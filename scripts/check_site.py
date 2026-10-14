@@ -742,7 +742,8 @@ def hero_variant_checks(browser, base, ck, index, pooled):
             ck.ok("Illustration" in pg.inner_text("#race-cap") and "measurement" in pg.inner_text("#race-cap"), f"{tag}: the caption says the animation is an illustration and the number is the measurement")
             # one run, then rest
             pick_loop(pg, "k04_rev")
-            pg.evaluate("document.getElementById('race-replay').click()")
+            started = pg.evaluate("(() => { document.getElementById('race-replay').click(); return document.getAnimations().length; })()")
+            ck.ok(v != 4 or started > 0, f"{tag}: Replay the race starts the bars growing at once ({started} animations running right after the click)")
             pg.wait_for_timeout(2600)
             d1 = hero_sig(pg)
             pg.wait_for_timeout(500)
@@ -823,7 +824,8 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         rp.wait_for_timeout(300)
         pick_loop(rp, "k04_rev")
         a1 = hero_sig(rp)
-        rp.evaluate("document.getElementById('race-replay').click()")
+        faded = rp.evaluate("(() => { document.getElementById('race-replay').click(); return document.getAnimations().length; })()")
+        ck.ok(v != 4 or faded > 0, f"hero {v}: with reduced motion Replay the race still answers the click with a fade, no movement ({faded} animations right after the click)")
         rp.wait_for_timeout(600)
         a2 = hero_sig(rp)
         rp.wait_for_timeout(900)
@@ -852,6 +854,9 @@ def interactive_checks(browser, base, ck, index, pooled, allowed, errors, saved,
     progress bar, baked numbers, reduced motion, keyboard use."""
     print("== interactive layer (hero race, story, slide-over, toggles, widgets)")
     raw = open(os.path.join(REPO, "site", "index.html"), encoding="utf-8").read()
+    raw_details = open(os.path.join(REPO, "site", "details.html"), encoding="utf-8").read()
+    ck.ok(not any(t in h for h in (raw, raw_details) for t in ("SAMPLE DATA", "made-up file", "results/fixture.json")),
+          "the served HTML of both pages carries no SAMPLE DATA text (a reader that does not run the page would take real data for a sample; the notices are added by the script only for the test fixture)")
     baked = re.findall(r'<span data-v="(?:lostMin|lostMax|googlePct|c2Lost|c2Vec|fixMin|fixMax|rwSlowMin|rwSlowMax)"[^>]*>([^<]*)</span>', raw)
     ck.ok(baked and all(b and not re.search(r"[A-Z]{4,}|…|&hellip;", b) for b in baked),
           f"index.html carries the first screen's key numbers in the HTML itself, from the data ({len(baked)} spans, e.g. {baked[:3]})")

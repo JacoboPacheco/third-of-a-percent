@@ -277,18 +277,18 @@ const WHAT = { // the generic wording per outcome, used when a loop has no sente
    has its own: the reverse-loop story is told only for the reverse loop. */
 const CAP = {
   k01_sum_fwd: { kept: 'Both builds are vectorized and, with the check on, the compiler removes the check altogether: nothing is left to pay for.' },
-  k02_add_fwd: { kept: 'Both builds are vectorized; the check runs only on the leftover elements.', keptBelow: ' Below 1×: the checked loop does fewer numbers per pass and happens to run faster (section 3; why is inferred).' },
+  k02_add_fwd: { kept: 'Both builds are vectorized; the check runs only on the leftover elements.', keptBelow: ' Below 1×: the checked loop happens to run faster (cause inferred; section 3).' },
   k03_stencil: { kept: 'Both builds are vectorized; the compiler tests the sizes once before the SIMD loop, so the check runs only on the leftover elements.' },
   k04_rev: { lost: 'Clang 18 could not vectorize it with the check inside.', novec: true },
   k05_stride2: { lost: 'Clang 18 gives the same remark as the reverse loop.', novec: true },
   k06_gather: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the index list.' },
   k07_hist: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the input.' },
-  k08_matmul: { lost: 'On clang 18 the remark says vectorizing is not beneficial with the check inside. Clang 19 to 21 keep SIMD yet cost 1.6× at L1 (EPYC 7763, timed); 22 keeps it, 23.1 and trunk lose it (compile-only).' },
+  k08_matmul: { lost: 'On clang 18 the remark says vectorizing is not beneficial. Clang 19 to 21 keep SIMD yet cost 1.6× at L1 (EPYC 7763, timed); 23.1 and trunk lose it (compile-only).' },
 };
-function capFor(k, i) {
+function capFor(k, i, plain) { // plain: the sentence without the no-vectorize clause (the mechanism demo's caption stays short; the hero and the drawer carry the clause)
   const c = CAP[k] || {};
   const t = c[i.cls] || WHAT[i.cls] || WHAT.none;
-  return t + (i.cls === 'lost' && c.novec ? novecClause(k, pooledOf(currentCpu().cpu_model), true) : '') + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '');
+  return t + (!plain && i.cls === 'lost' && c.novec ? novecClause(k, pooledOf(currentCpu().cpu_model), true) : '') + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '');
 }
 function gaugeSvg() {
   const pos = (v) => (Math.log(clamp(v, 0.5, 10)) - Math.log(0.5)) / (Math.log(10) - Math.log(0.5));
@@ -404,8 +404,16 @@ function layout4(infos) {
 function run4() { // the one run: every bar grows from the start; short ones finish first, the long ones lag
   for (const a of R.anims || []) a.cancel();
   R.anims = [];
-  if (RM()) return;
   const loops = [...$('race-loops').children];
+  if (RM()) { // no movement: a short fade of the bars shows that the click was received
+    for (const t of $('race-loops').querySelectorAll('.ln-t')) {
+      if (t.hidden || !t.firstChild) continue;
+      const a = t.firstChild.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease-out', fill: 'backwards' });
+      a.onfinish = () => { R.anims = R.anims.filter((x) => x !== a); };
+      R.anims.push(a);
+    }
+    return;
+  }
   const maxLen = Math.max(...loops.map((b) => parseFloat(b.style.getPropertyValue('--w-on')) || 0), 1);
   const done = (a) => { a.onfinish = () => { R.anims = R.anims.filter((x) => x !== a); }; R.anims.push(a); };
   for (const b of loops) {
@@ -578,5 +586,5 @@ function build(api) {
   play(); // the first look: one short run
 }
 function sync(onlyIfChanged) { if (!R.k) return; if (onlyIfChanged && R.k === S.sel) return; R.k = S.sel; R.pv = null; show(); }
-window.HeroRace = { build, sync, glyph: (k) => GLYPH[k] || '', words: (k) => capFor(k, infoFor(k)), unhint: () => document.dispatchEvent(new Event('race-used')) };
+window.HeroRace = { build, sync, glyph: (k) => GLYPH[k] || '', words: (k) => capFor(k, infoFor(k), true), unhint: () => document.dispatchEvent(new Event('race-used')) };
 })();

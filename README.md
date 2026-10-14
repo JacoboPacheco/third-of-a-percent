@@ -4,7 +4,7 @@
 
 A loop-by-loop measurement of what libc++ bounds checks cost, set next to Google's 0.30% average, with the machine code as proof.
 
-Status: measurements complete (Oct 2026); the page and notes may still be edited. Code written by AI coding agents directed by the author.
+Status: work in progress (Oct 2026). The measurements described here are the ones so far; the page, notes and results may still change. Code written by AI coding agents directed by the author.
 
 ![First screen of the page: eight loops as bars, the reverse loop with the check on drawn as 8.0 times as long](docs/hero.png)
 

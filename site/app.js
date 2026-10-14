@@ -1857,8 +1857,10 @@ async function loadPooled() {
   }
   state.replaceChildren();
   const sample = !!S.pooled.sample;
-  $('sample-band').hidden = !sample;
-  $('sample-mark').hidden = !sample;
+  // the sample notices exist only while the test fixture is shown: the served HTML carries no such text
+  const notice = (id, text) => { const n = document.getElementById(id); if (!n) return; n.textContent = sample ? text : ''; n.hidden = !sample; };
+  notice('sample-band', 'SAMPLE DATA: the figures below show results/fixture.json, a made-up file for testing the page, not a measurement.');
+  notice('sample-mark', 'SAMPLE DATA');
   return true;
 }
 async function loadSection(path, key, render, boxId) {
@@ -1939,7 +1941,7 @@ function buildChrome() {
   author = {JacoboPacheco},
   title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's 0.30% average},
   year   = {2026},
-  note   = {Technical note, measurements complete October 2026. Code written by AI coding agents directed by the author},
+  note   = {Work in progress, October 2026. Code written by AI coding agents directed by the author},
   url    = {${base}}
 }`;
 }
