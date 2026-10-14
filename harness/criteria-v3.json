@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "version": 3,
+  "written": "Mon Oct 12 2026 09:29 EDT (by `date`), stage S4-measurement, AFTER every S3 run (38120895740, 38121166129, 38121825636) and the S3 audit run (38127024171) and its report existed, and BEFORE the first run of .github/workflows/measure.yml under this file; no S4 number existed when this file was committed",
+  "changelog": [
+    "v3 (stage S4-measurement). Written after S3 and after the independent audit of S3, knowing all of their numbers, so nothing below is pre-registered in the sense criteria.json (v1) was. What it is: a change to how the measurement is POOLED and how its interval is computed, made because the audit showed the v2 headline was unstable for reasons that are about the measurement, not about the loops. It is not a loosening of any threshold: every number in 'verdict' (2 % A/A ceiling, 1.02 forward point, 1 + max(2 %, 2 x A/A) forward ceiling, 1.5 lost minimum) is copied from v2 unchanged.",
+    "Why. (1) The page-level form flipped INCONCLUSIVE, INCONCLUSIVE, MAP across the three S3-era runs only because each run drew a different set of CPU models and each job voted on its own 20-per-side sample. (2) A within-job 95 % interval does not include between-job spread: the audit rerun landed outside the earlier intervals for 9 to 14 of 32 in-cache cells per CPU model, by about 0.1 to 7 %. (3) v2's placement-sensitive cutoff was one job's layout A/A half-width, which moved from 0.25 % to 3.73 % between jobs; EPYC 7763's MAP rested on that cutoff excluding k03_stencil.L1. (4) The per-job A/A ceiling excluded whole jobs on a single noisy number (3.54 %, 2.97 %, 3.77 %).",
+    "What v3 changes. (a) The unit of evidence is the CPU model, not the job: every job of the same CPU model, in one run and across runs, is pooled. (b) The interval is a two-level bootstrap: jobs are resampled with replacement, and within each drawn job the repetitions of each side are resampled with replacement, so the interval contains between-job spread as well as within-job spread. (c) 40 repetitions per side (v2: 20), ABBA, fixed in advance, never adaptive. (d) The byte-identical A/A and the layout A/A are pooled the same way, per CPU model; no job is excluded on its own A/A. (e) A forward cell is placement-sensitive by a rule that uses no per-job cutoff (see v3.placement_sensitive). (f) The verdict is computed per CPU model on pooled data, and the page-level result is the SET of per-CPU verdicts, with no single page-level form. (g) Each cell carries Cachegrind instruction counts for NONE, FAST and the aligned pair at L1 and L2, beside the time ratio, labelled instructions, not time.",
+    "What v3 does not change: 'design', 'classes_from_remarks' and 'verdict' are v2's (design.timing.reps_per_side excepted, which v3.timing overrides for runs that name this file); criteria.json (v1) and criteria-v2.json stay untouched as the record. Every S4 per-job results.json still carries 'verdict' (the v2 per-job rule applied to that one job, informational only) and 'verdict_v1'.",
+    "Pre-run correction (Mon Oct 12, before any S4 run existed, committed separately): the bootstrap's random generator was changed from Python's random.Random to a counter-based splitmix64 (v3.pooling.interval), so the two-level bootstrap runs with numpy in seconds and gives the same numbers on any machine; nothing else changed.",
+    "Rule for changes, as in v1 and v2: no threshold, sample count, resample count, job count, minimum or rule here is changed after a result from an S4 run under this file exists. If one looks unfair, the result is reported against it as written and the objection is written beside it."
+  ],
+  "supersedes": "criteria-v2.json 'v2.page_level' and 'v2.placement_sensitive' for runs that name this file in run.criteria_file; the per-CPU pooled verdict and the set of per-CPU verdicts in pooled.json (harness/pool.py) replace combined.json's single page-level form for those runs",
+  "rule_for_changes": "No threshold, sample count, resample count, job count, minimum or rule in this file is changed after a result from an S4 run under this file exists.",
+  "design": {
+    "kernels": {
+      "k01_sum_fwd": "s += a[i], i up, int64 accumulator",
+      "k02_add_fwd": "c[i] = a[i] + b[i], i up",
+      "k03_stencil": "c[i] = a[i-1] + a[i] + a[i+1]",
+      "k04_rev": "c[i] = a[i] * 2, i counting down",
+      "k05_stride2": "c[i] = a[2*i] + a[2*i+1]",
+      "k06_gather": "c[i] = a[idx[i]], idx a fixed-seed permutation of 0..n-1",
+      "k07_hist": "h[a[i] & 255]++, h has 256 counters",
+      "k08_matmul": "d x d, order i-k-j, c[i*d+j] += a[i*d+k] * b[k*d+j], inputs masked to 0..3 so no int32 overflows"
+    },
+    "element_type": "int32_t in std::vector, accessed through operator[]; each kernel a noinline function kern_<id>",
+    "size_classes": "working set counts every array of the kernel; L1 = half of L1d, L2 = half of L2, RAM = four times the last-level cache capped at 256 MiB; cache sizes from /sys/devices/system/cpu/cpu0/cache",
+    "in_cache": [
+      "L1",
+      "L2"
+    ],
+    "skipped_cells": {
+      "k08_matmul.RAM": "not measured: at a RAM-sized working set one i-k-j call streams all of b once per row, an estimated 10 s or more per call and over 10 minutes per cell; RAM cells are not in N or the limits"
+    },
+    "builds": {
+      "common": "clang++-18 -O2 -std=c++20 -stdlib=libc++ (baseline x86-64, no -march)",
+      "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+      "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+      "novec": "the NONE flags plus -fno-vectorize (timing positive control)",
+      "aa": "the NONE binary of the A/A kernel copied to a second path; the run aborts if the two sha256 differ"
+    },
+    "aa_pair": "k02_add_fwd at the L1 size, NONE against its byte-identical copy, timed like every other pair, in every run",
+    "timing": {
+      "reps_per_side": 20,
+      "order": "ABBA repeated (A B B A A B B A ...), one process per repetition, pinned with taskset -c to one CPU",
+      "clock": "clock_gettime(CLOCK_MONOTONIC) inside the binary around the timed loop; process start, input fill and one warm-up call excluded",
+      "inner_iterations": "calibrated once per cell on the NONE build to about 75 ms per process, reused unchanged for every build of that cell",
+      "ratio": "median(FAST) / median(NONE)",
+      "interval": "percentile bootstrap, 10000 resamples of each side independently, seed 20261011, 95 %, harness/stats.py",
+      "half_width_pct": "(ci95_hi - ci95_lo) / 2 * 100"
+    },
+    "novec_pairs": "timed only for kernels vectorized in NONE (from the remarks), at the in-cache sizes",
+    "cachegrind": "valgrind --tool=cachegrind --cache-sim=no at the L1 size, 20 inner iterations; Ir attributed to kern_<id> divided by the number of calls (inner iterations plus one warm-up); instructions, not time"
+  },
+  "classes_from_remarks": {
+    "on_axis": "a kernel whose loop clang reports as vectorized in the NONE build",
+    "kept": "on_axis and vectorized in FAST: the forward class (negative control)",
+    "lost": "on_axis and not vectorized in FAST: the class that pays",
+    "off_axis": "not vectorized in NONE: reported, not used for N, the forward limit or the controls"
+  },
+  "verdict": {
+    "aa_half_width_max_pct": 2.0,
+    "forward_point_max_ratio": 1.02,
+    "forward_ci_hi_limit": "1 + max(0.02, 2 * aa_half_width_pct / 100)",
+    "forward_ci_hi_floor_pct": 2.0,
+    "forward_ci_hi_aa_multiplier": 2.0,
+    "lost_ci_lo_min_ratio": 1.5,
+    "ram_cells": "reported, never in N, the forward limit, the lost minimum or the positive control",
+    "positive_control_seen": "at least one in-cache cell of an on_axis kernel has a NOVEC/NONE ratio with ci95_lo > 1 + aa_half_width_pct / 100",
+    "order": [
+      "INCONCLUSIVE (A/A control) if the A/A half-width exceeds aa_half_width_max_pct",
+      "INCONCLUSIVE (checksum) if any measured cell has checksum_match false",
+      "INCONCLUSIVE (positive control) if the positive control is not seen",
+      "INCONCLUSIVE (negative control) if no kernel is in the kept class",
+      "MAP if every in-cache cell of a kept kernel has ratio <= forward_point_max_ratio AND ci95_hi <= the forward ci_hi limit, AND every in-cache cell of a lost kernel has ci95_lo >= lost_ci_lo_min_ratio, AND at least one kernel is in the lost class",
+      "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel has ci95_lo above the forward ci_hi limit (X = the largest ci95_hi over those cells, as a percent above 1, floored at 0)",
+      "INCONCLUSIVE (mixed picture) otherwise"
+    ],
+    "N": "median of ratio over the in-cache cells of the lost kernels, with min and max; RAM cells not in N",
+    "forward_limit_pct": "the forward ci_hi limit as a percent: max(2.0, 2 * aa_half_width_pct)"
+  },
+  "v2": {
+    "scope": "one results.json = one Actions job = one runner; its verdict is the verdict for that runner's CPU model (run.runner.cpu_model)",
+    "align_flag": "-falign-loops=64",
+    "builds_added": {
+      "none_a64": "the NONE flags plus -falign-loops=64",
+      "fast_a64": "the FAST flags plus -falign-loops=64"
+    },
+    "pairs_added": {
+      "aligned": "fast_a64 against none_a64 for every cell and program, the same n and inner iterations as the as-compiled pair, ABBA, reps_per_side per side; stored in the cell's (program's) 'aligned' key",
+      "layout_aa": "none against none_a64 (the same source and mode, only the loop alignment differs) for every kernel at the in-cache sizes and for every program; stored in controls.layout_aa"
+    },
+    "placement_record": "for every kernel build (none, fast, novec, none_a64, fast_a64): each loop in kern_<id> with start, bytes, start_mod64, crosses64, windows64, extra_window, simd, innermost (harness/placement.py); for programs a whole-binary count",
+    "layout_aa_designated": [
+      "k02_add_fwd.L1",
+      "k02_add_fwd.L2"
+    ],
+    "layout_aa_half_width": "the largest half_width_pct among the designated layout A/A pairs present in the run",
+    "columns": {
+      "as_compiled": "the cell's ratio and ci95 (the v1 pair, unchanged)",
+      "aligned": "the cell's aligned.ratio and aligned.ci95"
+    },
+    "headline_column": "aligned: the forward rule, N and X are read from the loops-aligned pair; the as-compiled pair is shown beside it (verdict.n_as_compiled, and both columns in the lost rule)",
+    "placement_sensitive": "a kept-class (forward) in-cache cell whose two ratios disagree by more than the layout A/A half-width: 100 * |ratio - aligned.ratio| > layout_aa_half_width_pct. It is excluded from the forward rule and from X, and listed in verdict.placement_sensitive and in the line",
+    "off_axis_reading": "an off-axis in-cache cell (not vectorized in NONE, e.g. k06_gather, k07_hist) is described as paying for the check only when ci95_lo is above the forward ci_hi limit in BOTH columns; listed in verdict.off_axis, never in N, X or the form",
+    "order": [
+      "INCONCLUSIVE (A/A control) if the byte-identical A/A half-width exceeds aa_half_width_max_pct (2 %), as in v1",
+      "INCONCLUSIVE (checksum) if any cell has a NONE/FAST checksum mismatch in either column",
+      "INCONCLUSIVE (build control) if a cell lacks the aligned pair, or the aligned builds' remarks disagree with the as-compiled builds' vectorized flags",
+      "INCONCLUSIVE (layout control) if no designated layout A/A pair is present",
+      "INCONCLUSIVE (positive control) as in v1",
+      "INCONCLUSIVE (negative control) as in v1",
+      "MAP if at least one forward in-cache cell is left after the placement-sensitive exclusions, every such cell passes the v1 forward rule (ratio <= forward_point_max_ratio AND ci95_hi <= the forward ci_hi limit) on its aligned pair, every in-cache cell of a lost kernel has ci95_lo >= lost_ci_lo_min_ratio in BOTH columns, and at least one kernel is in the lost class",
+      "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel, placement-sensitive cells excluded, has ci95_lo above the forward ci_hi limit in either column (X = the largest ci95_hi of those cells in either column, as a percent above 1, floored at 0)",
+      "INCONCLUSIVE (mixed picture) otherwise"
+    ],
+    "N": "median of aligned.ratio over the in-cache cells of the lost kernels, with min and max; the same over the as-compiled ratios is verdict.n_as_compiled",
+    "forward_limit_pct": "as in v1: max(2.0, 2 * the byte-identical A/A half_width_pct)",
+    "line": "the v1 wording, prefixed with 'On <cpu_model>: ', naming the aligned column, and followed by the placement-sensitive cells with both ratios when there are any",
+    "page_level": "SUPERSEDED for runs under this file by v3.page_level; kept here only so the per-job rule above reads as in v2"
+  },
+  "v3": {
+    "per_job_verdict": "results.json 'verdict' of a run under this file is the v2 per-job rule above (harness/verdict.py compute_v2, criteria_version 3), applied to that one job: informational, kept so the instability of per-job verdicts stays visible; it is NOT the v3 verdict",
+    "timing": {
+      "reps_per_side": 40,
+      "order": "ABBA as in v2 (A B B A A B B A ...), 80 processes per pair, pinned with taskset -c to one CPU",
+      "fixed_in_advance": "40 per side for every pair (FAST/NONE, aligned, layout A/A, NOVEC/NONE, byte-identical A/A), never adaptive, never extended after looking at a result"
+    },
+    "matrix": {
+      "jobs_per_run": 10,
+      "runs": 3,
+      "sizes_timed": [
+        "L1",
+        "L2"
+      ],
+      "programs": "not timed in S4 runs (whole-program wall time was never part of the verdict; the S2/S3 program rows stay the record)",
+      "ram_cells": "not timed in S4 runs (never part of the verdict; they did not reproduce in S1 to S3)",
+      "kernels": "all eight",
+      "which_runs_are_pooled": "every run of measure.yml under this file with the full configuration (kernels all, sizes L1,L2, programs none, 10 jobs), in the order launched, starting with the first after this file was committed; a run is replaced only if it produced no results file at all (e.g. GitHub failed to start it), and that is reported. Runs with any other inputs (a smoke test) are stored under results/s4-smoke-*/ and never pooled. S1 to S3 runs are not pooled (20 per side, a different sample count, already looked at)."
+    },
+    "pooling": {
+      "unit": "the CPU model, keyed by the exact run.runner.cpu_model string; every job (results.json) of that CPU model in the pooled runs is used",
+      "no_per_job_exclusion": "no job is excluded on its own A/A half-width or any other per-job statistic; a noisy job widens the pooled interval instead",
+      "per_job_ratio": "r_j = median(B samples of job j) / median(A samples of job j), the v1 ratio of medians inside one job (A = NONE, B = FAST for a cell; A = NONE, B = the copy for the A/A; A = NONE, B = NONE aligned for the layout A/A; A = NONE, B = NOVEC for the positive control)",
+      "pooled_ratio": "R = exp(mean over the J jobs of ln r_j), the geometric mean of the per-job ratios. Why not the median of all raw samples pooled: jobs run on different hosts whose absolute speed differs; a ratio inside one job is paired by design (ABBA on one CPU), and a geometric mean of paired ratios does not mix host speed into the medians. Every raw sample is kept in the per-job results.json.",
+      "interval": "two-level percentile bootstrap, B = 2000 resamples. Each resample: draw J job indices from the J jobs with replacement; for each drawn job draw len(A) values from its A samples and len(B) values from its B samples, with replacement; r* = median(B*) / median(A*); R* = exp(mean ln r*). Sort the 2000 R* and take positions 50 and 1949 (harness/stats.percentile_interval, 95 %). Random numbers: a counter-based splitmix64 generator (output k = mix(seed + (k + 1) * 0x9E3779B97F4A7C15 mod 2^64), index = output mod n), with one stream for the job draws and one per side, each seeded with int(first 16 hex digits of sha256('20261011|' + cpu_model + '|' + stat_id + '|' + stream), 16), stream 'jobs', 'side0', 'side1', ...; the job index of resample b, slot s is output b*J + s of the 'jobs' stream, and draw t of side k for that slot is output (b*J + s)*L + t of the 'side<k>' stream (L = the side's sample count, equal in every job). Fixed so that every number can be recomputed exactly on any machine (harness/pool.py, numpy uint64 arithmetic).",
+
+      "half_width_pct": "(hi - lo) / 2 * 100, as in v1",
+      "between_job_sd_pct": "reported beside every pooled statistic: 100 * the sample standard deviation of ln r_j over the jobs (null for one job); descriptive, not used by a rule",
+      "minimum_jobs": 3,
+      "few_jobs_caveat": "with 3 to 5 jobs the outer bootstrap understates between-job spread (a bootstrap over J units has variance about (J-1)/J of the true one, and its percentiles are coarse); pooled.json prints the job count beside every CPU model"
+    },
+    "controls_pooled": {
+      "aa": "the byte-identical A/A pair (k02_add_fwd.L1) pooled as above; its half-width is THE A/A half-width of the CPU model for every rule in 'verdict' (A/A ceiling, forward ci_hi limit, positive control)",
+      "layout_aa": "each layout A/A pair pooled as above, reported per cell; the designated pairs (k02_add_fwd.L1, .L2) must be present for a verdict (layout control). The layout A/A is no longer a cutoff for anything.",
+      "positive": "each NOVEC/NONE pair pooled as above; seen if at least one pooled ci95_lo > 1 + the pooled A/A half-width / 100",
+      "checksums": "INCONCLUSIVE (checksum) if any pooled job has a checksum mismatch in either column",
+      "build": "INCONCLUSIVE (build control) if the jobs of a CPU model disagree on any binary sha256 or vectorization flag of a cell, or a cell lacks its aligned pair in any job"
+    },
+    "placement_sensitive": {
+      "rule": "a kept-class (forward) in-cache cell is placement-sensitive if and only if BOTH (1) statistical: the two-level bootstrap 95 % interval of D = exp(mean over jobs of ln(r_compiled_j / r_aligned_j)) excludes 1, where each resample draws jobs with replacement and, inside each drawn job, resamples the four sides (NONE, FAST, NONE aligned, FAST aligned) independently (stat_id '<cell_id>|placement'); this interval contains the between-job spread, so no per-job cutoff is involved; AND (2) mechanical, from harness/placement.py on the as-compiled builds: the hot loop of NONE and the hot loop of FAST sit differently relative to 64-byte windows, i.e. they differ in start_mod64, bytes, windows64 or extra_window; the hot loop of a build is its innermost loop with simd true and the most bytes (the innermost loop with the most bytes when none has simd). Part (2) is deterministic and is the same on every runner (the binaries are byte-identical across jobs); it rules out calling a byte-identical pair such as k01_sum_fwd placement-sensitive.",
+      "effect": "as in v2: a placement-sensitive cell is excluded from the forward rule and from X, and listed with both pooled ratios and the interval of D in the CPU model's verdict line"
+    },
+    "verdict_per_cpu_model": {
+      "input": "the pooled statistics of one CPU model",
+      "order": [
+        "INCONCLUSIVE (too few jobs) if fewer than minimum_jobs jobs of this CPU model were pooled",
+        "INCONCLUSIVE (A/A control) if the pooled A/A half-width exceeds aa_half_width_max_pct",
+        "INCONCLUSIVE (checksum) as in controls_pooled.checksums",
+        "INCONCLUSIVE (build control) as in controls_pooled.build",
+        "INCONCLUSIVE (layout control) if a designated layout A/A pair is missing from any pooled job",
+        "INCONCLUSIVE (positive control) if no pooled NOVEC/NONE ci95_lo is above 1 + the pooled A/A half-width",
+        "INCONCLUSIVE (negative control) if no kernel is in the kept class",
+        "MAP if at least one forward in-cache cell is left after the placement-sensitive exclusions, every such cell has pooled aligned ratio <= forward_point_max_ratio AND pooled aligned ci95_hi <= 1 + max(forward_ci_hi_floor_pct, forward_ci_hi_aa_multiplier * pooled A/A half-width) / 100, every in-cache cell of a lost kernel has pooled ci95_lo >= lost_ci_lo_min_ratio in BOTH columns, and at least one kernel is in the lost class",
+        "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel, placement-sensitive cells excluded, has pooled ci95_lo above that forward limit in either column",
+        "INCONCLUSIVE (mixed picture) otherwise"
+      ],
+      "N": "median of the pooled aligned ratios over the in-cache cells of the lost kernels, with min and max; the same over the pooled as-compiled ratios is n_as_compiled",
+      "X": "the largest pooled aligned ci95_hi of the counted forward cells (MAP), or of the counted on-axis cells in either column (HOLDS_EVERYWHERE), as a percent above 1, floored at 0"
+    },
+    "stability": {
+      "per_run": "the same per-CPU-model verdict, recomputed from the jobs of ONE run only (pooled the same way, minimum_jobs applies), for every pooled run",
+      "stable": "a CPU model's verdict is stable if every run in which it had at least minimum_jobs jobs gives the same form as the all-runs pooled verdict, and there are at least 2 such runs; 'not assessable' with fewer than 2 such runs",
+      "reproduction": "for every CPU model with at least 2 assessable runs and every in-cache cell and column: whether each run's pooled point ratio lies inside each other assessable run's pooled 95 % interval; counted and printed (the audit's measure of whether the interval contains run-to-run spread)"
+    },
+    "page_level": {
+      "form": "none: there is no single page-level form",
+      "line": "the set of per-CPU-model verdicts, each with its form, the number of jobs and runs pooled, and whether it was stable across runs; CPU models with too few jobs are listed with their job count",
+      "file": "harness/pool.py writes pooled.json (kind 'pooled') from the per-job results.json files; scripts/check.py recomputes it and demands an exact match, and harness/pool_check.py recomputes a sample of the pooled intervals with an independent implementation"
+    },
+    "instructions": {
+      "what": "Cachegrind (valgrind --tool=cachegrind --cache-sim=no, 20 inner iterations, Ir attributed to kern_<id> per call) for NONE, FAST, NONE aligned and FAST aligned, at L1 and L2, in every job",
+      "where": "cells[].instr (NONE, FAST) and cells[].aligned.instr (aligned pair) in results.json; in pooled.json beside the pooled time ratio of the same cell and column",
+      "label": "instructions, not time",
+      "use": "descriptive: shows how much of a slowdown is extra instructions executed; no rule reads it. The counts are deterministic for a binary and input; the jobs of a CPU model must agree exactly, and a disagreement is printed"
+    }
+  }
+}

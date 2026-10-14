@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "kind": "layout-sweep-criteria",
+  "version": 2,
+  "written": "v2 amendment, Tue Oct 13 2026 (from `date`), after run 38439008261 aborted at the probe with no timing; no timing number from any layout-sweep run exists. v1 text: Tue Oct 13 2026 (from `date`), BEFORE any run of .github/workflows/layout-sweep.yml; no number from this sweep existed. Thresholds copied from harness/criteria-v3.json are listed under rules.copied_from_harness_criteria_v3.",
+  "rule_for_changes": "No threshold, count, rule or list in this file is changed after a result from a layout-sweep run exists. If one looks unfair, the result is reported against it as written and the objection is written beside it.",
+  "design": {
+    "kernels": [
+      "k01_sum_fwd",
+      "k02_add_fwd",
+      "k03_stencil",
+      "k04_rev"
+    ],
+    "sizes": [
+      "L1",
+      "L2"
+    ],
+    "placements": "16 in mode fine, 4 in mode coarse (see modes)",
+    "pad_step_bytes": "4 in mode fine, 16 in mode coarse",
+    "pad_ids": "p00..; placement pNN puts step*NN bytes of 0x90 filler before the kernel function",
+    "reference_placements": [
+      "ref",
+      "a64"
+    ],
+    "reps_per_side": 20,
+    "order": "ABBA (A = NONE, B = FAST), one process per repetition, taskset-pinned, via harness/run.py pair()",
+    "per_job_resamples": 2000,
+    "min_jobs_per_cpu": 3,
+    "loop_alignment_variants_in_order": [
+      [
+        "-falign-functions=1",
+        "-falign-loops=1"
+      ],
+      [
+        "-falign-functions=1",
+        "-falign-loops=1",
+        "-mllvm",
+        "-x86-experimental-pref-loop-alignment=0"
+      ],
+      [
+        "-falign-functions=1",
+        "-falign-loops=1",
+        "-mllvm",
+        "-x86-experimental-pref-innermost-loop-alignment=0"
+      ]
+    ]
+  },
+  "rules": {
+    "aa_half_width_max_pct": 2.0,
+    "forward_point_max_ratio": 1.02,
+    "forward_ci_hi_floor_pct": 2.0,
+    "forward_ci_hi_aa_multiplier": 2.0,
+    "lost_ci_lo_min_ratio": 1.5,
+    "copied_from_harness_criteria_v3": [
+      "aa_half_width_max_pct",
+      "forward_point_max_ratio",
+      "forward_ci_hi_floor_pct",
+      "forward_ci_hi_aa_multiplier",
+      "lost_ci_lo_min_ratio"
+    ]
+  },
+  "modes": {
+    "fine": {
+      "placements": 16,
+      "step": 4,
+      "flags": "first of design.loop_alignment_variants_in_order that passes the probe",
+      "robust_min_pass": 15,
+      "dependent_max_pass": 7,
+      "lost_holds_min_pass": 15,
+      "distinct_start_mod64_required": 16
+    },
+    "coarse": {
+      "placements": 4,
+      "step": 16,
+      "flags": [],
+      "robust_min_pass": 4,
+      "dependent_max_pass": 1,
+      "lost_holds_min_pass": 4,
+      "distinct_start_mod64_required": 4,
+      "note": "compiler default function and loop alignment (loops at multiples of 16 bytes): the only loop-start residues mod 64 the compiler produces by itself are 0, 16, 32, 48"
+    }
+  },
+  "mode_order": "fine is tried first (all loop-alignment variants, addresses only); if none moves the loop in 4-byte steps, coarse runs; a run never mixes modes and records which ran in mechanism.mode"
+}

@@ -1,0 +1,174 @@
+name: corpus
+
+# The compile-time census (corpus/README.md): every pinned project of a list (corpus/projects.json
+# is census 1, corpus/projects2.json census 2, corpus/PLAN2.md) and the 8 kernels compiled twice,
+# libc++ hardening NONE and FAST, with clang's loop-vectorize records. No linking, no running, no
+# timing. Per target (baseline, and avx2 = -march=x86-64-v3 as a labelled sensitivity run) the
+# census runs as shards on two separate copies (a and b); the finalize job joins each copy's
+# shards (corpus/merge.py), checks that the two copies are byte-identical (the determinism
+# control) and uploads the results folder as the artifact "<prefix>-<target>-run-<run id>".
+
+on:
+  workflow_dispatch:
+    inputs:
+      list:
+        description: "project list in corpus/ (projects2.json = census 2, projects.json = census 1)"
+        default: "projects2.json"
+      targets:
+        description: "comma-separated targets: baseline, avx2"
+        default: "baseline,avx2"
+      only:
+        description: "comma-separated project names, or empty for all"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      census: ${{ steps.m.outputs.census }}
+      targets: ${{ steps.m.outputs.targets }}
+      prefix: ${{ steps.m.outputs.prefix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        env:
+          LIST: ${{ inputs.list }}
+          TARGETS: ${{ inputs.targets }}
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          lst = os.environ["LIST"]
+          projects = json.load(open("corpus/" + lst))["projects"]
+          shards = sorted({p.get("shard", 1) for p in projects})
+          targets = [t.strip() for t in os.environ["TARGETS"].split(",") if t.strip()]
+          assert targets and all(t in ("baseline", "avx2") for t in targets), targets
+          inc = [{"target": t, "copy": c, "shard": s} for t in targets for c in ("a", "b") for s in shards]
+          print("census=" + json.dumps({"include": inc}))
+          print("targets=" + json.dumps(targets))
+          print("prefix=" + ("corpus2" if lst == "projects2.json" else "corpus1"))
+          EOF
+          cat "$GITHUB_OUTPUT"
+
+  census:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.census) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18, libc++-18 and llvm-18 (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev llvm-18 binutils
+          clang++-18 --version
+          objdump --version | head -1
+          dpkg-query -W clang-18 libc++-18-dev libc++abi-18-dev llvm-18 binutils
+
+      - name: Fetch (sha256 checked), build NONE and FAST, analyze
+        env:
+          ONLY: ${{ inputs.only }}
+          LIST: ${{ inputs.list }}
+          # __DATE__ and __TIME__ (CImg prints them) from a fixed time, so objects are byte-identical
+          SOURCE_DATE_EPOCH: "0"
+        run: |
+          python3 corpus/census.py all --projects "$LIST" --target ${{ matrix.target }} --shard ${{ matrix.shard }} \
+            --only "$ONLY" --deps build/corpus-deps --work build/corpus-work --out out
+          cat build/corpus-deps/MANIFEST
+
+      - name: Failed translation units (if any)
+        if: always()
+        run: |
+          grep -L '^0$' build/corpus-work/*/*/*.rc 2>/dev/null | while read rc; do
+            echo "== ${rc%.rc}"; grep -m5 'error' "${rc%.rc}.stderr.txt" || true
+          done
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: census-${{ matrix.target }}-${{ matrix.copy }}-${{ matrix.shard }}
+          path: out/
+          if-no-files-found: warn
+
+  finalize:
+    needs: [plan, census]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: census-${{ matrix.target }}-a-*
+          path: shards-a
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: census-${{ matrix.target }}-b-*
+          path: shards-b
+
+      - name: Join shards, determinism control, schema check, tests
+        env:
+          OUT: results/${{ needs.plan.outputs.prefix }}-${{ matrix.target }}-run-${{ github.run_id }}
+        run: |
+          python3 corpus/merge.py --out census-a shards-a/*
+          python3 corpus/merge.py --out census-b shards-b/*
+          python3 corpus/finalize.py --a census-a --b census-b --out "$OUT"
+          python3 corpus/run_tests.py
+
+      - name: Summary
+        if: always()
+        env:
+          OUT: results/${{ needs.plan.outputs.prefix }}-${{ matrix.target }}-run-${{ github.run_id }}
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          out = os.environ["OUT"]
+          c = json.load(open(out + "/corpus.json"))
+          t = c["totals"]
+          print(f"List {c.get('projects_file')}, target {c.get('target')}: projects {t['projects']}, "
+                f"translation units {t['translation_units']}\n")
+          print(f"Vectorized loops NONE {t['none']['vectorized']}, FAST {t['fast']['vectorized']}; "
+                f"lost {t['lost']} ({t['lost_pct_of_vectorized']}%), moved {t['moved']}, gained {t['gained']}; "
+                f"ud2 added {t['ud2_added']}; .text {t['text_bytes_change_pct']:+}%; "
+                f"lost with operator[] evidence {t.get('lost_with_index_evidence')}\n")
+          for k in ("kernels", "remark_crosscheck", "determinism"):
+              print(f"Control {k}: {'PASS' if c['controls'][k]['pass'] else 'FAIL'}\n")
+          ev = c["controls"]["kernels"].get("index_evidence")
+          if ev:
+              print(f"Control kernel index evidence: {'PASS' if ev['pass'] else 'FAIL'}\n")
+          for d in c["dropped"]:
+              print(f"Dropped {d['name']}: {d['reason'][:300]}\n")
+          print("| project | TUs | vec NONE | vec FAST | lost | moved | gained | ud2 added | .text |\n|---|---|---|---|---|---|---|---|---|")
+          for p in c["projects"]:
+              print(f"| {p['name']} | {p['compiled']}/{p['translation_units']} | {p['none']['vectorized']} | "
+                    f"{p['fast']['vectorized']} | {p['lost']} | {p['moved']} | {p['gained']} | {p['ud2_added']} | "
+                    f"{p['text_bytes_change_pct']}% |")
+          lost = json.load(open(out + "/lost_loops.json"))["lost"]
+          print("\n| project | where | class | evidence | trip count | source |\n|---|---|---|---|---|---|")
+          for e in lost[:60]:
+              ev = e.get("index_evidence", {})
+              print(f"| {e['project']} | {e['file']}:{e['line']} | {e['class']}: {e['detail']} | "
+                    f"{ev.get('status', '')} {'; '.join(ev.get('messages', []))} | "
+                    f"{e.get('trip_count', {}).get('kind', '')} | `{e['source_line'][:80].replace('|', '/')}` |")
+          EOF
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.plan.outputs.prefix }}-${{ matrix.target }}-run-${{ github.run_id }}
+          path: results/${{ needs.plan.outputs.prefix }}-${{ matrix.target }}-run-${{ github.run_id }}/
+          if-no-files-found: warn

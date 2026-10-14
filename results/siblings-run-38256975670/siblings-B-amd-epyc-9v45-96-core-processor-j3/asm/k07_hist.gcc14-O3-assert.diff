@@ -1,0 +1,45 @@
+--- k07_hist.gcc14O3.none.s
++++ k07_hist.gcc14O3.gcc14-O3-assert.s
+@@ -1,18 +1,32 @@
+ <_Z13kern_k07_histRSt6vectorIiSaIiEERKS1_>:
+ endbr64
+ mov    0x8(%rsi),%rax
+-mov    (%rsi),%rsi
+-mov    %rax,%r8
+-sub    %rsi,%r8
+-sar    $0x2,%r8
+-cmp    %rsi,%rax
++mov    (%rsi),%r8
++mov    %rax,%r9
++sub    %r8,%r9
++sar    $0x2,%r9
++cmp    %r8,%rax
+ je     <_Z13kern_k07_histRSt6vectorIiSaIiEERKS1_+off>
+-mov    (%rdi),%rcx
++mov    (%rdi),%rsi
++mov    0x8(%rdi),%rcx
+ xor    %eax,%eax
+-nop
+-movzbl (%rsi,%rax,4),%edx
++sub    %rsi,%rcx
++sar    $0x2,%rcx
++jmp    <_Z13kern_k07_histRSt6vectorIiSaIiEERKS1_+off>
++data16 cs nopw 0x0(%rax,%rax,1)
++nopw   0x0(%rax,%rax,1)
+ add    $0x1,%rax
+-addl   $0x1,(%rcx,%rdx,4)
+-cmp    %r8,%rax
++addl   $0x1,(%rsi,%rdx,4)
++cmp    %r9,%rax
++jae    <_Z13kern_k07_histRSt6vectorIiSaIiEERKS1_+off>
++movzbl (%r8,%rax,4),%edx
++cmp    %rcx,%rdx
+ jb     <_Z13kern_k07_histRSt6vectorIiSaIiEERKS1_+off>
++sub    $0x8,%rsp
++lea    0x8c2(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x8f7(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0x9b3(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nopw   0x0(%rax,%rax,1)
+ ret

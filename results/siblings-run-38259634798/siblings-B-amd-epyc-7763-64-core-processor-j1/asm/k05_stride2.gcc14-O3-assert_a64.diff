@@ -1,0 +1,120 @@
+--- k05_stride2.gcc14O3.none_a64.s
++++ k05_stride2.gcc14O3.gcc14-O3-assert_a64.s
+@@ -1,88 +1,36 @@
+ <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_>:
+ endbr64
+-mov    0x8(%rdi),%rdx
+-mov    (%rdi),%rcx
+-mov    %rdx,%rax
+-sub    %rcx,%rax
+-mov    %rax,%rdi
+-sar    $0x2,%rdi
++mov    0x8(%rdi),%rax
++mov    (%rdi),%r8
++mov    %rax,%r9
++sub    %r8,%r9
++sar    $0x2,%r9
++cmp    %r8,%rax
++je     <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
++mov    (%rsi),%rdi
++mov    0x8(%rsi),%rcx
++xor    %eax,%eax
++sub    %rdi,%rcx
++sar    $0x2,%rcx
++mov    %rcx,%rsi
++shr    $1,%rsi
++lea    (%rax,%rax,1),%rdx
+ cmp    %rcx,%rdx
++jae    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
++mov    (%rdi,%rax,8),%edx
++cmp    %rax,%rsi
+ je     <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-mov    (%rsi),%rdx
+-cmp    $0xc,%rax
+-jbe    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-test   %rax,%rax
+-lea    0x0(,%rdi,8),%rsi
+-mov    $0x8,%r8d
+-cmove  %r8,%rsi
+-setne  %r9b
+-add    %rdx,%rsi
+-cmp    %rsi,%rcx
+-jae    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-test   %rax,%rax
+-mov    $0x4,%esi
+-cmove  %rsi,%rax
+-add    %rcx,%rax
+-cmp    %rax,%rdx
+-jb     <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-test   %r9b,%r9b
+-mov    $0x1,%r8d
+-cmovne %rdi,%r8
+-xor    %eax,%eax
+-mov    %r8,%rsi
+-shr    $0x2,%rsi
+-shl    $0x4,%rsi
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   0x0(%rax,%rax,1)
+-movdqu (%rdx,%rax,2),%xmm0
+-movdqu 0x10(%rdx,%rax,2),%xmm2
+-movdqa %xmm0,%xmm1
+-shufps $0xdd,%xmm2,%xmm0
+-shufps $0x88,%xmm2,%xmm1
+-paddd  %xmm1,%xmm0
+-movups %xmm0,(%rcx,%rax,1)
+-add    $0x10,%rax
+-cmp    %rax,%rsi
+-jne    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-mov    %r8,%rax
+-and    $0xfffffffffffffffc,%rax
+-and    $0x3,%r8d
+-je     <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-mov    (%rdx,%rax,8),%esi
+-add    0x4(%rdx,%rax,8),%esi
+-lea    0x0(,%rax,8),%r8
+-lea    0x0(,%rax,4),%r9
+-mov    %esi,(%rcx,%rax,4)
+-lea    0x1(%rax),%rsi
+-cmp    %rdi,%rsi
+-jae    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-mov    0xc(%rdx,%r8,1),%esi
+-add    $0x2,%rax
+-add    0x8(%rdx,%r8,1),%esi
+-mov    %esi,0x4(%rcx,%r9,1)
+-cmp    %rdi,%rax
+-jae    <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+-mov    0x14(%rdx,%r8,1),%eax
+-add    0x10(%rdx,%r8,1),%eax
+-mov    %eax,0x8(%rcx,%r9,1)
+-ret
+-nopl   0x0(%rax)
+-xor    %eax,%eax
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-cs nopw 0x0(%rax,%rax,1)
+-mov    0x4(%rdx,%rax,8),%esi
+-add    (%rdx,%rax,8),%esi
+-mov    %esi,(%rcx,%rax,4)
++add    0x4(%rdi,%rax,8),%edx
++mov    %edx,(%r8,%rax,4)
+ add    $0x1,%rax
+-cmp    %rdi,%rax
++cmp    %r9,%rax
+ jb     <_Z16kern_k05_stride2RSt6vectorIiSaIiEERKS1_+off>
+ ret
+-cs nopw 0x0(%rax,%rax,1)
+-xchg   %ax,%ax
++nopl   0x0(%rax,%rax,1)
++sub    $0x8,%rsp
++lea    0x901(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x936(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x47d,%esi
++lea    0xa02(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nopl   0x0(%rax,%rax,1)

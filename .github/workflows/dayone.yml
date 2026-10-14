@@ -1,0 +1,74 @@
+name: dayone
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dayone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18 and libc++-18 (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev
+          clang++-18 --version
+          dpkg-query -W libc++-18-dev libc++abi-18-dev clang-18
+
+      - name: Fetch pinned sources (nlohmann/json v3.11.3, twitter.json from simdjson v3.10.1, fmt 11.0.2, pugixml 1.14)
+        run: |
+          set -euo pipefail
+          D=dayone/deps
+          mkdir -p $D/json
+          fetch() { curl -fsSL --retry 3 -o "$2" "$1"; }
+          fetch https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp $D/json/json.hpp
+          fetch https://raw.githubusercontent.com/simdjson/simdjson/v3.10.1/jsonexamples/twitter.json $D/twitter.json
+          fetch https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz $D/fmt.tar.gz
+          fetch https://github.com/zeux/pugixml/releases/download/v1.14/pugixml-1.14.tar.gz $D/pugixml.tar.gz
+          mkdir -p $D/fmt $D/pugixml
+          tar -xzf $D/fmt.tar.gz -C $D/fmt --strip-components=1
+          tar -xzf $D/pugixml.tar.gz -C $D/pugixml --strip-components=1
+          python3 - <<'EOF'
+          import hashlib, json, os
+          d = "dayone/deps"
+          src = {
+            "json/json.hpp": "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp",
+            "twitter.json": "https://raw.githubusercontent.com/simdjson/simdjson/v3.10.1/jsonexamples/twitter.json",
+            "fmt.tar.gz": "https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz",
+            "pugixml.tar.gz": "https://github.com/zeux/pugixml/releases/download/v1.14/pugixml-1.14.tar.gz",
+          }
+          m = {}
+          for p, u in src.items():
+              b = open(os.path.join(d, p), "rb").read()
+              m[p] = {"url": u, "bytes": len(b), "sha256": hashlib.sha256(b).hexdigest()}
+          json.dump(m, open(os.path.join(d, "manifest.json"), "w"), indent=1)
+          print(json.dumps(m, indent=1))
+          EOF
+
+      - name: Runner facts
+        run: |
+          lscpu
+          nproc
+          free -m
+          for i in /sys/devices/system/cpu/cpu0/cache/index*; do echo "$i $(cat $i/level) $(cat $i/type) $(cat $i/size)"; done
+
+      - name: Build, time and collect
+        run: python3 dayone/run.py
+
+      - name: Evaluate against dayone/criteria.json
+        if: always()
+        run: |
+          if [ -f dayone/out/raw.json ]; then python3 dayone/evaluate.py; fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dayone-out
+          path: dayone/out/
+          if-no-files-found: warn

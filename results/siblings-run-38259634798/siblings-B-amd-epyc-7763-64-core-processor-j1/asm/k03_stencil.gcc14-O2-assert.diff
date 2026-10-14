@@ -1,0 +1,56 @@
+--- k03_stencil.gcc14O2.none.s
++++ k03_stencil.gcc14O2.gcc14-O2-assert.s
+@@ -1,23 +1,37 @@
+ <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_>:
+ endbr64
+-mov    (%rsi),%rcx
++mov    (%rsi),%r8
+ mov    0x8(%rsi),%rax
+-sub    %rcx,%rax
+-mov    %rax,%rsi
+-sar    $0x2,%rsi
++sub    %r8,%rax
++mov    %rax,%r9
++sar    $0x2,%r9
+ cmp    $0x8,%rax
+ jbe    <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_+off>
+-mov    (%rdi),%rdi
+-mov    $0x2,%eax
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
++mov    (%rdi),%rsi
++mov    0x8(%rdi),%rcx
++mov    $0x1,%eax
++sub    %rsi,%rcx
++sar    $0x2,%rcx
++cmp    %rcx,%rax
++jae    <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_+off>
++mov    (%r8,%rax,4),%edx
++add    -0x4(%r8,%rax,4),%edx
++add    0x4(%r8,%rax,4),%edx
++mov    %edx,(%rsi,%rax,4)
++lea    0x1(%rax),%rdx
++add    $0x2,%rax
++cmp    %r9,%rax
++jae    <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_+off>
++mov    %rdx,%rax
++cmp    %rcx,%rax
++jb     <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_+off>
++sub    $0x8,%rsp
++lea    0x9e0(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0xa15(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0xac9(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
+ nopl   0x0(%rax)
+-mov    -0x4(%rcx,%rax,4),%edx
+-add    -0x8(%rcx,%rax,4),%edx
+-add    (%rcx,%rax,4),%edx
+-mov    %edx,-0x4(%rdi,%rax,4)
+-add    $0x1,%rax
+-cmp    %rsi,%rax
+-jb     <_Z16kern_k03_stencilRSt6vectorIiSaIiEERKS1_+off>
+ ret
+-nopl   0x0(%rax)
++cs nopw 0x0(%rax,%rax,1)
++nopl   0x0(%rax,%rax,1)

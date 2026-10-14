@@ -1,0 +1,22 @@
+clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clang18.clang18-extensive kernels/k04_rev.cpp
+kernels/k04_rev.cpp:5:3: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+    5 |   for (size_t i = a.size(); i-- > 0;) c[i] = a[i] * 2;  // LOOP
+      |   ^
+kernels/k04_rev.cpp:5:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+In file included from kernels/k04_rev.cpp:2:
+kernels/common.hpp:29:3: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+   29 |   for (auto& e : v) {
+      |   ^
+kernels/common.hpp:29:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+kernels/k04_rev.cpp:18:5: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+   18 |     kern_k04_rev(c, a);
+      |     ^
+kernels/k04_rev.cpp:17:3: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+   17 |   for (long it = 0; it < iters; ++it) {
+      |   ^
+kernels/k04_rev.cpp:17:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+In file included from kernels/k04_rev.cpp:2:
+kernels/common.hpp:37:3: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+   37 |   for (int32_t e : v) {
+      |   ^
+kernels/common.hpp:37:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]

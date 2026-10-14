@@ -1,0 +1,107 @@
+{
+ "kind": "combined",
+ "criteria_file": "harness/criteria-v2.json",
+ "criteria_sha256": "5faeb07f789d8cf2248d9b5bd9cd0c1db767d08abfe606b908e39ff59ca3c09f",
+ "files": [
+  {
+   "path": "results-amd-epyc-9v45-96-core-processor-j2/results.json",
+   "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+   "run_id": "38127024171",
+   "aa_half_width_pct": 2.9732667331097473,
+   "usable": false,
+   "form": "inconclusive",
+   "line": "On AMD EPYC 9V45 96-Core Processor: INCONCLUSIVE: the A/A control is too noisy (half-width 2.97%, above 2%), so no headline number is printed.",
+   "why": "A/A control: same-run A/A half-width above aa_half_width_max_pct",
+   "x_pct": null,
+   "placement_sensitive": [
+    "k02_add_fwd.L1"
+   ]
+  },
+  {
+   "path": "results-intel-xeon-platinum-8370c-cpu-2-80ghz-j1/results.json",
+   "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+   "run_id": "38127024171",
+   "aa_half_width_pct": 0.2637276844079217,
+   "usable": true,
+   "form": "map",
+   "line": "On Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz: Google's 0.30% holds for forward loops with loops aligned (at most 0.2% on k01_sum_fwd, k02_add_fwd, k03_stencil); a loop that loses vectorization under the same check (k04_rev, k05_stride2, k08_matmul) pays 4.90 times (range 3.92 to 6.15; as compiled 5.11), because it loses SIMD. Placement-sensitive, listed and not counted: k02_add_fwd.L1 (as compiled 1.07, aligned 1.05); k03_stencil.L2 (as compiled 0.99, aligned 1.00).",
+   "why": "MAP: every counted in-cache cell of k01_sum_fwd, k02_add_fwd, k03_stencil has aligned ratio <= 1.02 and aligned ci95_hi <= 1.0200; every in-cache cell of k04_rev, k05_stride2, k08_matmul has ci95_lo >= 1.5 in both columns; placement-sensitive (layout A/A half-width 0.25%): k02_add_fwd.L1, k03_stencil.L2",
+   "x_pct": 0.16452219702975945,
+   "placement_sensitive": [
+    "k02_add_fwd.L1",
+    "k03_stencil.L2"
+   ]
+  },
+  {
+   "path": "results-intel-xeon-platinum-8573c-j3/results.json",
+   "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "run_id": "38127024171",
+   "aa_half_width_pct": 3.7705957156324077,
+   "usable": false,
+   "form": "inconclusive",
+   "line": "On INTEL(R) XEON(R) PLATINUM 8573C: INCONCLUSIVE: the A/A control is too noisy (half-width 3.77%, above 2%), so no headline number is printed.",
+   "why": "A/A control: same-run A/A half-width above aa_half_width_max_pct",
+   "x_pct": null,
+   "placement_sensitive": [
+    "k02_add_fwd.L2"
+   ]
+  },
+  {
+   "path": "results-intel-xeon-platinum-8573c-j4/results.json",
+   "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "run_id": "38127024171",
+   "aa_half_width_pct": 1.651251523366365,
+   "usable": true,
+   "form": "map",
+   "line": "On INTEL(R) XEON(R) PLATINUM 8573C: Google's 0.30% holds for forward loops with loops aligned (at most 1.7% on k01_sum_fwd, k03_stencil); a loop that loses vectorization under the same check (k04_rev, k05_stride2, k08_matmul) pays 3.93 times (range 3.15 to 6.61; as compiled 4.17), because it loses SIMD. Placement-sensitive, listed and not counted: k02_add_fwd.L1 (as compiled 1.07, aligned 1.06); k02_add_fwd.L2 (as compiled 1.02, aligned 0.97); k03_stencil.L2 (as compiled 1.02, aligned 1.00).",
+   "why": "MAP: every counted in-cache cell of k01_sum_fwd, k03_stencil has aligned ratio <= 1.02 and aligned ci95_hi <= 1.0330; every in-cache cell of k04_rev, k05_stride2, k08_matmul has ci95_lo >= 1.5 in both columns; placement-sensitive (layout A/A half-width 1.44%): k02_add_fwd.L1, k02_add_fwd.L2, k03_stencil.L2",
+   "x_pct": 1.7347637820719797,
+   "placement_sensitive": [
+    "k02_add_fwd.L1",
+    "k02_add_fwd.L2",
+    "k03_stencil.L2"
+   ]
+  }
+ ],
+ "cpus": [
+  {
+   "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+   "files": [
+    "results-amd-epyc-9v45-96-core-processor-j2/results.json"
+   ],
+   "usable": false,
+   "form": null,
+   "why": "excluded: A/A half-width above 2% (2.97%)"
+  },
+  {
+   "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "files": [
+    "results-intel-xeon-platinum-8573c-j3/results.json",
+    "results-intel-xeon-platinum-8573c-j4/results.json"
+   ],
+   "usable": true,
+   "form": "map",
+   "why": "MAP: every counted in-cache cell of k01_sum_fwd, k03_stencil has aligned ratio <= 1.02 and aligned ci95_hi <= 1.0330; every in-cache cell of k04_rev, k05_stride2, k08_matmul has ci95_lo >= 1.5 in both columns; placement-sensitive (layout A/A half-width 1.44%): k02_add_fwd.L1, k02_add_fwd.L2, k03_stencil.L2"
+  },
+  {
+   "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+   "files": [
+    "results-intel-xeon-platinum-8370c-cpu-2-80ghz-j1/results.json"
+   ],
+   "usable": true,
+   "form": "map",
+   "why": "MAP: every counted in-cache cell of k01_sum_fwd, k02_add_fwd, k03_stencil has aligned ratio <= 1.02 and aligned ci95_hi <= 1.0200; every in-cache cell of k04_rev, k05_stride2, k08_matmul has ci95_lo >= 1.5 in both columns; placement-sensitive (layout A/A half-width 0.25%): k02_add_fwd.L1, k03_stencil.L2"
+  }
+ ],
+ "verdict": {
+  "form": "map",
+  "line": "On every CPU model drawn with a usable A/A control (INTEL(R) XEON(R) PLATINUM 8573C; Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz), Google's 0.30% holds for forward loops with loops aligned (at most 1.7%); a loop that loses vectorization under the same check (k04_rev, k05_stride2, k08_matmul) pays 4.36 times (range 3.15 to 6.61), because it loses SIMD. Placement-sensitive forward cells, listed and not counted: k02_add_fwd.L1 on Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; k03_stencil.L2 on Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz; k02_add_fwd.L1 on INTEL(R) XEON(R) PLATINUM 8573C; k02_add_fwd.L2 on INTEL(R) XEON(R) PLATINUM 8573C; k03_stencil.L2 on INTEL(R) XEON(R) PLATINUM 8573C. Not counted (A/A half-width above 2%): AMD EPYC 9V45 96-Core Processor (2.97%).",
+  "why": "page level: every usable CPU model is map",
+  "n": {
+   "median": 4.364943324175375,
+   "min": 3.152137176991239,
+   "max": 6.6086339916879755
+  },
+  "x_pct": 1.7347637820719797
+ }
+}

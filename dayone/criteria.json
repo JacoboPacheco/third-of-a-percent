@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "written": "Sun Oct 11 2026, before the first workflow run of the day-one test; no measured number existed when this file was committed",
+  "sources": {
+    "thresholds": "docs/PLAN.md, section 'The day-one test' (the skeptic's numbers, docs/skeptic.md 'Evidence that one day can collect')",
+    "verdict_rule": "docs/SPEC.md section 1"
+  },
+  "rule_for_changes": "No threshold in this file is changed, loosened or added after a result exists. If one looks unfair, the result is reported against it as written and the objection goes under problems in docs/dayone-results.md.",
+
+  "design_fixed_before_any_run": {
+    "kernels": {
+      "k01_sum_fwd":  "s += a[i], i up, int64 accumulator over int32 elements",
+      "k02_add_fwd":  "c[i] = a[i] + b[i], i up, bound a.size()",
+      "k03_stencil":  "c[i] = a[i-1] + a[i] + a[i+1], i from 1 to size-2",
+      "k04_rev":      "c[i] = a[i] * 2, i counting down",
+      "k05_stride2":  "c[i] = a[2*i] + a[2*i+1], bound c.size()"
+    },
+    "forward_kernels": ["k01_sum_fwd", "k02_add_fwd", "k03_stencil"],
+    "reverse_and_strided_kernels": ["k04_rev", "k05_stride2"],
+    "element_type": "int32_t in std::vector, accessed through operator[]; each kernel is a noinline function kern_<id> with external linkage",
+    "size_classes": {
+      "rule": "working set counts every array of the kernel; L1 = half of L1d, L2 = half of L2, RAM = four times the last-level cache capped at 256 MiB; cache sizes read from /sys/devices/system/cpu/cpu0/cache on the runner",
+      "in_cache": ["L1", "L2"]
+    },
+    "builds": {
+      "common": "clang++-18 -O2 -std=c++20 -stdlib=libc++ (baseline x86-64, no -march)",
+      "none":  "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+      "fast":  "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+      "novec": "the NONE flags plus -fno-vectorize (timing positive control)",
+      "aa":    "the NONE binary copied to a second path; the two must have equal sha256"
+    },
+    "timing": {
+      "reps_per_side": 20,
+      "order": "ABBA repeated (A B B A A B B A ...), one process per repetition",
+      "clock": "clock_gettime(CLOCK_MONOTONIC) inside the binary around the timed loop; process start, input fill and one warm-up call are excluded",
+      "pinning": "taskset -c to one CPU",
+      "inner_iterations": "calibrated once per cell on the NONE build to about 75 ms per process, then reused unchanged for every build of that cell",
+      "sample": "nanoseconds per kernel call (or per program iteration) for one process",
+      "ratio": "median(B) / median(A), where A is NONE",
+      "interval": "percentile bootstrap, 10000 resamples of each side independently, seed 20261011, 95 %",
+      "half_width_pct": "(ci95_hi - ci95_lo) / 2 * 100"
+    },
+    "aa_pairs": ["k02_add_fwd.L1", "k02_add_fwd.L2", "k02_add_fwd.RAM", "program:json_parse"],
+    "programs": {
+      "json_parse": "nlohmann/json release v3.11.3 (single header json.hpp from the release assets) parsing twitter.json from the simdjson repository at tag v3.10.1; the file's sha256 is recorded by the run",
+      "second_program": "the first of fmt 11.0.2 then pugixml 1.14 that builds against libc++-18 with NONE and FAST (SPEC section 3 order, yaml-cpp skipped because it needs a CMake build; tinyxml2 not reached unless both fail)"
+    },
+    "traps": "number of ud2 instructions plus calls to __libcpp_verbose_abort in the kern_<id> function (kernels) or in the whole binary (programs), from objdump -d"
+  },
+
+  "criteria": [
+    {
+      "id": "C1_aa_floor",
+      "plan_text": "One Actions run times two byte-identical NONE binaries, 20 alternating reps each. If the bootstrap 95% CI half-width is 0.3% or less, the whole-program column can test 0.30%. If it is 1% or more, that column stays a sanity check.",
+      "measured_value": "the largest half_width_pct over all aa_pairs",
+      "met_if": "every A/A pair is byte-identical (equal sha256) and has 20 valid reps per side, so the floor is measured",
+      "branch": {
+        "can_test_0.30": "largest half-width <= 0.3",
+        "sanity_check": "largest half-width >= 1.0",
+        "between": "0.3 < largest half-width < 1.0: the plan names no branch; the whole-program column stays a sanity check that prints its floor"
+      },
+      "note": "C1 is met when the floor is measured; the branch decides what the whole-program column may claim, not GO"
+    },
+    {
+      "id": "C2_loop_shape",
+      "plan_text": "If FAST costs 1.5x or more on reverse and strided loops in cache and under 2% on forward loops, the map has a headline a stranger can check.",
+      "met_if_all": [
+        "for k04_rev and k05_stride2 at L1 and L2: ci95_lo of ratio FAST/NONE >= 1.5",
+        "for k01_sum_fwd, k02_add_fwd and k03_stencil at L1 and L2: ci95_hi of ratio FAST/NONE < 1.02",
+        "in every one of those cells the NONE and FAST output checksums are equal"
+      ],
+      "reverse_min_ratio_lo": 1.5,
+      "forward_max_ratio_hi": 1.02
+    },
+    {
+      "id": "C3_toolchain",
+      "plan_text": "Build nlohmann/json and one more program against libc++-18-dev with FAST and NONE and count the traps.",
+      "met_if_all": [
+        "json_parse builds with NONE and FAST, runs, and its NONE and FAST output checksums are equal",
+        "a second program builds with NONE and FAST, runs, and its NONE and FAST output checksums are equal",
+        "the trap count is recorded for both builds of both programs"
+      ]
+    }
+  ],
+
+  "informational_checks_not_in_go": [
+    {
+      "id": "V1_vectorization_shape",
+      "text": "From the compiler's own remarks: k01, k02, k03 vectorized in NONE and FAST; k04 and k05 vectorized in NONE and not vectorized in FAST (the skeptic's Compiler Explorer reading, re-checked on int32 and the runner's clang-18)"
+    },
+    {
+      "id": "V2_hardening_present",
+      "text": "Every FAST kernel binary has more traps in kern_<id> than its NONE twin, or the FAST build is shown by the binary's printed _LIBCPP_HARDENING_MODE value"
+    }
+  ],
+
+  "go_rule": "GO if C1_aa_floor, C2_loop_shape and C3_toolchain are all met. NO-GO otherwise; a NO-GO on C2 means the honest verdict is 'holds everywhere we looked' (docs/PLAN.md).",
+
+  "verdict_rule_spec_section_1": {
+    "forward_limit_pct": 2.0,
+    "reverse_min_ratio": 1.5,
+    "kernel_aa_floor_pct": "the largest half_width_pct over the kernel A/A pairs (k02_add_fwd at L1, L2, RAM)",
+    "lost_vectorization": "a kernel vectorized in NONE and not vectorized in FAST, from the remarks",
+    "not_on_axis": "a kernel not vectorized in NONE is reported and not used for N or for the forward limit",
+    "positive_control_seen": "OPERATIONALIZED HERE (SPEC says 'seen' without a number): at least one in-cache cell of a kernel vectorized in NONE has a NONE-NOVEC/NONE ratio with ci95_lo > 1 + kernel_aa_floor_pct/100",
+    "order": [
+      "INCONCLUSIVE if an A/A pair is not byte-identical, or kernel_aa_floor_pct >= forward_limit_pct, or the positive control is not seen, or a checksum differs between builds of an in-cache cell",
+      "MAP if every forward kernel vectorized in both builds has, at L1 and L2, ci95_hi < 1 + forward_limit_pct/100, AND every lost-vectorization kernel has, at L1 and L2, ci95_lo >= reverse_min_ratio, AND at least one kernel lost vectorization",
+      "HOLDS_EVERYWHERE if no in-cache cell on the vectorization axis has ci95_lo >= 1 + forward_limit_pct/100 (X = the largest ratio upper bound, as a percent)",
+      "INCONCLUSIVE otherwise (a mixed picture that fits neither line)"
+    ],
+    "N": "median ratio over the lost-vectorization kernels at L1 and L2, with min and max; RAM cells reported but not in N"
+  }
+}

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Third of a Percent: details and appendices</title>
+<meta name="description" content="Every cell, every run, the full toolchain table, the census per project and the full rule history behind the Third of a Percent page.">
+<meta name="author" content="JacoboPacheco">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Third of a Percent: details and appendices">
+<meta property="og:description" content="Every cell, run, toolchain row, census project and rule behind the Third of a Percent paper.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23fff' stroke='%231b1b1b' stroke-width='2'/%3E%3Cpath d='M7 22h4l3-12 4 14 3-9h4' fill='none' stroke='%23c2461e' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"></noscript>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="details">
+<a class="skip" href="#result-full">Skip to the content</a>
+<div id="sample-band" class="sample-band" hidden>SAMPLE DATA: the figures below show results/fixture.json, a made-up file for testing the page, not a measurement.</div>
+
+<main class="paper" id="top">
+  <header class="front col">
+    <h1>Third of a Percent: details</h1>
+    <p class="byline">The material behind <a href="index.html">the main page</a>, section by section. <a id="repo-link">Code and data</a>.</p>
+    <p class="callout" id="details-purpose">This page holds the full tables and the checking material behind the main paper; it is not needed to follow the result.</p>
+    <nav class="dnav" aria-label="Sections on this page"><a href="#result-full">Result</a> <a href="#why-full">Why</a> <a href="#placement-full">Placement</a> <a href="#layout-full">Layout sweep</a> <a href="#census-full">Census</a> <a href="#mitigate-full">Rewrites</a> <a href="#siblings-full">Toolchains</a> <a href="#realworld-full">Real programs</a> <a href="#pgo-full">PGO column</a> <a href="#programs-full">Earlier programs</a> <a href="#method-full">Method</a> <a href="#related-full">Related work</a> <a href="#appendix-a">A: every cell</a> <a href="#appendix-b">B: every run</a> <a href="#appendix-c">C: toolchains per CPU</a> <a href="#appendix-d">D: census 2 projects</a></nav>
+  </header>
+  <div class="col body">
+    <section id="result-full">
+      <h2><span class="secno">1</span>Result, in full</h2>
+      <p id="terms-full">Four words used below. A <em>run</em> is one start of the measuring workflow on GitHub. Each run starts <span data-v="jobsPerRun"></span> machines at once, and each machine&rsquo;s share of the work is a <em>job</em>; GitHub decides which CPU model each job gets. The <em>pooled</em> ratio of a CPU model combines every job that drew it, in all <span data-v="nRuns"></span> runs: the geometric mean of the jobs&rsquo; own ratios. Its <em>interval</em> comes from resampling whole jobs and then the repetitions inside each job, so it includes the spread between machines, not only the noise inside one. A CPU model needs at least <span data-v="minJobs"></span> jobs to be judged.</p>
+      <p id="intel-p"><span data-v="intelText"></span></p>
+      <p id="jobsets">Each part of the page uses its own set of jobs, so the same loop can show slightly different ranges in different places. Figures 1 and 3, Tables 1 and 2 and Appendix A: the pooled runs (<span data-v="nJobs"></span> jobs), sizes L1 and L2, the column named (aligned or as compiled). Figure 2&rsquo;s footnote: the L1 size only. Section 5: the <span data-v="mitJobs"></span> jobs of the rewrite runs, aligned. Section 6: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, including CPU models drawn too rarely to judge here. Section 7: one Cachegrind profile per program (instructions, no timing); its Table 6, the earlier runs.</p>
+      <p id="fwd-low"><span data-v="fwdLow"></span></p>
+      <p id="reconcile">&ldquo;The same in every run&rdquo; means the verdict came out the same when each run was judged on its own. The pooled numbers still move from run to run: on <span data-v="reproCpu"></span>, <span data-v="reproOut"></span> of <span data-v="reproChecked"></span> comparisons put one run&rsquo;s pooled ratio outside another run&rsquo;s interval, by at most <span data-v="reproGap"></span>%.</p>
+      <p id="otherdraws"><span data-v="otherDraws"></span></p>
+      <p id="instr-p">Cachegrind&rsquo;s instruction counts agree with the clock for the loops that lose SIMD, not for every loop: those loops execute <span data-v="instrMin"></span> to <span data-v="instrMax"></span> times as many instructions with the checks on, so their slowdown is extra work, not a noisy machine. Elsewhere the two part ways: on <span data-v="instrCpu"></span> the histogram executes <span data-v="histInstr"></span>&times; the instructions but takes <span data-v="histTime"></span>&times; the time, and the forward add <span data-v="addInstr"></span>&times; the instructions in <span data-v="addTime"></span>&times; the time (L1, aligned). More instructions do not map one-to-one to more time when a loop waits on memory or on a chain of dependent operations, or is unrolled differently; that reading is inferred, not measured.</p>
+      <p id="stable-p">The earlier runs judged each job on its own, and the verdict flipped between runs as GitHub handed out different CPU models. Pooling fixes that: <span data-v="stableText"></span></p>
+      <h3 id="holdout-full">Holdout run</h3>
+      <p><span data-v="holdoutText"></span></p>
+      <p class="tcap"><b><span data-v="holdoutCap"></span></b></p>
+      <div class="tablewrap"><table class="tbl dense" id="holdout-table"><thead><tr><th scope="col">CPU model</th><th scope="col">First runs</th><th scope="col">Holdout</th><th scope="col" class="num">Lose SIMD, in cache: range, median</th><th scope="col">Reproduced</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section id="why-full">
+      <h2><span class="secno">2</span>Why uneven, in full</h2>
+      <p>SIMD (single instruction, multiple data) is the processor&rsquo;s way of working on several array elements with one instruction: on the baseline x86-64 these binaries target, one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once. A compiler turns a loop into SIMD code only when it can prove the transformation is safe, and the bounds check makes that proof harder, because the check can stop the loop at any element.</p>
+      <aside class="sidenote" id="fn-novec"><span class="fnno">1</span> Turning vectorization off by hand, with no checks (<code>-fno-vectorize</code>, the NOVEC build), makes the reverse loop <span data-v="novecRev"></span> times as long on <span data-v="novecCpu"></span> (L1 size, as compiled, pooled); the check makes it <span data-v="fastRev"></span> times as long on the same jobs and size. Losing SIMD is the only factor measured; it accounts for about a third (<span data-v="novecShare"></span>%) of the extra time. The rest, <span data-v="novecRest"></span>%, is not explained by this measurement; it presumably comes from the compare and jump on every element in a loop that is no longer unrolled (inferred, not measured).</aside>
+    </section>
+
+    <section id="placement-full">
+      <h2><span class="secno">3</span>The control that caught us, in full</h2>
+      <p id="ps-sum"><span data-v="psSummary"></span></p>
+      <p>One forward loop, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, it ran up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was. With the checks on, clang emits a shorter SIMD loop that handles <span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span> (<span data-v="k02Bytes"></span> bytes, starting at address <code data-v="k02Start"></code>). As placed, that loop is the slow one on these AMD cores; aligned, it runs faster than the unchecked one. Both builds&rsquo; hot loops cross a 64-byte boundary, so the crossing alone does not tell them apart; the hardware reason (presumably how the processor fetches small loops in 64-byte windows) is inferred, since the investigation had timings only, no hardware counters.</p>
+      <p>Rebuilding both binaries with every hot loop aligned to 64 bytes (<code>-falign-loops=64</code>) removes the effect. That is why every figure offers the aligned build, and why the rules now call a forward loop <em>placement-sensitive</em> when two things hold: the pooled ratio of its two columns (as compiled &divide; aligned) has an interval that excludes 1, and its hot loop sits differently against the 64-byte windows in the two builds. Such a loop is shown and flagged but not used to judge the forward side. The full write-up is in <a data-href="findingsUrl" href="#" title="investigate/FINDINGS.md in the repository">the investigation&rsquo;s notes</a>.</p>
+      <p class="tcap" id="ps-cap"><b>Table 2.</b> Placement-sensitive forward loops, per CPU model with enough jobs: pooled ratio as compiled, aligned, and the pooled ratio of the two with its 95% interval.</p>
+      <div class="tablewrap">
+          <table class="tbl" id="ps-table">
+            <thead><tr><th scope="col">Loop</th><th scope="col">CPU model</th><th scope="col" class="num">As compiled</th><th scope="col" class="num">Aligned</th><th scope="col" class="num">Compiled &divide; aligned</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      <p id="k02-faster">Aligned, the forward add is <em>faster</em> with the checks on (<span data-v="k02FasterRange"></span> on <span data-v="k02FasterCpus"></span>), which needs its own explanation. Without the check, clang unrolls the SIMD loop to handle <span data-v="k02PerPassOff"></span> numbers per pass; with it, <span data-v="k02PerPassOn"></span>. The investigation, on AMD models, timed the unchecked loop forced down to <span data-v="k02PerPassOn"></span> per pass and found it just as fast as the checked one, so the speed-up comes from the compiler&rsquo;s unrolling choice, not from the check. Why the shorter loop runs faster there at the L1 size is inferred, not measured: the virtual machines expose no hardware counters.</p>
+      <figure class="fig small" id="fig3">
+        <div class="fig-title" id="fig3-title">Forward add, <code>c[i] = a[i] + b[i]</code>, L1-sized data: time with checks on &divide; without, pooled per CPU model</div>
+        <div class="mrow mhead" aria-hidden="true"><span>CPU model</span><span class="mh-mid">&larr; checks faster &middot; checks slower &rarr;</span><span class="val">as compiled &rarr; aligned</span></div>
+        <div class="mini" id="mini"></div>
+        <div class="axis" id="mini-axis" aria-hidden="true"></div>
+        <figcaption><b>Figure 3.</b> <span class="key key-sq" aria-hidden="true"></span> Hollow squares: as compiled. <span class="key key-fill" aria-hidden="true"></span> Filled dots: aligned. The thin lines are pooled 95% intervals. Same code, same check; only where the loop sits in memory differs. Left of 1&times; the checked build is faster: its SIMD loop handles <span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span>, and there that shorter loop happens to run faster (why is inferred, see above).</figcaption>
+      </figure>
+    </section>
+
+    <section id="layout-full">
+      <h2><span class="secno">3b</span>Does code placement change the forward-loop claim? (layout sweep)</h2>
+      <p id="layout-intro"><span data-v="layoutIntro"></span></p>
+      <p id="layout-finding"><span data-v="layoutFinding"></span></p>
+      <p class="small" id="layout-limits"><span data-v="layoutLimits"></span></p>
+      <div id="layout-tables"></div>
+    </section>
+
+    <section id="census-full">
+      <h2><span class="secno">4</span>The census, in full</h2>
+      <p class="callout" id="census-not-full"><strong>Counted, not timed.</strong> This section counts loops in source code that clang compiles; it times nothing. How often a loop runs (its hotness) cannot be known when compiling, so these counts make no claim about runtime cost, and none about Google&rsquo;s average.</p>
+      <p id="census-p1-full">Census 2 loses <span data-v="c2Lost"></span> of <span data-v="c2Vec"></span> vectorized loops (<span data-v="c2Pct"></span>%), at <span data-v="c2LostU"></span> of <span data-v="c2VecU"></span> distinct source locations; census 1 loses <span data-v="c1Lost"></span> of <span data-v="c1Vec"></span>. One project dominates the raw count: <span data-v="bigName"></span> alone has <span data-v="bigLost"></span> of the <span data-v="c2Lost"></span> (<span data-v="bigLostU"></span> locations), mostly two template functions compiled into dozens of copies. Without it, census 2 loses <span data-v="woLost"></span> of <span data-v="woVec"></span> (<span data-v="woPct"></span>%), at <span data-v="woLostU"></span> locations. <span data-v="c2WithLost"></span> of <span data-v="c2Projects"></span> census-2 projects have any lost loop.</p>
+      <p>Each project was compiled twice with <span data-v="corpusClang"></span>, checks off and on, and the compiler&rsquo;s own optimization records say which loops it vectorized. A loop is <em>lost</em> when it is vectorized with the checks off and not with them on, the kind that Figure 1 shows paying several times. Census 1 took <span data-v="c1Projects"></span> general libraries (parsers, JSON, compression, logging). Census 2 took <span data-v="c2Projects"></span> projects of numeric, physics, graphics, machine-learning and compression code (including Stockfish and EnTT), where such loops are likely to live; its list and rules were committed in <a data-href="planUrl" href="#">its plan</a> before the first compile.</p>
+      <p id="census-p2">Every lost loop of census 2 is in the projects&rsquo; own code, and for <span data-v="c2Evidence"></span> of <span data-v="c2Lost"></span> (<span data-v="c2EvidenceU"></span> of <span data-v="c2LostU"></span> locations) a separate rebuild traced a libc++ check to a line inside the loop. The shapes are the kernels&rsquo; shapes, and one more: <span data-v="shapeText"></span>; <span data-v="shapeRest"></span>. A forward loop over <code>i &lt; n</code> that indexes a vector cannot be proven in range when <code>n</code> is not that vector&rsquo;s size, so the check stays inside and the vectorizer gives up.</p>
+      <figure class="fig" id="fig4">
+        <div class="fig-title">Share of vectorized loops lost under the check, by category</div>
+        <div class="c-head" aria-hidden="true"><span>Category (projects)</span><span class="c-scale" id="c-scale"></span><span class="val">lost of vectorized</span></div>
+        <div id="census-rows" class="c-rows"></div>
+        <figcaption id="fig4-cap"><b>Figure 4, per project.</b> Select a category to list its projects. <span class="key key-lost" aria-hidden="true"></span> Filled dots: every copy of a loop counted (a template loop compiled into 96 functions counts 96 times). <span class="key key-open-lost" aria-hidden="true"></span> Rings: distinct source locations, each counted once. Linear scale. Baseline x86-64, FAST against NONE.</figcaption>
+      </figure>
+      <div class="examples" id="census-examples"></div>
+      <p id="census-avx2">With AVX2 (<code>-march=x86-64-v3</code>) as a sensitivity run, census 2 loses <span data-v="c2aLost"></span> of <span data-v="c2aVec"></span> (<span data-v="c2aLostU"></span> locations) against <span data-v="c2Lost"></span> at baseline: census 2 loses fewer at the wider target. Census 1 loses <span data-v="c1aLost"></span> of <span data-v="c1aVec"></span> over <span data-v="c1aProjects"></span> projects (<span data-v="c1aDropped"></span> did not build at AVX2), against <span data-v="c1Lost"></span> of <span data-v="c1Vec"></span> at baseline, so not fewer there. The checks are in the code either way: FAST adds <span data-v="c2Ud2"></span> trap sites and <span data-v="c2Text"></span>% machine code in census 2.</p>
+      <p id="census-ctl-sum"><span data-v="censusCtlSum"></span></p>
+      <ul class="controls-list" id="census-controls"></ul>
+    </section>
+
+    <section id="mitigate-full">
+      <h2><span class="secno">5</span>What to change, the rule in full</h2>
+      <p id="mit-caveat-full">Measured under our strictest rule; ranges shown. That rule, committed before the first timed run, would call a rewrite <em>better</em> only if it keeps safety and its interval sits within the job&rsquo;s own A/A noise of 1&times; on every CPU model drawn, counting only jobs whose every A/A pair stayed within <span data-v="mitAa"></span>%. That held in <span data-v="mitUsable"></span> of <span data-v="mitJobs"></span> jobs, all on <span data-v="mitUsableCpus"></span>, so the table reports measured ranges instead of that label. On <span data-v="mit9v45"></span> the reverse rewrites sit at <span data-v="mit9v45Range"></span> times with their hot loop byte-identical to the unchecked original&rsquo;s; the cause was not found.</p>
+    </section>
+
+    <section id="siblings-full">
+      <h2><span class="secno">6</span>Other toolchains, every loop</h2>
+      <p>The same eight loops, built and timed the same way under six other setups. Each cell says whether the loop loses vectorization under that setup&rsquo;s checks and gives the range of its ratio, aligned, over every usable job and both sizes.</p>
+      <p class="tcap" id="sib-cap"><b>Table 4.</b> Checks on &divide; off, per setup and loop, aligned, over every usable job of every CPU model drawn in the toolchain runs, <span data-v="sibExtraCpus"></span>; so its ranges are wider than Table 1&rsquo;s. <span class="sib-key"><span class="tag t-lost">lost</span> vectorized without checks, not with them; <span class="tag t-kept">kept</span> vectorized in both; <span class="tag t-neither">none</span> vectorized in neither.</span> &ldquo;Kept&rdquo; means the loop stays vectorized, not that the check is free: clang 20 keeps the matrix multiply vectorized and it still costs up to <span data-v="c20MatmulMax"></span>&times;. Gather and histogram vectorize under no setup, checks or not.</p>
+      <p class="tnote" id="sib-note">Jobs: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, sizes L1 and L2, every CPU model drawn. The ranges differ from Figure 1&rsquo;s because each part uses its own jobs, sizes and column. The top of the clang 18 forward range, <span data-v="sib6973"></span>&times;, is an Intel Xeon 6973P-C draw (<span data-v="sib6973Jobs"></span>).</p>
+      <div class="tablewrap boxed sib-wrap" id="sib-wrap" tabindex="0" role="region" aria-label="Table 4, scrolls sideways on a narrow screen"><table class="tbl sib" id="sib-table" aria-describedby="sib-cap"><thead></thead><tbody></tbody></table></div>
+      <p class="scroll-hint" id="sib-hint" hidden>The table is wider than the screen: swipe it sideways for every loop.</p>
+      <p id="sib-finding">What the table shows: every libc++ mode on clang 18 (FAST, EXTENSIVE, DEBUG) loses the same three loops, at about the same cost. Clang 20 and AVX2 keep the matrix multiply vectorized, and it still costs up to <span data-v="sibMatmulMax"></span> times. GCC differs: at <code>-O2</code> it vectorizes none of these loops in either build, yet the assertions still cost up to <span data-v="gccO2Max"></span> times (the gather, one job); at <code>-O3</code> the forward add and the stencil lose vectorization too, the forward add at <span data-v="gccO3AddMin"></span> to <span data-v="gccO3AddMax"></span> times, while the forward sum stays vectorized. So &ldquo;forward loops pay about nothing&rdquo; is a property of clang with libc++ on these loops on the AMD models (one exception: <span data-v="avx2Exc"></span>), not of bounds checking in general: the clang 18 FAST forward add still costs <span data-v="sib6973"></span>&times; at L1 on a Xeon 6973P-C (one job).</p>
+      <p class="small" id="sib-thin">Coverage is thin: <span data-v="sibJobs"></span> jobs in <span data-v="sibRuns"></span> runs, <span data-v="sibExcluded"></span> toolchain-job pairs left out for a noisy A/A, and <span data-v="sibThin"></span> of the <span data-v="sibGroups"></span> setup, loop, size and CPU combinations rest on a single job. Appendix C has every CPU model.</p>
+          <p class="tcap" id="sibsum-cap"><b>Table 4a.</b> The timed toolchains in five rows. Checks on &divide; off, aligned, per setup and loop group: whether the group loses vectorization under that setup&rsquo;s checks (<span class="tag t-lost">lost</span>, <span class="tag t-kept">kept</span>, <span class="tag t-neither">none</span>) and the range over the group&rsquo;s loops, every usable job and both sizes. &ldquo;Kept&rdquo; is not &ldquo;free&rdquo;.</p>
+      <div class="tablewrap"><table class="tbl sibsum" id="sibsum-table"><thead></thead><tbody></tbody></table></div>
+      <h3 id="ce-full">Compile-only sweep: every compiler row</h3>
+      <p><span data-v="ceNote"></span></p>
+      <p class="tcap" id="ce-cap"><b>Table 4b.</b> <span data-v="ceTableCap"></span></p>
+      <div class="tablewrap" id="ce-wrap"><table class="tbl ce-table" id="ce-table"><thead></thead><tbody></tbody></table></div>
+      <ul id="ce-notes"></ul>
+    </section>
+
+    <section id="versions-full">
+      <h2><span class="secno">6b</span>Newer compilers (clang and libc++ 19, 20, 21), timed</h2>
+      <p id="ver-intro"><span data-v="verIntro"></span></p>
+      <p id="ver-finding"><span data-v="verFinding"></span></p>
+      <p id="ver-matmul"><span data-v="verMatmul"></span></p>
+      <p id="ver-forms"><span data-v="verForms"></span></p>
+      <p class="small" id="ver-limits"><span data-v="verLimits"></span></p>
+      <div id="ver-tables"></div>
+    </section>
+
+    <section id="environment-full">
+      <h2><span class="secno">6c</span>Measurement environment</h2>
+      <p id="env-intro"><span data-v="envIntro"></span></p>
+      <p id="env-finding"><span data-v="envFinding"></span></p>
+      <p id="env-topo"><span data-v="envTopo"></span></p>
+      <p class="small" id="env-limits"><span data-v="envLimits"></span></p>
+      <div id="env-tables"></div>
+    </section>
+
+    <section id="realworld-full">
+      <h2><span class="secno">7a</span>Real programs, every count</h2>
+      <p id="rw-other"><span data-v="rwOther"></span> <span data-v="rwOtherNote"></span></p>
+      <p class="tcap" id="rw-other-cap"><b>Table 10.</b> <span data-v="rwOtherCap"></span></p>
+      <div class="tablewrap"><table class="tbl dense" id="rw-other-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">As compiled</th><th scope="col" class="num">Aligned</th><th scope="col" class="num">A/A floor</th><th scope="col" class="num">Layout A/A</th></tr></thead><tbody></tbody></table></div>
+      <p class="tcap" id="rw-other2-cap"><b>Table 10c.</b> <span data-v="rwOther2Cap"></span></p>
+      <div class="tablewrap"><table class="tbl dense" id="rw-other2-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">As compiled</th><th scope="col" class="num">Aligned</th><th scope="col" class="num">A/A floor</th><th scope="col" class="num">Layout A/A</th></tr></thead><tbody></tbody></table></div>
+      <p class="tcap" id="rw-all-cap"><b>Table 10b.</b> <span data-v="rwAllCap"></span></p>
+      <div class="tablewrap"><table class="tbl dense" id="rw-all-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">As compiled</th><th scope="col" class="num">Aligned</th><th scope="col" class="num">A/A floor</th><th scope="col" class="num">Layout A/A</th></tr></thead><tbody></tbody></table></div>
+      <p class="tcap" id="rw-expect-cap"><b>Table 11.</b> <span data-v="rwExpectCap"></span></p>
+      <div class="tablewrap"><table class="tbl dense" id="rw-expect-table"><thead><tr><th scope="col">Program</th><th scope="col">Expected</th><th scope="col" class="num">As compiled / aligned</th><th scope="col">Held?</th></tr></thead><tbody></tbody></table></div>
+      <figure class="fig" id="fig5">
+        <div class="fig-title">Share of one workload iteration&rsquo;s instructions spent in the lost loops, checks off (Cachegrind)</div>
+        <div class="c-head" aria-hidden="true"><span>Program</span><span class="c-scale" id="rw-scale"></span><span class="val">instructions FAST &divide; NONE</span></div>
+        <div id="rw-rows" class="c-rows"></div>
+        <figcaption id="fig5-cap"><b>Figure 6.</b> <span class="key key-lost" aria-hidden="true"></span> Filled dots: instructions on the lost loops&rsquo; own source lines (a lower bound). <span class="key key-open-lost" aria-hidden="true"></span> Rings: instructions in the functions that hold them (probably an upper bound; only some of those functions were matched in the profile). Linear scale. Instructions, not time.</figcaption>
+      </figure>
+      <p class="tnote" id="rw-note">Build run <span data-v="rwRuns"></span>, the same source and flags as the timed binaries (LightGBM&rsquo;s profile builds differ in machine code, so its shares are marked &asymp;); shares are of NONE&rsquo;s instructions. Outputs: <span data-v="rwOutputs"></span></p>
+      <details class="more est-details" id="rw-est">
+        <summary><strong>An estimate, not a measurement:</strong> what if the lost loops ran <span data-v="rwR"></span>&times; slower?</summary>
+        <p><span data-v="rwEstIntro"></span> <span data-v="rwEstCaveat"></span> The upper bound uses the functions&rsquo; share; it is not informative for programs whose functions are large.</p>
+        <div class="tablewrap"><table class="tbl" id="rw-est-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">From the lines&rsquo; share</th><th scope="col" class="num">From the functions&rsquo; share</th></tr></thead><tbody></tbody></table></div>
+      </details>
+      <p class="tcap" id="rw-cap"><b>Table 5.</b> <span data-v="rwIntro"></span></p>
+      <div class="tablewrap"><table class="tbl" id="rw-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">Instructions FAST &divide; NONE</th><th scope="col" class="num">On the lost loops&rsquo; lines</th><th scope="col" class="num">In their functions</th><th scope="col" class="num">Traps NONE / FAST</th><th scope="col">Lost here too</th></tr></thead><tbody></tbody></table></div>
+      <p class="tcap" id="prog-sum-cap"><b>Table 6.</b> Two small programs timed earlier (older runs, not the programs above), as compiled: the largest slowdown each job allows next to its own noise floor, range over the jobs.</p>
+      <div class="tablewrap"><table class="tbl" id="progsum-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">Jobs</th><th scope="col" class="num">Slowdown at most</th><th scope="col" class="num">Noise floor</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section id="pgo-full">
+      <h2><span class="secno">7c</span>PGO column</h2>
+      <p id="pgo-intro"><span data-v="pgoIntro"></span></p>
+      <p id="pgo-finding"><span data-v="pgoFinding"></span></p>
+      <p class="small" id="pgo-limits"><span data-v="pgoLimits"></span></p>
+      <div id="pgo-tables"></div>
+      <p class="tnote" id="pgo-builds"><span data-v="pgoBuilds"></span></p>
+    </section>
+
+    <section id="programs-full">
+      <h2><span class="secno">7b</span>The earlier small programs, every job</h2>
+      <p id="prog-sum"><span data-v="progSum"></span></p>
+        <p>nlohmann/json parsed a public <code>twitter.json</code> and fmt formatted numbers. FAST mode put <span data-v="jsonTraps"></span> and <span data-v="fmtTraps"></span> check traps into them. For each job the table gives two numbers: the noise floor (how far the unchecked program differs from an identical copy of itself on that machine) and the largest slowdown the measurement allows once that floor is accounted for (the upper end of the 95% interval, or the floor if that is larger).</p>
+        <p class="tcap" id="prog-cap"><b>Table 8.</b> Whole programs, as compiled, every usable job of <span data-v="progRuns"></span>; the earlier run that timed fmt only and the single S2 job are not in it. Each row: the largest slowdown allowed, next to that job&rsquo;s noise floor.</p>
+      <div class="tablewrap">
+          <table class="tbl" id="prog-table">
+            <thead><tr><th scope="col">Run, job</th><th scope="col">CPU model</th><th scope="col" class="num">json: slowdown at most</th><th scope="col" class="num">json: noise floor</th><th scope="col" class="num">fmt: slowdown at most</th><th scope="col" class="num">fmt: noise floor</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p>The A/A floors run from <span data-v="progAaMin"></span>% to <span data-v="progAaMax"></span>%. A shared runner cannot resolve a difference of <span data-v="googlePct"></span>%, so these columns are an upper bound and not a confirmation of Google&rsquo;s figure.</p>
+    </section>
+
+    <section id="method-full">
+      <h2><span class="secno">8</span>Method, in full</h2>
+      <p>The rule history, in short:</p>
+      <ol class="rule-list" id="rule-list"></ol>
+      <dl class="method">
+        <dt>What the loops index</dt>
+        <dd>Each test loop checks every <code>operator[]</code> access. Compile-only variants (clang 18, no timing): two equal-size vectors still lose SIMD; a reverse loop over one vector loses its check entirely; iterators are unchecked in libc++ 18. <a href="https://github.com/JacoboPacheco/third-of-a-percent/blob/main/variants/RESULTS.md">Details</a>.</dd>
+        <dt>Timing</dt>
+        <dd><span data-v="reps"></span> repetitions per side in alternating order (ABBA), fixed in advance, pinned to one CPU, timed inside the binary. A job&rsquo;s ratio is the median with checks over the median without.</dd>
+        <dt>A/A</dt>
+        <dd>The unchecked binary against a byte-identical copy of itself, pooled the same way. Pooled per CPU model it came out at <span data-v="aaMin"></span>% to <span data-v="aaMax"></span>% half-width, against a ceiling of <span data-v="aaCeil"></span>%.</dd>
+        <dt>Controls</dt>
+        <dd>Forward loops vectorized in both builds (expected near 1&times;); loops that lose vectorization, with a NOVEC build as a yardstick; and a layout A/A, the unchecked binary rebuilt at a different loop alignment.</dd>
+        <dt>Instructions</dt>
+        <dd>Cachegrind counts the instructions each build executes, at both sizes, beside every time ratio: instructions, not time. No rule reads them.</dd>
+        <dt>Verdict</dt>
+        <dd>Computed by script per CPU model from the <a data-href="criteriaUrl" href="#" data-title="criteriaFile">written pass rules</a>; nobody edits the result by hand. Every number on this page is read from the data files the runs produced.</dd>
+        <dt>Builds</dt>
+        <dd>Every loop is compiled with <code data-v="commonFlags"></code> on <span data-v="clang"></span> and <span data-v="libcxx"></span>, once with <code>_LIBCPP_HARDENING_MODE_NONE</code> (checks off) and once with <code>_LIBCPP_HARDENING_MODE_FAST</code> (checks on). FAST is libc++&rsquo;s cheapest hardening mode; among other things it checks <code>operator[]</code> and stops the program with a trap instruction, <code>ud2</code>, on an index out of range. A second pair adds <code>-falign-loops=64</code>.</dd>
+        <dt>Pooling</dt>
+        <dd>All <span data-v="nJobs"></span> jobs of <span data-v="nRuns"></span> runs, grouped by CPU model; the pooled ratio is the geometric mean of the jobs&rsquo; ratios, and its 95% interval a two-level bootstrap with <span data-v="resamples"></span> resamples (jobs, then repetitions inside each job) and fixed random streams, so anyone can recompute it exactly. No job is left out for being noisy; a noisy job widens the interval.</dd>
+        <dt>Layout A/A</dt>
+        <dd>The unchecked binary against itself rebuilt at a different loop alignment: what placement alone can do, per loop.</dd>
+        <dt>Negative control</dt>
+        <dd>The forward loops, vectorized in both builds, where the expected cost is near <span class="nowrap">1&times;</span>.</dd>
+        <dt>Positive control</dt>
+        <dd>The reverse, stride-2 and matrix-multiply loops, which lose vectorization under FAST (the compiler&rsquo;s remarks and the assembly), plus the NOVEC build (no checks, vectorization off) as a yardstick of what losing SIMD costs on its own.</dd>
+        <dt>Run to run</dt>
+        <dd>On <span data-v="reproCpu"></span>, the only model with enough jobs in more than one run, a run&rsquo;s pooled ratio fell outside another run&rsquo;s pooled interval in <span data-v="reproOut"></span> of <span data-v="reproChecked"></span> comparisons.</dd>
+        <dt class="q">Tuned until it passed?</dt>
+        <dd id="tuned-full"><span data-v="tunedText"></span> Each of the four rule files was committed before the runs it judges: <span id="rule-commits"></span>. The census&rsquo;s AVX2 kernel control failed as registered and is shown in section 4, not re-fitted.</dd>
+      </dl>
+      <ul class="limits" id="limits-full">
+        <li><strong>Not Google&rsquo;s services.</strong> These are <span data-v="nKernels"></span> synthetic loops, six real programs picked because they contain lost loops, and compile-time counts. Nothing here tests the <span data-v="googlePct"></span>% figure for Google&rsquo;s own code.</li>
+        <li><strong>What Google&rsquo;s post also says.</strong> The same post notes that a handful of performance-critical code paths still needed targeted, explicitly unsafe accesses, and that profile-guided optimization further improved performance. Its <span data-v="googlePct"></span>% is an average across Google&rsquo;s services, not a per-loop figure.</li>
+        <li><strong>Counts are not cost.</strong> The census says how many loops lose SIMD, not how often they run.</li>
+        <li><strong>One main toolchain.</strong> <span data-v="clang"></span> with <span data-v="libcxx"></span> in FAST mode for the main timing, the census, the rewrites and the real programs. <span data-v="limVersions"></span> The other setups in section 6 rest on few jobs.</li>
+        <li><strong>Machine state.</strong> <span data-v="limEnv"></span></li>
+        <li><strong>Shared runners and the luck of the CPU.</strong> All CPU models drawn with enough jobs are AMD; <span data-v="fewText"></span></li>
+        <li><strong>Baseline x86-64.</strong> No arm64; AVX2 only in section 6 and as a census sensitivity run.</li>
+        <li><strong>Few jobs on two models.</strong> With 3 to 5 jobs the job-level resampling understates the spread between machines, and their verdicts cannot be checked run against run.</li>
+        <li><strong>RAM-sized data</strong> did not reproduce between the first runs and was not timed in the pooled runs.</li>
+        <li><strong>Real programs:</strong> the main timing used no profile-guided optimization (the PGO column in section 7c trains on the timed input and did not make the cost vanish in most rows), shared virtual machines, one toolchain, three AMD CPU models (16, 5 and 3 jobs; the result differs by model), and programs chosen for their lost loops, so they are not a sample of anyone&rsquo;s production code.</li>
+      </ul>
+      <div id="loosened">
+        <p><strong>The forward-loop rule was loosened after results were seen</strong>, once. The day-one test demanded that the upper end of every forward loop&rsquo;s interval stay below <span data-v="d1Limit"></span>&times;; both of its runs missed, so it said no-go as written. The first harness rules then replaced that ceiling with <span data-v="v1RuleText"></span>. The second version kept those thresholds and added the aligned column, the layout A/A and placement-sensitive cells. The third version, written after those runs and an independent audit, changed how jobs are pooled (per CPU model) and how a placement-sensitive cell is identified, which decides which forward cells are judged; it changed no threshold. The original no-go stays on record.</p>
+        <p id="orig-rule-h">Under the original rule (upper interval end below <span data-v="d1Limit"></span>&times;, as compiled), the pooled forward-add and stencil cells would read:</p>
+        <ul class="orig-rule" id="orig-rule"></ul>
+        <details class="more" id="loosened-details">
+          <summary>The exact misses and when each version was written</summary>
+          <p>The first day-one run missed by <span data-v="d1MissPp"></span> percentage points (an interval ending at <span data-v="d1Hi"></span> against a limit of <span data-v="d1Limit"></span>, on <span data-v="d1Cell"></span>), and its rerun missed on <span data-v="d1RerunCells"></span>. The first harness rules, <code>harness/criteria.json</code>, were <span data-v="v1When"></span>. The second version, <code data-v="v2File"></code>, was <span data-v="v2Written"></span>. The third, <code data-v="criteriaFile"></code>, which decides every verdict on this page, was <span data-v="v3Written"></span>.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="related-full">
+      <h2><span class="secno">9</span>Related work, in full</h2>
+      <p>Only sources read in full for this study are described, and every claim about one is as that source reports it, not re-checked here. <span data-v="relNone"></span></p>
+      <ol class="rel-list" id="rel-list"></ol>
+      <p class="small" id="rel-notread"></p>
+    </section>
+
+    <section id="appendix-a" class="appendix">
+      <h2><span class="secno">A</span>Every cell, <span id="appa-cpu"></span></h2>
+      <p class="small">Every loop and size, pooled over this CPU model&rsquo;s jobs: ratio with its 95% interval, as compiled and aligned; the instruction-count ratio from Cachegrind for the aligned pair (instructions, not time); and the spread between jobs. Pick the CPU model: <span class="seg" id="cpu-seg" role="radiogroup" aria-label="CPU model"></span></p>
+      <details class="more" id="appa-details">
+        <summary>Show the table (<span id="appa-count"></span>)</summary>
+        <p class="scroll-hint" id="appa-hint">The table is wider than the screen: swipe it sideways for every column.</p>
+        <div class="tablewrap boxed" id="appa-wrap" tabindex="0" role="region" aria-label="Appendix A table, scrolls sideways"><table class="tbl dense" id="appa"><thead></thead><tbody></tbody></table></div>
+      </details>
+    </section>
+
+    <section id="appendix-b" class="appendix">
+      <h2><span class="secno">B</span>Every run</h2>
+      <p class="small">The pattern per run and per CPU model, and the rule that decided each pooled verdict. Table 1 holds the same verdicts.</p>
+      <details class="more" id="appb-details">
+      <summary>Show every run and the rules</summary>
+      <div class="tablewrap"><table class="tbl dense" id="appb"><thead><tr><th scope="col">Run</th><th scope="col">CPU model</th><th scope="col" class="num">Jobs</th><th scope="col">Pattern in this run alone</th></tr></thead><tbody></tbody></table></div>
+      <p class="tcap" id="appb-cap"><b>Per CPU model, pooled.</b> The verdict form, the numbers it rests on and the rule that decided it, in plain words.</p>
+      <div class="tablewrap"><table class="tbl dense" id="appb-cpu"><thead><tr><th scope="col">CPU model</th><th scope="col" class="num">Jobs</th><th scope="col">Verdict</th><th scope="col" class="num">Lose SIMD, aligned: median (range)</th><th scope="col" class="num">Judged forward loops: highest interval end</th><th scope="col">Rule that decided it</th></tr></thead><tbody></tbody></table></div>
+      <p class="small">&ldquo;Map&rdquo; means the pattern of section 1 held: near 1&times; for forward loops, far above it for loops that lose SIMD. It is about these loops on these CPU models, not a statement about Google&rsquo;s services.</p>
+      <p class="small">The full record per CPU model, every pooled interval and every per-run result, is <a data-href="pooledUrl" href="#"><code>results/s4-pooled/pooled.json</code></a> in the repository.</p>
+      </details>
+    </section>
+
+    <section id="appendix-c" class="appendix">
+      <h2><span class="secno">C</span>Other toolchains, every CPU model</h2>
+      <p class="small">Per setup, loop and CPU model: the range of the aligned ratio over that model&rsquo;s usable jobs, L1 then L2, and the number of jobs.</p>
+      <details class="more" id="appc-details">
+        <summary>Show the table</summary>
+        <div class="tablewrap boxed" id="appc-wrap" tabindex="0" role="region" aria-label="Appendix C table, scrolls sideways"><table class="tbl dense" id="appc"><thead></thead><tbody></tbody></table></div>
+      </details>
+    </section>
+
+    <section id="appendix-d" class="appendix">
+      <h2><span class="secno">D</span>Census 2, every project</h2>
+      <details class="more" id="appd-details">
+        <summary>Show the table</summary>
+        <div class="tablewrap boxed" id="appd-wrap" tabindex="0" role="region" aria-label="Appendix D table, scrolls sideways"><table class="tbl dense" id="appd"><thead><tr><th scope="col">Project</th><th scope="col">Category</th><th scope="col" class="num">Vectorized</th><th scope="col" class="num">Lost</th><th scope="col" class="num">Lost, locations</th><th scope="col" class="num">Check traced</th><th scope="col" class="num">Traps added</th><th scope="col" class="num">Code size</th></tr></thead><tbody></tbody></table></div>
+      </details>
+    </section>
+
+
+    <footer class="foot small">
+      <p><a href="index.html">Back to the main page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the audit: <a data-href="repoUrl" href="#">the repository</a>.</p>
+    </footer>
+  </div>
+</main>
+<div id="tip" class="tooltip" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

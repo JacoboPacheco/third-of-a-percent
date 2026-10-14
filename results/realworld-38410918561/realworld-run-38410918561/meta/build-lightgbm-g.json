@@ -1,0 +1,45 @@
+{
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "libcxx_package": "1:18.1.3-1ubuntu1",
+  "builds": {
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "none_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64",
+   "fast_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64",
+   "none_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only",
+   "fast_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only"
+  },
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG: the census flags)"
+ },
+ "programs": {
+  "lightgbm": {
+   "program": "lightgbm",
+   "root": "LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63",
+   "sources": 35,
+   "c_sources": 4,
+   "builds": {
+    "none_g": {
+     "binary": "lightgbm.none_g",
+     "sha256": "93c05d3bcdc24dc304a35f5de9218a55215b80c2cdb2b0c180c2d2da79b080fe",
+     "bytes": 18494664,
+     "text_sha256": "7d97101478fd235ee6b1f961c54551973082ee0b2019cd6b524be4aae87c6604",
+     "traps": 3,
+     "compile_seconds": 528.4,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -o rwbin/lightgbm.none_g realworld/drivers/lightgbm_train.cpp build/rw-work/lightgbm/liblightgbm.none_g.a"
+    },
+    "fast_g": {
+     "binary": "lightgbm.fast_g",
+     "sha256": "2c9068e645ecc73cfdc6480e2d9f6d3afd879737e984d32594357aee1e9f35cd",
+     "bytes": 18714672,
+     "text_sha256": "16859f708a4107b5c90ffeded9e99f911d06ab4b7b1116953b1284ee4754fe50",
+     "traps": 1148,
+     "compile_seconds": 491.8,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -o rwbin/lightgbm.fast_g realworld/drivers/lightgbm_train.cpp build/rw-work/lightgbm/liblightgbm.fast_g.a"
+    }
+   },
+   "text_identical": {},
+   "example_compile": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -I<deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -I<deps>/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -I<deps>/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -I<deps>/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -I<deps>/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -I<deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -c <deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/src/boosting/boosting.cpp -o /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/rw-work/lightgbm/none_g/src__boosting__boosting.cpp.o"
+  }
+ }
+}

@@ -1,0 +1,4318 @@
+{
+ "schema": "siblings-1",
+ "part": "C",
+ "sample": false,
+ "run": {
+  "id": "38256975670",
+  "commit": "410946a8a5a08b3ed80705cde239d90d080a621e",
+  "job": "C4",
+  "workflow_run_url": "https://github.com/JacoboPacheco/third-of-a-percent/actions/runs/38256975670",
+  "started_at": "2026-10-12T13:37:49Z"
+ },
+ "runner": {
+  "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+  "cores": 2,
+  "kernel": "6.17.0-1022-azure",
+  "os": "Ubuntu 24.04.5 LTS",
+  "l1d_kib": 32,
+  "l2_kib": 1024,
+  "l3_kib": 32768,
+  "x86_64_v3_flags_missing": []
+ },
+ "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  2\nOn-line CPU(s) list:                     0,1\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 9V74 80-Core Processor\nCPU family:                              25\nModel:                                   17\nThread(s) per core:                      2\nCore(s) per socket:                      1\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                5192.25\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               32 KiB (1 instance)\nL1i cache:                               32 KiB (1 instance)\nL2 cache:                                1 MiB (1 instance)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0,1\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: No microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected\n",
+ "cache_bytes": {
+  "l1d": 32768,
+  "l2": 1048576,
+  "l3": 33554432
+ },
+ "size_targets_bytes": {
+  "L1": 16384,
+  "L2": 524288
+ },
+ "method": {
+  "reps_per_side": 20,
+  "order": "ABBA",
+  "pinned_cpu": "1",
+  "target_ns_per_process": 75000000.0,
+  "ratio": "median(hardened)/median(unhardened)",
+  "interval": "percentile bootstrap 95%, 10000 resamples, seed 20261011",
+  "align_flag": "-falign-loops=64",
+  "sizes": [
+   "L1",
+   "L2"
+  ],
+  "time_budget_s": 1140
+ },
+ "toolchains": {
+  "clangNEW": {
+   "cxx": "clang++-20",
+   "version": "Ubuntu clang version 20.1.2 (0ubuntu1~24.04.3)",
+   "common": "-O2 -std=c++20 -stdlib=libc++",
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "hard": {
+    "clang20-fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST"
+   },
+   "library": "libc++-20-dev"
+  }
+ },
+ "builds": {
+  "clangNEW": {
+   "k01_sum_fwd": {
+    "loop_line": 6,
+    "none": {
+     "sha256": "7efc7b564974c519d64fb13cf82d7ef219f565e1ce620b922d117d9526d6c713",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none kernels/k01_sum_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 2,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE"
+     ],
+     "asm_lines": 48,
+     "loops": [
+      {
+       "start": "0x1260",
+       "end": "0x1294",
+       "bytes": 52,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 13,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x12b0",
+       "end": "0x12bf",
+       "bytes": 15,
+       "start_mod64": 48,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 5,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "6c1a28a7afd4d8179f47b7fe4acbe779427920f56cf2ee99f61abc0d3cbf18fa",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none_a64 kernels/k01_sum_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 2,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE"
+     ],
+     "asm_lines": 51,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x12b4",
+       "bytes": 52,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 13,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x130f",
+       "bytes": 15,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 5,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "71f9e974d7c705f00505731221c65a1a51c39dfeb6ae6d7cf3e45b087ac36574",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast kernels/k01_sum_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 2,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE"
+     ],
+     "asm_lines": 48,
+     "loops": [
+      {
+       "start": "0x1260",
+       "end": "0x1294",
+       "bytes": 52,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 13,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x12b0",
+       "end": "0x12bf",
+       "bytes": 15,
+       "start_mod64": 48,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 5,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "b336efa032ba92727b0c566b8f5951bcd4eaf0fc52ee23da8fd568332f15e1a2",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast_a64 kernels/k01_sum_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 2,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE"
+     ],
+     "asm_lines": 51,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x12b4",
+       "bytes": 52,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 13,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x130f",
+       "bytes": 15,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 5,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k02_add_fwd": {
+    "loop_line": 6,
+    "none": {
+     "sha256": "655931635c12109d52d036ee30f22e1b70614e7cec8b9b5a0d318ecc20772181",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none kernels/k02_add_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 75,
+     "loops": [
+      {
+       "start": "0x1290",
+       "end": "0x12a4",
+       "bytes": 20,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 6,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12c0",
+       "end": "0x1302",
+       "bytes": 66,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1310",
+       "end": "0x1348",
+       "bytes": 56,
+       "start_mod64": 16,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 11,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1273",
+       "end": "0x1351",
+       "bytes": 222,
+       "start_mod64": 51,
+       "crosses64": true,
+       "windows64": 5,
+       "min_windows64": 4,
+       "extra_window": true,
+       "insns": 49,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "28ee76d6ffbb9f9ddcad554189499d9e5cdaff2823a46b11fe6f84f0a4e7ab5d",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none_a64 kernels/k02_add_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 81,
+     "loops": [
+      {
+       "start": "0x12c0",
+       "end": "0x12d4",
+       "bytes": 20,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 6,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x1342",
+       "bytes": 66,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x13b8",
+       "bytes": 56,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1293",
+       "end": "0x13c1",
+       "bytes": 302,
+       "start_mod64": 19,
+       "crosses64": true,
+       "windows64": 6,
+       "min_windows64": 5,
+       "extra_window": true,
+       "insns": 55,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "1c0bd29284802612ab56cdbc7e7d41ca50b5e9410a6deea97d5f30082ad5e422",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast kernels/k02_add_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 74,
+     "loops": [
+      {
+       "start": "0x12b0",
+       "end": "0x12e8",
+       "bytes": 56,
+       "start_mod64": 48,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 11,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x131e",
+       "bytes": 30,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 10,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "0e898e6a8b77cd5cb461f293da0e03e85f9d158a7ec38c366b89f1d9ed75e6c5",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast_a64 kernels/k02_add_fwd.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 81,
+     "loops": [
+      {
+       "start": "0x1300",
+       "end": "0x1338",
+       "bytes": 56,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x139e",
+       "bytes": 30,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 10,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k03_stencil": {
+    "loop_line": 5,
+    "none": {
+     "sha256": "c939a0755d063931c98bd9b564486acdc5ca1daff01cf7186edac87f109c3582",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none kernels/k03_stencil.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 83,
+     "loops": [
+      {
+       "start": "0x1290",
+       "end": "0x12e0",
+       "bytes": 80,
+       "start_mod64": 16,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1330",
+       "end": "0x1367",
+       "bytes": 55,
+       "start_mod64": 48,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 14,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "868f1b07f76295b57a04bb23addb3dd80fcbde2918f018d8c0b318ca74011a04",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none_a64 kernels/k03_stencil.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 86,
+     "loops": [
+      {
+       "start": "0x12c0",
+       "end": "0x1310",
+       "bytes": 80,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x13b7",
+       "bytes": 55,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 14,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "c4e1180e48cdfdcf54a6fc67a082bc53ff6a409ccd7f4e5c24c615b8aaf4a254",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast kernels/k03_stencil.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 81,
+     "loops": [
+      {
+       "start": "0x12e0",
+       "end": "0x1330",
+       "bytes": 80,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1340",
+       "end": "0x1365",
+       "bytes": 37,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "d021176cb8ef76c2b029b52579dbd504a03dbc2618e5af0533fff8db8d5e9283",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast_a64 kernels/k03_stencil.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 83,
+     "loops": [
+      {
+       "start": "0x1300",
+       "end": "0x1350",
+       "bytes": 80,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 15,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x13a5",
+       "bytes": 37,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k04_rev": {
+    "loop_line": 5,
+    "none": {
+     "sha256": "e346541603e9df17e576f0205385baf85b2f2f1f77c4d7daae0b373bdf9e1ac1",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none kernels/k04_rev.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 76,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x12ab",
+       "bytes": 43,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x12c0",
+       "end": "0x12d9",
+       "bytes": 25,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12e0",
+       "end": "0x1314",
+       "bytes": 52,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 16,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12e0",
+       "end": "0x131e",
+       "bytes": 62,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 20,
+       "simd": false,
+       "innermost": false
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "401e152a00e15beac3a7b42a666b130761ff90d48dba4f00c1ac4cfb53d7e16c",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none_a64 kernels/k04_rev.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 83,
+     "loops": [
+      {
+       "start": "0x12c0",
+       "end": "0x12eb",
+       "bytes": 43,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1340",
+       "end": "0x1359",
+       "bytes": 25,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x13b4",
+       "bytes": 52,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 16,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1380",
+       "end": "0x13be",
+       "bytes": 62,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 20,
+       "simd": false,
+       "innermost": false
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "76c6000aebab00a16b700522aac623c8ad90e4f116d860d8f93b6a6acbc6b453",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast kernels/k04_rev.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with writes to memory [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 24,
+     "loops": [
+      {
+       "start": "0x1250",
+       "end": "0x126e",
+       "bytes": 30,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "763f0f8983391968c3198c1b33677e5e1e0563afbe1874c2226419f694696695",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast_a64 kernels/k04_rev.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with writes to memory [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 25,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x129e",
+       "bytes": 30,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k05_stride2": {
+    "loop_line": 5,
+    "none": {
+     "sha256": "3f4ef4cadece6f041eb9dfc60aa9d820757ec63378c7fce37d999b3fb271866a",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none kernels/k05_stride2.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 67,
+     "loops": [
+      {
+       "start": "0x1290",
+       "end": "0x12af",
+       "bytes": 31,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12c0",
+       "end": "0x130b",
+       "bytes": 75,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 17,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1265",
+       "end": "0x1314",
+       "bytes": 175,
+       "start_mod64": 37,
+       "crosses64": true,
+       "windows64": 4,
+       "min_windows64": 3,
+       "extra_window": true,
+       "insns": 44,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "3009c591b3defa2a5302fb26461a3f218717bcf8ece2e10b53e80579ccdc890d",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none_a64 kernels/k05_stride2.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 69,
+     "loops": [
+      {
+       "start": "0x12c0",
+       "end": "0x12df",
+       "bytes": 31,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x134b",
+       "bytes": 75,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 17,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1285",
+       "end": "0x1354",
+       "bytes": 207,
+       "start_mod64": 5,
+       "crosses64": true,
+       "windows64": 4,
+       "min_windows64": 4,
+       "extra_window": false,
+       "insns": 46,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "3f75f4972b517a7bcea8d82ad29eb610dc6ad2c2fb4364ae1214f06a5dbf58c6",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast kernels/k05_stride2.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with more than one early exit [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 28,
+     "loops": [
+      {
+       "start": "0x1250",
+       "end": "0x1274",
+       "bytes": 36,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "50bcb8daf1ec90f9b01332385735696bda4ecef8cf2352ea9f49670fbd51ec11",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast_a64 kernels/k05_stride2.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with more than one early exit [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 29,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x12a4",
+       "bytes": 36,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 11,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k06_gather": {
+    "loop_line": 6,
+    "none": {
+     "sha256": "0af005071297978e5338447699559176201872b25cc4a39c116b31243968f39f",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none kernels/k06_gather.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 49,
+     "loops": [
+      {
+       "start": "0x1260",
+       "end": "0x129f",
+       "bytes": 63,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 15,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12b0",
+       "end": "0x12c4",
+       "bytes": 20,
+       "start_mod64": 48,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 6,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "4f3e2c33c9014f1e950cd208d458b0391090f7697a2e8a5dcfefa3ba63a263d2",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none_a64 kernels/k06_gather.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 52,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x12bf",
+       "bytes": 63,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 15,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x1314",
+       "bytes": 20,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 6,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "2798e533d565dab8407ebe37cecd324450b8619376dafbee3703c5abcbc87f3b",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast kernels/k06_gather.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 31,
+     "loops": [
+      {
+       "start": "0x1260",
+       "end": "0x127e",
+       "bytes": 30,
+       "start_mod64": 32,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 10,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "b9719f1cd38d17fa7794db516f9f3de723ad5fc344f2907dede4e755c7bb0f24",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast_a64 kernels/k06_gather.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_"
+     ],
+     "asm_lines": 31,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x129e",
+       "bytes": 30,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 10,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k07_hist": {
+    "loop_line": 7,
+    "none": {
+     "sha256": "e9d15e285453471b2e2f48eed6fa3469261d13190e100ae9da152a5319f8a6c4",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none kernels/k07_hist.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 30,
+     "loops": [
+      {
+       "start": "0x1250",
+       "end": "0x126c",
+       "bytes": 28,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "c5aca09dc9892c118f0746fa2560480d2a0c9d380400497f0fa6d3ac1d62ed72",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none_a64 kernels/k07_hist.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 31,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x129c",
+       "bytes": 28,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "9cde9e8fbe7f93a8809bc13a48b33ece4a77a9d1ef76d4f2dd35239a78e1c11a",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast kernels/k07_hist.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with writes to memory [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 24,
+     "loops": [
+      {
+       "start": "0x1250",
+       "end": "0x1266",
+       "bytes": 22,
+       "start_mod64": 16,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "9330d2a3b07b3cac661c465c8cefffd8c9fe5ca412366b91410b741744e8303f",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast_a64 kernels/k07_hist.cpp",
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "vector_bytes": null,
+      "remarks": [
+       "loop not vectorized: Cannot vectorize early exit loop with writes to memory [-Rpass-analysis=loop-vectorize]",
+       "loop not vectorized [-Rpass-missed=loop-vectorize]"
+      ],
+      "remarks_total": 2
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+     ],
+     "asm_lines": 25,
+     "loops": [
+      {
+       "start": "0x1280",
+       "end": "0x1296",
+       "bytes": 22,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 7,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    }
+   },
+   "k08_matmul": {
+    "loop_line": 11,
+    "none": {
+     "sha256": "c2e84bdf18a7f68eabe5ce289dc64930746bbc16882d408c16ae8ced48f8c2f2",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none kernels/k08_matmul.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m"
+     ],
+     "asm_lines": 141,
+     "loops": [
+      {
+       "start": "0x1290",
+       "end": "0x1322",
+       "bytes": 146,
+       "start_mod64": 16,
+       "crosses64": true,
+       "windows64": 3,
+       "min_windows64": 3,
+       "extra_window": false,
+       "insns": 36,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1360",
+       "end": "0x13ce",
+       "bytes": 110,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 3,
+       "min_windows64": 2,
+       "extra_window": true,
+       "insns": 23,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1310",
+       "end": "0x13da",
+       "bytes": 202,
+       "start_mod64": 16,
+       "crosses64": true,
+       "windows64": 4,
+       "min_windows64": 4,
+       "extra_window": false,
+       "insns": 45,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x1310",
+       "end": "0x141c",
+       "bytes": 268,
+       "start_mod64": 16,
+       "crosses64": true,
+       "windows64": 5,
+       "min_windows64": 5,
+       "extra_window": false,
+       "insns": 61,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x1420",
+       "end": "0x1443",
+       "bytes": 35,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "220ff8ca4a7638283358457bd9740b7bff3c6c298315556d5a8a68c3f8564adc",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none_a64 kernels/k08_matmul.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 0,
+      "calls": 0,
+      "total": 0
+     },
+     "blocks": [
+      "_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m"
+     ],
+     "asm_lines": 146,
+     "loops": [
+      {
+       "start": "0x12c0",
+       "end": "0x1352",
+       "bytes": 146,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 3,
+       "min_windows64": 3,
+       "extra_window": false,
+       "insns": 36,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x13c0",
+       "end": "0x142e",
+       "bytes": 110,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 23,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1340",
+       "end": "0x143a",
+       "bytes": 250,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 4,
+       "min_windows64": 4,
+       "extra_window": false,
+       "insns": 49,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x1340",
+       "end": "0x147c",
+       "bytes": 316,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 5,
+       "min_windows64": 5,
+       "extra_window": false,
+       "insns": 65,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x1480",
+       "end": "0x14a3",
+       "bytes": 35,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 9,
+       "simd": false,
+       "innermost": true
+      }
+     ]
+    },
+    "clang20-fast": {
+     "sha256": "7892a8c7f2c26b95563957119c224cdbea00c6a9a3ba812c7cc1229105b51b73",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast kernels/k08_matmul.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m"
+     ],
+     "asm_lines": 203,
+     "loops": [
+      {
+       "start": "0x1460",
+       "end": "0x14ce",
+       "bytes": 110,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 3,
+       "min_windows64": 2,
+       "extra_window": true,
+       "insns": 23,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x14e0",
+       "end": "0x1506",
+       "bytes": 38,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 1,
+       "extra_window": true,
+       "insns": 12,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x12e0",
+       "end": "0x152a",
+       "bytes": 586,
+       "start_mod64": 32,
+       "crosses64": true,
+       "windows64": 10,
+       "min_windows64": 10,
+       "extra_window": false,
+       "insns": 139,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x1286",
+       "end": "0x154d",
+       "bytes": 711,
+       "start_mod64": 6,
+       "crosses64": true,
+       "windows64": 12,
+       "min_windows64": 12,
+       "extra_window": false,
+       "insns": 166,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    },
+    "clang20-fast_a64": {
+     "sha256": "27bdc9c6d99eea997e7b5d1203b19eabd53fad99801bab0e21cb2f459415f67d",
+     "command": "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast_a64 kernels/k08_matmul.cpp",
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "vector_bytes": null,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ],
+      "remarks_total": 1
+     },
+     "traps": {
+      "ud2": 1,
+      "calls": 0,
+      "total": 1
+     },
+     "blocks": [
+      "_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m"
+     ],
+     "asm_lines": 208,
+     "loops": [
+      {
+       "start": "0x14c0",
+       "end": "0x152e",
+       "bytes": 110,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 2,
+       "min_windows64": 2,
+       "extra_window": false,
+       "insns": 23,
+       "simd": true,
+       "innermost": true
+      },
+      {
+       "start": "0x1540",
+       "end": "0x1566",
+       "bytes": 38,
+       "start_mod64": 0,
+       "crosses64": false,
+       "windows64": 1,
+       "min_windows64": 1,
+       "extra_window": false,
+       "insns": 12,
+       "simd": false,
+       "innermost": true
+      },
+      {
+       "start": "0x1300",
+       "end": "0x158a",
+       "bytes": 650,
+       "start_mod64": 0,
+       "crosses64": true,
+       "windows64": 11,
+       "min_windows64": 11,
+       "extra_window": false,
+       "insns": 144,
+       "simd": true,
+       "innermost": false
+      },
+      {
+       "start": "0x12a6",
+       "end": "0x15ad",
+       "bytes": 775,
+       "start_mod64": 38,
+       "crosses64": true,
+       "windows64": 13,
+       "min_windows64": 13,
+       "extra_window": false,
+       "insns": 171,
+       "simd": true,
+       "innermost": false
+      }
+     ]
+    }
+   }
+  }
+ },
+ "aa": {
+  "clangNEW": {
+   "cell": "k02_add_fwd.L1",
+   "n": 1365,
+   "iters": 267857,
+   "binary_sha256": "655931635c12109d52d036ee30f22e1b70614e7cec8b9b5a0d318ecc20772181",
+   "a_ns": [
+    152.132,
+    153.012,
+    157.257,
+    151.97,
+    151.75,
+    151.953,
+    153.74,
+    152.134,
+    153.047,
+    152.718,
+    152.044,
+    152.374,
+    152.872,
+    152.515,
+    154.136,
+    151.877,
+    151.803,
+    152.598,
+    152.505,
+    152.801
+   ],
+   "b_ns": [
+    166.627,
+    151.731,
+    154.401,
+    153.92,
+    151.916,
+    152.592,
+    151.793,
+    151.804,
+    152.264,
+    152.666,
+    152.659,
+    152.044,
+    151.849,
+    154.435,
+    154.273,
+    152.645,
+    164.222,
+    153.457,
+    152.755,
+    152.312
+   ],
+   "a_checksums": [
+    "609e045742861009"
+   ],
+   "b_checksums": [
+    "609e045742861009"
+   ],
+   "checksum_match": true,
+   "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+   "ratio": 1.000931086486132,
+   "ci95": [
+    0.9969444626581865,
+    1.0082668448427201
+   ],
+   "half_width_pct": 0.5661191092266815
+  }
+ },
+ "layout_aa": {
+  "clangNEW": {
+   "cell": "k02_add_fwd.L1",
+   "n": 1365,
+   "iters": 267857,
+   "a_ns": [
+    155.959,
+    152.64,
+    152.312,
+    151.913,
+    152.077,
+    152.957,
+    152.73,
+    152.347,
+    152.178,
+    152.612,
+    153.475,
+    154.975,
+    151.862,
+    152.056,
+    152.572,
+    154.069,
+    153.65,
+    152.793,
+    151.826,
+    151.667
+   ],
+   "b_ns": [
+    153.296,
+    152.346,
+    152.749,
+    152.392,
+    153.697,
+    153.832,
+    152.175,
+    152.806,
+    154.405,
+    152.85,
+    155.72,
+    154.415,
+    161.358,
+    159.701,
+    152.267,
+    152.411,
+    153.282,
+    152.995,
+    152.825,
+    153.192
+   ],
+   "a_checksums": [
+    "609e045742861009"
+   ],
+   "b_checksums": [
+    "609e045742861009"
+   ],
+   "checksum_match": true,
+   "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+   "ratio": 1.0032865418894832,
+   "ci95": [
+    0.9999213589178987,
+    1.0086754306555936
+   ],
+   "half_width_pct": 0.43770358688474675
+  }
+ },
+ "cells": [
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k01_sum_fwd",
+   "size_class": "L1",
+   "n": 4096,
+   "working_set_bytes": 16384,
+   "iters": 87108,
+   "calibration_ns_one_call": 861.0,
+   "checksum": [
+    "000000000803e950"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 2,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 2,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 0,
+   "none_sha256": "7efc7b564974c519d64fb13cf82d7ef219f565e1ce620b922d117d9526d6c713",
+   "hard_sha256": "71f9e974d7c705f00505731221c65a1a51c39dfeb6ae6d7cf3e45b087ac36574",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none_a64 kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast_a64 kernels/k01_sum_fwd.cpp",
+    "taskset -c 1 <binary> 4096 87108"
+   ],
+   "as_compiled": {
+    "ratio": 1.0001313068089042,
+    "ci95": [
+     0.9981598590970053,
+     1.0048595730323626
+    ],
+    "half_width_pct": 0.3349856967678644,
+    "a_ns": [
+     732.086,
+     734.796,
+     735.044,
+     731.435,
+     733.068,
+     735.333,
+     736.558,
+     732.058,
+     736.607,
+     735.529,
+     732.767,
+     737.32,
+     739.255,
+     735.554,
+     731.352,
+     779.057,
+     734.083,
+     731.728,
+     731.737,
+     742.064
+    ],
+    "b_ns": [
+     739.396,
+     816.786,
+     733.261,
+     741.92,
+     776.064,
+     737.063,
+     734.294,
+     735.747,
+     735.05,
+     734.483,
+     731.478,
+     757.467,
+     737.836,
+     731.347,
+     734.563,
+     733.893,
+     734.983,
+     735.992,
+     732.395,
+     731.559
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 0.9996897469903754,
+    "ci95": [
+     0.9974766671825601,
+     1.0023643515525478
+    ],
+    "half_width_pct": 0.24438421849938274,
+    "a_ns": [
+     730.498,
+     732.896,
+     732.24,
+     733.634,
+     733.077,
+     734.665,
+     731.287,
+     731.874,
+     736.375,
+     736.244,
+     736.267,
+     733.468,
+     730.375,
+     730.55,
+     735.541,
+     733.916,
+     730.935,
+     734.782,
+     734.058,
+     731.808
+    ],
+    "b_ns": [
+     734.477,
+     731.043,
+     733.353,
+     732.865,
+     731.16,
+     730.105,
+     733.996,
+     735.595,
+     730.907,
+     738.44,
+     732.878,
+     738.819,
+     734.236,
+     731.648,
+     736.64,
+     731.75,
+     733.212,
+     731.505,
+     732.585,
+     733.98
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 5.5
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k01_sum_fwd",
+   "size_class": "L2",
+   "n": 131072,
+   "working_set_bytes": 524288,
+   "iters": 3257,
+   "calibration_ns_one_call": 23025.0,
+   "checksum": [
+    "0000000100682a00"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 2,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 2,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 0,
+   "none_sha256": "7efc7b564974c519d64fb13cf82d7ef219f565e1ce620b922d117d9526d6c713",
+   "hard_sha256": "71f9e974d7c705f00505731221c65a1a51c39dfeb6ae6d7cf3e45b087ac36574",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.none_a64 kernels/k01_sum_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k01_sum_fwd.clangNEW.clang20-fast_a64 kernels/k01_sum_fwd.cpp",
+    "taskset -c 1 <binary> 131072 3257"
+   ],
+   "as_compiled": {
+    "ratio": 0.9993123033401423,
+    "ci95": [
+     0.9981836844433586,
+     1.0010808484694957
+    ],
+    "half_width_pct": 0.14485820130685778,
+    "a_ns": [
+     23236.776,
+     23247.708,
+     23182.728,
+     23318.847,
+     24183.054,
+     23215.292,
+     23229.357,
+     23243.265,
+     23200.095,
+     23294.699,
+     23390.533,
+     23218.025,
+     23210.061,
+     23314.127,
+     23195.803,
+     23242.382,
+     23224.264,
+     23177.55,
+     23166.314,
+     23190.871
+    ],
+    "b_ns": [
+     23232.435,
+     23226.116,
+     23191.738,
+     23248.603,
+     23197.574,
+     23210.427,
+     23198.22,
+     23873.945,
+     23199.367,
+     23251.924,
+     23211.248,
+     23239.439,
+     23188.309,
+     24017.287,
+     23194.843,
+     23200.966,
+     23426.59,
+     23177.11,
+     23251.13,
+     23204.868
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.000687865064414,
+    "ci95": [
+     0.9994244270073852,
+     1.002189883831232
+    ],
+    "half_width_pct": 0.1382728411923384,
+    "a_ns": [
+     23130.746,
+     23192.482,
+     23272.055,
+     23203.216,
+     23225.919,
+     23194.278,
+     23206.144,
+     23184.479,
+     23140.873,
+     23187.988,
+     23156.795,
+     23177.868,
+     23256.562,
+     23254.268,
+     23167.607,
+     23225.364,
+     23150.461,
+     23142.414,
+     23175.602,
+     23156.414
+    ],
+    "b_ns": [
+     23201.639,
+     23204.222,
+     23283.66,
+     23152.037,
+     23163.368,
+     23212.866,
+     23171.117,
+     23202.088,
+     23253.081,
+     23370.735,
+     23187.812,
+     23198.488,
+     23152.432,
+     23240.91,
+     23142.091,
+     23225.099,
+     23162.429,
+     23238.767,
+     23358.213,
+     23202.277
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.4
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k02_add_fwd",
+   "size_class": "L1",
+   "n": 1365,
+   "working_set_bytes": 16380,
+   "iters": 266904,
+   "calibration_ns_one_call": 281.0,
+   "checksum": [
+    "609e045742861009"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "655931635c12109d52d036ee30f22e1b70614e7cec8b9b5a0d318ecc20772181",
+   "hard_sha256": "1c0bd29284802612ab56cdbc7e7d41ca50b5e9410a6deea97d5f30082ad5e422",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none_a64 kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast_a64 kernels/k02_add_fwd.cpp",
+    "taskset -c 1 <binary> 1365 266904"
+   ],
+   "as_compiled": {
+    "ratio": 1.0077203319611223,
+    "ci95": [
+     0.9994844317981583,
+     1.0140517224373853
+    ],
+    "half_width_pct": 0.7283645319613508,
+    "a_ns": [
+     152.081,
+     153.306,
+     152.672,
+     151.828,
+     151.899,
+     152.144,
+     151.715,
+     153.229,
+     153.837,
+     151.783,
+     151.915,
+     151.789,
+     151.806,
+     153.756,
+     152.051,
+     151.88,
+     156.817,
+     154.623,
+     152.019,
+     153.643
+    ],
+    "b_ns": [
+     153.571,
+     152.841,
+     155.428,
+     152.64,
+     153.651,
+     153.15,
+     152.725,
+     206.675,
+     152.953,
+     152.848,
+     154.131,
+     153.322,
+     153.158,
+     154.218,
+     152.671,
+     153.102,
+     168.115,
+     153.1,
+     160.739,
+     155.406
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.0009240115206544,
+    "ci95": [
+     0.9987310433244048,
+     1.004106809831434
+    ],
+    "half_width_pct": 0.2687883253514656,
+    "a_ns": [
+     152.013,
+     152.447,
+     152.199,
+     152.634,
+     174.472,
+     152.968,
+     152.188,
+     152.653,
+     152.781,
+     152.557,
+     153.409,
+     152.546,
+     152.366,
+     152.155,
+     152.834,
+     152.929,
+     152.98,
+     152.833,
+     152.518,
+     152.245
+    ],
+    "b_ns": [
+     153.089,
+     152.735,
+     156.034,
+     152.738,
+     165.834,
+     152.444,
+     152.808,
+     152.417,
+     152.64,
+     152.476,
+     152.62,
+     152.437,
+     157.836,
+     152.861,
+     154.894,
+     154.992,
+     153.267,
+     152.525,
+     152.453,
+     152.516
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 3.6
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k02_add_fwd",
+   "size_class": "L2",
+   "n": 43690,
+   "working_set_bytes": 524280,
+   "iters": 12002,
+   "calibration_ns_one_call": 6249.0,
+   "checksum": [
+    "b004b8fc1330c2d1"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "655931635c12109d52d036ee30f22e1b70614e7cec8b9b5a0d318ecc20772181",
+   "hard_sha256": "1c0bd29284802612ab56cdbc7e7d41ca50b5e9410a6deea97d5f30082ad5e422",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.none_a64 kernels/k02_add_fwd.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k02_add_fwd.clangNEW.clang20-fast_a64 kernels/k02_add_fwd.cpp",
+    "taskset -c 1 <binary> 43690 12002"
+   ],
+   "as_compiled": {
+    "ratio": 1.0035919274837444,
+    "ci95": [
+     0.9773829712473011,
+     1.0179365975925232
+    ],
+    "half_width_pct": 2.027681317261104,
+    "a_ns": [
+     6174.892,
+     5909.749,
+     5803.621,
+     5855.633,
+     5799.043,
+     5805.613,
+     5804.717,
+     6022.716,
+     5807.017,
+     6071.527,
+     6050.172,
+     5893.103,
+     5867.222,
+     5809.993,
+     5828.353,
+     5881.912,
+     5996.411,
+     6022.801,
+     6024.468,
+     6039.647
+    ],
+    "b_ns": [
+     6225.928,
+     5967.038,
+     5822.679,
+     5815.449,
+     5802.404,
+     6018.497,
+     5905.332,
+     6160.374,
+     5895.734,
+     5911.978,
+     5843.786,
+     5860.79,
+     5930.509,
+     5813.97,
+     5807.444,
+     5816.402,
+     6009.146,
+     5918.704,
+     5977.882,
+     5997.351
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 0.9957487196190086,
+    "ci95": [
+     0.9855995483735333,
+     1.0080803180795566
+    ],
+    "half_width_pct": 1.1240384853011653,
+    "a_ns": [
+     5812.847,
+     6112.201,
+     6013.787,
+     5821.877,
+     5890.224,
+     5906.587,
+     5910.794,
+     5920.16,
+     5946.392,
+     5802.964,
+     6077.261,
+     5918.332,
+     6353.159,
+     5883.006,
+     5883.308,
+     5886.397,
+     5874.706,
+     6006.01,
+     5992.678,
+     5821.746
+    ],
+    "b_ns": [
+     5866.536,
+     5969.917,
+     5969.886,
+     5970.34,
+     5876.33,
+     5871.855,
+     6084.66,
+     5894.376,
+     5802.434,
+     5877.221,
+     6054.832,
+     5875.082,
+     5897.761,
+     5869.944,
+     5984.768,
+     5872.842,
+     5816.229,
+     5930.847,
+     5889.921,
+     5802.708
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.1
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k03_stencil",
+   "size_class": "L1",
+   "n": 2048,
+   "working_set_bytes": 16384,
+   "iters": 143954,
+   "calibration_ns_one_call": 521.0,
+   "checksum": [
+    "6469921de086ae1a"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "c939a0755d063931c98bd9b564486acdc5ca1daff01cf7186edac87f109c3582",
+   "hard_sha256": "c4e1180e48cdfdcf54a6fc67a082bc53ff6a409ccd7f4e5c24c615b8aaf4a254",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none_a64 kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast_a64 kernels/k03_stencil.cpp",
+    "taskset -c 1 <binary> 2048 143954"
+   ],
+   "as_compiled": {
+    "ratio": 0.9979955245821455,
+    "ci95": [
+     0.9927995903672634,
+     1.0031057771471028
+    ],
+    "half_width_pct": 0.5153093389919705,
+    "a_ns": [
+     375.365,
+     373.543,
+     376.237,
+     373.423,
+     465.691,
+     373.498,
+     457.231,
+     376.706,
+     376.923,
+     373.094,
+     374.444,
+     467.573,
+     458.132,
+     377.053,
+     373.443,
+     374.956,
+     373.497,
+     468.046,
+     373.696,
+     373.238
+    ],
+    "b_ns": [
+     374.32,
+     374.05,
+     374.061,
+     374.462,
+     374.738,
+     374.018,
+     390.599,
+     374.853,
+     376.059,
+     455.452,
+     455.106,
+     374.098,
+     376.182,
+     374.078,
+     373.691,
+     374.709,
+     374.204,
+     375.725,
+     374.001,
+     374.355
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.0218152268179925,
+    "ci95": [
+     1.0091524042599693,
+     1.0507447352021426
+    ],
+    "half_width_pct": 2.0796165471086647,
+    "a_ns": [
+     355.35,
+     382.201,
+     365.654,
+     366.541,
+     354.516,
+     370.399,
+     354.915,
+     447.635,
+     353.884,
+     370.827,
+     379.428,
+     459.052,
+     367.577,
+     360.601,
+     355.847,
+     367.647,
+     365.021,
+     354.705,
+     374.62,
+     356.234
+    ],
+    "b_ns": [
+     386.526,
+     373.568,
+     373.722,
+     374.406,
+     373.804,
+     374.685,
+     373.438,
+     384.134,
+     373.99,
+     375.387,
+     378.146,
+     373.939,
+     374.218,
+     380.336,
+     373.903,
+     374.071,
+     374.097,
+     373.551,
+     374.216,
+     373.473
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 4.7
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k03_stencil",
+   "size_class": "L2",
+   "n": 65536,
+   "working_set_bytes": 524288,
+   "iters": 6778,
+   "calibration_ns_one_call": 11066.0,
+   "checksum": [
+    "c8747525b8b1aeea"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "c939a0755d063931c98bd9b564486acdc5ca1daff01cf7186edac87f109c3582",
+   "hard_sha256": "c4e1180e48cdfdcf54a6fc67a082bc53ff6a409ccd7f4e5c24c615b8aaf4a254",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.none_a64 kernels/k03_stencil.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k03_stencil.clangNEW.clang20-fast_a64 kernels/k03_stencil.cpp",
+    "taskset -c 1 <binary> 65536 6778"
+   ],
+   "as_compiled": {
+    "ratio": 1.0020264698139714,
+    "ci95": [
+     0.9971117096684767,
+     1.00521577449788
+    ],
+    "half_width_pct": 0.4052032414701645,
+    "a_ns": [
+     11059.056,
+     11160.081,
+     11097.783,
+     11222.642,
+     11110.94,
+     11405.264,
+     11048.751,
+     11079.275,
+     11153.484,
+     11125.145,
+     10983.619,
+     11026.308,
+     11096.111,
+     11072.574,
+     11217.138,
+     11150.719,
+     11197.247,
+     11107.501,
+     11055.084,
+     11135.178
+    ],
+    "b_ns": [
+     11107.481,
+     11279.15,
+     11158.672,
+     11180.184,
+     11118.301,
+     11258.405,
+     11110.904,
+     11232.483,
+     11131.635,
+     11138.584,
+     11047.872,
+     11131.831,
+     11099.126,
+     11055.437,
+     11137.062,
+     11067.247,
+     11089.374,
+     11146.635,
+     11149.676,
+     11068.777
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 0.9994657991407464,
+    "ci95": [
+     0.9964279348188936,
+     1.0041484135495675
+    ],
+    "half_width_pct": 0.38602393653369704,
+    "a_ns": [
+     11092.616,
+     11203.815,
+     11078.424,
+     11202.97,
+     11109.53,
+     11142.239,
+     11117.188,
+     11152.145,
+     11345.434,
+     11181.861,
+     11163.951,
+     11154.812,
+     11141.514,
+     11076.475,
+     11104.851,
+     11149.203,
+     11204.079,
+     11090.253,
+     11089.271,
+     11117.039
+    ],
+    "b_ns": [
+     11141.247,
+     11153.509,
+     11130.602,
+     11163.19,
+     11123.702,
+     11159.387,
+     11182.987,
+     11079.734,
+     11055.246,
+     11178.801,
+     11093.257,
+     11093.427,
+     11249.28,
+     11224.049,
+     11120.223,
+     11122.506,
+     11457.603,
+     11058.856,
+     11074.025,
+     11159.607
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.4
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k04_rev",
+   "size_class": "L1",
+   "n": 2048,
+   "working_set_bytes": 16384,
+   "iters": 257732,
+   "calibration_ns_one_call": 291.0,
+   "checksum": [
+    "3799b6d56781d4f3"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "e346541603e9df17e576f0205385baf85b2f2f1f77c4d7daae0b373bdf9e1ac1",
+   "hard_sha256": "76c6000aebab00a16b700522aac623c8ad90e4f116d860d8f93b6a6acbc6b453",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none_a64 kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast_a64 kernels/k04_rev.cpp",
+    "taskset -c 1 <binary> 2048 257732"
+   ],
+   "as_compiled": {
+    "ratio": 6.685901214682465,
+    "ci95": [
+     6.678628020873374,
+     6.689193789909849
+    ],
+    "half_width_pct": 0.5282884518237552,
+    "a_ns": [
+     181.454,
+     180.643,
+     180.665,
+     186.271,
+     226.047,
+     180.448,
+     180.782,
+     180.64,
+     180.827,
+     180.627,
+     180.664,
+     180.396,
+     180.622,
+     180.48,
+     180.786,
+     180.823,
+     180.469,
+     180.609,
+     180.666,
+     182.143
+    ],
+    "b_ns": [
+     1210.539,
+     1205.739,
+     1206.689,
+     1208.316,
+     1472.563,
+     1206.763,
+     1208.142,
+     1207.526,
+     1207.538,
+     1205.791,
+     1218.935,
+     1213.655,
+     1211.755,
+     1208.097,
+     1208.376,
+     1207.713,
+     1206.719,
+     1208.242,
+     1206.616,
+     1206.466
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 5.4293337685798155,
+    "ci95": [
+     5.375476754831162,
+     5.4760800504743035
+    ],
+    "half_width_pct": 5.030164782157076,
+    "a_ns": [
+     180.298,
+     180.941,
+     180.773,
+     180.491,
+     180.59,
+     180.562,
+     180.686,
+     181.241,
+     180.801,
+     180.536,
+     180.723,
+     180.43,
+     180.827,
+     180.758,
+     180.804,
+     180.859,
+     181.114,
+     180.969,
+     180.603,
+     180.596
+    ],
+    "b_ns": [
+     993.606,
+     986.71,
+     1002.494,
+     996.665,
+     988.306,
+     970.069,
+     971.463,
+     996.032,
+     989.029,
+     971.776,
+     984.552,
+     978.049,
+     974.392,
+     989.873,
+     971.048,
+     970.338,
+     970.832,
+     970.808,
+     972.727,
+     993.987
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 13.6
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k04_rev",
+   "size_class": "L2",
+   "n": 65536,
+   "working_set_bytes": 524288,
+   "iters": 12523,
+   "calibration_ns_one_call": 5989.0,
+   "checksum": [
+    "bf8d1b00ff21b983"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "e346541603e9df17e576f0205385baf85b2f2f1f77c4d7daae0b373bdf9e1ac1",
+   "hard_sha256": "76c6000aebab00a16b700522aac623c8ad90e4f116d860d8f93b6a6acbc6b453",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.none_a64 kernels/k04_rev.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k04_rev.clangNEW.clang20-fast_a64 kernels/k04_rev.cpp",
+    "taskset -c 1 <binary> 65536 12523"
+   ],
+   "as_compiled": {
+    "ratio": 5.873905361650397,
+    "ci95": [
+     5.865053961534929,
+     5.886985828976024
+    ],
+    "half_width_pct": 1.096593372054766,
+    "a_ns": [
+     5876.595,
+     5884.582,
+     5900.314,
+     5885.246,
+     5903.3,
+     5897.743,
+     5883.997,
+     5895.193,
+     5881.549,
+     5888.331,
+     5881.134,
+     5886.66,
+     5900.81,
+     5884.439,
+     5904.893,
+     6123.447,
+     5908.125,
+     6040.391,
+     5907.795,
+     5906.934
+    ],
+    "b_ns": [
+     34723.794,
+     34628.44,
+     34654.684,
+     34633.886,
+     34605.642,
+     34605.678,
+     34723.253,
+     35988.921,
+     34600.344,
+     34897.92,
+     34592.196,
+     34636.704,
+     34573.2,
+     34965.032,
+     34568.426,
+     34649.21,
+     34644.515,
+     34581.635,
+     34629.857,
+     34670.769
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 5.793155630077548,
+    "ci95": [
+     5.736976129238379,
+     5.867350251866503
+    ],
+    "half_width_pct": 6.518706131406171,
+    "a_ns": [
+     6182.122,
+     5894.485,
+     5899.614,
+     5901.142,
+     6036.936,
+     6026.106,
+     6151.773,
+     6177.361,
+     5902.85,
+     5972.614,
+     5994.923,
+     5898.661,
+     5891.195,
+     6148.995,
+     6191.251,
+     6013.447,
+     5900.448,
+     5883.672,
+     5974.344,
+     5892.579
+    ],
+    "b_ns": [
+     34536.072,
+     34632.401,
+     34821.391,
+     34599.542,
+     35028.771,
+     34540.666,
+     34592.337,
+     34714.087,
+     34634.132,
+     34744.101,
+     34597.592,
+     34545.088,
+     34602.795,
+     34564.84,
+     34615.733,
+     34565.304,
+     34620.05,
+     34568.036,
+     34607.792,
+     34673.229
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 20.7
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k05_stride2",
+   "size_class": "L1",
+   "n": 1365,
+   "working_set_bytes": 16380,
+   "iters": 233645,
+   "calibration_ns_one_call": 321.0,
+   "checksum": [
+    "a92aefd1840ca5df"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "3f4ef4cadece6f041eb9dfc60aa9d820757ec63378c7fce37d999b3fb271866a",
+   "hard_sha256": "3f75f4972b517a7bcea8d82ad29eb610dc6ad2c2fb4364ae1214f06a5dbf58c6",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none_a64 kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast_a64 kernels/k05_stride2.cpp",
+    "taskset -c 1 <binary> 1365 233645"
+   ],
+   "as_compiled": {
+    "ratio": 5.104946935171022,
+    "ci95": [
+     5.084738972648292,
+     5.120448622168113
+    ],
+    "half_width_pct": 1.7854824759910404,
+    "a_ns": [
+     216.703,
+     198.432,
+     190.55,
+     197.919,
+     189.671,
+     189.992,
+     190.357,
+     189.696,
+     189.777,
+     189.375,
+     189.333,
+     191.746,
+     190.717,
+     189.516,
+     190.121,
+     190.82,
+     189.56,
+     189.877,
+     193.367,
+     191.094
+    ],
+    "b_ns": [
+     970.418,
+     971.35,
+     970.113,
+     972.291,
+     972.266,
+     972.742,
+     976.115,
+     972.734,
+     970.527,
+     970.97,
+     972.058,
+     969.741,
+     970.938,
+     970.558,
+     973.0,
+     969.414,
+     970.963,
+     971.722,
+     970.047,
+     1025.064
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 5.082001653480681,
+    "ci95": [
+     5.070340944112747,
+     5.098599379541658
+    ],
+    "half_width_pct": 1.412921771445541,
+    "a_ns": [
+     191.436,
+     190.991,
+     191.575,
+     192.482,
+     190.533,
+     190.251,
+     190.282,
+     191.303,
+     190.549,
+     191.233,
+     192.85,
+     190.43,
+     190.844,
+     197.98,
+     191.91,
+     194.461,
+     190.782,
+     190.12,
+     190.384,
+     191.268
+    ],
+    "b_ns": [
+     970.485,
+     972.924,
+     971.11,
+     977.384,
+     973.876,
+     972.383,
+     971.871,
+     970.77,
+     972.475,
+     969.702,
+     970.814,
+     969.936,
+     972.281,
+     970.488,
+     970.552,
+     969.999,
+     969.744,
+     975.02,
+     971.738,
+     971.353
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 11.2
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k05_stride2",
+   "size_class": "L2",
+   "n": 43690,
+   "working_set_bytes": 524280,
+   "iters": 11983,
+   "calibration_ns_one_call": 6259.0,
+   "checksum": [
+    "fa2a8cafca0f2d4d"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "3f4ef4cadece6f041eb9dfc60aa9d820757ec63378c7fce37d999b3fb271866a",
+   "hard_sha256": "3f75f4972b517a7bcea8d82ad29eb610dc6ad2c2fb4364ae1214f06a5dbf58c6",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.none_a64 kernels/k05_stride2.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k05_stride2.clangNEW.clang20-fast_a64 kernels/k05_stride2.cpp",
+    "taskset -c 1 <binary> 43690 11983"
+   ],
+   "as_compiled": {
+    "ratio": 5.152195644370969,
+    "ci95": [
+     5.056040301530667,
+     5.299465932292795
+    ],
+    "half_width_pct": 12.17128153810636,
+    "a_ns": [
+     6175.421,
+     6041.678,
+     5821.571,
+     5837.654,
+     5812.628,
+     6090.805,
+     6143.66,
+     5809.962,
+     5869.355,
+     6114.786,
+     6147.448,
+     5813.325,
+     6150.08,
+     5978.344,
+     6041.82,
+     6119.826,
+     5817.333,
+     5821.32,
+     5822.271,
+     5995.954
+    ],
+    "b_ns": [
+     30982.551,
+     30837.946,
+     30954.595,
+     30772.002,
+     30778.236,
+     30792.157,
+     30836.988,
+     30822.685,
+     30817.509,
+     30885.686,
+     30822.882,
+     30829.226,
+     30872.732,
+     30855.98,
+     30811.688,
+     30871.07,
+     30921.554,
+     30869.156,
+     32368.678,
+     30888.142
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 5.13048398061519,
+    "ci95": [
+     5.058934980660648,
+     5.247445493807058
+    ],
+    "half_width_pct": 9.425525657320533,
+    "a_ns": [
+     6016.404,
+     6121.864,
+     6124.928,
+     5852.077,
+     7571.813,
+     5812.16,
+     6138.267,
+     6090.26,
+     6100.428,
+     6090.022,
+     6005.436,
+     5973.272,
+     6017.001,
+     5825.653,
+     5831.602,
+     5842.133,
+     5903.092,
+     6005.999,
+     6109.218,
+     5816.107
+    ],
+    "b_ns": [
+     30954.632,
+     31054.496,
+     30920.263,
+     30910.972,
+     30804.01,
+     30815.418,
+     30882.902,
+     30816.082,
+     30881.683,
+     30912.277,
+     30802.869,
+     30823.568,
+     30812.104,
+     30790.254,
+     30789.843,
+     31419.946,
+     30859.188,
+     30857.178,
+     30798.344,
+     30816.214
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 18.1
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k06_gather",
+   "size_class": "L1",
+   "n": 1365,
+   "working_set_bytes": 16380,
+   "iters": 105485,
+   "calibration_ns_one_call": 711.0,
+   "checksum": [
+    "e452a8c132b71882"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": false,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "0af005071297978e5338447699559176201872b25cc4a39c116b31243968f39f",
+   "hard_sha256": "2798e533d565dab8407ebe37cecd324450b8619376dafbee3703c5abcbc87f3b",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none_a64 kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast_a64 kernels/k06_gather.cpp",
+    "taskset -c 1 <binary> 1365 105485"
+   ],
+   "as_compiled": {
+    "ratio": 1.5855342174798033,
+    "ci95": [
+     1.580339392459001,
+     1.5914605241000155
+    ],
+    "half_width_pct": 0.5560565820507235,
+    "a_ns": [
+     515.801,
+     513.702,
+     512.999,
+     516.229,
+     515.866,
+     514.283,
+     512.399,
+     514.907,
+     517.095,
+     512.901,
+     513.62,
+     519.438,
+     513.274,
+     512.815,
+     516.484,
+     516.503,
+     513.345,
+     513.978,
+     515.459,
+     513.186
+    ],
+    "b_ns": [
+     815.109,
+     830.432,
+     815.192,
+     814.648,
+     833.082,
+     814.713,
+     814.858,
+     817.047,
+     831.732,
+     814.634,
+     817.953,
+     815.142,
+     817.683,
+     814.634,
+     814.548,
+     817.472,
+     814.576,
+     816.717,
+     819.271,
+     815.151
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.584481554878345,
+    "ci95": [
+     1.583334952833672,
+     1.5863423163116894
+    ],
+    "half_width_pct": 0.1503681739008722,
+    "a_ns": [
+     514.246,
+     516.182,
+     514.397,
+     514.334,
+     513.749,
+     514.103,
+     513.384,
+     513.662,
+     514.377,
+     517.033,
+     512.931,
+     528.349,
+     513.54,
+     514.562,
+     516.128,
+     513.466,
+     513.906,
+     514.753,
+     514.156,
+     513.318
+    ],
+    "b_ns": [
+     815.018,
+     814.349,
+     813.871,
+     814.012,
+     814.747,
+     818.194,
+     814.42,
+     814.842,
+     817.229,
+     814.64,
+     814.344,
+     814.921,
+     814.711,
+     813.659,
+     813.648,
+     817.211,
+     819.941,
+     814.737,
+     818.096,
+     815.389
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 5.9
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k06_gather",
+   "size_class": "L2",
+   "n": 43690,
+   "working_set_bytes": 524280,
+   "iters": 2492,
+   "calibration_ns_one_call": 30095.0,
+   "checksum": [
+    "c31c1f4115392da9"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": false,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "0af005071297978e5338447699559176201872b25cc4a39c116b31243968f39f",
+   "hard_sha256": "2798e533d565dab8407ebe37cecd324450b8619376dafbee3703c5abcbc87f3b",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.none_a64 kernels/k06_gather.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k06_gather.clangNEW.clang20-fast_a64 kernels/k06_gather.cpp",
+    "taskset -c 1 <binary> 43690 2492"
+   ],
+   "as_compiled": {
+    "ratio": 1.002547734206441,
+    "ci95": [
+     0.9993219678426141,
+     1.0050256982506809
+    ],
+    "half_width_pct": 0.285186520403341,
+    "a_ns": [
+     30440.843,
+     30715.045,
+     30448.584,
+     30458.004,
+     30554.598,
+     30568.226,
+     30563.753,
+     30562.427,
+     30557.014,
+     30676.154,
+     30514.675,
+     30536.827,
+     30328.202,
+     30464.796,
+     30492.964,
+     30566.072,
+     30567.214,
+     30469.0,
+     30469.128,
+     30299.519
+    ],
+    "b_ns": [
+     30787.015,
+     30480.486,
+     30456.039,
+     30591.661,
+     30775.871,
+     30632.939,
+     30615.437,
+     30664.093,
+     30843.706,
+     30507.902,
+     30546.577,
+     30738.527,
+     30602.174,
+     30504.804,
+     30611.317,
+     30604.871,
+     30521.185,
+     30675.511,
+     30517.018,
+     30479.381
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.0049481446066288,
+    "ci95": [
+     1.0038539034025071,
+     1.0067623523225817
+    ],
+    "half_width_pct": 0.145422446003729,
+    "a_ns": [
+     30357.527,
+     30448.588,
+     30456.537,
+     30417.061,
+     30429.5,
+     30394.342,
+     30720.536,
+     30471.167,
+     30379.436,
+     30484.948,
+     30474.017,
+     30491.547,
+     30499.276,
+     30476.428,
+     30768.751,
+     30479.792,
+     30415.14,
+     30418.183,
+     30467.309,
+     30408.762
+    ],
+    "b_ns": [
+     30521.579,
+     30585.017,
+     30588.31,
+     30865.575,
+     30612.822,
+     30579.055,
+     30576.274,
+     30598.631,
+     30612.303,
+     30639.463,
+     30631.087,
+     30527.195,
+     30721.135,
+     30612.484,
+     38501.431,
+     31259.012,
+     30616.993,
+     30548.001,
+     30644.599,
+     30648.385
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.5
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k07_hist",
+   "size_class": "L1",
+   "n": 3840,
+   "working_set_bytes": 16384,
+   "iters": 49277,
+   "calibration_ns_one_call": 1522.0,
+   "checksum": [
+    "2278dc4dc98db32f"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": false,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "e9d15e285453471b2e2f48eed6fa3469261d13190e100ae9da152a5319f8a6c4",
+   "hard_sha256": "9cde9e8fbe7f93a8809bc13a48b33ece4a77a9d1ef76d4f2dd35239a78e1c11a",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none_a64 kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast_a64 kernels/k07_hist.cpp",
+    "taskset -c 1 <binary> 3840 49277"
+   ],
+   "as_compiled": {
+    "ratio": 1.199276779549656,
+    "ci95": [
+     1.0211706131656177,
+     1.209455056829938
+    ],
+    "half_width_pct": 9.414222183216015,
+    "a_ns": [
+     1420.693,
+     1463.189,
+     1434.085,
+     2406.306,
+     1532.439,
+     1436.074,
+     1424.004,
+     1419.283,
+     1789.269,
+     1433.537,
+     1425.745,
+     1871.957,
+     1874.19,
+     1435.804,
+     1791.106,
+     1437.462,
+     1420.081,
+     1424.918,
+     1873.319,
+     1583.425
+    ],
+    "b_ns": [
+     1712.491,
+     1710.702,
+     2318.118,
+     1712.246,
+     1745.408,
+     1713.082,
+     1722.048,
+     1724.117,
+     1725.401,
+     2082.428,
+     1713.186,
+     2073.303,
+     1764.541,
+     1712.244,
+     1715.24,
+     1712.512,
+     1725.561,
+     1716.863,
+     1724.632,
+     2202.708
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.1118944570183682,
+    "ci95": [
+     1.0411840095046332,
+     1.1245792773223136
+    ],
+    "half_width_pct": 4.169763390884018,
+    "a_ns": [
+     1416.882,
+     1520.188,
+     1448.255,
+     1779.69,
+     1432.43,
+     1419.185,
+     1419.697,
+     1537.774,
+     1418.013,
+     1435.083,
+     1532.963,
+     1421.421,
+     1532.496,
+     1423.127,
+     1421.003,
+     1421.065,
+     1420.12,
+     2424.906,
+     1526.747,
+     1422.198
+    ],
+    "b_ns": [
+     2086.682,
+     2144.809,
+     1590.673,
+     1574.094,
+     1957.615,
+     1573.958,
+     2089.278,
+     1605.288,
+     1573.941,
+     1584.405,
+     1581.766,
+     1581.747,
+     1592.587,
+     1571.929,
+     1579.94,
+     1573.359,
+     1577.119,
+     1592.022,
+     1596.896,
+     1807.943
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.8
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k07_hist",
+   "size_class": "L2",
+   "n": 130816,
+   "working_set_bytes": 524288,
+   "iters": 1495,
+   "calibration_ns_one_call": 50166.0,
+   "checksum": [
+    "eec40cdaab44b2b3"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": false,
+    "width": null,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": false,
+   "vectorized_hard_a64": false,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "e9d15e285453471b2e2f48eed6fa3469261d13190e100ae9da152a5319f8a6c4",
+   "hard_sha256": "9cde9e8fbe7f93a8809bc13a48b33ece4a77a9d1ef76d4f2dd35239a78e1c11a",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.none_a64 kernels/k07_hist.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast_a64 kernels/k07_hist.cpp",
+    "taskset -c 1 <binary> 130816 1495"
+   ],
+   "as_compiled": {
+    "ratio": 1.1357782739533855,
+    "ci95": [
+     1.105941930546499,
+     1.1474421423137118
+    ],
+    "half_width_pct": 2.0750105883606373,
+    "a_ns": [
+     52737.593,
+     52054.597,
+     51056.805,
+     52474.896,
+     51234.417,
+     54190.506,
+     52120.201,
+     52620.419,
+     51656.231,
+     50999.046,
+     52622.021,
+     52622.603,
+     51709.508,
+     53721.417,
+     50504.434,
+     52136.346,
+     52239.304,
+     51614.409,
+     51831.19,
+     53590.639
+    ],
+    "b_ns": [
+     56736.391,
+     59942.474,
+     57863.702,
+     59172.759,
+     59269.044,
+     57230.172,
+     54541.276,
+     57377.959,
+     59753.574,
+     59444.439,
+     57624.277,
+     62500.257,
+     59239.562,
+     59366.643,
+     60250.363,
+     60401.273,
+     61655.873,
+     58943.604,
+     58516.967,
+     57514.446
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.1210164127327105,
+    "ci95": [
+     1.0863931110958516,
+     1.155570744197512
+    ],
+    "half_width_pct": 3.4588816550830237,
+    "a_ns": [
+     50892.249,
+     53196.217,
+     52583.12,
+     51672.771,
+     53074.67,
+     51167.588,
+     52069.288,
+     51029.714,
+     52043.597,
+     53232.084,
+     52055.857,
+     51151.383,
+     53157.832,
+     53747.423,
+     52986.437,
+     53905.588,
+     53404.58,
+     50989.662,
+     52701.627,
+     51454.108
+    ],
+    "b_ns": [
+     64781.112,
+     60555.666,
+     63649.957,
+     62408.814,
+     57108.704,
+     60517.167,
+     58221.264,
+     57112.609,
+     60154.902,
+     58543.094,
+     59425.749,
+     55588.312,
+     58952.42,
+     58111.447,
+     56667.397,
+     56145.868,
+     58773.973,
+     56874.802,
+     60447.009,
+     57065.155
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 7.0
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k08_matmul",
+   "size_class": "L1",
+   "n": 36,
+   "working_set_bytes": 15552,
+   "iters": 7392,
+   "calibration_ns_one_call": 10146.0,
+   "checksum": [
+    "736eadd29c28221b"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "c2e84bdf18a7f68eabe5ce289dc64930746bbc16882d408c16ae8ced48f8c2f2",
+   "hard_sha256": "7892a8c7f2c26b95563957119c224cdbea00c6a9a3ba812c7cc1229105b51b73",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none_a64 kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast_a64 kernels/k08_matmul.cpp",
+    "taskset -c 1 <binary> 36 7392"
+   ],
+   "as_compiled": {
+    "ratio": 1.699986495059751,
+    "ci95": [
+     1.6975650615254994,
+     1.7023757180502743
+    ],
+    "half_width_pct": 0.2405328262387485,
+    "a_ns": [
+     10147.248,
+     10670.287,
+     10120.64,
+     10145.05,
+     10178.077,
+     10154.497,
+     10160.88,
+     10123.219,
+     10135.573,
+     10123.135,
+     10121.458,
+     10136.612,
+     10143.198,
+     10160.525,
+     10141.16,
+     10135.814,
+     10206.487,
+     10140.307,
+     10133.978,
+     10125.193
+    ],
+    "b_ns": [
+     17205.08,
+     17222.276,
+     17225.422,
+     17238.111,
+     17229.06,
+     17202.533,
+     17247.776,
+     17253.71,
+     17269.365,
+     17257.319,
+     17292.302,
+     17240.109,
+     17477.601,
+     17255.807,
+     17204.512,
+     17221.597,
+     17423.937,
+     17216.292,
+     17396.628,
+     17202.49
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.6482744846038833,
+    "ci95": [
+     1.645762708181936,
+     1.6500869376273897
+    ],
+    "half_width_pct": 0.2162114722726871,
+    "a_ns": [
+     10587.877,
+     10567.479,
+     10587.325,
+     10789.657,
+     10571.809,
+     10588.928,
+     10667.767,
+     10613.366,
+     10576.656,
+     10586.001,
+     10653.403,
+     10589.234,
+     10581.189,
+     10583.771,
+     10600.322,
+     10573.466,
+     10584.349,
+     10580.046,
+     10582.04,
+     10609.235
+    ],
+    "b_ns": [
+     17472.739,
+     17448.362,
+     17457.108,
+     17451.091,
+     17444.077,
+     17459.469,
+     17483.736,
+     17422.23,
+     17427.191,
+     17428.734,
+     17419.721,
+     17419.399,
+     17480.469,
+     17414.048,
+     17484.567,
+     17425.059,
+     17538.978,
+     17460.179,
+     17414.407,
+     17515.669
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 8.5
+  },
+  {
+   "toolchain": "clangNEW",
+   "variant": "clang20-fast",
+   "kernel": "k08_matmul",
+   "size_class": "L2",
+   "n": 209,
+   "working_set_bytes": 524172,
+   "iters": 43,
+   "calibration_ns_one_call": 1754905.0,
+   "checksum": [
+    "1462966f14912475"
+   ],
+   "checksum_ok": true,
+   "vectorized_none": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_hard": {
+    "vectorized": true,
+    "width": 4,
+    "vector_bytes": null
+   },
+   "vectorized_none_a64": true,
+   "vectorized_hard_a64": true,
+   "traps_none": 0,
+   "traps_hard": 1,
+   "none_sha256": "c2e84bdf18a7f68eabe5ce289dc64930746bbc16882d408c16ae8ced48f8c2f2",
+   "hard_sha256": "7892a8c7f2c26b95563957119c224cdbea00c6a9a3ba812c7cc1229105b51b73",
+   "commands": [
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.none_a64 kernels/k08_matmul.cpp",
+    "clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k08_matmul.clangNEW.clang20-fast_a64 kernels/k08_matmul.cpp",
+    "taskset -c 1 <binary> 209 43"
+   ],
+   "as_compiled": {
+    "ratio": 1.1080057070274483,
+    "ci95": [
+     1.1061382271034927,
+     1.1095478355592738
+    ],
+    "half_width_pct": 0.1704804227890544,
+    "a_ns": [
+     1729231.698,
+     1744661.209,
+     1728690.86,
+     1726366.419,
+     1730966.86,
+     1730249.977,
+     1728911.442,
+     1940934.326,
+     1730089.256,
+     1731038.372,
+     1731622.977,
+     1728925.86,
+     1730970.581,
+     1733464.093,
+     1729227.488,
+     1755603.767,
+     1736406.93,
+     1731932.256,
+     1727886.163,
+     1731609.442
+    ],
+    "b_ns": [
+     1918804.907,
+     1917928.0,
+     1919524.837,
+     1912695.907,
+     1915491.302,
+     1917918.442,
+     1914997.302,
+     1976242.651,
+     1914386.837,
+     1912745.07,
+     1919402.791,
+     1915482.698,
+     1913452.186,
+     1920159.744,
+     1950256.977,
+     1914491.884,
+     1920903.884,
+     1919730.721,
+     1919761.0,
+     1915331.07
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "aligned": {
+    "ratio": 1.1055977847371616,
+    "ci95": [
+     1.103728236980211,
+     1.1080649791855517
+    ],
+    "half_width_pct": 0.2168371102670319,
+    "a_ns": [
+     1726358.512,
+     1734509.186,
+     1735901.279,
+     1733279.651,
+     1730489.86,
+     1731912.465,
+     1732027.535,
+     1732630.07,
+     1732744.651,
+     1730940.302,
+     1729040.233,
+     1730523.884,
+     1732305.395,
+     1734594.419,
+     1733757.814,
+     1730637.302,
+     1729790.209,
+     1731364.442,
+     1734698.302,
+     1735214.186
+    ],
+    "b_ns": [
+     1920462.535,
+     1911926.163,
+     1918738.767,
+     1913021.535,
+     1917831.581,
+     1912779.302,
+     1913233.488,
+     1925794.977,
+     1919531.837,
+     2236435.116,
+     1915476.86,
+     1947378.907,
+     1910708.047,
+     1908293.256,
+     1914681.953,
+     1910741.581,
+     1930347.186,
+     1915670.651,
+     1905202.767,
+     1911773.372
+    ],
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA",
+    "checksum_match": true
+   },
+   "seconds": 6.8
+  }
+ ],
+ "skipped": [],
+ "packages": [
+  "clang-20\t1:20.1.2-0ubuntu1~24.04.3",
+  "libc++-20-dev:amd64\t1:20.1.2-0ubuntu1~24.04.3",
+  "libc++abi-20-dev:amd64\t1:20.1.2-0ubuntu1~24.04.3"
+ ],
+ "checksum_agreement_across_toolchains": {
+  "k01_sum_fwd.L1": true,
+  "k01_sum_fwd.L2": true,
+  "k02_add_fwd.L1": true,
+  "k02_add_fwd.L2": true,
+  "k03_stencil.L1": true,
+  "k03_stencil.L2": true,
+  "k04_rev.L1": true,
+  "k04_rev.L2": true,
+  "k05_stride2.L1": true,
+  "k05_stride2.L2": true,
+  "k06_gather.L1": true,
+  "k06_gather.L2": true,
+  "k07_hist.L1": true,
+  "k07_hist.L2": true,
+  "k08_matmul.L1": true,
+  "k08_matmul.L2": true
+ },
+ "seconds": 177.6
+}

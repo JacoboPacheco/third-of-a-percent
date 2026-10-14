@@ -1,0 +1,48 @@
+# Example only: copy this file into YOUR repository's .github/workflows/ to run lostloops on your code.
+# It is documentation here (tools/lostloops/example-workflow.yml) and never runs in this repository.
+# NOT tested yet: no live run with real clang has been made (see tools/lostloops/README.md).
+#
+# What it does: configures your CMake project with clang 18 and libc++, exports compile_commands.json
+# (nothing is built), runs lostloops.py against FAST hardening and uploads report.md / report.json.
+# Change the cmake line to your project's own configure step and release flags.
+name: lostloops
+on: workflow_dispatch
+
+jobs:
+  lostloops:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang 18 and libc++ 18
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-18 libc++-18-dev libc++abi-18-dev binutils llvm-18 cmake ninja-build
+
+      - name: Get lostloops
+        # Copy tools/lostloops/ from the third-of-a-percent repository into your repo (or vendor it),
+        # then point this step at it. Here it is assumed to sit at tools/lostloops/.
+        run: test -f tools/lostloops/lostloops.py
+
+      - name: Export compile_commands.json (configure only, nothing is built)
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          # Generated headers some files need: build just those targets here if your project has any.
+
+      - name: Run lostloops (NONE vs FAST)
+        # Exit code 0 means a report was written, whatever it says; 2 means clang or libc++ is missing.
+        run: |
+          mkdir -p lostloops-report
+          python3 tools/lostloops/lostloops.py \
+            --compile-commands build/compile_commands.json \
+            --mode fast --out lostloops-report --clang clang++-18 | tee lostloops-report/summary.txt
+          test -f lostloops-report/report.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lostloops-report
+          path: lostloops-report/

@@ -1,0 +1,308 @@
+--- k08_matmul.none.s
++++ k08_matmul.fast.s
+@@ -1,85 +1,142 @@
+ <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m>:
+-test   %rcx,%rcx
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+ push   %rbp
+ push   %r15
+ push   %r14
+ push   %r13
+ push   %r12
+ push   %rbx
+-mov    (%rsi),%rax
+-mov    %rax,-0x18(%rsp)
+-mov    (%rdx),%rdx
+-mov    (%rdi),%r12
+-lea    0x0(,%rcx,4),%rdi
+-mov    %rcx,%rax
++sub    $0x10,%rsp
++test   %rcx,%rcx
++je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    (%rsi),%r8
++mov    0x8(%rsi),%rax
++mov    %r8,-0x8(%rsp)
++sub    %r8,%rax
++sar    $0x2,%rax
++mov    %rax,(%rsp)
++lea    0x0(,%rcx,4),%rsi
++lea    -0x1(%rcx),%rax
++mov    %rax,-0x70(%rsp)
++mov    $0x10,%eax
++mov    %rax,-0x68(%rsp)
++xor    %r14d,%r14d
++movq   $0x0,-0x60(%rsp)
++xor    %eax,%eax
++mov    %rdx,-0x40(%rsp)
++mov    %rdi,-0x80(%rsp)
++mov    %rsi,-0x50(%rsp)
++mov    %rax,%r11
++imul   %rcx,%r11
++mov    %rsi,%r8
++mov    %rax,-0x38(%rsp)
++imul   %rax,%r8
++mov    %r8,-0x20(%rsp)
++mov    (%rdx),%rbx
++mov    0x8(%rdx),%r12
++sub    %rbx,%r12
++sar    $0x2,%r12
++lea    0x4(%rbx),%rax
++mov    %rax,-0x28(%rsp)
++lea    0x10(%rbx),%r10
++mov    %rbx,-0x30(%rsp)
++movq   $0x0,-0x58(%rsp)
++xor    %ebp,%ebp
++xor    %r9d,%r9d
++mov    %r11,-0x78(%rsp)
++data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++cmp    %rbp,%r12
++mov    %rbp,%r15
++cmova  %r12,%r15
++mov    %r9,%rax
+ imul   %rcx,%rax
+-lea    (%rdx,%rax,4),%rax
+-mov    %rax,-0x28(%rsp)
+-lea    (%r12,%rcx,4),%rax
+-mov    %rax,-0x30(%rsp)
+-mov    %rcx,%r10
+-and    $0xfffffffffffffff8,%r10
+-lea    -0x1(%rcx),%r11
+-mov    %rdx,-0x40(%rsp)
+-lea    0x10(%rdx),%rax
+-mov    %rax,-0x38(%rsp)
+-lea    0x10(%r12),%r14
+-xor    %r8d,%r8d
+-mov    %r12,-0x20(%rsp)
+-jmp    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-nopw   0x0(%rax,%rax,1)
+-mov    -0x10(%rsp),%r8
+-inc    %r8
+-add    %rdi,%r14
+-add    %rdi,%r12
+-cmp    %rcx,%r8
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-test   %rdi,%rdi
+-sets   %dl
+-mov    %rdi,%rax
+-imul   %r8,%rax
+-mov    -0x20(%rsp),%rbx
+-lea    (%rbx,%rax,1),%rsi
+-add    -0x30(%rsp),%rax
+-mov    %r8,-0x10(%rsp)
+-imul   %rcx,%r8
+-mov    -0x18(%rsp),%r9
+-lea    (%r9,%r8,4),%r13
+-lea    (%rbx,%r8,4),%r8
+-mov    %r8,-0x8(%rsp)
+-cmp    -0x28(%rsp),%rsi
+-setb   %sil
+-mov    -0x40(%rsp),%r8
+-cmp    %rax,%r8
+-setb   %al
+-and    %sil,%al
+-or     %dl,%al
+-mov    %r8,%rdx
+-mov    -0x38(%rsp),%rbx
++mov    %r12,%rdx
++sub    %rax,%rdx
++mov    $0x0,%r13d
++cmovae %rdx,%r13
++lea    (%r9,%r11,1),%r8
++cmp    %r8,(%rsp)
++jbe    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    %r9,-0x48(%rsp)
++mov    %r12,%r9
++sub    %rax,%r9
++mov    $0x0,%eax
++cmovb  %rax,%r9
++mov    (%rdi),%rax
++mov    0x8(%rdi),%rsi
++sub    %rax,%rsi
++sar    $0x2,%rsi
++cmp    %r11,%rsi
++mov    %r11,%rdx
++cmova  %rsi,%rdx
++sub    %r11,%rdx
++mov    -0x70(%rsp),%r11
++cmp    %r11,%rdx
++mov    -0x78(%rsp),%rdi
++cmovb  %rdx,%r11
++cmp    %r9,%r11
++cmovae %r9,%r11
++mov    -0x8(%rsp),%r9
++mov    (%r9,%r8,4),%r8d
++inc    %r11
++mov    $0x0,%r9d
++mov    %r11,0x8(%rsp)
++cmp    $0x8,%r11
++mov    %rdi,%r11
++mov    -0x80(%rsp),%rdi
++jbe    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    -0x50(%rsp),%r9
++imul   -0x48(%rsp),%r9
++mov    -0x28(%rsp),%rdi
++add    %r9,%rdi
++mov    %rdi,-0x10(%rsp)
++mov    -0x20(%rsp),%rdi
++add    %rax,%rdi
++mov    %rdi,-0x18(%rsp)
++cmp    %r11,%rsi
++mov    %r11,%rdi
++cmova  %rsi,%r11
++sub    %rdi,%r11
++mov    -0x70(%rsp),%rdi
++cmp    %rdi,%r11
++cmovae %rdi,%r11
++cmp    %r13,%r11
++cmovae %r13,%r11
++mov    -0x10(%rsp),%rdi
++lea    (%rdi,%r11,4),%rdi
++mov    -0x18(%rsp),%r13
++cmp    %rdi,%r13
++jae    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++add    -0x30(%rsp),%r9
++lea    0x4(,%r11,4),%rdi
++add    %r13,%rdi
++cmp    %rdi,%r9
++jae    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+ xor    %r9d,%r9d
+ jmp    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-inc    %r9
+-add    %rdi,%rbx
+-add    %rdi,%rdx
+-cmp    %rcx,%r9
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-cmp    $0x8,%rcx
+-setb   %r8b
+-mov    0x0(%r13,%r9,4),%esi
+-or     %al,%r8b
+-test   $0x1,%r8b
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-xor    %r8d,%r8d
+-jmp    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-movd   %esi,%xmm0
++data16 data16 cs nopw 0x0(%rax,%rax,1)
++add    -0x58(%rsp),%r15
++mov    0x8(%rsp),%r11
++mov    %r11d,%r9d
++and    $0x7,%r9d
++mov    $0x8,%edi
++cmove  %rdi,%r9
++sub    %r9,%r11
++movd   %r8d,%xmm0
+ pshufd $0x0,%xmm0,%xmm0
++cmp    %r15,%rdx
++cmovb  %rdx,%r15
++mov    -0x68(%rsp),%rdx
++lea    (%rax,%rdx,1),%rdi
++mov    -0x70(%rsp),%rdx
++cmp    %rdx,%r15
++cmovae %rdx,%r15
++sub    %r9,%r15
++inc    %r15
+ pshufd $0xf5,%xmm0,%xmm1
+-xor    %r15d,%r15d
++xor    %r13d,%r13d
+ data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-movdqu -0x10(%rbx,%r15,4),%xmm2
+-movdqu (%rbx,%r15,4),%xmm3
++movdqu -0x10(%r10,%r13,4),%xmm2
++movdqu (%r10,%r13,4),%xmm3
+ pshufd $0xf5,%xmm2,%xmm4
+ pmuludq %xmm0,%xmm2
+ pshufd $0xe8,%xmm2,%xmm2
+@@ -92,45 +149,49 @@
+ pmuludq %xmm1,%xmm4
+ pshufd $0xe8,%xmm4,%xmm4
+ punpckldq %xmm4,%xmm3
+-movdqu -0x10(%r14,%r15,4),%xmm4
++movdqu -0x10(%rdi,%r13,4),%xmm4
+ paddd  %xmm2,%xmm4
+-movdqu (%r14,%r15,4),%xmm2
++movdqu (%rdi,%r13,4),%xmm2
+ paddd  %xmm3,%xmm2
+-movdqu %xmm4,-0x10(%r14,%r15,4)
+-movdqu %xmm2,(%r14,%r15,4)
+-add    $0x8,%r15
+-cmp    %r15,%r10
+-jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-mov    %r10,%r8
+-cmp    %rcx,%r10
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-mov    %r8,%r15
+-test   $0x1,%cl
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-mov    %r9,%r15
+-imul   %rcx,%r15
+-mov    -0x40(%rsp),%rbp
+-lea    0x0(,%r15,4),%r15
+-add    %rbp,%r15
+-mov    (%r15,%r8,4),%r15d
+-imul   %esi,%r15d
+-mov    -0x8(%rsp),%rbp
+-add    %r15d,0x0(%rbp,%r8,4)
+-mov    %r8,%r15
+-or     $0x1,%r15
+-cmp    %r11,%r8
+-je     <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-nopl   0x0(%rax,%rax,1)
+-mov    (%rdx,%r15,4),%r8d
+-imul   %esi,%r8d
+-add    %r8d,(%r12,%r15,4)
+-mov    0x4(%rdx,%r15,4),%r8d
+-imul   %esi,%r8d
+-add    %r8d,0x4(%r12,%r15,4)
+-add    $0x2,%r15
+-cmp    %r15,%rcx
+-jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-jmp    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++movdqu %xmm4,-0x10(%rdi,%r13,4)
++movdqu %xmm2,(%rdi,%r13,4)
++add    $0x8,%r13
++cmp    %r13,%r15
++jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    %r11,%r9
++mov    -0x80(%rsp),%rdi
++mov    -0x78(%rsp),%r11
++add    -0x60(%rsp),%rax
++lea    (%r9,%rbp,1),%rdx
++cmp    %rdx,%r12
++jbe    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++lea    (%r14,%r9,1),%rdx
++cmp    %rdx,%rsi
++jbe    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    (%rbx,%r9,4),%edx
++imul   %r8d,%edx
++add    %edx,(%rax,%r9,4)
++inc    %r9
++cmp    %r9,%rcx
++jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    -0x48(%rsp),%r9
++inc    %r9
++mov    -0x50(%rsp),%rsi
++add    %rsi,%r10
++add    %rcx,%rbp
++sub    %rcx,-0x58(%rsp)
++add    %rsi,%rbx
++cmp    %rcx,%r9
++jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov    -0x38(%rsp),%rax
++inc    %rax
++add    %rsi,-0x68(%rsp)
++add    %rsi,-0x60(%rsp)
++add    %rcx,%r14
++cmp    %rcx,%rax
++mov    -0x40(%rsp),%rdx
++jne    <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++add    $0x10,%rsp
+ pop    %rbx
+ pop    %r12
+ pop    %r13
+@@ -138,4 +199,5 @@
+ pop    %r15
+ pop    %rbp
+ ret
+-data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++ud2
++xchg   %ax,%ax

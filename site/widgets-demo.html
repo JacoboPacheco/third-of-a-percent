@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widgets demo</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --paper: #ffffff; --ink: #1b1b1b; --ink-2: #4a4a4a; --ink-3: #727272; --rule: #d6d6d1; --rule-2: #ebebe7;
+    --hover: #f6f6f2; --sel: #f0f0ea; --lost: #c2461e; --kept: #1f5aa6; --none: #8d8d88; --simd-tint: #e8eff9; --check-hl: #fcefb4;
+    --serif: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --accent: #1f5aa6; --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); font-size: 18px; line-height: 1.6; }
+  main { max-width: 52rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+  h1 { font-size: 1.3rem; margin: 0 0 .3rem; }
+  p.lede { color: var(--ink-2); margin: 0 0 2rem; font-size: .95rem; }
+  .widget { margin: 0 0 3rem; padding: 0 0 2rem; border-bottom: 1px solid var(--rule); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Widgets demo</h1>
+  <p class="lede">Standalone test page for site/widgets/*. Not linked from the paper. Data is read from data/.</p>
+  <div class="widget" id="w-placement"></div>
+  <div class="widget" id="w-mitigation"></div>
+  <div class="widget" id="w-programs"></div>
+</main>
+<script type="module">
+  const ctx = { base: 'data/', tokens: getComputedStyle(document.documentElement) };
+  window.__widgets = {};
+  for (const name of ['placement', 'mitigation', 'programs']) {
+    try {
+      const m = await import(`./widgets/${name}.js`);
+      window.__widgets[name] = m.mount(document.getElementById('w-' + name), ctx);
+    } catch (e) {
+      document.getElementById('w-' + name).textContent = `widget ${name} failed to load: ${e.message}`;
+      console.error(e);
+    }
+  }
+  document.documentElement.dataset.ready = '1';
+</script>
+</body>
+</html>

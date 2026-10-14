@@ -1,0 +1,122 @@
+{
+ "gaps_file": "gaps/GAPS.md",
+ "main_rows": [
+  "google",
+  "queue",
+  "nader",
+  "nist",
+  "readyset"
+ ],
+ "none_found": "In this search we found no public per-loop measurement of libc++\u2019s FAST mode (we looked in the LLVM documentation, the LLVM Discourse, GitHub issues, Phoronix, Chromium\u2019s spanification commits and the Microsoft STL hardening documentation); we found none, which is not the same as none existing.",
+ "not_read": [
+  {
+   "name": "Shnatsel, \u201cHow to avoid bounds checks in Rust (without unsafe!)\u201d",
+   "url": "https://shnatsel.medium.com/how-to-avoid-bounds-checks-in-rust-without-unsafe-f65e618b4c1e"
+  },
+  {
+   "name": "Apple, -fbounds-safety, EuroLLVM 2025 slides",
+   "url": "https://www.llvm.org/devmtg/2025-04/slides/tutorial/olsonn-stefaniski_fbounds.pdf"
+  },
+  {
+   "name": "GCC\u2019s _GLIBCXX_ASSERTIONS discussions (gcc-patches 2022; Ubuntu LP #2016042)",
+   "url": ""
+  },
+  {
+   "name": "Denis Bakhvalov, \u201cCode alignment issues\u201d",
+   "url": "https://easyperf.net/blog/2018/01/18/Code_alignment_issues"
+  }
+ ],
+ "sources": [
+  {
+   "d_short": "A fleet average; no loop shapes or machine code",
+   "differs": "A fleet average on production workloads with PGO builds; no per-loop breakdown, machine code or controls a stranger can rerun. This study tests none of its numbers.",
+   "id": "google",
+   "m_short": "An average 0.30% across Google\u2019s services, with PGO builds",
+   "measured": "As reported: an average 0.30% performance impact across Google\u2019s services; fixing one unnecessary check took the overhead from 0.35% to 0.3%; PGO further improved performance; a handful of performance-critical code paths still use explicitly unsafe accesses.",
+   "name": "Google Security Blog, Nov 15 2024",
+   "short": "Google\u2019s post (2024)",
+   "url": "https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html"
+  },
+  {
+   "d_short": "The same fleet; PGO tested here only with the timed input as training",
+   "differs": "The same fleet, with its method; no loop shapes. This study\u2019s one PGO test (training input equal to the timed input, one CPU model) did not make the cost vanish in most rows; its census (the expensive shape is rare in general code) is consistent with few unsafe sites, a link not tested here.",
+   "id": "queue",
+   "m_short": "PGO critical; five services opted out; the unsafe-access API used in seven places",
+   "measured": "As reported: key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
+   "name": "Dionne, Rebert, Shavrick, Varlamov, \u201cPractical Security in Production: Hardening the C++ Standard Library at Massive Scale\u201d, ACM Queue 23(5), 2025",
+   "short": "ACM Queue sequel (2025)",
+   "url": "https://queue.acm.org/detail.cfm?id=3773097"
+  },
+  {
+   "differs": "This study\u2019s PGO column trains on the timed input, so it tests his PGO point only in part (it did not make the cost vanish in most rows on one CPU model); its loops are the cases where the check stays inside the loop.",
+   "id": "carruth",
+   "measured": "An expert account, not a measurement. As reported: credits LLVM\u2019s check optimization and PGO; says without PGO the overhead would not be tolerable for most performance-sensitive workloads; warns that benchmarks of pervasive patterns skew toward confirmation bias.",
+   "name": "Chandler Carruth, \u201cStory-time: C++, bounds checking, performance, and compilers\u201d, Nov 2024",
+   "short": "Carruth (2024)",
+   "url": "https://chandlerc.blog/posts/2024/11/story-time-bounds-checking/"
+  },
+  {
+   "d_short": "Rust; layout not controlled, here it is",
+   "differs": "Rust, many real benchmarks, several machines. As reported, it attributes checks-make-it-faster results to code layout and inlining heuristics without controlling layout; this study controls layout on eight C++ loops.",
+   "id": "nader",
+   "m_short": "76.4% of benchmarks of top Rust crates pay little, nothing or less",
+   "measured": "As reported: 76.4% of benchmarks of top Rust crates show little, no or negative cost from unchecked indexing; 23.6% are more than 1% slower with checks and 11.8% more than 1% faster; brotli\u2019s overhead 7.7%, 6.5% on an older rustc, 2.5% on Apple M1; about 200 benchmarks with 95% intervals.",
+   "name": "Popescu, Xu, Apostolakis, August, Levy, \u201cSafer at Any Speed\u201d (NADER), OOPSLA 2021",
+   "short": "NADER, OOPSLA 2021 (Rust)",
+   "url": "https://www.cs.princeton.edu/~npopescu/papers/nader.pdf"
+  },
+  {
+   "d_short": "One forward shape; vectorization not analysed",
+   "differs": "Bare metal and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test.",
+   "id": "nist",
+   "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, bare metal)",
+   "measured": "As reported: GCC 4.6.2 on one bare-metal Xeon with frequency scaling off, 63 runs per cell; vector.at(i) 0.881% (\u00b10.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
+   "name": "Flater and Guthrie (NIST), \u201cA Case Study of Performance Degradation Attributable to Run-Time Bounds Checks on C++ Vector Access\u201d, J. Res. NIST 118, 2013",
+   "short": "NIST (2013)",
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4487316/"
+  },
+  {
+   "d_short": "A whole program; no intervals or controls",
+   "differs": "A whole real program with every check removed; no intervals, A/A or machine code. This study times loops, not a whole program.",
+   "id": "readyset",
+   "m_short": "Every check removed from one Rust program: within the noise",
+   "measured": "As reported: a rustc patched to drop every bounds check; 1,227 checks per warm read; results well within the noise threshold; no hardware or run count stated.",
+   "name": "Readyset, \u201cHow much does Rust\u2019s bounds checking actually cost?\u201d",
+   "short": "Readyset (blog)",
+   "url": "https://readyset.io/blog/bounds-checks"
+  },
+  {
+   "differs": "This study does a causal analysis of one layout effect (the forward add, section 3) but samples only two layouts there (section 3b adds four placements, still not many).",
+   "id": "mytkowicz",
+   "measured": "As reported: link order and environment size change measured speedups enough to reverse conclusions; none of 133 surveyed papers adequately addressed it; the remedy is setup randomization and causal analysis.",
+   "name": "Mytkowicz, Diwan, Hauswirth, Sweeney, \u201cProducing Wrong Data Without Doing Anything Obviously Wrong!\u201d, ASPLOS 2009",
+   "short": "Mytkowicz et al. (2009)",
+   "url": "https://sape.inf.usi.ch/publications/asplos09.html"
+  },
+  {
+   "differs": "Many layout samples per build; this study has two (as compiled and aligned) on a current toolchain.",
+   "id": "stabilizer",
+   "measured": "As reported: rerandomizes code, stack and heap layout at run time, because a single binary is just one sample from the space of program layouts; LLVM 3.1 only, unmaintained.",
+   "name": "Curtsinger and Berger, Stabilizer, ASPLOS 2013",
+   "short": "Stabilizer (2013)",
+   "url": "https://github.com/ccurtsinger/stabilizer"
+  },
+  {
+   "differs": "A noise history drawn beside every result; Figure 1 here draws only each job\u2019s ratio and the A/A band.",
+   "id": "rustcperf",
+   "measured": "As reported: a change counts as significant only if it is an outlier against the benchmark\u2019s historical noise (an IQR fence), with a compare view per benchmark.",
+   "name": "rustc-perf, the Rust compiler\u2019s benchmark dashboard and its comparison-analysis docs",
+   "short": "rustc-perf",
+   "url": "https://github.com/rust-lang/rustc-perf/blob/master/docs/comparison-analysis.md"
+  },
+  {
+   "differs": "A stranger reruns a micro-benchmark in seconds in a browser; this study needs a checkout of its repository and GitHub Actions.",
+   "id": "quickbench",
+   "measured": "As reported: browser-run micro-benchmarks with a compiler, standard-library and flags selector, a disassembly view and share links.",
+   "name": "Quick C++ Benchmark",
+   "short": "Quick C++ Benchmark",
+   "url": "https://quick-bench.com/"
+  }
+ ],
+ "summary": "Google\u2019s post reports an average 0.30% performance impact across its services, with profile-guided optimization (PGO) improving it further. Its 2025 sequel in ACM Queue, as reported, calls PGO critical, says only five services opted out entirely, and that the fine-grained unsafe-access API was used in just seven distinct places. The closest per-benchmark study, NADER (OOPSLA 2021, on Rust), reports 76.4% of benchmarks of top crates with little, no or negative cost from unchecked indexing; NIST (2013) reports vector.at(i) 0.881% slower than a C array on sequential writes. As reported, Mytkowicz and colleagues (2009) found that link order and environment size can reverse a measured speedup, and Stabilizer (2013) treats one binary as one sample of possible layouts; that is why this study times an aligned build and a layout A/A."
+}

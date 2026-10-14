@@ -1,0 +1,4960 @@
+{
+ "control": {
+  "expected_lost": [
+   "k04_rev",
+   "k05_stride2",
+   "k08_matmul"
+  ],
+  "observed_lost": [
+   "k04_rev",
+   "k05_stride2",
+   "k08_matmul"
+  ],
+  "ok": true,
+  "row": "clang1810 (x86-64 clang 18.1.0), x86-64, -O2, libc++ FAST vs NONE"
+ },
+ "counts": {
+  "builds": 168,
+  "cells": 672,
+  "compilers": 28,
+  "rows": 84
+ },
+ "kernels": [
+  "k01_sum_fwd",
+  "k02_add_fwd",
+  "k03_stencil",
+  "k04_rev",
+  "k05_stride2",
+  "k06_gather",
+  "k07_hist",
+  "k08_matmul"
+ ],
+ "links": {
+  "k01_sum_fwd": "https://godbolt.org/z/655efP99r",
+  "k02_add_fwd": "https://godbolt.org/z/aqh4c3EM8",
+  "k03_stencil": "https://godbolt.org/z/MosWGxaeo",
+  "k04_rev": "https://godbolt.org/z/EGPjvWTP5",
+  "k05_stride2": "https://godbolt.org/z/d1eYx5hPj",
+  "k06_gather": "https://godbolt.org/z/W7h1GEMvj",
+  "k07_hist": "https://godbolt.org/z/MT3Th6drT",
+  "k08_matmul": "https://godbolt.org/z/zdnz5j3Ga"
+ },
+ "note": "compile-only: which loops lose vectorization, not what they cost; clang N is paired with the libc++ Compiler Explorer provides (assumed to be libc++ N)",
+ "rows": [
+  {
+   "compiler_id": "clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 1)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "the cost-model indicates that vectorization is not beneficial"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 1)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 8, interleaved count: 4)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "clang_trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "clang_trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 2, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "clang_trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "clang_trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k03_stencil": "vectorized loop (vectorization width: 8, interleaved count: 4)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "armv8-clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "armv8-clang1600",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_ASSERTIONS=1",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "16.0.0"
+  },
+  {
+   "compiler_id": "armv8-clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "armv8-clang1701",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_ENABLE_HARDENED_MODE=1",
+   "macro_effective": true,
+   "major": 17,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "17.0.1"
+  },
+  {
+   "compiler_id": "armv8-clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang1810",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 18,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "18.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang1910",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 19,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: could not determine number of loop iterations",
+    "k05_stride2": "loop not vectorized: could not determine number of loop iterations",
+    "k06_gather": "loop not vectorized: could not determine number of loop iterations",
+    "k07_hist": "loop not vectorized: could not determine number of loop iterations",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "19.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2010",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 20,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "20.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2110",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 21,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Cannot vectorize early exit loop with writes to memory",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "21.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2210",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 22,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Cannot vectorize early exit loop with more than one early exit",
+    "k06_gather": "loop not vectorized: Cannot vectorize early exit loop",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": true,
+     "none": true
+    }
+   },
+   "version": "22.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang2310",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 23,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "23.1.0"
+  },
+  {
+   "compiler_id": "armv8-clang-trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "armv8-clang-trunk",
+   "family": "clang",
+   "lost": [
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_LIBCPP_HARDENING_MODE_FAST",
+   "macro_effective": true,
+   "major": 0,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "vectorized loop (vectorization width: 4, interleaved count: 4)",
+    "k02_add_fwd": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k03_stencil": "vectorized loop (vectorization width: 4, interleaved count: 2)",
+    "k04_rev": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k05_stride2": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k06_gather": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k07_hist": "loop not vectorized: Early exit loop with store but no supported condition load",
+    "k08_matmul": "loop not vectorized: Early exit loop with store but no supported condition load"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "trunk"
+  },
+  {
+   "compiler_id": "g125",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "12.5"
+  },
+  {
+   "compiler_id": "g125",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "12.5"
+  },
+  {
+   "compiler_id": "g125",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "12.5"
+  },
+  {
+   "compiler_id": "g125",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "12.5"
+  },
+  {
+   "compiler_id": "g134",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "13.4"
+  },
+  {
+   "compiler_id": "g134",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "13.4"
+  },
+  {
+   "compiler_id": "g134",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "13.4"
+  },
+  {
+   "compiler_id": "g134",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "13.4"
+  },
+  {
+   "compiler_id": "g144",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "14.4"
+  },
+  {
+   "compiler_id": "g144",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "14.4"
+  },
+  {
+   "compiler_id": "g144",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "14.4"
+  },
+  {
+   "compiler_id": "g144",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "optimized: loop vectorized using 32 byte vectors",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "14.4"
+  },
+  {
+   "compiler_id": "g153",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "15.3"
+  },
+  {
+   "compiler_id": "g153",
+   "family": "gcc",
+   "lost": [
+    "k04_rev",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "15.3"
+  },
+  {
+   "compiler_id": "g153",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "15.3"
+  },
+  {
+   "compiler_id": "g153",
+   "family": "gcc",
+   "lost": [
+    "k04_rev",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "15.3"
+  },
+  {
+   "compiler_id": "g162",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "16.2"
+  },
+  {
+   "compiler_id": "g162",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors and unroll factor 4",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "16.2"
+  },
+  {
+   "compiler_id": "g162",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors and unroll factor 8",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "16.2"
+  },
+  {
+   "compiler_id": "g162",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 32 byte vectors and unroll factor 8",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "optimized: loop vectorized using 32 byte vectors and unroll factor 8",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "x86-64-v3",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "16.2"
+  },
+  {
+   "compiler_id": "arm64g1250",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "12.5.0"
+  },
+  {
+   "compiler_id": "arm64g1250",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 12,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "12.5.0"
+  },
+  {
+   "compiler_id": "arm64g1340",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "13.4.0"
+  },
+  {
+   "compiler_id": "arm64g1340",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k03_stencil",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 13,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "13.4.0"
+  },
+  {
+   "compiler_id": "arm64g1430",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "14.3.0"
+  },
+  {
+   "compiler_id": "arm64g1430",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k04_rev",
+    "k05_stride2",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 14,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "optimized: loop vectorized using 16 byte vectors",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "14.3.0"
+  },
+  {
+   "compiler_id": "arm64g1520",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "15.2.0"
+  },
+  {
+   "compiler_id": "arm64g1520",
+   "family": "gcc",
+   "lost": [
+    "k04_rev",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 15,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "15.2.0"
+  },
+  {
+   "compiler_id": "arm64g1610",
+   "family": "gcc",
+   "lost": [],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O2",
+   "remark": {
+    "k01_sum_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": false
+    },
+    "k03_stencil": {
+     "checked": false,
+     "none": false
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": false
+    },
+    "k05_stride2": {
+     "checked": false,
+     "none": false
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": false
+    }
+   },
+   "version": "16.1.0"
+  },
+  {
+   "compiler_id": "arm64g1610",
+   "family": "gcc",
+   "lost": [
+    "k02_add_fwd",
+    "k04_rev",
+    "k08_matmul"
+   ],
+   "macro": "_GLIBCXX_ASSERTIONS",
+   "macro_effective": true,
+   "major": 16,
+   "opt": "-O3",
+   "remark": {
+    "k01_sum_fwd": "optimized: loop vectorized using 16 byte vectors and unroll factor 4",
+    "k02_add_fwd": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k03_stencil": "optimized: loop vectorized using 16 byte vectors and unroll factor 4",
+    "k04_rev": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k05_stride2": "optimized: loop vectorized using 16 byte vectors and unroll factor 4",
+    "k06_gather": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k07_hist": "no vectorization remark (GCC reports only the loops it vectorizes)",
+    "k08_matmul": "no vectorization remark (GCC reports only the loops it vectorizes)"
+   },
+   "target": "aarch64",
+   "vec": {
+    "k01_sum_fwd": {
+     "checked": true,
+     "none": true
+    },
+    "k02_add_fwd": {
+     "checked": false,
+     "none": true
+    },
+    "k03_stencil": {
+     "checked": true,
+     "none": true
+    },
+    "k04_rev": {
+     "checked": false,
+     "none": true
+    },
+    "k05_stride2": {
+     "checked": true,
+     "none": true
+    },
+    "k06_gather": {
+     "checked": false,
+     "none": false
+    },
+    "k07_hist": {
+     "checked": false,
+     "none": false
+    },
+    "k08_matmul": {
+     "checked": false,
+     "none": true
+    }
+   },
+   "version": "16.1.0"
+  }
+ ],
+ "source": "ce-sweep/results.json",
+ "source_sha256": "470e07dffeaec8350a80e0639d220fd708fe0788f87918a3ff19845733862ee2",
+ "summary": {
+  "clang_fwd_lost": 0,
+  "clang_rev_s2_lost": 54,
+  "clang_rows": 54,
+  "gcc_o2_lost": 0,
+  "gcc_o3_lost": {
+   "k01_sum_fwd": 0,
+   "k02_add_fwd": 12,
+   "k03_stencil": 8,
+   "k04_rev": 15,
+   "k05_stride2": 11,
+   "k06_gather": 0,
+   "k07_hist": 0,
+   "k08_matmul": 15
+  },
+  "gcc_o3_rows": 15,
+  "gcc_rows": 30,
+  "majors": [
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23
+  ]
+ },
+ "targets": {
+  "aarch64": "AArch64 (armv8-a)",
+  "x86-64": "x86-64 (SSE2)",
+  "x86-64-v3": "x86-64-v3 (AVX2)"
+ }
+}

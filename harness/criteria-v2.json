@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "version": 2,
+  "written": "Sun Oct 11 2026 03:10 EDT (by `date`), stage S3, AFTER the S1 run (38119008371), the S2 run (38119607308) and the investigation run (38119645255) existed, and BEFORE the first S3 matrix run of .github/workflows/measure.yml; no S3 number existed when this file was committed",
+  "changelog": [
+    "v2 (stage S3). Written after S1 and S2 results existed, so the new rules below are NOT pre-registered in the sense criteria.json (v1) was: they were written knowing those numbers. Why they exist: the investigation (investigate/FINDINGS.md) found that the FAST/NONE ratio of the forward kernel k02_add_fwd (1.6x on EPYC 7763 and 9V74, 0.98x on 9V45, 1.075x at L1 on the Xeon 8573C of S2) comes from where the hot loop lands: under FAST clang picks interleave 1 and the 31-byte SIMD loop straddles a 64-byte boundary. With -falign-loops=64 the FAST/NONE ratio became 0.82 to 1.0 on all three CPUs. A byte-identical A/A cannot see this kind of noise, and the same binary behaves differently on different CPU models.",
+    "What v2 adds: (1) a second NONE/FAST pair built with -falign-loops=64 for every kernel and program (the 'loops aligned' column beside 'as compiled'); (2) a layout A/A (NONE against NONE built with -falign-loops=64); (3) each build's loop placement recorded; (4) one verdict per runner CPU model, and a page-level line that is a map only when every CPU model with a usable A/A agrees.",
+    "What v2 does not change: every rule and threshold of criteria.json (v1) is copied below unchanged in 'design', 'classes_from_remarks' and 'verdict'. criteria.json itself stays as the record, and every S3 results.json also carries 'verdict_v1': the v1 rules applied to its as-compiled column, so the pre-registered answer stays visible beside the v2 one.",
+    "Rule for changes, as in v1: no threshold here is changed, loosened or added after a result from the S3 harness exists. If one looks unfair, the result is reported against it as written and the objection is written beside it."
+  ],
+  "supersedes": "criteria.json (v1) as the rule that decides results.json 'verdict' for runs that name this file in run.criteria_file; criteria.json keeps deciding 'verdict_v1' and every earlier run",
+  "rule_for_changes": "No threshold in this file is changed, loosened or added after a result from the S3 harness exists.",
+  "design": {
+    "kernels": {
+      "k01_sum_fwd": "s += a[i], i up, int64 accumulator",
+      "k02_add_fwd": "c[i] = a[i] + b[i], i up",
+      "k03_stencil": "c[i] = a[i-1] + a[i] + a[i+1]",
+      "k04_rev": "c[i] = a[i] * 2, i counting down",
+      "k05_stride2": "c[i] = a[2*i] + a[2*i+1]",
+      "k06_gather": "c[i] = a[idx[i]], idx a fixed-seed permutation of 0..n-1",
+      "k07_hist": "h[a[i] & 255]++, h has 256 counters",
+      "k08_matmul": "d x d, order i-k-j, c[i*d+j] += a[i*d+k] * b[k*d+j], inputs masked to 0..3 so no int32 overflows"
+    },
+    "element_type": "int32_t in std::vector, accessed through operator[]; each kernel a noinline function kern_<id>",
+    "size_classes": "working set counts every array of the kernel; L1 = half of L1d, L2 = half of L2, RAM = four times the last-level cache capped at 256 MiB; cache sizes from /sys/devices/system/cpu/cpu0/cache",
+    "in_cache": [
+      "L1",
+      "L2"
+    ],
+    "skipped_cells": {
+      "k08_matmul.RAM": "not measured: at a RAM-sized working set one i-k-j call streams all of b once per row, an estimated 10 s or more per call and over 10 minutes per cell; RAM cells are not in N or the limits"
+    },
+    "builds": {
+      "common": "clang++-18 -O2 -std=c++20 -stdlib=libc++ (baseline x86-64, no -march)",
+      "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+      "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+      "novec": "the NONE flags plus -fno-vectorize (timing positive control)",
+      "aa": "the NONE binary of the A/A kernel copied to a second path; the run aborts if the two sha256 differ"
+    },
+    "aa_pair": "k02_add_fwd at the L1 size, NONE against its byte-identical copy, timed like every other pair, in every run",
+    "timing": {
+      "reps_per_side": 20,
+      "order": "ABBA repeated (A B B A A B B A ...), one process per repetition, pinned with taskset -c to one CPU",
+      "clock": "clock_gettime(CLOCK_MONOTONIC) inside the binary around the timed loop; process start, input fill and one warm-up call excluded",
+      "inner_iterations": "calibrated once per cell on the NONE build to about 75 ms per process, reused unchanged for every build of that cell",
+      "ratio": "median(FAST) / median(NONE)",
+      "interval": "percentile bootstrap, 10000 resamples of each side independently, seed 20261011, 95 %, harness/stats.py",
+      "half_width_pct": "(ci95_hi - ci95_lo) / 2 * 100"
+    },
+    "novec_pairs": "timed only for kernels vectorized in NONE (from the remarks), at the in-cache sizes",
+    "cachegrind": "valgrind --tool=cachegrind --cache-sim=no at the L1 size, 20 inner iterations; Ir attributed to kern_<id> divided by the number of calls (inner iterations plus one warm-up); instructions, not time"
+  },
+  "classes_from_remarks": {
+    "on_axis": "a kernel whose loop clang reports as vectorized in the NONE build",
+    "kept": "on_axis and vectorized in FAST: the forward class (negative control)",
+    "lost": "on_axis and not vectorized in FAST: the class that pays",
+    "off_axis": "not vectorized in NONE: reported, not used for N, the forward limit or the controls"
+  },
+  "verdict": {
+    "aa_half_width_max_pct": 2.0,
+    "forward_point_max_ratio": 1.02,
+    "forward_ci_hi_limit": "1 + max(0.02, 2 * aa_half_width_pct / 100)",
+    "forward_ci_hi_floor_pct": 2.0,
+    "forward_ci_hi_aa_multiplier": 2.0,
+    "lost_ci_lo_min_ratio": 1.5,
+    "ram_cells": "reported, never in N, the forward limit, the lost minimum or the positive control",
+    "positive_control_seen": "at least one in-cache cell of an on_axis kernel has a NOVEC/NONE ratio with ci95_lo > 1 + aa_half_width_pct / 100",
+    "order": [
+      "INCONCLUSIVE (A/A control) if the A/A half-width exceeds aa_half_width_max_pct",
+      "INCONCLUSIVE (checksum) if any measured cell has checksum_match false",
+      "INCONCLUSIVE (positive control) if the positive control is not seen",
+      "INCONCLUSIVE (negative control) if no kernel is in the kept class",
+      "MAP if every in-cache cell of a kept kernel has ratio <= forward_point_max_ratio AND ci95_hi <= the forward ci_hi limit, AND every in-cache cell of a lost kernel has ci95_lo >= lost_ci_lo_min_ratio, AND at least one kernel is in the lost class",
+      "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel has ci95_lo above the forward ci_hi limit (X = the largest ci95_hi over those cells, as a percent above 1, floored at 0)",
+      "INCONCLUSIVE (mixed picture) otherwise"
+    ],
+    "N": "median of ratio over the in-cache cells of the lost kernels, with min and max; RAM cells not in N",
+    "forward_limit_pct": "the forward ci_hi limit as a percent: max(2.0, 2 * aa_half_width_pct)"
+  },
+  "v2": {
+    "scope": "one results.json = one Actions job = one runner; its verdict is the verdict for that runner's CPU model (run.runner.cpu_model)",
+    "align_flag": "-falign-loops=64",
+    "builds_added": {
+      "none_a64": "the NONE flags plus -falign-loops=64",
+      "fast_a64": "the FAST flags plus -falign-loops=64"
+    },
+    "pairs_added": {
+      "aligned": "fast_a64 against none_a64 for every cell and program, the same n and inner iterations as the as-compiled pair, ABBA, reps_per_side per side; stored in the cell's (program's) 'aligned' key",
+      "layout_aa": "none against none_a64 (the same source and mode, only the loop alignment differs) for every kernel at the in-cache sizes and for every program; stored in controls.layout_aa"
+    },
+    "placement_record": "for every kernel build (none, fast, novec, none_a64, fast_a64): each loop in kern_<id> with start, bytes, start_mod64, crosses64, windows64, extra_window, simd, innermost (harness/placement.py); for programs a whole-binary count",
+    "layout_aa_designated": [
+      "k02_add_fwd.L1",
+      "k02_add_fwd.L2"
+    ],
+    "layout_aa_half_width": "the largest half_width_pct among the designated layout A/A pairs present in the run",
+    "columns": {
+      "as_compiled": "the cell's ratio and ci95 (the v1 pair, unchanged)",
+      "aligned": "the cell's aligned.ratio and aligned.ci95"
+    },
+    "headline_column": "aligned: the forward rule, N and X are read from the loops-aligned pair; the as-compiled pair is shown beside it (verdict.n_as_compiled, and both columns in the lost rule)",
+    "placement_sensitive": "a kept-class (forward) in-cache cell whose two ratios disagree by more than the layout A/A half-width: 100 * |ratio - aligned.ratio| > layout_aa_half_width_pct. It is excluded from the forward rule and from X, and listed in verdict.placement_sensitive and in the line",
+    "off_axis_reading": "an off-axis in-cache cell (not vectorized in NONE, e.g. k06_gather, k07_hist) is described as paying for the check only when ci95_lo is above the forward ci_hi limit in BOTH columns; listed in verdict.off_axis, never in N, X or the form",
+    "order": [
+      "INCONCLUSIVE (A/A control) if the byte-identical A/A half-width exceeds aa_half_width_max_pct (2 %), as in v1",
+      "INCONCLUSIVE (checksum) if any cell has a NONE/FAST checksum mismatch in either column",
+      "INCONCLUSIVE (build control) if a cell lacks the aligned pair, or the aligned builds' remarks disagree with the as-compiled builds' vectorized flags",
+      "INCONCLUSIVE (layout control) if no designated layout A/A pair is present",
+      "INCONCLUSIVE (positive control) as in v1",
+      "INCONCLUSIVE (negative control) as in v1",
+      "MAP if at least one forward in-cache cell is left after the placement-sensitive exclusions, every such cell passes the v1 forward rule (ratio <= forward_point_max_ratio AND ci95_hi <= the forward ci_hi limit) on its aligned pair, every in-cache cell of a lost kernel has ci95_lo >= lost_ci_lo_min_ratio in BOTH columns, and at least one kernel is in the lost class",
+      "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel, placement-sensitive cells excluded, has ci95_lo above the forward ci_hi limit in either column (X = the largest ci95_hi of those cells in either column, as a percent above 1, floored at 0)",
+      "INCONCLUSIVE (mixed picture) otherwise"
+    ],
+    "N": "median of aligned.ratio over the in-cache cells of the lost kernels, with min and max; the same over the as-compiled ratios is verdict.n_as_compiled",
+    "forward_limit_pct": "as in v1: max(2.0, 2 * the byte-identical A/A half_width_pct)",
+    "line": "the v1 wording, prefixed with 'On <cpu_model>: ', naming the aligned column, and followed by the placement-sensitive cells with both ratios when there are any",
+    "page_level": {
+      "input": "every results.json of one workflow run (one per matrix job), grouped by run.runner.cpu_model; harness/combine.py writes combined.json",
+      "usable": "a results file whose byte-identical A/A half-width is at most aa_half_width_max_pct",
+      "cpu_form": "the form of the CPU model's usable files when they all agree; inconclusive when they disagree; a CPU model with no usable file is listed as excluded (A/A) and does not vote",
+      "form": "map only if at least one CPU model is usable and every usable CPU model's form is map; holds_everywhere only if every usable CPU model's form is holds_everywhere; otherwise inconclusive, and the line names which CPU model differs and why",
+      "N": "median of aligned.ratio over the lost kernels' in-cache cells pooled across the usable files that are map, with min and max; X = the largest X of those files"
+    }
+  }
+}

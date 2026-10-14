@@ -1,0 +1,79 @@
+name: investigate
+
+# Why does k02_add_fwd (a forward loop that stays vectorized) cost 1.6x under FAST on some runner
+# CPUs and nothing on others? Builds one-thing-changed variants of the kernel and times them.
+# Four jobs per run, each on its own runner, so one run draws up to four runner CPUs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: "timing rounds per configuration"
+        default: "15"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        draw: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner CPU (first, before anything else)
+        run: |
+          grep -m1 'model name' /proc/cpuinfo
+          lscpu
+          grep MHz /proc/cpuinfo || true
+          uname -r
+
+      - name: Install clang-18, libc++-18 (Ubuntu noble apt) and, if the kernel has a package, perf
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev
+          dpkg-query -W clang-18 libc++-18-dev
+          timeout 120 sudo apt-get install -y -qq "linux-tools-$(uname -r)" || timeout 120 sudo apt-get install -y -qq linux-tools-azure || echo "no perf package"
+
+      - name: Build the variants
+        run: bash investigate/build.sh investigate/build
+
+      - name: Where the hot loops sit
+        run: |
+          cd investigate/build
+          python3 ../loops.py none fast none_a64 fast_a64 none_il1 fast_il2 probe_none probe_fast | tee loops.jsonl
+
+      - name: Hardware counters, if this VM exposes them
+        continue-on-error: true
+        run: |
+          cd investigate/build
+          PERF=$(ls /usr/lib/linux-tools/*/perf 2>/dev/null | head -1)
+          [ -n "$PERF" ] || PERF=$(command -v perf || true)
+          [ -n "$PERF" ] || { echo "no perf binary"; exit 0; }
+          for v in none fast none_a64 fast_a64; do
+            echo "== $v n=1365"
+            sudo "$PERF" stat -e cycles,instructions,task-clock taskset -c 1 ./$v 1365 300000 2>&1 | tail -n 12
+          done | tee perf.txt
+
+      - name: Time every variant
+        env:
+          ROUNDS: ${{ inputs.rounds }}
+        run: python3 investigate/bench.py investigate/build "investigate/build/bench.json" "$ROUNDS"
+
+      - name: Name the result by the CPU
+        if: always()
+        run: |
+          cd investigate/build
+          grep -m1 'model name' /proc/cpuinfo | sed 's/.*: //' > cpu.txt
+          lscpu > lscpu.txt
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: investigate-${{ github.run_id }}-draw${{ matrix.draw }}
+          path: investigate/build/

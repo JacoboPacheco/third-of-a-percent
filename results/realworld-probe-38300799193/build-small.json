@@ -1,0 +1,325 @@
+{
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "libcxx_package": "1:18.1.3-1ubuntu1",
+  "builds": {
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "none_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64",
+   "fast_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64",
+   "none_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only",
+   "fast_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only"
+  },
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG: the census flags)"
+ },
+ "programs": {
+  "tinydnn": {
+   "program": "tinydnn",
+   "root": "tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5",
+   "sources": 0,
+   "c_sources": 0,
+   "builds": {
+    "none": {
+     "binary": "tinydnn.none",
+     "sha256": "2ce1216177b78371dbb344f5723609a44fe754f5d87c60c6010f6f2808fce645",
+     "bytes": 1461184,
+     "text_sha256": "7b81d61bf713779c4120200ef2514443d6bfd50c7c05718cc4f84c37eda14fc2",
+     "traps": 3,
+     "compile_seconds": 26.3,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/tinydnn.none realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "fast": {
+     "binary": "tinydnn.fast",
+     "sha256": "258494d1463160d071535d61718ade5ba51ed542065107df7b9aba099cd5da1d",
+     "bytes": 1465608,
+     "text_sha256": "ff11f01d62bdaeb363feea1aa742b1ab24a415ab5864210690ad36451af1a239",
+     "traps": 159,
+     "compile_seconds": 23.4,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/tinydnn.fast realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "none_a64": {
+     "binary": "tinydnn.none_a64",
+     "sha256": "177809203294cca8514fdd77a4e7d94dee27ad483e4fd27daf4243eab67937d6",
+     "bytes": 1489856,
+     "text_sha256": "ece76fbf7025a83a53c639465bd016e7c5f9ee2cf011f9dd781126fb1f1a6db9",
+     "traps": 3,
+     "compile_seconds": 21.8,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o rwbin/tinydnn.none_a64 realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "fast_a64": {
+     "binary": "tinydnn.fast_a64",
+     "sha256": "a99021a154d6129b3900cee8e644a70134281e93fb5fcf98de9ac77c1b9f6360",
+     "bytes": 1494280,
+     "text_sha256": "61b43b6446e728b68aa5b0db79f5f69c17e9c1d838bee5f0f05d2dd5c6cca047",
+     "traps": 159,
+     "compile_seconds": 22.1,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o rwbin/tinydnn.fast_a64 realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "none_g": {
+     "binary": "tinydnn.none_g",
+     "sha256": "82bbe1ad6081c7b40a90ae4569ff62efd562ee13fe681e475b3add048494af56",
+     "bytes": 3416344,
+     "text_sha256": "7b81d61bf713779c4120200ef2514443d6bfd50c7c05718cc4f84c37eda14fc2",
+     "traps": 3,
+     "compile_seconds": 23.4,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o rwbin/tinydnn.none_g realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "fast_g": {
+     "binary": "tinydnn.fast_g",
+     "sha256": "c957fab0f3480c0f20a32e383d07c367538fe57e7b29e175ce81239e8e33c8ac",
+     "bytes": 3424656,
+     "text_sha256": "ff11f01d62bdaeb363feea1aa742b1ab24a415ab5864210690ad36451af1a239",
+     "traps": 159,
+     "compile_seconds": 23.5,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o rwbin/tinydnn.fast_g realworld/drivers/tinydnn_mlp.cpp"
+    }
+   },
+   "text_identical": {
+    "none_vs_none_g": true,
+    "fast_vs_fast_g": true
+   },
+   "example_compile": null,
+   "lost_locations": [
+    {
+     "location": "tiny_dnn/core/kernels/fully_connected_op_internal.h:65:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "tiny_dnn/layers/layer.h:391:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    }
+   ],
+   "vectorized_remarks_total": {
+    "none": 61,
+    "fast": 59
+   }
+  },
+  "spectra": {
+   "program": "spectra",
+   "root": "spectra-6841bcbacaa0f0a8446210314e682057a084be4e",
+   "sources": 0,
+   "c_sources": 0,
+   "builds": {
+    "none": {
+     "binary": "spectra.none",
+     "sha256": "7b90933ca888dfad114d17ac41a5d486f4ecff33c8163b427480fa7aa6779628",
+     "bytes": 278248,
+     "text_sha256": "e34523e3c15d0b09eb0c0ff32423ca9592df5b0d86649f24e44eee187cb68a1a",
+     "traps": 0,
+     "compile_seconds": 7.6,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/spectra.none realworld/drivers/spectra_eigs.cpp"
+    },
+    "fast": {
+     "binary": "spectra.fast",
+     "sha256": "cb60466b17a1a4632006337eaca56e1295fda86e42b72cdc2779bea42285bffa",
+     "bytes": 284656,
+     "text_sha256": "7ed191b953086a202ce352ab35a42edea4dc676c870ac0328f3629df38012ff7",
+     "traps": 27,
+     "compile_seconds": 7.1,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/spectra.fast realworld/drivers/spectra_eigs.cpp"
+    },
+    "none_a64": {
+     "binary": "spectra.none_a64",
+     "sha256": "e780b5f0b6945a1b24f4791f2ae5fa46141786e49edb165d67e9683b409b56bc",
+     "bytes": 298728,
+     "text_sha256": "5938e397ee025037700b18022aade9b16b9d30dc5bcc9d22f7f53248b968fe4b",
+     "traps": 0,
+     "compile_seconds": 6.7,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o rwbin/spectra.none_a64 realworld/drivers/spectra_eigs.cpp"
+    },
+    "fast_a64": {
+     "binary": "spectra.fast_a64",
+     "sha256": "4b3f06495b3213f04127bfb3e90fa5a02bbb34244ebac75529aa7b42e2e35b12",
+     "bytes": 309232,
+     "text_sha256": "b61f78704a3cdf89d716974e35bc8e132fd58a0670f673f399fb563094369ab3",
+     "traps": 27,
+     "compile_seconds": 6.7,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o rwbin/spectra.fast_a64 realworld/drivers/spectra_eigs.cpp"
+    },
+    "none_g": {
+     "binary": "spectra.none_g",
+     "sha256": "2c24a20683d14ae6c53f7c959de56838824c90696712b7f3731bfd686145fc8b",
+     "bytes": 884512,
+     "text_sha256": "e34523e3c15d0b09eb0c0ff32423ca9592df5b0d86649f24e44eee187cb68a1a",
+     "traps": 0,
+     "compile_seconds": 7.1,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o rwbin/spectra.none_g realworld/drivers/spectra_eigs.cpp"
+    },
+    "fast_g": {
+     "binary": "spectra.fast_g",
+     "sha256": "4caa123935288e74c41e6e84f1288c9e99400f039385d1d8f0dda7023551b97c",
+     "bytes": 893136,
+     "text_sha256": "7ed191b953086a202ce352ab35a42edea4dc676c870ac0328f3629df38012ff7",
+     "traps": 27,
+     "compile_seconds": 7.1,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o rwbin/spectra.fast_g realworld/drivers/spectra_eigs.cpp"
+    }
+   },
+   "text_identical": {
+    "none_vs_none_g": true,
+    "fast_vs_fast_g": true
+   },
+   "example_compile": null,
+   "lost_locations": [
+    {
+     "location": "include/Spectra/Util/SelectionRule.h:215:9",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    }
+   ],
+   "vectorized_remarks_total": {
+    "none": 84,
+    "fast": 80
+   }
+  },
+  "meshopt": {
+   "program": "meshopt",
+   "root": "meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4",
+   "sources": 21,
+   "c_sources": 0,
+   "builds": {
+    "none": {
+     "binary": "meshopt.none",
+     "sha256": "22ef8b028471babd740ce533ccac4924e9170506e8188fce7cbe481488308908",
+     "bytes": 169488,
+     "text_sha256": "2abe326e42a85baa6fc6db5e7424f042a4435eac4adefa4c3667a0dbb5afaff5",
+     "traps": 0,
+     "compile_seconds": 8.3,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/meshopt.none realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.none.a"
+    },
+    "fast": {
+     "binary": "meshopt.fast",
+     "sha256": "46a31ad44ac2264f60bb7b7d5cf258c3a7b097c4e8479d1a30b5387ddcb55683",
+     "bytes": 169488,
+     "text_sha256": "df456f2fe931fd5d605d36b71d9ac8307947c5e492ff836c21c2092dcdf5fd17",
+     "traps": 2,
+     "compile_seconds": 8.5,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/meshopt.fast realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.fast.a"
+    },
+    "none_a64": {
+     "binary": "meshopt.none_a64",
+     "sha256": "8938b01652586bb30e6b038e77e92e721f8aa1a148f40ee4f7b8e2f608bcf51d",
+     "bytes": 181776,
+     "text_sha256": "412a76626774afebc1c2977cac24c8aedcb3f6a4cac5c1c2818f1063dde1bf05",
+     "traps": 0,
+     "compile_seconds": 8.0,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o rwbin/meshopt.none_a64 realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.none_a64.a"
+    },
+    "fast_a64": {
+     "binary": "meshopt.fast_a64",
+     "sha256": "44d8512c88927773109f0cd5eab524911e1ce5933c21b7f0ed7ce1c9a624f57c",
+     "bytes": 181776,
+     "text_sha256": "4b5245e60aa25933f48523a4754f96642169527ecb06889c35f6e68a04395317",
+     "traps": 2,
+     "compile_seconds": 7.9,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o rwbin/meshopt.fast_a64 realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.fast_a64.a"
+    },
+    "none_g": {
+     "binary": "meshopt.none_g",
+     "sha256": "a26b0b360c2c64722668ed00c069fe24c0aae6bf23cab7694ef755761fc86a31",
+     "bytes": 279768,
+     "text_sha256": "2abe326e42a85baa6fc6db5e7424f042a4435eac4adefa4c3667a0dbb5afaff5",
+     "traps": 0,
+     "compile_seconds": 8.2,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o rwbin/meshopt.none_g realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.none_g.a"
+    },
+    "fast_g": {
+     "binary": "meshopt.fast_g",
+     "sha256": "feca4903d314d65f0c2f4a5d9b81d6b3fe1ac9494a2320df2bf9ea6d697d64a8",
+     "bytes": 280016,
+     "text_sha256": "df456f2fe931fd5d605d36b71d9ac8307947c5e492ff836c21c2092dcdf5fd17",
+     "traps": 2,
+     "compile_seconds": 8.2,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o rwbin/meshopt.fast_g realworld/drivers/meshopt_pipeline.cpp build/rw-work/meshopt/libmeshopt.fast_g.a"
+    }
+   },
+   "text_identical": {
+    "none_vs_none_g": true,
+    "fast_vs_fast_g": true
+   },
+   "example_compile": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -I<deps>/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -c <deps>/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src/allocator.cpp -o /home/runner/work/third-of-a-percent/third-of-a-percent/build/rw-work/meshopt/none/src__allocator.cpp.o",
+   "lost_locations": [],
+   "vectorized_remarks_total": {
+    "none": 44,
+    "fast": 44
+   }
+  },
+  "fmt": {
+   "program": "fmt",
+   "root": "fmt-11.0.2",
+   "sources": 0,
+   "c_sources": 0,
+   "builds": {
+    "none": {
+     "binary": "fmt.none",
+     "sha256": "7614fb2cedd27275455f9bd2a13c0cbbb885d31580827ac6a2d8f2206559adce",
+     "bytes": 166448,
+     "text_sha256": "7362e440daf62f5641e09e6ff4313010f8ccccb4db144b56386f55523f027baf",
+     "traps": 0,
+     "compile_seconds": 2.9,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/fmt.none realworld/drivers/fmt_format.cpp"
+    },
+    "fast": {
+     "binary": "fmt.fast",
+     "sha256": "80be514c8a10d5fdf1cf2e5230bf97e40c2b14ba069791256a690411ff64441e",
+     "bytes": 166448,
+     "text_sha256": "45c67ec92a0968e6830737f15aa160cfa2393845da57c0517de3d5014aef2a39",
+     "traps": 7,
+     "compile_seconds": 2.8,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/fmt.fast realworld/drivers/fmt_format.cpp"
+    },
+    "none_a64": {
+     "binary": "fmt.none_a64",
+     "sha256": "c61f113ea2c96d3cb77d3bc71fc3b0ed4db418f7b59366f302e06204b568208c",
+     "bytes": 174640,
+     "text_sha256": "bfa370424a9860c34ec966dac20092b319ab40816b557f58efc8ad12b6cf6051",
+     "traps": 0,
+     "compile_seconds": 2.7,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o rwbin/fmt.none_a64 realworld/drivers/fmt_format.cpp"
+    },
+    "fast_a64": {
+     "binary": "fmt.fast_a64",
+     "sha256": "bc07524746c70552f40dd71c2f3ceaaccb21643b8d157e2f4eed7c8f65cff346",
+     "bytes": 174640,
+     "text_sha256": "9f4bdd9958200e21d820a179ac4c4e0696fa5a7c9f252851d5b1231c02372f32",
+     "traps": 7,
+     "compile_seconds": 2.7,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o rwbin/fmt.fast_a64 realworld/drivers/fmt_format.cpp"
+    },
+    "none_g": {
+     "binary": "fmt.none_g",
+     "sha256": "52cb11b7b4fe8dbbf6642c96dbf78a64b24ee7117464041f0076ade9521c5193",
+     "bytes": 355040,
+     "text_sha256": "7362e440daf62f5641e09e6ff4313010f8ccccb4db144b56386f55523f027baf",
+     "traps": 0,
+     "compile_seconds": 2.8,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o rwbin/fmt.none_g realworld/drivers/fmt_format.cpp"
+    },
+    "fast_g": {
+     "binary": "fmt.fast_g",
+     "sha256": "98b0407986cf8995df7267b47f88aef4ca1d381d82801443d28cffc3ffa4b8ad",
+     "bytes": 355944,
+     "text_sha256": "45c67ec92a0968e6830737f15aa160cfa2393845da57c0517de3d5014aef2a39",
+     "traps": 7,
+     "compile_seconds": 2.8,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o rwbin/fmt.fast_g realworld/drivers/fmt_format.cpp"
+    }
+   },
+   "text_identical": {
+    "none_vs_none_g": true,
+    "fast_vs_fast_g": true
+   },
+   "example_compile": null,
+   "lost_locations": [],
+   "vectorized_remarks_total": {
+    "none": 23,
+    "fast": 23
+   }
+  }
+ }
+}

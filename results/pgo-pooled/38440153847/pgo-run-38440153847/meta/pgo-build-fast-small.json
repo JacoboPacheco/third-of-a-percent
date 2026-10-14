@@ -1,0 +1,292 @@
+{
+ "kind": "pgo-build",
+ "schema": 1,
+ "mode": "fast",
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "llvm_profdata": "Optimized build.",
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG), -fprofile-instr-generate, then -fprofile-instr-use=<own profile>"
+ },
+ "programs": {
+  "tinydnn": {
+   "program": "tinydnn",
+   "mode": "fast",
+   "instrumented": {
+    "binary": "tinydnn.fast_gen",
+    "sha256": "4d2e1943dde6077e84d22c7ece559924d1eb8701162eee55994388729068d17b",
+    "bytes": 8220296,
+    "text_sha256": "a5a537cbebbe605f74ae1e5f7593bf538eab177e1c81907055df8fd723f38419",
+    "traps": 130,
+    "compile_seconds": 27.9,
+    "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-generate -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.fast_gen realworld/drivers/tinydnn_mlp.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "tinydnn",
+      "args": [
+       "512",
+       "1",
+       "1"
+      ],
+      "checksum": "f2aab6845f2479a9",
+      "checksum_r": "2a8a6014b2c17d1a",
+      "seconds": 1.1
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 21143,
+    "max_function_count": 554992812,
+    "file": "tinydnn.fast.profdata",
+    "bytes": 5754088,
+    "sha256": "2c33ea47344813daa47fcffd5bd1fec3f7c15d946b82e527ec076877b790c9e9",
+    "raw_files": 1,
+    "raw_bytes": 1798840
+   },
+   "builds": {
+    "pgo": {
+     "binary": "tinydnn.fast_pgo",
+     "sha256": "47eba2c2d38131c4c01c82707098218e8b2e566fdc180ee01dd08bdf4767dc62",
+     "bytes": 1497784,
+     "text_sha256": "d90ea1323c94ac05017984158b4061178f0693bbfb2f4bca33002dd213433890",
+     "traps": 151,
+     "compile_seconds": 17.9,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/tinydnn.fast.profdata -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.fast_pgo realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "pgo_a64": {
+     "binary": "tinydnn.fast_pgo_a64",
+     "sha256": "2a988bd4d349fa0713e74de24247c06772f14dd077907204da52365c9843f932",
+     "bytes": 1501880,
+     "text_sha256": "277256480399f05401f726398ec597dc40b5f13d24494e4d94aa707f26fd63d9",
+     "traps": 151,
+     "compile_seconds": 18.1,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/tinydnn.fast.profdata -falign-loops=64 -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.fast_pgo_a64 realworld/drivers/tinydnn_mlp.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "tinydnn.fast",
+    "pgo_a64": "tinydnn.fast_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": [
+    {
+     "location": "tiny_dnn/core/kernels/fully_connected_op_internal.h:65:9",
+     "vectorized": 0
+    },
+    {
+     "location": "tiny_dnn/layers/layer.h:391:7",
+     "vectorized": 0
+    }
+   ]
+  },
+  "spectra": {
+   "program": "spectra",
+   "mode": "fast",
+   "instrumented": {
+    "binary": "spectra.fast_gen",
+    "sha256": "ebf2273023f26d56bf97e0128d98ca6726b0f1627e5a6188843d156017c21bc7",
+    "bytes": 1925192,
+    "text_sha256": "e2f0ef9f54da84a09c565952de858e185d57dac6cc96d9ea8c8f7e1e42ca866d",
+    "traps": 27,
+    "compile_seconds": 7.6,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-generate -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.fast_gen realworld/drivers/spectra_eigs.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "spectra",
+      "args": [
+       "400",
+       "20000",
+       "1"
+      ],
+      "checksum": "1c787615afc7fd9c",
+      "checksum_r": "7bf3cd65fd199ac4",
+      "seconds": 0.1
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 4621,
+    "max_function_count": 51288640,
+    "file": "spectra.fast.profdata",
+    "bytes": 1124856,
+    "sha256": "db19f24214d9f0410a3c6aa0bc3821bb15e5ab5b883106fbefc17e7865ecd411",
+    "raw_files": 1,
+    "raw_bytes": 448600
+   },
+   "builds": {
+    "pgo": {
+     "binary": "spectra.fast_pgo",
+     "sha256": "ff4770228dbb9c731aabaf36b9eab97bd20247575f1964158024b69bc17bd19c",
+     "bytes": 345800,
+     "text_sha256": "3ea880715804b58d97492fd2bc102677bac5c3ef8c678364bf879f16ad6db089",
+     "traps": 27,
+     "compile_seconds": 5.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/spectra.fast.profdata -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.fast_pgo realworld/drivers/spectra_eigs.cpp"
+    },
+    "pgo_a64": {
+     "binary": "spectra.fast_pgo_a64",
+     "sha256": "7d8e06c4f6c685ac325ee95bdbdecfe80659bf552ea051f7be355e471ebd0372",
+     "bytes": 349896,
+     "text_sha256": "90121c8d1442851a91781983210eb2a99c88f87db68221e010dbd6fce22d5f41",
+     "traps": 27,
+     "compile_seconds": 5.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/spectra.fast.profdata -falign-loops=64 -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.fast_pgo_a64 realworld/drivers/spectra_eigs.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "spectra.fast",
+    "pgo_a64": "spectra.fast_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": [
+    {
+     "location": "include/Spectra/Util/SelectionRule.h:215:9",
+     "vectorized": 0
+    }
+   ]
+  },
+  "meshopt": {
+   "program": "meshopt",
+   "mode": "fast",
+   "instrumented": {
+    "binary": "meshopt.fast_gen",
+    "sha256": "1da2f974d70a7af79b20fcc6735f216efe2bfa49a655b22061174235165b6f24",
+    "bytes": 403768,
+    "text_sha256": "95e377db138a3da13f325ad45646ad88f4b1d07dc35606d4f4901dfc4051bdd9",
+    "traps": 3,
+    "compile_seconds": 7.2,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-generate -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.fast_gen realworld/drivers/meshopt_pipeline.cpp build/pgo-work/gen/meshopt/libmeshopt.fast_gen.a"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "meshopt",
+      "args": [
+       "300",
+       "1"
+      ],
+      "checksum": "08a1c1bd0d32a502",
+      "checksum_r": "08a1c1bd0d32a502",
+      "seconds": 0.5
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 781,
+    "max_function_count": 28485647,
+    "file": "meshopt.fast.profdata",
+    "bytes": 145080,
+    "sha256": "97602b4e18e6605d147f1f4cfb871835920d16f60821d0d30e99f1b134e3e451",
+    "raw_files": 1,
+    "raw_bytes": 82096
+   },
+   "builds": {
+    "pgo": {
+     "binary": "meshopt.fast_pgo",
+     "sha256": "2b4a32385a5de704bff037a1265498ff23c9bd17160967b407e6bb73cfc06f15",
+     "bytes": 171992,
+     "text_sha256": "637e5d64a95308b7339ceced0a5479b85c549da3c9d49086aa76b769af1a8b13",
+     "traps": 2,
+     "compile_seconds": 6.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/meshopt.fast.profdata -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.fast_pgo realworld/drivers/meshopt_pipeline.cpp build/pgo-work/pgo/meshopt/libmeshopt.fast_pgo.a"
+    },
+    "pgo_a64": {
+     "binary": "meshopt.fast_pgo_a64",
+     "sha256": "917bffcd416345b4a73ce068cb53d82e8f62ca61e49c021fbd7d8de1d4cc6aec",
+     "bytes": 176088,
+     "text_sha256": "db54847f196fa3c2d470a22a84b7250c1f8041aa29e8288e9dd1e53334a9e97d",
+     "traps": 2,
+     "compile_seconds": 5.8,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/meshopt.fast.profdata -falign-loops=64 -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.fast_pgo_a64 realworld/drivers/meshopt_pipeline.cpp build/pgo-work/pgo/meshopt/libmeshopt.fast_pgo_a64.a"
+    }
+   },
+   "binary_names": {
+    "pgo": "meshopt.fast",
+    "pgo_a64": "meshopt.fast_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 13
+   },
+   "census_lost_locations": []
+  },
+  "fmt": {
+   "program": "fmt",
+   "mode": "fast",
+   "instrumented": {
+    "binary": "fmt.fast_gen",
+    "sha256": "6a3218874ecb397cd08e57be8af97ad4cf30853efc9ca8e6bacd0af094a507ce",
+    "bytes": 498352,
+    "text_sha256": "85a4e7c0c7fe5a61fb4df8a317d4c04676c826ce75d01b4ffb8ed13f777392ef",
+    "traps": 4,
+    "compile_seconds": 2.8,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-generate -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.fast_gen realworld/drivers/fmt_format.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "fmt",
+      "args": [
+       "20000",
+       "1"
+      ],
+      "checksum": "579637bbd5b764e1",
+      "checksum_r": "579637bbd5b764e1",
+      "seconds": 0.0
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 1050,
+    "max_function_count": 1120011,
+    "file": "fmt.fast.profdata",
+    "bytes": 201800,
+    "sha256": "729af39bc30cc6a7418418eb4a62c5d61b0071a0c2230a2bb19774ce6cdd26af",
+    "raw_files": 1,
+    "raw_bytes": 102256
+   },
+   "builds": {
+    "pgo": {
+     "binary": "fmt.fast_pgo",
+     "sha256": "9b7119cfb1b806c3c5b2aefc2802ee6234596ef81e90a1ec671b74f2eb191bcc",
+     "bytes": 162256,
+     "text_sha256": "71c2c0748d39e72c1ceea2c8ed78bf486242ce2fc0a4a206cbbc0e307a6ba56f",
+     "traps": 5,
+     "compile_seconds": 2.1,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/fmt.fast.profdata -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.fast_pgo realworld/drivers/fmt_format.cpp"
+    },
+    "pgo_a64": {
+     "binary": "fmt.fast_pgo_a64",
+     "sha256": "543d53aec425a423c49258a75157fa0ab3d018e7f8498a97c7432fa2dff9c2e2",
+     "bytes": 162256,
+     "text_sha256": "cc81d664ac025788ae2d71e79eee1fec0b2237bb495b02984750f7fe339c83b1",
+     "traps": 5,
+     "compile_seconds": 2.1,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/fmt.fast.profdata -falign-loops=64 -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.fast_pgo_a64 realworld/drivers/fmt_format.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "fmt.fast",
+    "pgo_a64": "fmt.fast_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": []
+  }
+ }
+}

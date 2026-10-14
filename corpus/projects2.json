@@ -1,0 +1,854 @@
+{
+ "comment": "Census 2 (corpus/PLAN2.md): numeric, physics, graphics, ML, image/signal, game and compression code, fixed before compiling. Same fields as projects.json, plus 'category' (for the combined table), 'why' (the reason the project is in) and 'shard' (which census job compiles it). Paths in 'includes' and 'generate.from' are relative to 'root'; '../<dir>' points at another download of the same project. 'generate' may also give 'content' (written as is) and 'cmakedefine' (plain #cmakedefine lines). 'std' (optional) replaces -std=c++20 with the project's own language standard from its build file (added after the first run, corpus/PLAN2.md).",
+ "projects": [
+  {
+   "name": "box2d",
+   "category": "physics and game",
+   "kind": "physics engine (2D rigid bodies)",
+   "why": "The last C++ release of Box2D (v3 is C): contact solver loops over bodies and constraints.",
+   "version": "2.4.2",
+   "repo": "https://github.com/erincatto/box2d",
+   "commit": "411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230",
+   "downloads": [
+    {
+     "url": "https://github.com/erincatto/box2d/archive/411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230.tar.gz",
+     "file": "box2d.tar.gz",
+     "sha256": "853a6141b9f187a9de6a1e9a7864b9394eb70150373af1e185f0d508f533a524",
+     "bytes": 1237162
+    }
+   ],
+   "root": "box2d-411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230",
+   "sources": [
+    "src/collision/*.cpp",
+    "src/common/*.cpp",
+    "src/dynamics/*.cpp",
+    "src/rope/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "include",
+    "src"
+   ],
+   "defines": [],
+   "shard": 2
+  },
+  {
+   "name": "joltphysics",
+   "category": "physics and game",
+   "kind": "physics engine (3D rigid and soft bodies)",
+   "why": "A production 3D physics engine used in shipped games: broad phase, narrow phase and solver loops.",
+   "version": "5.6.0",
+   "repo": "https://github.com/jrouwe/JoltPhysics",
+   "commit": "e77f175595e64cb44218cc9d9d56fc365ad0e36a",
+   "downloads": [
+    {
+     "url": "https://github.com/jrouwe/JoltPhysics/archive/e77f175595e64cb44218cc9d9d56fc365ad0e36a.tar.gz",
+     "file": "joltphysics.tar.gz",
+     "sha256": "1f32328fb763135de10a244568d6ccb2ed9b1e6593fafe6dc6db5b2719d330bd",
+     "bytes": 19392623
+    }
+   ],
+   "root": "JoltPhysics-e77f175595e64cb44218cc9d9d56fc365ad0e36a",
+   "sources": [
+    "Jolt/**/*.cpp"
+   ],
+   "exclude": [
+    "Jolt/Compute/DX12/*",
+    "Jolt/Compute/VK/*",
+    "Jolt/Renderer/*",
+    "Jolt/Shaders/*"
+   ],
+   "includes": [
+    "."
+   ],
+   "defines": [],
+   "shard": 1
+  },
+  {
+   "name": "recastnavigation",
+   "category": "physics and game",
+   "kind": "game AI (navigation mesh build and path finding)",
+   "why": "Voxelization and mesh building over grids and spans, plus crowd simulation: game code with index arithmetic.",
+   "version": "1.6.0",
+   "repo": "https://github.com/recastnavigation/recastnavigation",
+   "commit": "6dc1667f580357e8a2154c28b7867bea7e8ad3a7",
+   "downloads": [
+    {
+     "url": "https://github.com/recastnavigation/recastnavigation/archive/6dc1667f580357e8a2154c28b7867bea7e8ad3a7.tar.gz",
+     "file": "recastnavigation.tar.gz",
+     "sha256": "f565cc91b85df95a656cfc672e41c02e8aa44ba2363905aa8277ce20ea87491d",
+     "bytes": 1280923
+    }
+   ],
+   "root": "recastnavigation-6dc1667f580357e8a2154c28b7867bea7e8ad3a7",
+   "sources": [
+    "Recast/Source/*.cpp",
+    "Detour/Source/*.cpp",
+    "DetourCrowd/Source/*.cpp",
+    "DetourTileCache/Source/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "Recast/Include",
+    "Detour/Include",
+    "DetourCrowd/Include",
+    "DetourTileCache/Include"
+   ],
+   "defines": [],
+   "shard": 1
+  },
+  {
+   "name": "ozz-animation",
+   "category": "physics and game",
+   "kind": "game animation runtime (skeletal sampling, blending)",
+   "why": "Animation sampling and blending over spans of SoA transforms; the offline builders use std::vector.",
+   "version": "0.17.0",
+   "repo": "https://github.com/guillaumeblanc/ozz-animation",
+   "commit": "744eb9d99f606eda849acb0b1204f7a3dc20bca1",
+   "downloads": [
+    {
+     "url": "https://github.com/guillaumeblanc/ozz-animation/archive/744eb9d99f606eda849acb0b1204f7a3dc20bca1.tar.gz",
+     "file": "ozz-animation.tar.gz",
+     "sha256": "a29a8a014b571487d9a6dabebeed57627fc19bf1f0ebf531b0c76384840c3b74",
+     "bytes": 43532520
+    }
+   ],
+   "root": "ozz-animation-744eb9d99f606eda849acb0b1204f7a3dc20bca1",
+   "sources": [
+    "src/base/*.cc",
+    "src/base/*/*.cc",
+    "src/animation/runtime/*.cc",
+    "src/animation/offline/*.cc",
+    "src/geometry/runtime/*.cc"
+   ],
+   "exclude": [],
+   "includes": [
+    "include",
+    "src"
+   ],
+   "defines": [],
+   "shard": 5
+  },
+  {
+   "name": "entt",
+   "category": "physics and game",
+   "kind": "game engine core (entity-component system)",
+   "why": "The ECS used by many game engines: sparse sets and packed storage indexed by entity.",
+   "version": "3.16.0",
+   "repo": "https://github.com/skypjack/entt",
+   "commit": "b4e58bdd364ad72246c123a0c28538eab3252672",
+   "downloads": [
+    {
+     "url": "https://github.com/skypjack/entt/archive/b4e58bdd364ad72246c123a0c28538eab3252672.tar.gz",
+     "file": "entt.tar.gz",
+     "sha256": "3e996cf255b09527faf995c7c36e3daf92cefa0fb37540a4b9c359af557e19cd",
+     "bytes": 912100
+    }
+   ],
+   "root": "entt-b4e58bdd364ad72246c123a0c28538eab3252672",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "src"
+   ],
+   "defines": [],
+   "driver": "entt.cpp",
+   "shard": 1
+  },
+  {
+   "name": "stockfish",
+   "category": "physics and game",
+   "kind": "chess engine (search and NNUE evaluation)",
+   "why": "A heavily optimized engine: move generation over arrays, NNUE layers over fixed-size arrays.",
+   "version": "sf_19",
+   "repo": "https://github.com/official-stockfish/Stockfish",
+   "commit": "edb0d9db6731067ec50ce619ff372b463bc4dd5d",
+   "downloads": [
+    {
+     "url": "https://github.com/official-stockfish/Stockfish/archive/edb0d9db6731067ec50ce619ff372b463bc4dd5d.tar.gz",
+     "file": "stockfish.tar.gz",
+     "sha256": "4fc20699a5ecf7883b036ce180020f5e57979623ad719fd2a52839209521581b",
+     "bytes": 291397
+    }
+   ],
+   "root": "Stockfish-edb0d9db6731067ec50ce619ff372b463bc4dd5d",
+   "sources": [
+    "src/attacks.cpp",
+    "src/benchmark.cpp",
+    "src/bitboard.cpp",
+    "src/evaluate.cpp",
+    "src/main.cpp",
+    "src/misc.cpp",
+    "src/movegen.cpp",
+    "src/movepick.cpp",
+    "src/position.cpp",
+    "src/search.cpp",
+    "src/thread.cpp",
+    "src/timeman.cpp",
+    "src/tt.cpp",
+    "src/uci.cpp",
+    "src/ucioption.cpp",
+    "src/tune.cpp",
+    "src/syzygy/tbprobe.cpp",
+    "src/nnue/nnue_accumulator.cpp",
+    "src/nnue/nnue_misc.cpp",
+    "src/nnue/network.cpp",
+    "src/nnue/features/half_ka_v2_hm.cpp",
+    "src/nnue/features/full_threats.cpp",
+    "src/nnue/features/pp_3wide.cpp",
+    "src/engine.cpp",
+    "src/score.cpp",
+    "src/memory.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src"
+   ],
+   "defines": [
+    "IS_64BIT",
+    "USE_SSE2",
+    "NNUE_EMBEDDING_OFF"
+   ],
+   "shard": 5
+  },
+  {
+   "name": "meshoptimizer",
+   "category": "graphics and geometry",
+   "kind": "mesh processing (GPU vertex/index optimization)",
+   "why": "Vertex cache, overdraw and simplification passes over index and vertex buffers.",
+   "version": "1.3",
+   "repo": "https://github.com/zeux/meshoptimizer",
+   "commit": "9e1f07b159d3cb777f1c67ed31fc11fd117986f4",
+   "downloads": [
+    {
+     "url": "https://github.com/zeux/meshoptimizer/archive/9e1f07b159d3cb777f1c67ed31fc11fd117986f4.tar.gz",
+     "file": "meshoptimizer.tar.gz",
+     "sha256": "e753b45fbc410031bd69cb278180ae31fa0d5430d0c3e662e3a3b100467ce0b3",
+     "bytes": 610285
+    }
+   ],
+   "root": "meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4",
+   "sources": [
+    "src/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src"
+   ],
+   "defines": [],
+   "shard": 2
+  },
+  {
+   "name": "earcut",
+   "category": "graphics and geometry",
+   "kind": "geometry (polygon triangulation)",
+   "why": "Header-only triangulator over std::vector of points, used in map renderers.",
+   "version": "3.2.4",
+   "repo": "https://github.com/mapbox/earcut.hpp",
+   "commit": "92acda9e2ed96ff1f910cda35de444727e9da7b0",
+   "downloads": [
+    {
+     "url": "https://github.com/mapbox/earcut.hpp/archive/92acda9e2ed96ff1f910cda35de444727e9da7b0.tar.gz",
+     "file": "earcut.tar.gz",
+     "sha256": "799dc5d93478f74ca5331eaba935946efa25772f00dc7274005e07e296d469a8",
+     "bytes": 97490
+    }
+   ],
+   "root": "earcut.hpp-92acda9e2ed96ff1f910cda35de444727e9da7b0",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "include"
+   ],
+   "defines": [],
+   "driver": "earcut.cpp",
+   "shard": 1
+  },
+  {
+   "name": "delaunator-cpp",
+   "category": "graphics and geometry",
+   "kind": "geometry (Delaunay triangulation)",
+   "why": "Header-only Delaunay over std::vector<double> coordinates with computed indices (2 * i, 3 * t).",
+   "version": "0.4.0",
+   "repo": "https://github.com/delfrrr/delaunator-cpp",
+   "commit": "393cfc39c9b1ca268081d5f42062de0d9b33f5a2",
+   "downloads": [
+    {
+     "url": "https://github.com/delfrrr/delaunator-cpp/archive/393cfc39c9b1ca268081d5f42062de0d9b33f5a2.tar.gz",
+     "file": "delaunator-cpp.tar.gz",
+     "sha256": "61deec54e3e2e64e4fb487890f27f2b94e24e3957b784f22f332f87e594adaa9",
+     "bytes": 2289865
+    }
+   ],
+   "root": "delaunator-cpp-393cfc39c9b1ca268081d5f42062de0d9b33f5a2",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "include"
+   ],
+   "defines": [],
+   "driver": "delaunator.cpp",
+   "shard": 1
+  },
+  {
+   "name": "nanoflann",
+   "category": "graphics and geometry",
+   "kind": "geometry (k-d tree nearest neighbours)",
+   "why": "Header-only k-d tree used in robotics and point-cloud code; distance loops over dimensions.",
+   "version": "1.10.0",
+   "repo": "https://github.com/jlblancoc/nanoflann",
+   "commit": "57d2d8c83c862b66f4689b082423e31314ad27ec",
+   "downloads": [
+    {
+     "url": "https://github.com/jlblancoc/nanoflann/archive/57d2d8c83c862b66f4689b082423e31314ad27ec.tar.gz",
+     "file": "nanoflann.tar.gz",
+     "sha256": "c84a1cbd90d26813859d87c43f71ca4363e4df777154cb7bbdedf3feb856864d",
+     "bytes": 550018
+    }
+   ],
+   "root": "nanoflann-57d2d8c83c862b66f4689b082423e31314ad27ec",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "include"
+   ],
+   "defines": [],
+   "driver": "nanoflann.cpp",
+   "shard": 2
+  },
+  {
+   "name": "nanort",
+   "category": "graphics and geometry",
+   "kind": "graphics (ray tracing BVH build and traversal)",
+   "why": "Header-only BVH builder and traversal; binning loops over std::vector of primitives.",
+   "version": "release 2024-11-10",
+   "repo": "https://github.com/lighttransport/nanort",
+   "commit": "cdf474ae9176b87a9334c858bb06c9e028ed0e0d",
+   "downloads": [
+    {
+     "url": "https://github.com/lighttransport/nanort/archive/cdf474ae9176b87a9334c858bb06c9e028ed0e0d.tar.gz",
+     "file": "nanort.tar.gz",
+     "sha256": "99c011d695b8e158ce317ab5d47aa69f6c5ad272062ab26801f15f56b7122e49",
+     "bytes": 29506236
+    }
+   ],
+   "root": "nanort-cdf474ae9176b87a9334c858bb06c9e028ed0e0d",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "."
+   ],
+   "defines": [],
+   "driver": "nanort.cpp",
+   "shard": 2
+  },
+  {
+   "name": "draco",
+   "category": "graphics and geometry",
+   "kind": "graphics (3D mesh and point-cloud compression)",
+   "why": "Attribute quantization, prediction schemes and entropy coding over std::vector buffers.",
+   "version": "1.5.7",
+   "repo": "https://github.com/google/draco",
+   "commit": "8786740086a9f4d83f44aa83badfbea4dce7a1b5",
+   "downloads": [
+    {
+     "url": "https://github.com/google/draco/archive/8786740086a9f4d83f44aa83badfbea4dce7a1b5.tar.gz",
+     "file": "draco.tar.gz",
+     "sha256": "b9c2392dbfcf454aaec68823d832de9d62614054b33807b7c9776799b8e0bbca",
+     "bytes": 60469150
+    }
+   ],
+   "root": "draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5",
+   "sources": [
+    "src/draco/**/*.cc"
+   ],
+   "exclude": [
+    "*_test.cc",
+    "src/draco/javascript/*",
+    "src/draco/maya/*",
+    "src/draco/unity/*",
+    "src/draco/tools/*",
+    "src/draco/core/draco_test_utils.cc",
+    "src/draco/io/gltf_test_helper.cc"
+   ],
+   "includes": [
+    "src",
+    "_census_gen"
+   ],
+   "defines": [],
+   "generate": {
+    "_census_gen/draco/draco_features.h": {
+     "content": "#ifndef DRACO_FEATURES_H_\n#define DRACO_FEATURES_H_\n#define DRACO_POINT_CLOUD_COMPRESSION_SUPPORTED\n#define DRACO_MESH_COMPRESSION_SUPPORTED\n#define DRACO_NORMAL_ENCODING_SUPPORTED\n#define DRACO_STANDARD_EDGEBREAKER_SUPPORTED\n#define DRACO_PREDICTIVE_EDGEBREAKER_SUPPORTED\n#define DRACO_BACKWARDS_COMPATIBILITY_SUPPORTED\n#define DRACO_ATTRIBUTE_INDICES_DEDUPLICATION_SUPPORTED\n#define DRACO_ATTRIBUTE_VALUES_DEDUPLICATION_SUPPORTED\n#endif\n"
+    }
+   },
+   "shard": 2
+  },
+  {
+   "name": "imath",
+   "category": "graphics and geometry",
+   "kind": "graphics math (OpenEXR's vector, matrix and half types)",
+   "why": "The math library under OpenEXR: matrix algorithms, color conversion, half-float tables.",
+   "version": "3.2.3",
+   "repo": "https://github.com/AcademySoftwareFoundation/Imath",
+   "commit": "5f27ba266d3ea1565e912570c30b5eafc89959f1",
+   "downloads": [
+    {
+     "url": "https://github.com/AcademySoftwareFoundation/Imath/archive/5f27ba266d3ea1565e912570c30b5eafc89959f1.tar.gz",
+     "file": "imath.tar.gz",
+     "sha256": "b3a8de8b9dfcf4e5387e1ab3ca67c858e7fd05d1faa2e55decc3ee715e034cb8",
+     "bytes": 696698
+    }
+   ],
+   "root": "Imath-5f27ba266d3ea1565e912570c30b5eafc89959f1",
+   "sources": [
+    "src/Imath/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src/Imath",
+    "_census_gen"
+   ],
+   "defines": [],
+   "generate": {
+    "_census_gen/ImathConfig.h": {
+     "from": "config/ImathConfig.h.in",
+     "replace": {
+      "@IMATH_NAMESPACE_CUSTOM@": "0",
+      "@IMATH_INTERNAL_NAMESPACE@": "Imath_3_2",
+      "@IMATH_NAMESPACE@": "Imath",
+      "@IMATH_VERSION@": "3.2.3",
+      "@IMATH_PACKAGE_NAME@": "Imath 3.2.3",
+      "@Imath_VERSION_MAJOR@": "3",
+      "@Imath_VERSION_MINOR@": "2",
+      "@Imath_VERSION_PATCH@": "3",
+      "@IMATH_VERSION_RELEASE_TYPE@": "",
+      "@IMATH_LIB_VERSION@": "30.3.2.3"
+     },
+     "cmakedefine": {
+      "IMATH_HALF_USE_LOOKUP_TABLE": 1,
+      "IMATH_ENABLE_API_VISIBILITY": 1
+     },
+     "cmakedefine01": {
+      "IMATH_USE_NOEXCEPT": 1
+     }
+    }
+   },
+   "shard": 2
+  },
+  {
+   "name": "tinyrenderer",
+   "category": "graphics and geometry",
+   "kind": "graphics (software rasterizer, application code)",
+   "why": "A small application, not a library: rasterizer loops over a std::vector<double> depth buffer.",
+   "version": "master 2026-07-29",
+   "repo": "https://github.com/ssloy/tinyrenderer",
+   "commit": "97eb7a480e762285899a93c5d21e70a79e60782e",
+   "downloads": [
+    {
+     "url": "https://github.com/ssloy/tinyrenderer/archive/97eb7a480e762285899a93c5d21e70a79e60782e.tar.gz",
+     "file": "tinyrenderer.tar.gz",
+     "sha256": "8c809f60fe1869897c6eb70afb13fb43108bcc4169805341e4352cc421348c30",
+     "bytes": 35926909
+    }
+   ],
+   "root": "tinyrenderer-97eb7a480e762285899a93c5d21e70a79e60782e",
+   "sources": [
+    "*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "."
+   ],
+   "defines": [],
+   "shard": 2
+  },
+  {
+   "name": "xtensor",
+   "category": "numeric, image and signal",
+   "kind": "numeric (n-dimensional arrays)",
+   "why": "NumPy-style arrays for C++: element-wise and reduction loops over its containers.",
+   "version": "0.27.1",
+   "repo": "https://github.com/xtensor-stack/xtensor",
+   "commit": "f115228a7fc277b9be1bef34572831f8fd53ac73",
+   "downloads": [
+    {
+     "url": "https://github.com/xtensor-stack/xtensor/archive/f115228a7fc277b9be1bef34572831f8fd53ac73.tar.gz",
+     "file": "xtensor.tar.gz",
+     "sha256": "fad3c8e944bb6e1f1909c291aeb6f7bd3859055e2783bca9acd50c3b74d40880",
+     "bytes": 1225961
+    },
+    {
+     "url": "https://github.com/xtensor-stack/xtl/archive/c52350e283b98e5d69dbc50726925a1f8e16c57c.tar.gz",
+     "file": "xtl.tar.gz",
+     "sha256": "dc659dacad0edcd263d994027b0e397768d6f951a65991b4357f4dd11414648d",
+     "bytes": 138877
+    }
+   ],
+   "root": "xtensor-f115228a7fc277b9be1bef34572831f8fd53ac73",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "include",
+    "../xtl-c52350e283b98e5d69dbc50726925a1f8e16c57c/include"
+   ],
+   "defines": [],
+   "driver": "xtensor.cpp",
+   "shard": 3
+  },
+  {
+   "name": "spectra",
+   "category": "numeric, image and signal",
+   "kind": "scientific (eigenvalue solver on Eigen)",
+   "why": "An Eigen-based solver (ARPACK-like): Lanczos and Arnoldi iterations.",
+   "version": "1.2.0",
+   "repo": "https://github.com/yixuan/spectra",
+   "commit": "6841bcbacaa0f0a8446210314e682057a084be4e",
+   "downloads": [
+    {
+     "url": "https://github.com/yixuan/spectra/archive/6841bcbacaa0f0a8446210314e682057a084be4e.tar.gz",
+     "file": "spectra.tar.gz",
+     "sha256": "e9a485e5faf6ee3c42a8904b65dd0bf2f809665e28d80b4a52f2d21c7838902b",
+     "bytes": 293122
+    },
+    {
+     "url": "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz",
+     "file": "eigen-3.4.0.tar.gz",
+     "sha256": "8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72",
+     "bytes": 2705005
+    }
+   ],
+   "root": "spectra-6841bcbacaa0f0a8446210314e682057a084be4e",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "include",
+    "../eigen-3.4.0"
+   ],
+   "defines": [],
+   "driver": "spectra.cpp",
+   "shard": 2
+  },
+  {
+   "name": "pocketfft",
+   "category": "numeric, image and signal",
+   "kind": "signal processing (FFT)",
+   "why": "The C++ FFT used by NumPy and SciPy: butterfly loops over arrays.",
+   "version": "cpp 2026-06-30",
+   "repo": "https://github.com/mreineck/pocketfft",
+   "commit": "c90e55b3d529f8efa40ed01a20de22405f45fc65",
+   "downloads": [
+    {
+     "url": "https://github.com/mreineck/pocketfft/archive/c90e55b3d529f8efa40ed01a20de22405f45fc65.tar.gz",
+     "file": "pocketfft.tar.gz",
+     "sha256": "2d90016da31a8cc1dd0ac0c89c1f2fb55df8f4ccc3f0386dcfbad09ac6d1c3ba",
+     "bytes": 28485
+    }
+   ],
+   "root": "pocketfft-c90e55b3d529f8efa40ed01a20de22405f45fc65",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "."
+   ],
+   "defines": [],
+   "driver": "pocketfft.cpp",
+   "shard": 2
+  },
+  {
+   "name": "cimg",
+   "category": "numeric, image and signal",
+   "kind": "image processing",
+   "why": "A header-only image-processing library: filters, convolution and resizing over pixel buffers.",
+   "version": "3.7.6",
+   "repo": "https://github.com/GreycLab/CImg",
+   "commit": "49b29ef7e3230b05f9924c5f79bf92da1c58c5a8",
+   "downloads": [
+    {
+     "url": "https://github.com/GreycLab/CImg/archive/49b29ef7e3230b05f9924c5f79bf92da1c58c5a8.tar.gz",
+     "file": "cimg.tar.gz",
+     "sha256": "42b0c5eaee38fe58aadb77aaad2825d6a52363cf0e9631e084c8505182af363d",
+     "bytes": 12701473
+    }
+   ],
+   "root": "CImg-49b29ef7e3230b05f9924c5f79bf92da1c58c5a8",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "."
+   ],
+   "defines": [
+    "cimg_display=0"
+   ],
+   "driver": "cimg.cpp",
+   "shard": 2
+  },
+  {
+   "name": "lightgbm",
+   "category": "machine learning",
+   "kind": "ML training (gradient-boosted trees)",
+   "why": "Histogram construction and split finding over std::vector of bins and gradients.",
+   "version": "4.7.0",
+   "repo": "https://github.com/microsoft/LightGBM",
+   "commit": "8f7036f03627054d5a54a6f965b13f4b9ff2cb63",
+   "downloads": [
+    {
+     "url": "https://github.com/microsoft/LightGBM/archive/8f7036f03627054d5a54a6f965b13f4b9ff2cb63.tar.gz",
+     "file": "lightgbm.tar.gz",
+     "sha256": "35cb44a8ca923ed696d917c7455563260c54e57e8c1ee6b93d5680ac9d4b4250",
+     "bytes": 6350136
+    },
+    {
+     "url": "https://github.com/fmtlib/fmt/archive/8303d140a1a11f19b982a9f664bbe59a1ccda3f4.tar.gz",
+     "file": "lgbm-fmt.tar.gz",
+     "sha256": "dca18efa83961de689594ac560108d3e1ed64179fcc058c58e8ecdc124ab92e9",
+     "bytes": 702766
+    },
+    {
+     "url": "https://github.com/lemire/fast_double_parser/archive/252029ddac664370bdda3f0761675785d92a1573.tar.gz",
+     "file": "lgbm-fast_double_parser.tar.gz",
+     "sha256": "12c63a935cf261ec12be3357f791cb25a3adc61ae8035406dc6681b89e101447",
+     "bytes": 637038
+    },
+    {
+     "url": "https://gitlab.com/libeigen/eigen/-/archive/3147391d946bb4b6c68edd901f2add6ac1f31f8c/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c.tar.gz",
+     "file": "lgbm-eigen.tar.gz",
+     "sha256": "0c8c490764f9c2a793133491adca0cd073b73e0bde965c68cbe58d91b5ed4261",
+     "bytes": 2710482
+    },
+    {
+     "url": "https://github.com/apache/arrow-nanoarrow/archive/a579fbf5d192e85b6249935e117de7d02a6dc4e9.tar.gz",
+     "file": "lgbm-nanoarrow.tar.gz",
+     "sha256": "f1826116664ee876a14f0cc0a407b3d1f3bed642b78f9b1ea03d2351fb15a19e",
+     "bytes": 1095567
+    }
+   ],
+   "root": "LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63",
+   "sources": [
+    "src/c_api.cpp",
+    "src/boosting/*.cpp",
+    "src/io/*.cpp",
+    "src/metric/*.cpp",
+    "src/network/*.cpp",
+    "src/objective/*.cpp",
+    "src/treelearner/*.cpp",
+    "src/utils/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "include",
+    "../fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include",
+    "../fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include",
+    "../eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c",
+    "../arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src",
+    "_census_gen"
+   ],
+   "defines": [
+    "EIGEN_MPL2_ONLY",
+    "EIGEN_DONT_PARALLELIZE",
+    "USE_SOCKET",
+    "MM_MALLOC"
+   ],
+   "generate": {
+    "_census_gen/nanoarrow/nanoarrow_config.h": {
+     "from": "../arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src/nanoarrow/nanoarrow_config.h.in",
+     "replace": {
+      "@NANOARROW_VERSION_MAJOR@": "0",
+      "@NANOARROW_VERSION_MINOR@": "8",
+      "@NANOARROW_VERSION_PATCH@": "0",
+      "@NANOARROW_VERSION@": "0.8.0",
+      "@NANOARROW_NAMESPACE_DEFINE@": ""
+     }
+    }
+   },
+   "shard": 4,
+   "std": "c++17"
+  },
+  {
+   "name": "tiny-dnn",
+   "category": "machine learning",
+   "kind": "ML (header-only neural networks)",
+   "why": "Convolution and fully-connected layers over std::vector<float> (vec_t).",
+   "version": "master 2018-10-23",
+   "repo": "https://github.com/tiny-dnn/tiny-dnn",
+   "commit": "c0f576f5cb7b35893f62127cb7aec18f77a3bcc5",
+   "downloads": [
+    {
+     "url": "https://github.com/tiny-dnn/tiny-dnn/archive/c0f576f5cb7b35893f62127cb7aec18f77a3bcc5.tar.gz",
+     "file": "tiny-dnn.tar.gz",
+     "sha256": "123dabe15b019938e04c7ccdd22c8423ceae091f4bd2fb878f972a2ea031d4b9",
+     "bytes": 18935508
+    }
+   ],
+   "root": "tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    ".",
+    "third_party"
+   ],
+   "defines": [
+    "CNN_SINGLE_THREAD"
+   ],
+   "driver": "tiny_dnn.cpp",
+   "shard": 3,
+   "std": "c++14"
+  },
+  {
+   "name": "llama.cpp",
+   "category": "machine learning",
+   "kind": "ML inference (LLM runtime, C++ part only)",
+   "why": "The C++ library around ggml: sampling, tokenizer, KV cache, model loading. ggml (C) is not compiled.",
+   "version": "v0.6.0",
+   "repo": "https://github.com/ggml-org/llama.cpp",
+   "commit": "d81235049384534c167caea52b85a694f6103d14",
+   "downloads": [
+    {
+     "url": "https://github.com/ggml-org/llama.cpp/archive/d81235049384534c167caea52b85a694f6103d14.tar.gz",
+     "file": "llama.cpp.tar.gz",
+     "sha256": "6b58785f0a82898f4c3442417ff962e2d4b231b1bee5d033902ad90b27901e14",
+     "bytes": 37887730
+    }
+   ],
+   "root": "llama.cpp-d81235049384534c167caea52b85a694f6103d14",
+   "sources": [
+    "src/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src",
+    "include",
+    "ggml/include",
+    "_census_gen"
+   ],
+   "defines": [],
+   "generate": {
+    "_census_gen/llama-version.h": {
+     "from": "src/llama-version.h.in",
+     "replace": {
+      "@LLAMA_VERSION@": "0.6.0",
+      "@LLAMA_BUILD_COMMIT@": "d8123504"
+     }
+    }
+   },
+   "shard": 3
+  },
+  {
+   "name": "whisper.cpp",
+   "category": "machine learning",
+   "kind": "ML inference (speech recognition, C++ part only)",
+   "why": "Mel spectrogram, FFT and decoding loops over std::vector<float>; ggml (C) is not compiled.",
+   "version": "v1.9.5",
+   "repo": "https://github.com/ggml-org/whisper.cpp",
+   "commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+   "downloads": [
+    {
+     "url": "https://github.com/ggml-org/whisper.cpp/archive/d1be6fde11ac6e0407606b4e42fe72d34add8037.tar.gz",
+     "file": "whisper.cpp.tar.gz",
+     "sha256": "645445da884df6dbd52b30f82d7be7c01d1767c938714e477e786b88d529e9f4",
+     "bytes": 9631456
+    }
+   ],
+   "root": "whisper.cpp-d1be6fde11ac6e0407606b4e42fe72d34add8037",
+   "sources": [
+    "src/whisper.cpp",
+    "src/parakeet.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src",
+    "include",
+    "ggml/include"
+   ],
+   "defines": [
+    "WHISPER_VERSION=\"1.9.5\"",
+    "PARAKEET_VERSION=\"1.9.5\""
+   ],
+   "shard": 2
+  },
+  {
+   "name": "hnswlib",
+   "category": "machine learning",
+   "kind": "ML (approximate nearest-neighbour search, HNSW)",
+   "why": "Header-only vector search used by vector databases: distance loops and graph walks.",
+   "version": "0.9.0",
+   "repo": "https://github.com/nmslib/hnswlib",
+   "commit": "d9b3608c83d83b46c96e25088cb1d729b29dcfe9",
+   "downloads": [
+    {
+     "url": "https://github.com/nmslib/hnswlib/archive/d9b3608c83d83b46c96e25088cb1d729b29dcfe9.tar.gz",
+     "file": "hnswlib.tar.gz",
+     "sha256": "d7e12ea0604bd6d6753aab403e8cb177b95697968722e0154e8f68a31278f26e",
+     "bytes": 67545
+    }
+   ],
+   "root": "hnswlib-d9b3608c83d83b46c96e25088cb1d729b29dcfe9",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "."
+   ],
+   "defines": [],
+   "driver": "hnswlib.cpp",
+   "shard": 1
+  },
+  {
+   "name": "annoy",
+   "category": "machine learning",
+   "kind": "ML (approximate nearest-neighbour search, trees)",
+   "why": "Header-only index from Spotify: split and distance loops over std::vector<T>.",
+   "version": "1.17.3",
+   "repo": "https://github.com/spotify/annoy",
+   "commit": "75429e5dc930754698f1d37c44ea189a7521c7a3",
+   "downloads": [
+    {
+     "url": "https://github.com/spotify/annoy/archive/75429e5dc930754698f1d37c44ea189a7521c7a3.tar.gz",
+     "file": "annoy.tar.gz",
+     "sha256": "262637d7adbf906e955a4ad2d04ce9bb73b630abbb63f2bb1131d9fb412e84cb",
+     "bytes": 673505
+    }
+   ],
+   "root": "annoy-75429e5dc930754698f1d37c44ea189a7521c7a3",
+   "sources": [],
+   "exclude": [],
+   "includes": [
+    "src"
+   ],
+   "defines": [],
+   "driver": "annoy.cpp",
+   "shard": 1
+  },
+  {
+   "name": "kanzi",
+   "category": "compression",
+   "kind": "compression (block transforms and entropy coders)",
+   "why": "A modern C++ compressor: BWT, LZ, ROLZ, ANS and Huffman coders over buffers and arrays.",
+   "version": "2.6.0",
+   "repo": "https://github.com/flanglet/kanzi-cpp",
+   "commit": "1330414143be82209e0a0860d2b9f8ab567c94b5",
+   "downloads": [
+    {
+     "url": "https://github.com/flanglet/kanzi-cpp/archive/1330414143be82209e0a0860d2b9f8ab567c94b5.tar.gz",
+     "file": "kanzi.tar.gz",
+     "sha256": "cc429f622947ca43254fa05c662ca2261bc8f8e25e770a1324a36c38580c20ea",
+     "bytes": 398063
+    }
+   ],
+   "root": "kanzi-cpp-1330414143be82209e0a0860d2b9f8ab567c94b5",
+   "sources": [
+    "src/*.cpp",
+    "src/api/*.cpp",
+    "src/bitstream/*.cpp",
+    "src/entropy/*.cpp",
+    "src/io/*.cpp",
+    "src/transform/*.cpp",
+    "src/util/*.cpp"
+   ],
+   "exclude": [],
+   "includes": [
+    "src"
+   ],
+   "defines": [],
+   "shard": 5
+  }
+ ]
+}

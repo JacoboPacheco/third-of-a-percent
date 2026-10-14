@@ -1,0 +1,260 @@
+{
+ "kind": "pgo-build",
+ "schema": 1,
+ "mode": "fast",
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "llvm_profdata": "Optimized build.",
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG), -fprofile-instr-generate, then -fprofile-instr-use=<own profile>"
+ },
+ "programs": {
+  "lightgbm": {
+   "program": "lightgbm",
+   "mode": "fast",
+   "instrumented": {
+    "binary": "lightgbm.fast_gen",
+    "sha256": "5a99fd46b850f0f45ea7c6f7abcd48bdc965552c75acd9fdcb60d2e37ecd3fd9",
+    "bytes": 27047752,
+    "text_sha256": "68e12c9c739e677afb4acce7321ee60090d27376c47d13836080cec032a8e344",
+    "traps": 1241,
+    "compile_seconds": 620.3,
+    "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-generate -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -o build/pgo-work/genbin/lightgbm.fast_gen realworld/drivers/lightgbm_train.cpp build/pgo-work/gen/lightgbm/liblightgbm.fast_gen.a"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "lightgbm_default",
+      "args": [
+       "binary",
+       "10000",
+       "28",
+       "50",
+       "1"
+      ],
+      "checksum": "bd3be102b7ab3e29",
+      "checksum_r": "463ce2f0fa52b17b",
+      "seconds": 0.8
+     },
+     {
+      "row": "lightgbm_multiclass",
+      "args": [
+       "multiclass",
+       "5000",
+       "24",
+       "20",
+       "1"
+      ],
+      "checksum": "e84e0dd3680f0968",
+      "checksum_r": "1512950fe96ea655",
+      "seconds": 1.1
+     },
+     {
+      "row": "lightgbm_linear",
+      "args": [
+       "linear",
+       "10000",
+       "10",
+       "30",
+       "1"
+      ],
+      "checksum": "e2c0c3475cd7d732",
+      "checksum_r": "da617db4438ed45e",
+      "seconds": 0.4
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 59734,
+    "max_function_count": 180008832,
+    "file": "lightgbm.fast.profdata",
+    "bytes": 16678872,
+    "sha256": "38a7d0473670100ada6d36bc22ced0a39dcaae973b820ebce569652e16ee1f8b",
+    "raw_files": 3,
+    "raw_bytes": 17780688
+   },
+   "builds": {
+    "pgo": {
+     "binary": "lightgbm.fast_pgo",
+     "sha256": "f37df57732c9108cfacd1df25a3de50dec2673ea3b858cce8b4c37b47769d234",
+     "bytes": 7158480,
+     "text_sha256": "cee1448e22c3f628168f589267f3e8e9a2ebca2a68eb1b5c3a43c6c12dfa73c2",
+     "traps": 1337,
+     "compile_seconds": 566.9,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/lightgbm.fast.profdata -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -o build/pgo-work/genbin/lightgbm.fast_pgo realworld/drivers/lightgbm_train.cpp build/pgo-work/pgo/lightgbm/liblightgbm.fast_pgo.a"
+    },
+    "pgo_a64": {
+     "binary": "lightgbm.fast_pgo_a64",
+     "sha256": "5f3482c0f61a5a8da9e641544e1c92fbc6616759f00f3a213cdecf332ea7cd3d",
+     "bytes": 7174864,
+     "text_sha256": "8176360c408b0dd1a93c6c86570980c05083f884d7eb55896a3a1f4577bd219f",
+     "traps": 1337,
+     "compile_seconds": 501.7,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -fprofile-instr-use=pgometa/lightgbm.fast.profdata -falign-loops=64 -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -o build/pgo-work/genbin/lightgbm.fast_pgo_a64 realworld/drivers/lightgbm_train.cpp build/pgo-work/pgo/lightgbm/liblightgbm.fast_pgo_a64.a"
+    }
+   },
+   "binary_names": {
+    "pgo": "lightgbm.fast",
+    "pgo_a64": "lightgbm.fast_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 2
+   },
+   "census_lost_locations": [
+    {
+     "location": "include/LightGBM/utils/common.h:643:3",
+     "vectorized": 0
+    },
+    {
+     "location": "include/LightGBM/utils/common.h:652:3",
+     "vectorized": 0
+    },
+    {
+     "location": "src/boosting/rf.hpp:104:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/bin.cpp:657:3",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/dataset.cpp:1179:3",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/dataset_loader.cpp:1346:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/dataset_loader.cpp:1424:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/metadata.cpp:469:3",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/metadata.cpp:538:3",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/multi_val_dense_bin.hpp:47:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/multi_val_dense_bin.hpp:283:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:62:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:71:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:364:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/io/tree.cpp:388:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/map_metric.hpp:122:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/map_metric.hpp:132:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/map_metric.hpp:139:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:110:11",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:130:11",
+     "vectorized": 0
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:138:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/network/linker_topo.cpp:114:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/network/linker_topo.cpp:164:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/network/linker_topo.cpp:173:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/objective/multiclass_objective.hpp:98:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/objective/multiclass_objective.hpp:119:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/objective/regression_objective.hpp:120:7",
+     "vectorized": 1
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:373:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:378:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:731:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:736:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:188:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:297:9",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:312:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:315:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:324:5",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/serial_tree_learner.cpp:956:7",
+     "vectorized": 0
+    },
+    {
+     "location": "src/treelearner/serial_tree_learner.cpp:961:7",
+     "vectorized": 0
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,75 @@
+name: mitigate
+
+# The mitigation experiment (mitigate/README.md): for the reverse, stride-2, gather and matrix-multiply
+# loops, rewrites that keep libc++ FAST hardening on, each built NONE and FAST (and both again with
+# -falign-loops=64), checked for vectorization, check traps and safety (an input one element too
+# short must stop the program), and timed against the original's NONE build at the L1 and L2 sizes.
+# A matrix of 4 jobs so more than one runner CPU model is drawn; one results.json per job, uploaded as
+# "mitigate-<cpu>-j<N>". Rules: mitigate/criteria.json.
+
+on:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "how many matrix jobs: 4 (the experiment) or 1 (a probe)"
+        default: "4"
+      timing:
+        description: "time the variants (yes), or only build, read remarks and run the safety test (no)"
+        default: "yes"
+      kernels:
+        description: "comma-separated kernel ids (m04_rev,m05_stride2,m06_gather,m08_matmul), or all"
+        default: "all"
+
+permissions:
+  contents: read
+
+jobs:
+  mitigate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [1, 2, 3, 4]
+    steps:
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        if: matrix.job <= fromJSON(inputs.jobs)
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU ($(nproc) cores)"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+        if: matrix.job <= fromJSON(inputs.jobs)
+
+      - name: Install clang-18 and libc++-18 (Ubuntu noble apt)
+        if: matrix.job <= fromJSON(inputs.jobs)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev
+          clang++-18 --version
+          dpkg-query -W libc++-18-dev libc++abi-18-dev clang-18
+
+      - name: Build, check safety, time
+        if: matrix.job <= fromJSON(inputs.jobs)
+        env:
+          MITIGATE_JOB: ${{ matrix.job }}
+          KERNELS: ${{ inputs.kernels }}
+        run: |
+          if [ "${{ inputs.timing }}" = "yes" ]; then T=""; else T="--no-timing"; fi
+          python3 mitigate/run.py --kernels "$KERNELS" --out out $T
+
+      - name: Summary
+        if: always() && matrix.job <= fromJSON(inputs.jobs)
+        run: python3 mitigate/summarize.py out/results.json >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload results
+        if: always() && matrix.job <= fromJSON(inputs.jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mitigate-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn

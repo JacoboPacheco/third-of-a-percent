@@ -1,0 +1,257 @@
+name: realworld
+
+# Real programs that contain census-2 lost loops, timed NONE against FAST (realworld/PLAN.md).
+#
+# mode=build: fetches the pinned sources (sha256 checked), builds every program six ways (NONE, FAST,
+#   both with -falign-loops=64, and NONE/FAST with -gline-tables-only for the profile) in six
+#   parallel jobs; then one job runs each build once for checksums and profiles each row with Cachegrind (the
+#   share of instructions on the census lost loops; the instruction ratio FAST/NONE). Uploads the
+#   binaries ("rwbin-<group>") and the build and profile records ("rwmeta-<group>"). No timing.
+# mode=measure: downloads the binaries of the build run given in bins_run (so every measurement run
+#   times the same bytes), and times every row on a matrix of jobs (ABBA, 40 processes per side,
+#   pinned; FAST/NONE, byte-identical A/A, aligned pair, layout A/A). The last job pools the jobs per
+#   CPU model (realworld/pool_rw.py, harness/pool.py's two-level bootstrap), checks the result without
+#   a compiler (realworld/check.py) and uploads everything as "realworld-run-<run id>".
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "build (build, smoke, profile; no timing) or measure (time the binaries of bins_run)"
+        default: "build"
+      bins_run:
+        description: "measure: the run id of the build run whose binaries are timed"
+        default: ""
+      rows:
+        description: "comma-separated rows, or all"
+        default: "all"
+      pairs:
+        description: "measure: pairs per row (fast, aa, aligned, layout)"
+        default: "fast,aa,aligned,layout"
+      jobs:
+        description: "measure: matrix job numbers as a JSON list"
+        default: "[1, 2, 3, 4]"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    if: inputs.mode == 'build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [lightgbm, lightgbm-g, lightgbm-a64, draco, draco-a64, small]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18, libc++-18, valgrind and binutils (Ubuntu noble apt)
+        timeout-minutes: 6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev binutils
+          clang++-18 --version
+          dpkg-query -W clang-18 libc++-18-dev libc++abi-18-dev binutils
+
+      - name: Programs and rows of this group
+        id: sel
+        env:
+          GROUP: ${{ matrix.group }}
+          ROWS: ${{ inputs.rows }}
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          d = json.load(open("realworld/programs.json"))
+          g = d["groups"][os.environ["GROUP"]]
+          progs = g["programs"]
+          want = os.environ["ROWS"].strip()
+          rows = [r["row"] for r in d["rows"] if r["program"] in progs and (want == "all" or r["row"] in want.split(","))]
+          progs = [p for p in progs if any(r["program"] == p and r["row"] in rows for r in d["rows"])]
+          print("programs=" + " ".join(progs))
+          print("rows=" + " ".join(rows))
+          print("builds=" + ("" if g["builds"] == "all" else "--builds " + g["builds"]))
+          EOF
+          cat "$GITHUB_OUTPUT"
+
+      - name: Fetch the pinned sources (sha256 checked)
+        if: steps.sel.outputs.programs != ''
+        run: python3 realworld/fetch.py build/rw-deps ${{ steps.sel.outputs.programs }}
+
+      - name: Build six ways
+        if: steps.sel.outputs.programs != ''
+        run: |
+          mkdir -p rwbin rwmeta
+          python3 realworld/build.py --deps build/rw-deps --work build/rw-work --bin rwbin ${{ steps.sel.outputs.builds }} \
+            --out rwmeta/build-${{ matrix.group }}.json ${{ steps.sel.outputs.programs }}
+
+      - name: Copy the records next to the binaries
+        if: steps.sel.outputs.programs != ''
+        run: cp rwmeta/*.json rwbin/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rwbin-${{ matrix.group }}
+          path: rwbin/
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rwmeta-${{ matrix.group }}
+          path: rwmeta/
+          if-no-files-found: warn
+
+  profile:
+    needs: build
+    if: inputs.mode == 'build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the libc++-18 runtime and valgrind (Ubuntu noble apt)
+        timeout-minutes: 6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc++-18-dev libc++abi-18-dev valgrind
+          valgrind --version
+          dpkg-query -W libc++-18-dev libc++abi-18-dev valgrind
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rwbin-*
+          merge-multiple: true
+          path: rwbin
+
+      - name: Smoke runs and Cachegrind profile of every row
+        env:
+          ROWS: ${{ inputs.rows }}
+        run: |
+          chmod +x rwbin/*.none rwbin/*.fast rwbin/*.none_a64 rwbin/*.fast_a64 rwbin/*.none_g rwbin/*.fast_g
+          if [ "$ROWS" = "all" ]; then
+            ROWS="$(python3 -c 'import json; print(" ".join(r["row"] for r in json.load(open("realworld/programs.json"))["rows"]))')"
+          else
+            ROWS="$(echo "$ROWS" | tr ',' ' ')"
+          fi
+          mkdir -p rwmeta
+          python3 realworld/profile.py --bin rwbin --out rwmeta/profile-all.json --cg-dir build/cg $ROWS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rwmeta-profile
+          path: rwmeta/
+          if-no-files-found: warn
+
+  measure:
+    if: inputs.mode == 'measure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      # First, before anything else: every result is read against the CPU it got.
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU, cores: $(nproc)"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+
+      - name: Install the libc++-18 runtime (Ubuntu noble apt)
+        timeout-minutes: 6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc++-18-dev libc++abi-18-dev
+          dpkg-query -W libc++-18-dev libc++abi-18-dev
+
+      - name: Binaries of the build run
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rwbin-*
+          merge-multiple: true
+          path: rwbin
+          run-id: ${{ inputs.bins_run }}
+          github-token: ${{ github.token }}
+
+      - name: Time every row
+        env:
+          ROWS: ${{ inputs.rows }}
+          PAIRS: ${{ inputs.pairs }}
+        run: |
+          chmod +x rwbin/*.none rwbin/*.fast rwbin/*.none_a64 rwbin/*.fast_a64
+          sha256sum rwbin/*.none rwbin/*.fast rwbin/*.none_a64 rwbin/*.fast_a64
+          if [ "$ROWS" = "all" ]; then
+            ROWS="$(python3 -c 'import json; print(" ".join(r["row"] for r in json.load(open("realworld/programs.json"))["rows"]))')"
+          else
+            ROWS="$(echo "$ROWS" | tr ',' ' ')"
+          fi
+          mkdir -p out
+          python3 realworld/measure.py --bin rwbin --out out/results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}.json \
+            --job ${{ matrix.job }} --pairs "$PAIRS" $ROWS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn
+
+  pool:
+    needs: measure
+    if: always() && inputs.mode == 'measure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install numpy (Ubuntu noble apt)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          path: run/jobs
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rwmeta-*
+          merge-multiple: true
+          path: run/meta
+          run-id: ${{ inputs.bins_run }}
+          github-token: ${{ github.token }}
+
+      - name: Pool per CPU model and check without a compiler
+        run: |
+          ls -R run | head -50
+          python3 realworld/pool_rw.py run/realworld.json run
+          python3 realworld/check.py --pooled run/realworld.json --no-readme
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("run/realworld.json"))
+          for b in d["cpus"] + [d["all_runners"]]:
+              print(f"\n#### {b['cpu_model']} ({b['jobs']} jobs)\n")
+              print("| row | FAST/NONE [95%] | aligned [95%] | A/A half-width | layout A/A | reading |\n|---|---|---|---|---|---|")
+              for r in b["rows"]:
+                  P = r["pairs"]
+                  f = lambda k: (f"{P[k]['time']['ratio']:.4f} [{P[k]['time']['ci95'][0]:.4f}, {P[k]['time']['ci95'][1]:.4f}]" if k in P else "-")
+                  hw = f"{P['aa']['time']['half_width_pct']:.2f}%" if "aa" in P else "-"
+                  print(f"| {r['row']} | {f('fast')} | {f('aligned')} | {hw} | {f('layout')} | {r.get('reading', {}).get('text', '-')} |")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: realworld-run-${{ github.run_id }}
+          path: run/
+          if-no-files-found: warn

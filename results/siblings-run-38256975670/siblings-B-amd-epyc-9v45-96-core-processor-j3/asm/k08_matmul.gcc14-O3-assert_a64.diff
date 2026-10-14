@@ -1,0 +1,222 @@
+--- k08_matmul.gcc14O3.none_a64.s
++++ k08_matmul.gcc14O3.gcc14-O3-assert_a64.s
+@@ -3,143 +3,70 @@
+ test   %rcx,%rcx
+ je     <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+ push   %r15
+-lea    -0x1(%rcx),%rax
++mov    %rdx,%r9
+ mov    %rcx,%r11
++xor    %edx,%edx
+ push   %r14
+-mov    %rcx,%r14
++mov    %rcx,%r10
+ push   %r13
+-and    $0xfffffffffffffffc,%r14
+-xor    %r13d,%r13d
+ push   %r12
+-lea    0x0(,%rcx,4),%r12
++xor    %r12d,%r12d
+ push   %rbp
+ push   %rbx
+-mov    (%rdi),%rbp
+-mov    %r13,%rbx
+-xor    %edi,%edi
+-mov    (%rsi),%r15
+-mov    %rcx,%rsi
+-mov    (%rdx),%r10
+-shr    $0x2,%rsi
+-mov    %rbp,%rdx
+-mov    %rax,-0x18(%rsp)
+-lea    0x1(%r14),%rax
+-add    %r12,%r15
+-shl    $0x4,%rsi
+-mov    %rax,-0x40(%rsp)
+-lea    0x2(%r14),%rax
+-mov    %rax,-0x38(%rsp)
+-mov    %rcx,%rax
+-and    $0x3,%eax
+-mov    %rax,-0x48(%rsp)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   0x0(%rax)
+-lea    0x0(%rbp,%rbx,4),%rcx
+-mov    %rdi,-0x10(%rsp)
+-mov    %r15,%r8
+-mov    %r10,%rax
+-mov    %rcx,-0x20(%rsp)
+-mov    -0x40(%rsp),%rcx
+-sub    %r12,%r8
+-xor    %r9d,%r9d
+-add    %rbx,%rcx
+-lea    0x0(%rbp,%rcx,4),%rcx
+-mov    %rcx,-0x30(%rsp)
+-mov    -0x38(%rsp),%rcx
+-add    %rbx,%rcx
+-lea    0x0(%rbp,%rcx,4),%rcx
+-mov    %rcx,-0x28(%rsp)
+-cmpq   $0x2,-0x18(%rsp)
+-mov    (%r8),%edi
+-jbe    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-lea    0x4(%rax),%r13
+-mov    %rdx,%rcx
+-sub    %r13,%rcx
+-cmp    $0x8,%rcx
+-jbe    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-movd   %edi,%xmm4
+-xor    %ecx,%ecx
+-pshufd $0x0,%xmm4,%xmm2
+-movdqa %xmm2,%xmm3
+-psrlq  $0x20,%xmm3
+-cs nopw 0x0(%rax,%rax,1)
+-movdqu (%rax,%rcx,1),%xmm0
+-movdqa %xmm0,%xmm1
+-psrlq  $0x20,%xmm0
+-pmuludq %xmm2,%xmm1
+-pmuludq %xmm3,%xmm0
+-pshufd $0x8,%xmm1,%xmm1
+-pshufd $0x8,%xmm0,%xmm0
+-punpckldq %xmm0,%xmm1
+-movdqu (%rdx,%rcx,1),%xmm0
+-paddd  %xmm1,%xmm0
+-movups %xmm0,(%rdx,%rcx,1)
+-add    $0x10,%rcx
+-cmp    %rsi,%rcx
++xor    %ebx,%ebx
++sub    $0x28,%rsp
++mov    (%rsi),%r13
++mov    0x8(%rsi),%rax
++sub    %r13,%rax
++sar    $0x2,%rax
++mov    %rax,%r14
++mov    %rbx,0x18(%rsp)
++mov    %rdx,%r8
++mov    %r12,%rcx
++mov    %rdx,%rbx
++mov    %r10,%rsi
++cmp    %r14,%rcx
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++mov    (%r9),%rax
++mov    0x8(%r9),%r10
++mov    %r12,0x8(%rsp)
++mov    %r13,0x10(%rsp)
++mov    0x0(%r13,%rcx,4),%r15d
++sub    %rax,%r10
++lea    (%rax,%r8,4),%rbp
++mov    %r12,%rax
++sar    $0x2,%r10
++lea    (%rax,%r8,1),%rdx
++cmp    %r10,%rdx
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++mov    (%rdi),%r12
++mov    0x8(%rdi),%rdx
++mov    0x0(%rbp,%rax,4),%r13d
++sub    %r12,%rdx
++sar    $0x2,%rdx
++imul   %r15d,%r13d
++cmp    %rdx,%rax
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++add    %r13d,(%r12,%rax,4)
++add    $0x1,%rax
++cmp    %r11,%rax
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-cmpq   $0x0,-0x48(%rsp)
+-je     <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-lea    (%r14,%rbx,1),%rcx
+-lea    (%r14,%r9,1),%r13
+-mov    %rcx,-0x50(%rsp)
+-mov    (%r10,%r13,4),%ecx
+-imul   %edi,%ecx
+-mov    %ecx,%r13d
+-mov    -0x50(%rsp),%rcx
+-add    %r13d,0x0(%rbp,%rcx,4)
+-mov    -0x40(%rsp),%rcx
+-cmp    %r11,%rcx
+-jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-add    %r9,%rcx
+-mov    (%r10,%rcx,4),%r13d
+-imul   %edi,%r13d
+-mov    %r13d,%ecx
+-mov    -0x30(%rsp),%r13
+-add    %ecx,0x0(%r13)
+-mov    -0x38(%rsp),%rcx
+-cmp    %r11,%rcx
+-jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-add    %r9,%rcx
+-imul   (%r10,%rcx,4),%edi
+-mov    -0x28(%rsp),%rcx
+-add    %edi,(%rcx)
+-add    $0x4,%r8
+-add    %r12,%rax
+-add    %r11,%r9
+-cmp    %r15,%r8
+-je     <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-lea    0x4(%rax),%r13
+-mov    %rdx,%rcx
+-mov    (%r8),%edi
+-sub    %r13,%rcx
+-cmp    $0x8,%rcx
+-ja     <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-mov    %r8,-0x50(%rsp)
+-mov    -0x20(%rsp),%rcx
+-lea    (%rax,%r12,1),%r13
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-cs nopw 0x0(%rax,%rax,1)
+-mov    (%rax),%r8d
+-add    $0x4,%rax
+-imul   %edi,%r8d
+-add    %r8d,(%rcx)
+-add    $0x4,%rcx
+-cmp    %r13,%rax
++add    $0x1,%rcx
++mov    0x8(%rsp),%r12
++mov    0x10(%rsp),%r13
++add    %rsi,%r8
++cmp    %rcx,%r11
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-mov    -0x50(%rsp),%r8
+-add    %r11,%r9
+-add    $0x4,%r8
+-cmp    %r15,%r8
++mov    %rbx,%rdx
++mov    0x18(%rsp),%rbx
++mov    %rsi,%r10
++add    %rsi,%r11
++add    %rsi,%r12
++sub    %rsi,%rdx
++add    $0x1,%rbx
++cmp    %rbx,%rsi
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-mov    -0x10(%rsp),%rdi
+-add    %r12,%r15
+-add    %r12,%rdx
+-add    %r11,%rbx
+-add    $0x1,%rdi
+-cmp    %rdi,%r11
+-jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++add    $0x28,%rsp
+ pop    %rbx
+ pop    %rbp
+ pop    %r12
+@@ -147,6 +74,19 @@
+ pop    %r14
+ pop    %r15
+ ret
++cs nopw 0x0(%rax,%rax,1)
++lea    0x58d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x5c2(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x47d,%esi
++lea    0x68e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
++lea    0x56d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x6a2(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0x66e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
+ ret
+ cs nopw 0x0(%rax,%rax,1)
+-nopl   (%rax)
++nopl   0x0(%rax,%rax,1)

@@ -1,0 +1,74 @@
+--- m04_rev.orig.fast.s
++++ m04_rev.rtransform.fast.s
+@@ -1,24 +1,52 @@
+ <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+ mov    (%rsi),%rax
+-mov    0x8(%rsi),%rcx
+-sub    %rax,%rcx
++mov    0x8(%rsi),%rsi
++mov    %rsi,%r8
++sub    %rax,%r8
+ je     <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-sar    $0x2,%rcx
+-mov    (%rdi),%rdx
+-mov    0x8(%rdi),%rsi
+-sub    %rdx,%rsi
+-sar    $0x2,%rsi
+-lea    -0x1(%rcx),%rdi
+-data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-cmp    %rsi,%rdi
+-jae    <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-mov    -0x4(%rax,%rcx,4),%r8d
+-add    %r8d,%r8d
+-mov    %r8d,-0x4(%rdx,%rcx,4)
+-lea    -0x1(%rcx),%r8
+-mov    %r8,%rcx
+-test   %r8,%r8
++mov    0x8(%rdi),%rdi
++add    $0xfffffffffffffffc,%r8
++cmp    $0x1c,%r8
++jb     <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++mov    %rsi,%rcx
++sub    %rdi,%rcx
++cmp    $0x20,%rcx
++jb     <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++shr    $0x2,%r8
++inc    %r8
++mov    %r8,%r9
++and    $0xfffffffffffffff8,%r9
++lea    0x0(,%r9,4),%r10
++mov    %rsi,%rcx
++sub    %r10,%rcx
++mov    %rdi,%rdx
++sub    %r10,%rdx
++mov    %r9,%r10
++neg    %r10
++xor    %r11d,%r11d
++nopl   0x0(%rax,%rax,1)
++movdqu -0x20(%rsi,%r11,4),%xmm0
++movdqu -0x10(%rsi,%r11,4),%xmm1
++paddd  %xmm1,%xmm1
++paddd  %xmm0,%xmm0
++movdqu %xmm1,-0x10(%rdi,%r11,4)
++movdqu %xmm0,-0x20(%rdi,%r11,4)
++add    $0xfffffffffffffff8,%r11
++cmp    %r11,%r10
++jne    <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++cmp    %r9,%r8
++jne    <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++jmp    <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++mov    %rsi,%rcx
++mov    %rdi,%rdx
++add    $0xfffffffffffffffc,%rdx
++xchg   %ax,%ax
++mov    -0x4(%rcx),%esi
++add    $0xfffffffffffffffc,%rcx
++add    %esi,%esi
++mov    %esi,(%rdx)
++add    $0xfffffffffffffffc,%rdx
++cmp    %rax,%rcx
+ jne    <_Z12kern_m04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ ret
+-ud2
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++data16 cs nopw 0x0(%rax,%rax,1)

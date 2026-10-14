@@ -1,0 +1,2354 @@
+{
+ "schema": "corpus-2",
+ "what": "Compile-time census: loops clang 18 vectorizes with libc++ hardening NONE and not with FAST.",
+ "projects_file": "projects2.json",
+ "shards": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "target": "avx2",
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "packages": [
+   "binutils 2.42-4ubuntu2.10",
+   "clang-18 1:18.1.3-1ubuntu1",
+   "libc++-18-dev 1:18.1.3-1ubuntu1",
+   "libc++abi-18-dev 1:18.1.3-1ubuntu1",
+   "llvm-18 1:18.1.3-1ubuntu1"
+  ],
+  "flags": [
+   "-O2",
+   "-std=c++20",
+   "-stdlib=libc++",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "-fsave-optimization-record",
+   "-foptimization-record-passes=loop-vectorize",
+   "-march=x86-64-v3"
+  ],
+  "modes": {
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST"
+  },
+  "target": "x86-64-v3 (-march=x86-64-v3, AVX2)"
+ },
+ "source": {
+  "repo_sha": "322cc218fd3a03f8064e8a5b0a04a44be6c52570",
+  "run_id": "38273183229"
+ },
+ "projects": [
+  {
+   "name": "box2d",
+   "category": "physics and game",
+   "kind": "physics engine (2D rigid bodies)",
+   "version": "2.4.2",
+   "repo": "https://github.com/erincatto/box2d",
+   "commit": "411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230",
+   "downloads": [
+    {
+     "url": "https://github.com/erincatto/box2d/archive/411acc32eb6d4f2e96fc70ddbdf01fe5f9b16230.tar.gz",
+     "sha256": "853a6141b9f187a9de6a1e9a7864b9394eb70150373af1e185f0d508f533a524",
+     "bytes": 1237162
+    }
+   ],
+   "translation_units": 45,
+   "compiled": 45,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -Isrc -c src/collision/b2_broad_phase.cpp -o OUT.o",
+   "none": {
+    "vectorized": 6,
+    "vectorized_unique": 4,
+    "loops_reported": 242,
+    "ud2": 3,
+    "text_bytes": 138139,
+    "stderr_vectorized": 6,
+    "vectorized_by_origin": {
+     "project": 6,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 6,
+    "vectorized_unique": 4,
+    "loops_reported": 242,
+    "ud2": 3,
+    "text_bytes": 138139,
+    "stderr_vectorized": 6,
+    "vectorized_by_origin": {
+     "project": 6,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "joltphysics",
+   "category": "physics and game",
+   "kind": "physics engine (3D rigid and soft bodies)",
+   "version": "5.6.0",
+   "repo": "https://github.com/jrouwe/JoltPhysics",
+   "commit": "e77f175595e64cb44218cc9d9d56fc365ad0e36a",
+   "downloads": [
+    {
+     "url": "https://github.com/jrouwe/JoltPhysics/archive/e77f175595e64cb44218cc9d9d56fc365ad0e36a.tar.gz",
+     "sha256": "1f32328fb763135de10a244568d6ccb2ed9b1e6593fafe6dc6db5b2719d330bd",
+     "bytes": 19392623
+    }
+   ],
+   "translation_units": 137,
+   "compiled": 137,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -c Jolt/AABBTree/AABBTreeBuilder.cpp -o OUT.o",
+   "none": {
+    "vectorized": 116,
+    "vectorized_unique": 28,
+    "loops_reported": 3033,
+    "ud2": 21,
+    "text_bytes": 1955846,
+    "stderr_vectorized": 116,
+    "vectorized_by_origin": {
+     "project": 116,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 116,
+    "vectorized_unique": 28,
+    "loops_reported": 3033,
+    "ud2": 21,
+    "text_bytes": 1955846,
+    "stderr_vectorized": 116,
+    "vectorized_by_origin": {
+     "project": 116,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "recastnavigation",
+   "category": "physics and game",
+   "kind": "game AI (navigation mesh build and path finding)",
+   "version": "1.6.0",
+   "repo": "https://github.com/recastnavigation/recastnavigation",
+   "commit": "6dc1667f580357e8a2154c28b7867bea7e8ad3a7",
+   "downloads": [
+    {
+     "url": "https://github.com/recastnavigation/recastnavigation/archive/6dc1667f580357e8a2154c28b7867bea7e8ad3a7.tar.gz",
+     "sha256": "f565cc91b85df95a656cfc672e41c02e8aa44ba2363905aa8277ce20ea87491d",
+     "bytes": 1280923
+    }
+   ],
+   "translation_units": 26,
+   "compiled": 26,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -IRecast/Include -IDetour/Include -IDetourCrowd/Include -IDetourTileCache/Include -c Detour/Source/DetourAlloc.cpp -o OUT.o",
+   "none": {
+    "vectorized": 91,
+    "vectorized_unique": 46,
+    "loops_reported": 666,
+    "ud2": 3,
+    "text_bytes": 306695,
+    "stderr_vectorized": 91,
+    "vectorized_by_origin": {
+     "project": 91,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 91,
+    "vectorized_unique": 46,
+    "loops_reported": 666,
+    "ud2": 3,
+    "text_bytes": 306695,
+    "stderr_vectorized": 91,
+    "vectorized_by_origin": {
+     "project": 91,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "ozz-animation",
+   "category": "physics and game",
+   "kind": "game animation runtime (skeletal sampling, blending)",
+   "version": "0.17.0",
+   "repo": "https://github.com/guillaumeblanc/ozz-animation",
+   "commit": "744eb9d99f606eda849acb0b1204f7a3dc20bca1",
+   "downloads": [
+    {
+     "url": "https://github.com/guillaumeblanc/ozz-animation/archive/744eb9d99f606eda849acb0b1204f7a3dc20bca1.tar.gz",
+     "sha256": "a29a8a014b571487d9a6dabebeed57627fc19bf1f0ebf531b0c76384840c3b74",
+     "bytes": 43532520
+    }
+   ],
+   "translation_units": 40,
+   "compiled": 40,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -Isrc -c src/animation/offline/additive_animation_builder.cc -o OUT.o",
+   "none": {
+    "vectorized": 61,
+    "vectorized_unique": 13,
+    "loops_reported": 702,
+    "ud2": 0,
+    "text_bytes": 259908,
+    "stderr_vectorized": 61,
+    "vectorized_by_origin": {
+     "project": 39,
+     "driver": 0,
+     "libc++": 22,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 60,
+    "vectorized_unique": 12,
+    "loops_reported": 701,
+    "ud2": 24,
+    "text_bytes": 260621,
+    "stderr_vectorized": 60,
+    "vectorized_by_origin": {
+     "project": 38,
+     "driver": 0,
+     "libc++": 22,
+     "system": 0
+    }
+   },
+   "lost": 1,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 1.639,
+   "ud2_added": 24,
+   "text_bytes_change_pct": 0.274,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 1
+   },
+   "lost_by_origin": {
+    "project": 1,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 1
+  },
+  {
+   "name": "entt",
+   "category": "physics and game",
+   "kind": "game engine core (entity-component system)",
+   "version": "3.16.0",
+   "repo": "https://github.com/skypjack/entt",
+   "commit": "b4e58bdd364ad72246c123a0c28538eab3252672",
+   "downloads": [
+    {
+     "url": "https://github.com/skypjack/entt/archive/b4e58bdd364ad72246c123a0c28538eab3252672.tar.gz",
+     "sha256": "3e996cf255b09527faf995c7c36e3daf92cefa0fb37540a4b9c359af557e19cd",
+     "bytes": 912100
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -c _census_driver/entt.cpp -o OUT.o",
+   "none": {
+    "vectorized": 28,
+    "vectorized_unique": 3,
+    "loops_reported": 234,
+    "ud2": 0,
+    "text_bytes": 55030,
+    "stderr_vectorized": 28,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 28,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 28,
+    "vectorized_unique": 3,
+    "loops_reported": 259,
+    "ud2": 72,
+    "text_bytes": 49488,
+    "stderr_vectorized": 28,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 28,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 72,
+   "text_bytes_change_pct": -10.071,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "stockfish",
+   "category": "physics and game",
+   "kind": "chess engine (search and NNUE evaluation)",
+   "version": "sf_19",
+   "repo": "https://github.com/official-stockfish/Stockfish",
+   "commit": "edb0d9db6731067ec50ce619ff372b463bc4dd5d",
+   "downloads": [
+    {
+     "url": "https://github.com/official-stockfish/Stockfish/archive/edb0d9db6731067ec50ce619ff372b463bc4dd5d.tar.gz",
+     "sha256": "4fc20699a5ecf7883b036ce180020f5e57979623ad719fd2a52839209521581b",
+     "bytes": 291397
+    }
+   ],
+   "translation_units": 26,
+   "compiled": 26,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -DIS_64BIT -DUSE_SSE2 -DNNUE_EMBEDDING_OFF -c src/attacks.cpp -o OUT.o",
+   "none": {
+    "vectorized": 105,
+    "vectorized_unique": 26,
+    "loops_reported": 1642,
+    "ud2": 3,
+    "text_bytes": 587974,
+    "stderr_vectorized": 105,
+    "vectorized_by_origin": {
+     "project": 36,
+     "driver": 0,
+     "libc++": 69,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 103,
+    "vectorized_unique": 25,
+    "loops_reported": 1641,
+    "ud2": 142,
+    "text_bytes": 588562,
+    "stderr_vectorized": 103,
+    "vectorized_by_origin": {
+     "project": 35,
+     "driver": 0,
+     "libc++": 68,
+     "system": 0
+    }
+   },
+   "lost": 2,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 1.905,
+   "ud2_added": 139,
+   "text_bytes_change_pct": 0.1,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 2
+   },
+   "lost_by_origin": {
+    "project": 1,
+    "driver": 0,
+    "libc++": 1,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "meshoptimizer",
+   "category": "graphics and geometry",
+   "kind": "mesh processing (GPU vertex/index optimization)",
+   "version": "1.3",
+   "repo": "https://github.com/zeux/meshoptimizer",
+   "commit": "9e1f07b159d3cb777f1c67ed31fc11fd117986f4",
+   "downloads": [
+    {
+     "url": "https://github.com/zeux/meshoptimizer/archive/9e1f07b159d3cb777f1c67ed31fc11fd117986f4.tar.gz",
+     "sha256": "e753b45fbc410031bd69cb278180ae31fa0d5430d0c3e662e3a3b100467ce0b3",
+     "bytes": 610285
+    }
+   ],
+   "translation_units": 21,
+   "compiled": 21,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -c src/allocator.cpp -o OUT.o",
+   "none": {
+    "vectorized": 52,
+    "vectorized_unique": 43,
+    "loops_reported": 587,
+    "ud2": 0,
+    "text_bytes": 206608,
+    "stderr_vectorized": 52,
+    "vectorized_by_origin": {
+     "project": 52,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 52,
+    "vectorized_unique": 43,
+    "loops_reported": 587,
+    "ud2": 0,
+    "text_bytes": 206608,
+    "stderr_vectorized": 52,
+    "vectorized_by_origin": {
+     "project": 52,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "earcut",
+   "category": "graphics and geometry",
+   "kind": "geometry (polygon triangulation)",
+   "version": "3.2.4",
+   "repo": "https://github.com/mapbox/earcut.hpp",
+   "commit": "92acda9e2ed96ff1f910cda35de444727e9da7b0",
+   "downloads": [
+    {
+     "url": "https://github.com/mapbox/earcut.hpp/archive/92acda9e2ed96ff1f910cda35de444727e9da7b0.tar.gz",
+     "sha256": "799dc5d93478f74ca5331eaba935946efa25772f00dc7274005e07e296d469a8",
+     "bytes": 97490
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -c _census_driver/earcut.cpp -o OUT.o",
+   "none": {
+    "vectorized": 13,
+    "vectorized_unique": 1,
+    "loops_reported": 149,
+    "ud2": 0,
+    "text_bytes": 43949,
+    "stderr_vectorized": 13,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 13,
+    "vectorized_unique": 1,
+    "loops_reported": 159,
+    "ud2": 22,
+    "text_bytes": 45032,
+    "stderr_vectorized": 13,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 22,
+   "text_bytes_change_pct": 2.464,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "delaunator-cpp",
+   "category": "graphics and geometry",
+   "kind": "geometry (Delaunay triangulation)",
+   "version": "0.4.0",
+   "repo": "https://github.com/delfrrr/delaunator-cpp",
+   "commit": "393cfc39c9b1ca268081d5f42062de0d9b33f5a2",
+   "downloads": [
+    {
+     "url": "https://github.com/delfrrr/delaunator-cpp/archive/393cfc39c9b1ca268081d5f42062de0d9b33f5a2.tar.gz",
+     "sha256": "61deec54e3e2e64e4fb487890f27f2b94e24e3957b784f22f332f87e594adaa9",
+     "bytes": 2289865
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -c _census_driver/delaunator.cpp -o OUT.o",
+   "none": {
+    "vectorized": 11,
+    "vectorized_unique": 2,
+    "loops_reported": 49,
+    "ud2": 0,
+    "text_bytes": 18860,
+    "stderr_vectorized": 11,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 1,
+     "libc++": 10,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 11,
+    "vectorized_unique": 2,
+    "loops_reported": 48,
+    "ud2": 17,
+    "text_bytes": 21805,
+    "stderr_vectorized": 11,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 1,
+     "libc++": 10,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 17,
+   "text_bytes_change_pct": 15.615,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "nanoflann",
+   "category": "graphics and geometry",
+   "kind": "geometry (k-d tree nearest neighbours)",
+   "version": "1.10.0",
+   "repo": "https://github.com/jlblancoc/nanoflann",
+   "commit": "57d2d8c83c862b66f4689b082423e31314ad27ec",
+   "downloads": [
+    {
+     "url": "https://github.com/jlblancoc/nanoflann/archive/57d2d8c83c862b66f4689b082423e31314ad27ec.tar.gz",
+     "sha256": "c84a1cbd90d26813859d87c43f71ca4363e4df777154cb7bbdedf3feb856864d",
+     "bytes": 550018
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -c _census_driver/nanoflann.cpp -o OUT.o",
+   "none": {
+    "vectorized": 4,
+    "vectorized_unique": 2,
+    "loops_reported": 44,
+    "ud2": 0,
+    "text_bytes": 16819,
+    "stderr_vectorized": 4,
+    "vectorized_by_origin": {
+     "project": 1,
+     "driver": 0,
+     "libc++": 3,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 4,
+    "vectorized_unique": 2,
+    "loops_reported": 44,
+    "ud2": 11,
+    "text_bytes": 18026,
+    "stderr_vectorized": 4,
+    "vectorized_by_origin": {
+     "project": 1,
+     "driver": 0,
+     "libc++": 3,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 11,
+   "text_bytes_change_pct": 7.176,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "nanort",
+   "category": "graphics and geometry",
+   "kind": "graphics (ray tracing BVH build and traversal)",
+   "version": "release 2024-11-10",
+   "repo": "https://github.com/lighttransport/nanort",
+   "commit": "cdf474ae9176b87a9334c858bb06c9e028ed0e0d",
+   "downloads": [
+    {
+     "url": "https://github.com/lighttransport/nanort/archive/cdf474ae9176b87a9334c858bb06c9e028ed0e0d.tar.gz",
+     "sha256": "99c011d695b8e158ce317ab5d47aa69f6c5ad272062ab26801f15f56b7122e49",
+     "bytes": 29506236
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -c _census_driver/nanort.cpp -o OUT.o",
+   "none": {
+    "vectorized": 7,
+    "vectorized_unique": 6,
+    "loops_reported": 35,
+    "ud2": 0,
+    "text_bytes": 11128,
+    "stderr_vectorized": 7,
+    "vectorized_by_origin": {
+     "project": 1,
+     "driver": 0,
+     "libc++": 6,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 7,
+    "vectorized_unique": 6,
+    "loops_reported": 30,
+    "ud2": 6,
+    "text_bytes": 11692,
+    "stderr_vectorized": 7,
+    "vectorized_by_origin": {
+     "project": 1,
+     "driver": 0,
+     "libc++": 6,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 6,
+   "text_bytes_change_pct": 5.068,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "draco",
+   "category": "graphics and geometry",
+   "kind": "graphics (3D mesh and point-cloud compression)",
+   "version": "1.5.7",
+   "repo": "https://github.com/google/draco",
+   "commit": "8786740086a9f4d83f44aa83badfbea4dce7a1b5",
+   "downloads": [
+    {
+     "url": "https://github.com/google/draco/archive/8786740086a9f4d83f44aa83badfbea4dce7a1b5.tar.gz",
+     "sha256": "b9c2392dbfcf454aaec68823d832de9d62614054b33807b7c9776799b8e0bbca",
+     "bytes": 60469150
+    }
+   ],
+   "translation_units": 129,
+   "compiled": 129,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -I_census_gen -c src/draco/animation/animation.cc -o OUT.o",
+   "none": {
+    "vectorized": 826,
+    "vectorized_unique": 58,
+    "loops_reported": 3463,
+    "ud2": 20,
+    "text_bytes": 1153461,
+    "stderr_vectorized": 826,
+    "vectorized_by_origin": {
+     "project": 185,
+     "driver": 0,
+     "libc++": 641,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 819,
+    "vectorized_unique": 55,
+    "loops_reported": 3399,
+    "ud2": 567,
+    "text_bytes": 1159593,
+    "stderr_vectorized": 819,
+    "vectorized_by_origin": {
+     "project": 178,
+     "driver": 0,
+     "libc++": 641,
+     "system": 0
+    }
+   },
+   "lost": 17,
+   "moved": 6,
+   "gained": 16,
+   "lost_pct_of_vectorized": 2.058,
+   "ud2_added": 547,
+   "text_bytes_change_pct": 0.532,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 11,
+    "indirect": 0,
+    "other": 6
+   },
+   "lost_by_origin": {
+    "project": 17,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 9
+  },
+  {
+   "name": "imath",
+   "category": "graphics and geometry",
+   "kind": "graphics math (OpenEXR's vector, matrix and half types)",
+   "version": "3.2.3",
+   "repo": "https://github.com/AcademySoftwareFoundation/Imath",
+   "commit": "5f27ba266d3ea1565e912570c30b5eafc89959f1",
+   "downloads": [
+    {
+     "url": "https://github.com/AcademySoftwareFoundation/Imath/archive/5f27ba266d3ea1565e912570c30b5eafc89959f1.tar.gz",
+     "sha256": "b3a8de8b9dfcf4e5387e1ab3ca67c858e7fd05d1faa2e55decc3ee715e034cb8",
+     "bytes": 696698
+    }
+   ],
+   "translation_units": 6,
+   "compiled": 6,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc/Imath -I_census_gen -c src/Imath/ImathColorAlgo.cpp -o OUT.o",
+   "none": {
+    "vectorized": 0,
+    "vectorized_unique": 0,
+    "loops_reported": 46,
+    "ud2": 0,
+    "text_bytes": 33840,
+    "stderr_vectorized": 0,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 0,
+    "vectorized_unique": 0,
+    "loops_reported": 46,
+    "ud2": 0,
+    "text_bytes": 33840,
+    "stderr_vectorized": 0,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": null,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "tinyrenderer",
+   "category": "graphics and geometry",
+   "kind": "graphics (software rasterizer, application code)",
+   "version": "master 2026-07-29",
+   "repo": "https://github.com/ssloy/tinyrenderer",
+   "commit": "97eb7a480e762285899a93c5d21e70a79e60782e",
+   "downloads": [
+    {
+     "url": "https://github.com/ssloy/tinyrenderer/archive/97eb7a480e762285899a93c5d21e70a79e60782e.tar.gz",
+     "sha256": "8c809f60fe1869897c6eb70afb13fb43108bcc4169805341e4352cc421348c30",
+     "bytes": 35926909
+    }
+   ],
+   "translation_units": 4,
+   "compiled": 4,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -c main.cpp -o OUT.o",
+   "none": {
+    "vectorized": 6,
+    "vectorized_unique": 4,
+    "loops_reported": 21,
+    "ud2": 0,
+    "text_bytes": 21953,
+    "stderr_vectorized": 6,
+    "vectorized_by_origin": {
+     "project": 2,
+     "driver": 0,
+     "libc++": 4,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 6,
+    "vectorized_unique": 4,
+    "loops_reported": 21,
+    "ud2": 9,
+    "text_bytes": 22336,
+    "stderr_vectorized": 6,
+    "vectorized_by_origin": {
+     "project": 2,
+     "driver": 0,
+     "libc++": 4,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 9,
+   "text_bytes_change_pct": 1.745,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "xtensor",
+   "category": "numeric, image and signal",
+   "kind": "numeric (n-dimensional arrays)",
+   "version": "0.27.1",
+   "repo": "https://github.com/xtensor-stack/xtensor",
+   "commit": "f115228a7fc277b9be1bef34572831f8fd53ac73",
+   "downloads": [
+    {
+     "url": "https://github.com/xtensor-stack/xtensor/archive/f115228a7fc277b9be1bef34572831f8fd53ac73.tar.gz",
+     "sha256": "fad3c8e944bb6e1f1909c291aeb6f7bd3859055e2783bca9acd50c3b74d40880",
+     "bytes": 1225961
+    },
+    {
+     "url": "https://github.com/xtensor-stack/xtl/archive/c52350e283b98e5d69dbc50726925a1f8e16c57c.tar.gz",
+     "sha256": "dc659dacad0edcd263d994027b0e397768d6f951a65991b4357f4dd11414648d",
+     "bytes": 138877
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -I../xtl-c52350e283b98e5d69dbc50726925a1f8e16c57c/include -c _census_driver/xtensor.cpp -o OUT.o",
+   "none": {
+    "vectorized": 19,
+    "vectorized_unique": 5,
+    "loops_reported": 45,
+    "ud2": 0,
+    "text_bytes": 27014,
+    "stderr_vectorized": 19,
+    "vectorized_by_origin": {
+     "project": 6,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 19,
+    "vectorized_unique": 5,
+    "loops_reported": 41,
+    "ud2": 10,
+    "text_bytes": 27279,
+    "stderr_vectorized": 19,
+    "vectorized_by_origin": {
+     "project": 6,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 10,
+   "text_bytes_change_pct": 0.981,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "spectra",
+   "category": "numeric, image and signal",
+   "kind": "scientific (eigenvalue solver on Eigen)",
+   "version": "1.2.0",
+   "repo": "https://github.com/yixuan/spectra",
+   "commit": "6841bcbacaa0f0a8446210314e682057a084be4e",
+   "downloads": [
+    {
+     "url": "https://github.com/yixuan/spectra/archive/6841bcbacaa0f0a8446210314e682057a084be4e.tar.gz",
+     "sha256": "e9a485e5faf6ee3c42a8904b65dd0bf2f809665e28d80b4a52f2d21c7838902b",
+     "bytes": 293122
+    },
+    {
+     "url": "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz",
+     "sha256": "8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72",
+     "bytes": 2705005
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -I../eigen-3.4.0 -c _census_driver/spectra.cpp -o OUT.o",
+   "none": {
+    "vectorized": 99,
+    "vectorized_unique": 18,
+    "loops_reported": 431,
+    "ud2": 0,
+    "text_bytes": 181509,
+    "stderr_vectorized": 99,
+    "vectorized_by_origin": {
+     "project": 92,
+     "driver": 0,
+     "libc++": 7,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 99,
+    "vectorized_unique": 18,
+    "loops_reported": 442,
+    "ud2": 27,
+    "text_bytes": 183538,
+    "stderr_vectorized": 99,
+    "vectorized_by_origin": {
+     "project": 92,
+     "driver": 0,
+     "libc++": 7,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 27,
+   "text_bytes_change_pct": 1.118,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "pocketfft",
+   "category": "numeric, image and signal",
+   "kind": "signal processing (FFT)",
+   "version": "cpp 2026-06-30",
+   "repo": "https://github.com/mreineck/pocketfft",
+   "commit": "c90e55b3d529f8efa40ed01a20de22405f45fc65",
+   "downloads": [
+    {
+     "url": "https://github.com/mreineck/pocketfft/archive/c90e55b3d529f8efa40ed01a20de22405f45fc65.tar.gz",
+     "sha256": "2d90016da31a8cc1dd0ac0c89c1f2fb55df8f4ccc3f0386dcfbad09ac6d1c3ba",
+     "bytes": 28485
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -c _census_driver/pocketfft.cpp -o OUT.o",
+   "none": {
+    "vectorized": 142,
+    "vectorized_unique": 60,
+    "loops_reported": 885,
+    "ud2": 0,
+    "text_bytes": 493269,
+    "stderr_vectorized": 142,
+    "vectorized_by_origin": {
+     "project": 137,
+     "driver": 0,
+     "libc++": 5,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 142,
+    "vectorized_unique": 60,
+    "loops_reported": 883,
+    "ud2": 25,
+    "text_bytes": 494552,
+    "stderr_vectorized": 142,
+    "vectorized_by_origin": {
+     "project": 137,
+     "driver": 0,
+     "libc++": 5,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 25,
+   "text_bytes_change_pct": 0.26,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "cimg",
+   "category": "numeric, image and signal",
+   "kind": "image processing",
+   "version": "3.7.6",
+   "repo": "https://github.com/GreycLab/CImg",
+   "commit": "49b29ef7e3230b05f9924c5f79bf92da1c58c5a8",
+   "downloads": [
+    {
+     "url": "https://github.com/GreycLab/CImg/archive/49b29ef7e3230b05f9924c5f79bf92da1c58c5a8.tar.gz",
+     "sha256": "42b0c5eaee38fe58aadb77aaad2825d6a52363cf0e9631e084c8505182af363d",
+     "bytes": 12701473
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -Dcimg_display=0 -c _census_driver/cimg.cpp -o OUT.o",
+   "none": {
+    "vectorized": 21,
+    "vectorized_unique": 18,
+    "loops_reported": 189,
+    "ud2": 0,
+    "text_bytes": 129546,
+    "stderr_vectorized": 21,
+    "vectorized_by_origin": {
+     "project": 21,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 21,
+    "vectorized_unique": 18,
+    "loops_reported": 189,
+    "ud2": 0,
+    "text_bytes": 129546,
+    "stderr_vectorized": 21,
+    "vectorized_by_origin": {
+     "project": 21,
+     "driver": 0,
+     "libc++": 0,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 0,
+   "text_bytes_change_pct": 0.0,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "lightgbm",
+   "category": "machine learning",
+   "kind": "ML training (gradient-boosted trees)",
+   "version": "4.7.0",
+   "repo": "https://github.com/microsoft/LightGBM",
+   "commit": "8f7036f03627054d5a54a6f965b13f4b9ff2cb63",
+   "downloads": [
+    {
+     "url": "https://github.com/microsoft/LightGBM/archive/8f7036f03627054d5a54a6f965b13f4b9ff2cb63.tar.gz",
+     "sha256": "35cb44a8ca923ed696d917c7455563260c54e57e8c1ee6b93d5680ac9d4b4250",
+     "bytes": 6350136
+    },
+    {
+     "url": "https://github.com/fmtlib/fmt/archive/8303d140a1a11f19b982a9f664bbe59a1ccda3f4.tar.gz",
+     "sha256": "dca18efa83961de689594ac560108d3e1ed64179fcc058c58e8ecdc124ab92e9",
+     "bytes": 702766
+    },
+    {
+     "url": "https://github.com/lemire/fast_double_parser/archive/252029ddac664370bdda3f0761675785d92a1573.tar.gz",
+     "sha256": "12c63a935cf261ec12be3357f791cb25a3adc61ae8035406dc6681b89e101447",
+     "bytes": 637038
+    },
+    {
+     "url": "https://gitlab.com/libeigen/eigen/-/archive/3147391d946bb4b6c68edd901f2add6ac1f31f8c/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c.tar.gz",
+     "sha256": "0c8c490764f9c2a793133491adca0cd073b73e0bde965c68cbe58d91b5ed4261",
+     "bytes": 2710482
+    },
+    {
+     "url": "https://github.com/apache/arrow-nanoarrow/archive/a579fbf5d192e85b6249935e117de7d02a6dc4e9.tar.gz",
+     "sha256": "f1826116664ee876a14f0cc0a407b3d1f3bed642b78f9b1ea03d2351fb15a19e",
+     "bytes": 1095567
+    }
+   ],
+   "translation_units": 35,
+   "compiled": 35,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Iinclude -I../fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -I../fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -I../eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -I../arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -I_census_gen -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -c src/boosting/boosting.cpp -o OUT.o",
+   "none": {
+    "vectorized": 2580,
+    "vectorized_unique": 177,
+    "loops_reported": 13366,
+    "ud2": 3,
+    "text_bytes": 5605719,
+    "stderr_vectorized": 2580,
+    "vectorized_by_origin": {
+     "project": 733,
+     "driver": 0,
+     "libc++": 1847,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 2403,
+    "vectorized_unique": 150,
+    "loops_reported": 13214,
+    "ud2": 1196,
+    "text_bytes": 5597322,
+    "stderr_vectorized": 2403,
+    "vectorized_by_origin": {
+     "project": 556,
+     "driver": 0,
+     "libc++": 1847,
+     "system": 0
+    }
+   },
+   "lost": 180,
+   "moved": 0,
+   "gained": 3,
+   "lost_pct_of_vectorized": 6.977,
+   "ud2_added": 1193,
+   "text_bytes_change_pct": -0.15,
+   "lost_by_class": {
+    "reverse": 128,
+    "strided": 2,
+    "indirect": 13,
+    "other": 37
+   },
+   "lost_by_origin": {
+    "project": 180,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 179
+  },
+  {
+   "name": "tiny-dnn",
+   "category": "machine learning",
+   "kind": "ML (header-only neural networks)",
+   "version": "master 2018-10-23",
+   "repo": "https://github.com/tiny-dnn/tiny-dnn",
+   "commit": "c0f576f5cb7b35893f62127cb7aec18f77a3bcc5",
+   "downloads": [
+    {
+     "url": "https://github.com/tiny-dnn/tiny-dnn/archive/c0f576f5cb7b35893f62127cb7aec18f77a3bcc5.tar.gz",
+     "sha256": "123dabe15b019938e04c7ccdd22c8423ceae091f4bd2fb878f972a2ea031d4b9",
+     "bytes": 18935508
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -Ithird_party -DCNN_SINGLE_THREAD -c _census_driver/tiny_dnn.cpp -o OUT.o",
+   "none": {
+    "vectorized": 73,
+    "vectorized_unique": 28,
+    "loops_reported": 1088,
+    "ud2": 3,
+    "text_bytes": 492602,
+    "stderr_vectorized": 73,
+    "vectorized_by_origin": {
+     "project": 21,
+     "driver": 0,
+     "libc++": 52,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 71,
+    "vectorized_unique": 26,
+    "loops_reported": 1086,
+    "ud2": 175,
+    "text_bytes": 494108,
+    "stderr_vectorized": 71,
+    "vectorized_by_origin": {
+     "project": 19,
+     "driver": 0,
+     "libc++": 52,
+     "system": 0
+    }
+   },
+   "lost": 2,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 2.74,
+   "ud2_added": 172,
+   "text_bytes_change_pct": 0.306,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 2
+   },
+   "lost_by_origin": {
+    "project": 2,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "llama.cpp",
+   "category": "machine learning",
+   "kind": "ML inference (LLM runtime, C++ part only)",
+   "version": "v0.6.0",
+   "repo": "https://github.com/ggml-org/llama.cpp",
+   "commit": "d81235049384534c167caea52b85a694f6103d14",
+   "downloads": [
+    {
+     "url": "https://github.com/ggml-org/llama.cpp/archive/d81235049384534c167caea52b85a694f6103d14.tar.gz",
+     "sha256": "6b58785f0a82898f4c3442417ff962e2d4b231b1bee5d033902ad90b27901e14",
+     "bytes": 37887730
+    }
+   ],
+   "translation_units": 32,
+   "compiled": 32,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -Iinclude -Iggml/include -I_census_gen -c src/llama-adapter.cpp -o OUT.o",
+   "none": {
+    "vectorized": 608,
+    "vectorized_unique": 86,
+    "loops_reported": 4610,
+    "ud2": 3,
+    "text_bytes": 1668431,
+    "stderr_vectorized": 608,
+    "vectorized_by_origin": {
+     "project": 82,
+     "driver": 0,
+     "libc++": 526,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 597,
+    "vectorized_unique": 77,
+    "loops_reported": 4585,
+    "ud2": 433,
+    "text_bytes": 1686319,
+    "stderr_vectorized": 597,
+    "vectorized_by_origin": {
+     "project": 71,
+     "driver": 0,
+     "libc++": 526,
+     "system": 0
+    }
+   },
+   "lost": 14,
+   "moved": 0,
+   "gained": 3,
+   "lost_pct_of_vectorized": 2.303,
+   "ud2_added": 430,
+   "text_bytes_change_pct": 1.072,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 3,
+    "indirect": 0,
+    "other": 11
+   },
+   "lost_by_origin": {
+    "project": 14,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 11
+  },
+  {
+   "name": "whisper.cpp",
+   "category": "machine learning",
+   "kind": "ML inference (speech recognition, C++ part only)",
+   "version": "v1.9.5",
+   "repo": "https://github.com/ggml-org/whisper.cpp",
+   "commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+   "downloads": [
+    {
+     "url": "https://github.com/ggml-org/whisper.cpp/archive/d1be6fde11ac6e0407606b4e42fe72d34add8037.tar.gz",
+     "sha256": "645445da884df6dbd52b30f82d7be7c01d1767c938714e477e786b88d529e9f4",
+     "bytes": 9631456
+    }
+   ],
+   "translation_units": 2,
+   "compiled": 2,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -Iinclude -Iggml/include -DWHISPER_VERSION=\"1.9.5\" -DPARAKEET_VERSION=\"1.9.5\" -c src/parakeet.cpp -o OUT.o",
+   "none": {
+    "vectorized": 113,
+    "vectorized_unique": 40,
+    "loops_reported": 1043,
+    "ud2": 0,
+    "text_bytes": 363341,
+    "stderr_vectorized": 113,
+    "vectorized_by_origin": {
+     "project": 31,
+     "driver": 0,
+     "libc++": 82,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 109,
+    "vectorized_unique": 36,
+    "loops_reported": 1031,
+    "ud2": 105,
+    "text_bytes": 362292,
+    "stderr_vectorized": 109,
+    "vectorized_by_origin": {
+     "project": 27,
+     "driver": 0,
+     "libc++": 82,
+     "system": 0
+    }
+   },
+   "lost": 5,
+   "moved": 0,
+   "gained": 1,
+   "lost_pct_of_vectorized": 4.425,
+   "ud2_added": 105,
+   "text_bytes_change_pct": -0.289,
+   "lost_by_class": {
+    "reverse": 1,
+    "strided": 2,
+    "indirect": 0,
+    "other": 2
+   },
+   "lost_by_origin": {
+    "project": 5,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "hnswlib",
+   "category": "machine learning",
+   "kind": "ML (approximate nearest-neighbour search, HNSW)",
+   "version": "0.9.0",
+   "repo": "https://github.com/nmslib/hnswlib",
+   "commit": "d9b3608c83d83b46c96e25088cb1d729b29dcfe9",
+   "downloads": [
+    {
+     "url": "https://github.com/nmslib/hnswlib/archive/d9b3608c83d83b46c96e25088cb1d729b29dcfe9.tar.gz",
+     "sha256": "d7e12ea0604bd6d6753aab403e8cb177b95697968722e0154e8f68a31278f26e",
+     "bytes": 67545
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -I. -c _census_driver/hnswlib.cpp -o OUT.o",
+   "none": {
+    "vectorized": 13,
+    "vectorized_unique": 3,
+    "loops_reported": 169,
+    "ud2": 0,
+    "text_bytes": 44584,
+    "stderr_vectorized": 13,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 13,
+    "vectorized_unique": 3,
+    "loops_reported": 171,
+    "ud2": 16,
+    "text_bytes": 45315,
+    "stderr_vectorized": 13,
+    "vectorized_by_origin": {
+     "project": 0,
+     "driver": 0,
+     "libc++": 13,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 16,
+   "text_bytes_change_pct": 1.64,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "annoy",
+   "category": "machine learning",
+   "kind": "ML (approximate nearest-neighbour search, trees)",
+   "version": "1.17.3",
+   "repo": "https://github.com/spotify/annoy",
+   "commit": "75429e5dc930754698f1d37c44ea189a7521c7a3",
+   "downloads": [
+    {
+     "url": "https://github.com/spotify/annoy/archive/75429e5dc930754698f1d37c44ea189a7521c7a3.tar.gz",
+     "sha256": "262637d7adbf906e955a4ad2d04ce9bb73b630abbb63f2bb1131d9fb412e84cb",
+     "bytes": 673505
+    }
+   ],
+   "translation_units": 1,
+   "compiled": 1,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -c _census_driver/annoy.cpp -o OUT.o",
+   "none": {
+    "vectorized": 39,
+    "vectorized_unique": 9,
+    "loops_reported": 92,
+    "ud2": 0,
+    "text_bytes": 54548,
+    "stderr_vectorized": 39,
+    "vectorized_by_origin": {
+     "project": 14,
+     "driver": 0,
+     "libc++": 25,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 39,
+    "vectorized_unique": 9,
+    "loops_reported": 92,
+    "ud2": 8,
+    "text_bytes": 55079,
+    "stderr_vectorized": 39,
+    "vectorized_by_origin": {
+     "project": 14,
+     "driver": 0,
+     "libc++": 25,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 8,
+   "text_bytes_change_pct": 0.973,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  },
+  {
+   "name": "kanzi",
+   "category": "compression",
+   "kind": "compression (block transforms and entropy coders)",
+   "version": "2.6.0",
+   "repo": "https://github.com/flanglet/kanzi-cpp",
+   "commit": "1330414143be82209e0a0860d2b9f8ab567c94b5",
+   "downloads": [
+    {
+     "url": "https://github.com/flanglet/kanzi-cpp/archive/1330414143be82209e0a0860d2b9f8ab567c94b5.tar.gz",
+     "sha256": "cc429f622947ca43254fa05c662ca2261bc8f8e25e770a1324a36c38580c20ea",
+     "bytes": 398063
+    }
+   ],
+   "translation_units": 42,
+   "compiled": 42,
+   "failed": [],
+   "example_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -fsave-optimization-record -foptimization-record-passes=loop-vectorize -march=x86-64-v3 -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -foptimization-record-file=OUT.opt.yaml -Isrc -c src/Event.cpp -o OUT.o",
+   "none": {
+    "vectorized": 153,
+    "vectorized_unique": 78,
+    "loops_reported": 1041,
+    "ud2": 0,
+    "text_bytes": 426239,
+    "stderr_vectorized": 153,
+    "vectorized_by_origin": {
+     "project": 120,
+     "driver": 0,
+     "libc++": 33,
+     "system": 0
+    }
+   },
+   "fast": {
+    "vectorized": 153,
+    "vectorized_unique": 78,
+    "loops_reported": 1039,
+    "ud2": 40,
+    "text_bytes": 426457,
+    "stderr_vectorized": 153,
+    "vectorized_by_origin": {
+     "project": 120,
+     "driver": 0,
+     "libc++": 33,
+     "system": 0
+    }
+   },
+   "lost": 0,
+   "moved": 0,
+   "gained": 0,
+   "lost_pct_of_vectorized": 0.0,
+   "ud2_added": 40,
+   "text_bytes_change_pct": 0.051,
+   "lost_by_class": {
+    "reverse": 0,
+    "strided": 0,
+    "indirect": 0,
+    "other": 0
+   },
+   "lost_by_origin": {
+    "project": 0,
+    "driver": 0,
+    "libc++": 0,
+    "system": 0
+   },
+   "lost_with_index_evidence": 0
+  }
+ ],
+ "dropped": [],
+ "totals": {
+  "projects": 25,
+  "translation_units": 557,
+  "none": {
+   "vectorized": 5186,
+   "vectorized_unique": 758,
+   "loops_reported": 33872,
+   "ud2": 59,
+   "text_bytes": 14297012,
+   "stderr_vectorized": 5186,
+   "vectorized_by_origin": {
+    "project": 1786,
+    "driver": 1,
+    "libc++": 3399,
+    "system": 0
+   }
+  },
+  "fast": {
+   "vectorized": 4982,
+   "vectorized_unique": 711,
+   "loops_reported": 33649,
+   "ud2": 2932,
+   "text_bytes": 14320090,
+   "stderr_vectorized": 4982,
+   "vectorized_by_origin": {
+    "project": 1583,
+    "driver": 1,
+    "libc++": 3398,
+    "system": 0
+   }
+  },
+  "lost": 221,
+  "lost_unique_locations": 61,
+  "moved": 6,
+  "gained": 23,
+  "lost_pct_of_vectorized": 4.261,
+  "ud2_added": 2873,
+  "text_bytes_change_pct": 0.161,
+  "lost_by_class": {
+   "reverse": 129,
+   "strided": 18,
+   "indirect": 13,
+   "other": 61
+  },
+  "lost_by_origin": {
+   "project": 220,
+   "driver": 0,
+   "libc++": 1,
+   "system": 0
+  },
+  "projects_with_a_lost_loop": 7,
+  "lost_with_index_evidence": 200
+ },
+ "patterns": [
+  {
+   "class": "reverse",
+   "detail": "index n - 1 - i",
+   "count": 128,
+   "unique_locations": 2,
+   "examples": [
+    {
+     "project": "lightgbm",
+     "where": "src/treelearner/feature_histogram.cpp:378",
+     "source_line": "for (int i = 0; i < output->num_cat_threshold; ++i) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/treelearner/feature_histogram.cpp:736",
+     "source_line": "for (int i = 0; i < output->num_cat_threshold; ++i) {"
+    }
+   ]
+  },
+  {
+   "class": "other",
+   "detail": "forward loop bounded by a variable, not the container's size()",
+   "count": 40,
+   "unique_locations": 24,
+   "examples": [
+    {
+     "project": "draco",
+     "where": "src/draco/attributes/attribute_quantization_transform.cc:39",
+     "source_line": "for (int i = 0; i < attribute.num_components(); ++i) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/io/dataset.cpp:1179",
+     "source_line": "for (int i = 0; i < num_total_features_; ++i) {"
+    },
+    {
+     "project": "llama.cpp",
+     "where": "src/llama-batch.cpp:157",
+     "source_line": "for (int32_t i = 0; i < n_tok; ++i) {"
+    }
+   ]
+  },
+  {
+   "class": "indirect",
+   "detail": "index read from memory (a[b[i]])",
+   "count": 13,
+   "unique_locations": 7,
+   "examples": [
+    {
+     "project": "lightgbm",
+     "where": "src/io/metadata.cpp:185",
+     "source_line": "for (data_size_t i = 0; i < num_data_; ++i) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/io/metadata.cpp:267",
+     "source_line": "for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/io/metadata.cpp:350",
+     "source_line": "for (size_t i = 0; i < used_data_indices.size(); ++i) {"
+    }
+   ]
+  },
+  {
+   "class": "other",
+   "detail": "unclear from the text",
+   "count": 12,
+   "unique_locations": 12,
+   "examples": [
+    {
+     "project": "draco",
+     "where": "src/draco/mesh/corner_table.cc:44",
+     "source_line": "for (FaceIndex fi(0); fi < static_cast<uint32_t>(faces.size()); ++fi) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/c_api.cpp:547",
+     "source_line": "for (int j = 0; j < static_cast<int>(row_vector.size()); ++j) {"
+    },
+    {
+     "project": "llama.cpp",
+     "where": "src/llama-batch.cpp:859",
+     "source_line": "for (int32_t idx : idxs) {"
+    }
+   ]
+  },
+  {
+   "class": "strided",
+   "detail": "multiplied index ([2 * i], [i * n + j])",
+   "count": 10,
+   "unique_locations": 8,
+   "examples": [
+    {
+     "project": "draco",
+     "where": "src/draco/compression/mesh/mesh_edgebreaker_decoder_impl.cc:1274",
+     "source_line": "for (FaceIndex f(0); f < decoder_->mesh()->num_faces(); ++f) {"
+    },
+    {
+     "project": "lightgbm",
+     "where": "src/io/dataset_loader.cpp:1346",
+     "source_line": "for (int k = 0; k < num_class_; ++k) {"
+    },
+    {
+     "project": "llama.cpp",
+     "where": "src/llama-batch.cpp:1382",
+     "source_line": "for (uint32_t j = 0; j < batch_ext->n_pos_per_embd; ++j) {"
+    }
+   ]
+  }
+ ],
+ "controls": {
+  "kernels": {
+   "pass": false,
+   "target": "avx2",
+   "lost_kernels": [
+    "k04_rev",
+    "k05_stride2"
+   ],
+   "kernels": [
+    {
+     "kernel": "k01_sum_fwd",
+     "loop_line": 6,
+     "none_vectorized": 1,
+     "fast_vectorized": 1,
+     "status": "both",
+     "expected": "both",
+     "class": null,
+     "expected_class": null,
+     "fast_remarks": [],
+     "pass": true
+    },
+    {
+     "kernel": "k02_add_fwd",
+     "loop_line": 6,
+     "none_vectorized": 1,
+     "fast_vectorized": 1,
+     "status": "both",
+     "expected": "both",
+     "class": null,
+     "expected_class": null,
+     "fast_remarks": [],
+     "pass": true
+    },
+    {
+     "kernel": "k03_stencil",
+     "loop_line": 5,
+     "none_vectorized": 1,
+     "fast_vectorized": 1,
+     "status": "both",
+     "expected": "both",
+     "class": null,
+     "expected_class": null,
+     "fast_remarks": [],
+     "pass": true
+    },
+    {
+     "kernel": "k04_rev",
+     "loop_line": 5,
+     "none_vectorized": 1,
+     "fast_vectorized": 0,
+     "status": "lost",
+     "expected": "lost",
+     "class": "reverse",
+     "expected_class": "reverse",
+     "fast_remarks": [
+      "loop not vectorized",
+      "loop not vectorized: could not determine number of loop iterations"
+     ],
+     "pass": true
+    },
+    {
+     "kernel": "k05_stride2",
+     "loop_line": 5,
+     "none_vectorized": 1,
+     "fast_vectorized": 0,
+     "status": "lost",
+     "expected": "lost",
+     "class": "strided",
+     "expected_class": "strided",
+     "fast_remarks": [
+      "loop not vectorized",
+      "loop not vectorized: could not determine number of loop iterations"
+     ],
+     "pass": true
+    },
+    {
+     "kernel": "k06_gather",
+     "loop_line": 6,
+     "none_vectorized": 0,
+     "fast_vectorized": 0,
+     "status": "neither",
+     "expected": "neither",
+     "class": null,
+     "expected_class": null,
+     "fast_remarks": [
+      "loop not vectorized",
+      "loop not vectorized: could not determine number of loop iterations"
+     ],
+     "pass": true
+    },
+    {
+     "kernel": "k07_hist",
+     "loop_line": 7,
+     "none_vectorized": 0,
+     "fast_vectorized": 0,
+     "status": "neither",
+     "expected": "neither",
+     "class": null,
+     "expected_class": null,
+     "fast_remarks": [
+      "loop not vectorized",
+      "loop not vectorized: could not determine number of loop iterations"
+     ],
+     "pass": true
+    },
+    {
+     "kernel": "k08_matmul",
+     "loop_line": 11,
+     "none_vectorized": 1,
+     "fast_vectorized": 1,
+     "status": "both",
+     "expected": "lost",
+     "class": null,
+     "expected_class": "strided",
+     "fast_remarks": [
+      "the cost-model indicates that interleaving is not beneficial"
+     ],
+     "pass": false
+    }
+   ],
+   "other_lost_loops_in_kernel_files": [],
+   "rule": "avx2: k01 to k03 vectorized in both builds; k04_rev, k05_stride2, k08_matmul LOST at their // LOOP line (reverse, strided, strided); k06_gather and k07_hist either in neither build or LOST (class indirect), reported as found",
+   "index_evidence": {
+    "rule": "every lost kernel loop shows a std::vector operator[] check within its loop lines",
+    "pass": true,
+    "kernels": [
+     {
+      "kernel": "k04_rev",
+      "pass": true,
+      "status": "checked container access in the loop",
+      "messages": [
+       "vector[] index out of bounds"
+      ],
+      "example_chain": [
+       "libc++/vector:1393",
+       "k04_rev.cpp:5"
+      ],
+      "evidence_build_loop_not_vectorized": true
+     },
+     {
+      "kernel": "k05_stride2",
+      "pass": true,
+      "status": "checked container access in the loop",
+      "messages": [
+       "vector[] index out of bounds"
+      ],
+      "example_chain": [
+       "libc++/vector:1400",
+       "k05_stride2.cpp:5"
+      ],
+      "evidence_build_loop_not_vectorized": true
+     }
+    ]
+   }
+  },
+  "remark_crosscheck": {
+   "rule": "vectorized records in the YAML == 'vectorized loop' remarks on stderr",
+   "pass": true,
+   "per_project": {
+    "box2d": {
+     "none": [
+      6,
+      6
+     ],
+     "fast": [
+      6,
+      6
+     ]
+    },
+    "joltphysics": {
+     "none": [
+      116,
+      116
+     ],
+     "fast": [
+      116,
+      116
+     ]
+    },
+    "recastnavigation": {
+     "none": [
+      91,
+      91
+     ],
+     "fast": [
+      91,
+      91
+     ]
+    },
+    "ozz-animation": {
+     "none": [
+      61,
+      61
+     ],
+     "fast": [
+      60,
+      60
+     ]
+    },
+    "entt": {
+     "none": [
+      28,
+      28
+     ],
+     "fast": [
+      28,
+      28
+     ]
+    },
+    "stockfish": {
+     "none": [
+      105,
+      105
+     ],
+     "fast": [
+      103,
+      103
+     ]
+    },
+    "meshoptimizer": {
+     "none": [
+      52,
+      52
+     ],
+     "fast": [
+      52,
+      52
+     ]
+    },
+    "earcut": {
+     "none": [
+      13,
+      13
+     ],
+     "fast": [
+      13,
+      13
+     ]
+    },
+    "delaunator-cpp": {
+     "none": [
+      11,
+      11
+     ],
+     "fast": [
+      11,
+      11
+     ]
+    },
+    "nanoflann": {
+     "none": [
+      4,
+      4
+     ],
+     "fast": [
+      4,
+      4
+     ]
+    },
+    "nanort": {
+     "none": [
+      7,
+      7
+     ],
+     "fast": [
+      7,
+      7
+     ]
+    },
+    "draco": {
+     "none": [
+      826,
+      826
+     ],
+     "fast": [
+      819,
+      819
+     ]
+    },
+    "imath": {
+     "none": [
+      0,
+      0
+     ],
+     "fast": [
+      0,
+      0
+     ]
+    },
+    "tinyrenderer": {
+     "none": [
+      6,
+      6
+     ],
+     "fast": [
+      6,
+      6
+     ]
+    },
+    "xtensor": {
+     "none": [
+      19,
+      19
+     ],
+     "fast": [
+      19,
+      19
+     ]
+    },
+    "spectra": {
+     "none": [
+      99,
+      99
+     ],
+     "fast": [
+      99,
+      99
+     ]
+    },
+    "pocketfft": {
+     "none": [
+      142,
+      142
+     ],
+     "fast": [
+      142,
+      142
+     ]
+    },
+    "cimg": {
+     "none": [
+      21,
+      21
+     ],
+     "fast": [
+      21,
+      21
+     ]
+    },
+    "lightgbm": {
+     "none": [
+      2580,
+      2580
+     ],
+     "fast": [
+      2403,
+      2403
+     ]
+    },
+    "tiny-dnn": {
+     "none": [
+      73,
+      73
+     ],
+     "fast": [
+      71,
+      71
+     ]
+    },
+    "llama.cpp": {
+     "none": [
+      608,
+      608
+     ],
+     "fast": [
+      597,
+      597
+     ]
+    },
+    "whisper.cpp": {
+     "none": [
+      113,
+      113
+     ],
+     "fast": [
+      109,
+      109
+     ]
+    },
+    "hnswlib": {
+     "none": [
+      13,
+      13
+     ],
+     "fast": [
+      13,
+      13
+     ]
+    },
+    "annoy": {
+     "none": [
+      39,
+      39
+     ],
+     "fast": [
+      39,
+      39
+     ]
+    },
+    "kanzi": {
+     "none": [
+      153,
+      153
+     ],
+     "fast": [
+      153,
+      153
+     ]
+    },
+    "kernels": {
+     "none": [
+      9,
+      9
+     ],
+     "fast": [
+      7,
+      7
+     ]
+    }
+   }
+  },
+  "determinism": {
+   "rule": "two complete census runs on two separate runners give byte-identical outputs",
+   "pass": true,
+   "files": [
+    {
+     "file": "census.json",
+     "sha256_a": "730ee6eff7af248f51fc93b1b53806d9d2f5daf41aeb828091b36cdddf66d674",
+     "sha256_b": "730ee6eff7af248f51fc93b1b53806d9d2f5daf41aeb828091b36cdddf66d674",
+     "identical": true
+    },
+    {
+     "file": "lost_loops.json",
+     "sha256_a": "4382e609734fb960154e2c7cc0f6080e4e00d4df8f0dbc1151668ca149462eb1",
+     "sha256_b": "4382e609734fb960154e2c7cc0f6080e4e00d4df8f0dbc1151668ca149462eb1",
+     "identical": true
+    },
+    {
+     "file": "objects.sha256",
+     "sha256_a": "a5de74e8aa4a260aacee994f989ef673a412f1c58cbc754e1427d152832adf88",
+     "sha256_b": "a5de74e8aa4a260aacee994f989ef673a412f1c58cbc754e1427d152832adf88",
+     "identical": true
+    },
+    {
+     "file": "remarks.tar.gz",
+     "sha256_a": "099c3c19c89209cdec59a257a68b52cab851a9160e66ab82092e3f26f848f86b",
+     "sha256_b": "099c3c19c89209cdec59a257a68b52cab851a9160e66ab82092e3f26f848f86b",
+     "identical": true
+    }
+   ],
+   "build_files_compared": 3390,
+   "build_files_differing": []
+  }
+ },
+ "limits": [
+  "Compile-time counts only: a lost loop is only potentially expensive. How often it runs (its hotness) is unknown at compile time, so no runtime cost is claimed from this census.",
+  "Every vectorized loop counts once per function it was compiled into: a header loop inlined into three functions counts three times. Unique source locations are reported beside the counts.",
+  "One toolchain and target: clang 18 with libc++ 18 (Ubuntu noble), -O2, baseline x86-64 (SSE2), FAST mode only. Other compilers, -march levels and the extensive mode are not covered.",
+  "Header-only libraries are measured through a small driver that instantiates common operations; loops the driver does not instantiate are not counted.",
+  "The classification of why a loop lost SIMD is a regular-expression heuristic over the source text, not a proof; each lost loop is listed with its line so the call can be checked.",
+  "libc++ 18 spells the hardening mode into the ABI tag of its inline functions ([abi:ne180100] under NONE, [abi:fe180100] under FAST); FAST names are mapped to the NONE spelling before matching.",
+  "A loop vectorized in NONE whose function is not inlined the same way in FAST can move: it is counted as moved (not lost) when the same source location gains a vectorized copy in another function of the same file."
+ ]
+}

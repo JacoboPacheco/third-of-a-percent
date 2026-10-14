@@ -1,0 +1,118 @@
+name: siblings
+
+# Is the finding specific to clang 18 + libc++ 18 FAST at baseline SSE2? The same 8 kernels, the same
+# method (siblings/run.py), on sibling toolchains: libc++ EXTENSIVE and DEBUG, clang 18 with
+# -march=x86-64-v3 (AVX2), GCC 14 with libstdc++ -D_GLIBCXX_ASSERTIONS (-O2, plus -O3), and the
+# newest clang Ubuntu noble's apt provides (with its own libc++). Three parts (A, B, C) x 4 jobs, so
+# more than one runner CPU model is drawn; parts A and B also repeat the reference row (clang 18 FAST);
+# part C cannot (its libc++ conflicts with libc++-18-dev) and is read against A and B on the same CPU model. Each job uploads
+# "siblings-<part>-<cpu>-j<N>" with siblings.json (every raw sample), the assembly and the remarks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reps:
+        description: "processes per side"
+        default: "20"
+      sizes:
+        description: "comma-separated size classes (L1, L2)"
+        default: "L1,L2"
+      kernels:
+        description: "comma-separated kernel ids, or all"
+        default: "all"
+
+permissions:
+  contents: read
+
+jobs:
+  siblings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [A, B, C]
+        job: [1, 2, 3, 4]
+    steps:
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Part ${{ matrix.part }} job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+          grep -m1 '^flags' /proc/cpuinfo
+          /lib64/ld-linux-x86-64.so.2 --help | grep -i 'x86-64-v' || true
+
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchains (Ubuntu noble apt only)
+        # one job of run 38256975670 hung here until the job timeout; fail fast instead
+        timeout-minutes: 6
+        run: |
+          sudo apt-get update -qq
+          # libc++-18-dev and libc++-20-dev cannot be installed together (apt: "held broken packages",
+          # run 38256448953), so the newest clang gets a part of its own (C) with its own libc++.
+          if [ "${{ matrix.part }}" = "C" ]; then
+            NEW=""
+            for v in 21 20 19; do
+              if apt-cache policy "clang-$v" 2>/dev/null | grep -q 'Candidate: [0-9]'; then NEW=$v; break; fi
+            done
+            echo "newest clang apt offers above 18: ${NEW:-none}"
+            for v in 21 20 19; do apt-cache policy "clang-$v" "libc++-$v-dev" 2>/dev/null; done
+            if [ -z "$NEW" ]; then echo "no clang newer than 18 in apt"; exit 1; fi
+            PKGS="clang-$NEW"
+            if apt-cache policy "libc++-$NEW-dev" 2>/dev/null | grep -q 'Candidate: [0-9]'; then
+              PKGS="$PKGS libc++-$NEW-dev libc++abi-$NEW-dev"; LIB=$NEW
+            else
+              PKGS="$PKGS libc++-18-dev libc++abi-18-dev"; LIB=18
+            fi
+            echo "CLANG_NEW=$NEW" >> "$GITHUB_ENV"
+            echo "CLANG_NEW_LIBCXX=$LIB" >> "$GITHUB_ENV"
+          elif [ "${{ matrix.part }}" = "B" ]; then
+            PKGS="clang-18 libc++-18-dev libc++abi-18-dev g++-14"
+          else
+            PKGS="clang-18 libc++-18-dev libc++abi-18-dev"
+          fi
+          echo "installing: $PKGS"
+          sudo apt-get install -y -qq $PKGS
+          dpkg-query -W $PKGS | tee packages.txt
+          for p in $PKGS; do apt-cache policy "$p" | sed -n '1,4p'; done | tee -a packages-origin.txt
+
+      - name: Build, time and collect
+        env:
+          SIBLINGS_JOB: ${{ matrix.part }}${{ matrix.job }}
+          REPS: ${{ inputs.reps }}
+          SIZES: ${{ inputs.sizes }}
+          KERNELS: ${{ inputs.kernels }}
+        run: |
+          python3 siblings/run.py --part ${{ matrix.part }} --reps "$REPS" --sizes "$SIZES" --kernels "$KERNELS" \
+            --packages packages.txt --out out
+          cp packages.txt packages-origin.txt out/
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("out/siblings.json"))
+          print(f"CPU: {d['runner']['cpu_model']}\n")
+          for t, x in d["aa"].items():
+              print(f"- A/A {t}: half-width {x['half_width_pct']:.2f}%; layout A/A {d['layout_aa'][t]['ratio']:.3f}")
+          print("\n| variant | cell | vec unhardened -> hardened | as compiled | aligned [95%] |\n|---|---|---|---|---|")
+          for c in d["cells"]:
+              a = c["aligned"]
+              print(f"| {c['variant']} | {c['kernel']}.{c['size_class']} | {c['vectorized_none']['vectorized']} -> "
+                    f"{c['vectorized_hard']['vectorized']} | {c['as_compiled']['ratio']:.3f} | "
+                    f"{a['ratio']:.3f} [{a['ci95'][0]:.3f}, {a['ci95'][1]:.3f}] |")
+          print("\nskipped: " + "; ".join(f"{s['what']} ({s['why']})" for s in d["skipped"]))
+          EOF
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: siblings-${{ matrix.part }}-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn

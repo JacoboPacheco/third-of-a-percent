@@ -1,0 +1,30 @@
+clang++-20 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build-siblings/k07_hist.clangNEW.clang20-fast_a64 kernels/k07_hist.cpp
+kernels/k07_hist.cpp:7:3: remark: loop not vectorized: Cannot vectorize early exit loop with writes to memory [-Rpass-analysis=loop-vectorize]
+    7 |   for (size_t i = 0; i < a.size(); ++i) h[a[i] & 255]++;  // LOOP
+      |   ^
+In file included from kernels/k07_hist.cpp:4:
+In file included from kernels/common.hpp:9:
+In file included from /usr/lib/llvm-20/bin/../include/c++/v1/vector:314:
+/usr/lib/llvm-20/bin/../include/c++/v1/__vector/vector.h:404:12: remark: loop not vectorized: cannot identify array bounds [-Rpass-analysis=loop-vectorize]
+  404 |     return this->__begin_[__n];
+      |            ^
+kernels/k07_hist.cpp:7:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+    7 |   for (size_t i = 0; i < a.size(); ++i) h[a[i] & 255]++;  // LOOP
+      |   ^
+In file included from kernels/k07_hist.cpp:4:
+kernels/common.hpp:29:3: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+   29 |   for (auto& e : v) {
+      |   ^
+kernels/common.hpp:29:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+kernels/k07_hist.cpp:20:5: remark: loop not vectorized: call instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+   20 |     kern_k07_hist(h, a);
+      |     ^
+kernels/k07_hist.cpp:19:3: remark: loop not vectorized: instruction cannot be vectorized [-Rpass-analysis=loop-vectorize]
+   19 |   for (long it = 0; it < iters; ++it) {
+      |   ^
+kernels/k07_hist.cpp:19:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+In file included from kernels/k07_hist.cpp:4:
+kernels/common.hpp:37:3: remark: loop not vectorized: value that could not be identified as reduction is used outside the loop [-Rpass-analysis=loop-vectorize]
+   37 |   for (int32_t e : v) {
+      |   ^
+kernels/common.hpp:37:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]

@@ -1,0 +1,90 @@
+name: lostloops-live
+
+# The first run of tools/lostloops/ with a real clang (tools/lostloops-live/PLAN.md). For each of three
+# census projects (leveldb, spectra, lightgbm) it fetches the pinned sources with corpus/census.py's
+# own fetch, writes a compile_commands.json, runs the tool, and compares the tool's lost / moved /
+# gained lists, totals and check traces with the census's stored lists (tools/lostloops-live/expected/).
+# Any difference fails the job. Nothing is timed. Needs corpus/ and tools/ in the repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      projects:
+        description: "comma-separated subset of leveldb,spectra,lightgbm (empty: all three)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      projects: ${{ steps.m.outputs.projects }}
+    steps:
+      - id: m
+        env:
+          WANT: ${{ inputs.projects }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          allp = ["leveldb", "spectra", "lightgbm"]
+          want = [x.strip() for x in os.environ["WANT"].split(",") if x.strip()] or allp
+          assert all(x in allp for x in want), want
+          print("projects=" + json.dumps(want))
+          PY
+
+  live:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18, libc++-18 and llvm-18 (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev llvm-18 binutils
+          clang++-18 --version
+          objdump --version | head -1
+          llvm-symbolizer-18 --version | head -1
+          dpkg-query -W clang-18 libc++-18-dev libc++abi-18-dev llvm-18 binutils
+
+      - name: Offline tests of the tool
+        run: python3 tools/lostloops/run_tests.py
+
+      - name: Live run and comparison with the census
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          set -o pipefail
+          mkdir -p build/live
+          python3 tools/lostloops-live/run_live.py --project "$PROJECT" --work "build/live/$PROJECT" \
+            --out "build/live/out-$PROJECT" --clang clang++-18 2>&1 | tee "build/live/log-$PROJECT.txt"
+
+      - name: Summary
+        if: always()
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          {
+            echo "### lostloops live: $PROJECT"
+            echo '```'
+            grep -E '^(clang|totals|lists|details|checks|RESULT|files that did not)' "build/live/log-$PROJECT.txt" || echo "no result line (the tool did not run)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the tool's output and the comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lostloops-live-${{ matrix.project }}
+          path: |
+            build/live/out-${{ matrix.project }}/
+            build/live/log-${{ matrix.project }}.txt
+          if-no-files-found: warn

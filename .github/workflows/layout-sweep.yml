@@ -1,0 +1,118 @@
+name: layout-sweep
+
+# Is the forward-loop result robust to code placement, or only to two layouts? (layout-sweep/PLAN.md,
+# rules and numbers fixed in layout-sweep/criteria.json before any run.) Each job builds k01, k02, k03,
+# k04 NONE and FAST at 16 placements (mode fine, 4-byte steps) or 4 (mode coarse, 16-byte steps; the
+# fallback when the compiler keeps loops 16-byte aligned; PLAN.md amendment 1), plus the harness's two
+# layouts, checks from the disassembly that the hot loop moved, and times every placement at L1 and L2 (20 per side, ABBA, pinned). The last job pools
+# every job of a CPU model with harness/pool.py and prints the distribution over placements.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernels:
+        description: "comma-separated kernel ids"
+        default: "k01_sum_fwd,k02_add_fwd,k03_stencil,k04_rev"
+      sizes:
+        description: "comma-separated size classes (L1, L2)"
+        default: "L1,L2"
+      jobs:
+        description: "matrix job numbers as a JSON list (4 to 10 for a pooled run; fewer only for a smoke test)"
+        default: "[1, 2, 3, 4, 5, 6, 7, 8]"
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18, libc++-18 and numpy (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev python3-numpy
+          clang++-18 --version
+          dpkg-query -W clang-18 libc++-18-dev
+
+      - name: Offline check (tests, criteria, workflow)
+        run: python3 layout-sweep/check.py
+
+      - name: Build every placement, verify the loop moved, time
+        env:
+          KERNELS: ${{ inputs.kernels }}
+          SIZES: ${{ inputs.sizes }}
+        run: python3 layout-sweep/sweep.py --job "${{ matrix.job }}" --kernels "$KERNELS" --sizes "$SIZES" --out out --build build/layout-sweep
+
+      - name: Per-job analysis (informational, one job is not a verdict)
+        if: always()
+        run: python3 layout-sweep/analyze.py out/results.json || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-sweep-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn
+
+  analyse:
+    needs: sweep
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download every job's results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: layout-sweep-*
+          path: matrix/
+
+      - name: Any results?
+        id: have
+        run: |
+          if ls matrix/*/results.json >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No sweep job produced a results.json (every job aborted before timing, e.g. at the mechanism probe); nothing to pool. See the sweep jobs' logs." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install numpy (Ubuntu noble apt)
+        if: steps.have.outputs.found == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
+
+      - name: Pool per CPU model and print the distribution over placements
+        if: steps.have.outputs.found == 'true'
+        run: |
+          ls matrix
+          python3 layout-sweep/analyze.py matrix --out matrix/analysis.json | tee matrix/report.txt
+          { echo '### Layout sweep, pooled per CPU model'; echo; echo '```'; cat matrix/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload analysis
+        if: steps.have.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-sweep-analysis
+          path: |
+            matrix/analysis.json
+            matrix/report.txt
+          if-no-files-found: warn

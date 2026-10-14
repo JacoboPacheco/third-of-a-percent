@@ -1,0 +1,69 @@
+{
+ "links": {
+  "k01_sum_fwd": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) int64_t kern_k01_sum_fwd(const std::vector<int32_t>& a) {\n  int64_t s = 0;\n  for (size_t i = 0; i < a.size(); ++i) s += a[i];  // LOOP\n  return s;\n}\n",
+   "url": "https://godbolt.org/z/655efP99r",
+   "verified": true
+  },
+  "k02_add_fwd": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k02_add_fwd(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                                const std::vector<int32_t>& b) {\n  for (size_t i = 0; i < a.size(); ++i) c[i] = a[i] + b[i];  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/aqh4c3EM8",
+   "verified": true
+  },
+  "k03_stencil": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k03_stencil(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 1; i + 1 < a.size(); ++i) c[i] = a[i - 1] + a[i] + a[i + 1];  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/MosWGxaeo",
+   "verified": true
+  },
+  "k04_rev": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k04_rev(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = a.size(); i-- > 0;) c[i] = a[i] * 2;  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/EGPjvWTP5",
+   "verified": true
+  },
+  "k05_stride2": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k05_stride2(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 0; i < c.size(); ++i) c[i] = a[2 * i] + a[2 * i + 1];  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/d1eYx5hPj",
+   "verified": true
+  },
+  "k06_gather": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k06_gather(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                               const std::vector<int32_t>& idx) {\n  for (size_t i = 0; i < idx.size(); ++i) c[i] = a[idx[i]];  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/W7h1GEMvj",
+   "verified": true
+  },
+  "k07_hist": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k07_hist(std::vector<int32_t>& h, const std::vector<int32_t>& a) {\n  for (size_t i = 0; i < a.size(); ++i) h[a[i] & 255]++;  // LOOP\n}\n",
+   "url": "https://godbolt.org/z/MT3Th6drT",
+   "verified": true
+  },
+  "k08_matmul": {
+   "compiler": "clang1810",
+   "options_fast": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "options_none": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "source": "// The 8 loop functions of kernels/kNN_*.cpp, copied verbatim, in one file for Compiler Explorer.\n// Each loop carries a // LOOP comment; the compiler's remarks at that line decide the cell.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k08_matmul(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                               const std::vector<int32_t>& b, size_t d) {\n  for (size_t i = 0; i < d; ++i)\n    for (size_t k = 0; k < d; ++k) {\n      int32_t aik = a[i * d + k];\n      for (size_t j = 0; j < d; ++j) c[i * d + j] += aik * b[k * d + j];  // LOOP\n    }\n}\n",
+   "url": "https://godbolt.org/z/zdnz5j3Ga",
+   "verified": true
+  }
+ },
+ "what": "Compiler Explorer short links, clang 18.1.0 x86-64 -O2 libc++, NONE and FAST panes"
+}

@@ -1,0 +1,72 @@
+--- k06_gather.none.s
++++ k06_gather.fast.s
+@@ -1,45 +1,29 @@
+ <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_>:
+-mov    (%rdx),%r8
+-mov    0x8(%rdx),%r9
+-sub    %r8,%r9
++mov    (%rdx),%rax
++mov    0x8(%rdx),%rcx
++sub    %rax,%rcx
+ je     <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-sar    $0x2,%r9
+-mov    (%rsi),%rax
+-mov    (%rdi),%rdx
+-mov    %r9d,%ecx
+-and    $0x3,%ecx
+-cmp    $0x4,%r9
+-jae    <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-xor    %esi,%esi
+-jmp    <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-and    $0xfffffffffffffffc,%r9
+-xor    %esi,%esi
+-movslq (%r8,%rsi,4),%rdi
+-mov    (%rax,%rdi,4),%edi
+-mov    %edi,(%rdx,%rsi,4)
+-movslq 0x4(%r8,%rsi,4),%rdi
+-mov    (%rax,%rdi,4),%edi
+-mov    %edi,0x4(%rdx,%rsi,4)
+-movslq 0x8(%r8,%rsi,4),%rdi
+-mov    (%rax,%rdi,4),%edi
+-mov    %edi,0x8(%rdx,%rsi,4)
+-movslq 0xc(%r8,%rsi,4),%rdi
+-mov    (%rax,%rdi,4),%edi
+-mov    %edi,0xc(%rdx,%rsi,4)
+-add    $0x4,%rsi
+-cmp    %rsi,%r9
+-jne    <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-test   %rcx,%rcx
++sar    $0x2,%rcx
++mov    (%rsi),%rdx
++mov    0x8(%rsi),%rsi
++sub    %rdx,%rsi
++sar    $0x2,%rsi
++mov    (%rdi),%r8
++mov    0x8(%rdi),%rdi
++sub    %r8,%rdi
++sar    $0x2,%rdi
++xor    %r9d,%r9d
++nop
++movslq (%rax,%r9,4),%r10
++cmp    %r10,%rsi
++jbe    <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++cmp    %r9,%rdi
+ je     <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-lea    (%rdx,%rsi,4),%rdx
+-lea    (%r8,%rsi,4),%rsi
+-xor    %edi,%edi
+-cs nopw 0x0(%rax,%rax,1)
+-movslq (%rsi,%rdi,4),%r8
+-mov    (%rax,%r8,4),%r8d
+-mov    %r8d,(%rdx,%rdi,4)
+-inc    %rdi
+-cmp    %rdi,%rcx
++mov    (%rdx,%r10,4),%r10d
++mov    %r10d,(%r8,%r9,4)
++inc    %r9
++cmp    %r9,%rcx
+ jne    <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+ ret
+-data16 cs nopw 0x0(%rax,%rax,1)
++ud2
++data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)

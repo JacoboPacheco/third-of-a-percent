@@ -1,0 +1,144 @@
+{
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "libcxx_package": "1:18.1.3-1ubuntu1",
+  "builds": {
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "none_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64",
+   "fast_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64",
+   "none_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only",
+   "fast_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only"
+  },
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG: the census flags)"
+ },
+ "programs": {
+  "draco": {
+   "program": "draco",
+   "root": "draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5",
+   "sources": 129,
+   "c_sources": 0,
+   "builds": {
+    "none": {
+     "binary": "draco.none",
+     "sha256": "b793e56ff0421237cda5ae09e46d8cfefb6f6285a4c475d1f8dbe8ed73a8fb6f",
+     "bytes": 1346312,
+     "text_sha256": "723f2818451217af6c27a1884235300b05ebe6ecaa20f52193313432bc405685",
+     "traps": 20,
+     "compile_seconds": 293.3,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/draco.none realworld/drivers/draco_codec.cpp build/rw-work/draco/libdraco.none.a"
+    },
+    "fast": {
+     "binary": "draco.fast",
+     "sha256": "888424f546041efaefd5824a1f3ac797c26c9b014c46d34e999626b5fb085e3f",
+     "bytes": 1359824,
+     "text_sha256": "f9c30ba0fe091b18c9ab492b6ed23619491a09005d393493097263d73a56a452",
+     "traps": 440,
+     "compile_seconds": 263.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/draco.fast realworld/drivers/draco_codec.cpp build/rw-work/draco/libdraco.fast.a"
+    },
+    "none_g": {
+     "binary": "draco.none_g",
+     "sha256": "07cfa56528254f672d80f1147571f58244a2135713e4b6635f7037505fcb9bb1",
+     "bytes": 4153200,
+     "text_sha256": "723f2818451217af6c27a1884235300b05ebe6ecaa20f52193313432bc405685",
+     "traps": 20,
+     "compile_seconds": 258.7,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/_census_gen -pthread -o rwbin/draco.none_g realworld/drivers/draco_codec.cpp build/rw-work/draco/libdraco.none_g.a"
+    },
+    "fast_g": {
+     "binary": "draco.fast_g",
+     "sha256": "263fa0ae2d5639da8c52daf5085f5b4de02a473d5cf193dfe4e5b77fd5234d32",
+     "bytes": 4227128,
+     "text_sha256": "f9c30ba0fe091b18c9ab492b6ed23619491a09005d393493097263d73a56a452",
+     "traps": 440,
+     "compile_seconds": 259.8,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src -Ibuild/rw-deps/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/_census_gen -pthread -o rwbin/draco.fast_g realworld/drivers/draco_codec.cpp build/rw-work/draco/libdraco.fast_g.a"
+    }
+   },
+   "text_identical": {
+    "none_vs_none_g": true,
+    "fast_vs_fast_g": true
+   },
+   "example_compile": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -I<deps>/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src -I<deps>/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -c <deps>/draco/draco-8786740086a9f4d83f44aa83badfbea4dce7a1b5/src/draco/animation/animation.cc -o /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/rw-work/draco/none/src__draco__animation__animation.cc.o",
+   "lost_locations": [
+    {
+     "location": "src/draco/attributes/attribute_quantization_transform.cc:39:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/attributes/point_attribute.cc:213:5",
+     "vectorized_none": 28,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/kd_tree_attributes_decoder.cc:477:5",
+     "vectorized_none": 2,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/kd_tree_attributes_encoder.cc:100:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/kd_tree_attributes_encoder.cc:203:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/prediction_schemes/mesh_prediction_scheme_constrained_multi_parallelogram_decoder.h:164:11",
+     "vectorized_none": 2,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/prediction_schemes/mesh_prediction_scheme_parallelogram_shared.h:62:5",
+     "vectorized_none": 14,
+     "vectorized_fast": 6,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/attributes/sequential_integer_attribute_encoder.cc:175:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/entropy/ans.h:493:7",
+     "vectorized_none": 18,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/entropy/rans_symbol_decoder.h:108:7",
+     "vectorized_none": 18,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/compression/mesh/mesh_edgebreaker_traversal_valence_encoder.h:64:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/draco/io/ply_decoder.cc:27:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    }
+   ],
+   "vectorized_remarks_total": {
+    "none": 822,
+    "fast": 750
+   }
+  }
+ }
+}

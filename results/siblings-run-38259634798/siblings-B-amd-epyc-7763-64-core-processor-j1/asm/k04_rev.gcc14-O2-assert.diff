@@ -1,0 +1,46 @@
+--- k04_rev.gcc14O2.none.s
++++ k04_rev.gcc14O2.gcc14-O2-assert.s
+@@ -1,16 +1,34 @@
+ <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_>:
+ endbr64
+-mov    (%rsi),%rcx
++mov    (%rsi),%r8
+ mov    0x8(%rsi),%rdx
+-sub    %rcx,%rdx
++sub    %r8,%rdx
+ sar    $0x2,%rdx
+-lea    -0x1(%rdx),%rax
+ je     <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_+off>
+ mov    (%rdi),%rsi
++mov    0x8(%rdi),%rcx
++lea    -0x1(%rdx),%rax
++mov    (%r8,%rax,4),%edi
++sub    %rsi,%rcx
++sar    $0x2,%rcx
++lea    (%rdi,%rdi,1),%edx
++cmp    %rcx,%rax
++jae    <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_+off>
++mov    %edx,(%rsi,%rax,4)
++lea    -0x1(%rax),%rdx
++test   %rax,%rax
++je     <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_+off>
++mov    %rdx,%rax
++mov    (%r8,%rax,4),%edi
++lea    (%rdi,%rdi,1),%edx
++cmp    %rcx,%rax
++jb     <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_+off>
++sub    $0x8,%rsp
++lea    0x9ec(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0xa21(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0xad5(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++ret
++cs nopw 0x0(%rax,%rax,1)
+ nopl   0x0(%rax,%rax,1)
+-mov    (%rcx,%rax,4),%edi
+-lea    (%rdi,%rdi,1),%edx
+-mov    %edx,(%rsi,%rax,4)
+-sub    $0x1,%rax
+-jae    <_Z12kern_k04_revRSt6vectorIiSaIiEERKS1_+off>
+-ret

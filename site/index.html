@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en" data-hv="4">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Third of a Percent: libc++ bounds checks, loop by loop</title>
+<meta name="description" content="Re-testing Google's 'a third of a percent' cost of libc++ bounds checks, loop shape by loop shape, with the machine code as proof, a census of real code, the rewrites that recover most of the cost for reverse and matrix-multiply loops, and other toolchains.">
+<meta name="author" content="JacoboPacheco">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Third of a Percent: libc++ bounds checks, loop by loop">
+<meta property="og:description" content="Google reported a third of a percent for libc++ bounds checks. We timed small loops with the checks off and on, and show the machine code behind each result.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23fff' stroke='%231b1b1b' stroke-width='2'/%3E%3Cpath d='M7 22h4l3-12 4 14 3-9h4' fill='none' stroke='%23c2461e' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"></noscript>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="hero.css">
+<link rel="stylesheet" href="modules.css">
+</head>
+<body data-page="main">
+<a class="skip" href="#result">Skip to the paper</a>
+<div id="sample-band" class="sample-band" hidden>SAMPLE DATA: the figures below show results/fixture.json, a made-up file for testing the page, not a measurement.</div>
+
+<header class="bar" id="bar">
+  <a class="bar-title" href="#top">Third of a Percent</a>
+  <span class="bar-sec" id="bar-sec" aria-hidden="true"></span>
+  <a class="bar-limits" id="bar-limits" href="#cannot">Limits</a>
+  <a class="bar-details" href="details.html">Full details</a>
+  <nav class="toc" id="toc" aria-label="Contents"><button type="button" class="toc-btn" aria-expanded="false" aria-controls="toc-list">Contents</button><ol id="toc-list"></ol></nav>
+</header>
+<nav class="rail" id="rail" aria-label="Sections"></nav>
+
+<main class="paper" id="top">
+  <div class="front">
+    <section class="hero" id="hero" aria-labelledby="hero-h">
+      <div class="hero-in wide">
+        <div class="hero-copy">
+          <div class="hc-l">
+            <p class="dateline">Preprint, Oct 2026, v0.x, in progress. <a href="details.html">Full details</a></p>
+            <h1 id="hero-h">Third of a Percent</h1>
+            <div class="hero-actions">
+              <button type="button" class="repro-btn" id="repro-btn" aria-expanded="false" aria-controls="repro-box">Reproduce in one command</button>
+              <div class="repro-box" id="repro-box" hidden role="region" aria-label="Reproduce every number">
+                <p>Check every number on a laptop, no compiler needed: the tests, every interval and verdict recomputed from the raw samples, and this page against its data.</p>
+                <div class="cmdline"><pre><code id="repro-cmd">python scripts/check.py</code></pre><button type="button" class="copy" data-copy="repro-cmd">Copy</button></div>
+                <p class="repro-more"><a href="#reproduce">Run the measurement itself on GitHub: section 10 &darr;</a></p>
+              </div>
+            </div>
+          </div>
+          <div class="hc-r">
+            <p class="byline">Bounds checks in C++&rsquo;s standard library, re-tested loop by loop. <span class="more">Pick a loop, switch the check on, and watch what it costs.</span></p>
+            <p class="scope">Google reported <span data-v="googlePct">0.30</span>% on average. Here: <span data-v="clang">clang 18.1.3</span>, <span data-v="libcxx">libc++ 18.1.3</span> in FAST mode, <code>-O2</code>, no profile-guided optimization in the main timing, loop by loop.</p>
+            <p class="simd-gloss"><button type="button" class="w-chip" id="simd-chip" aria-expanded="false" aria-controls="simd-def">What is SIMD?</button><span class="simd-def" id="simd-def" hidden>SIMD = several elements per instruction: the processor adds four numbers at once instead of one. <a href="#mech">Try it below</a>.</span></p>
+            <p class="authors"><span class="au">JacoboPacheco</span>. Code written by AI coding agents directed by the author.</p>
+          </div>
+        </div>
+        <figure class="stage" id="race" data-hv="4">
+          <div class="race-ctl">
+            <div class="seg" id="race-cpu" role="radiogroup" aria-label="CPU model"></div>
+            <div class="race-key" aria-hidden="true"><span><i class="k-off"></i>check off</span><span><i class="k-lost"></i>check on, loses SIMD</span><span><i class="k-kept"></i>check on, keeps SIMD</span><span><i class="k-chk"></i>a check</span></div>
+            <button type="button" class="sw" id="race-sw" role="switch" aria-checked="true"><span class="sw-l">Bounds check</span><span class="sw-t" aria-hidden="true"><i></i></span><b id="race-sw-w">on</b><span class="sw-hint" id="sw-hint" hidden aria-hidden="true">flip the check</span></button>
+            <button type="button" class="replay" id="race-replay">Replay the race</button>
+          </div>
+          <div class="race-loops" id="race-loops" role="radiogroup" aria-label="Loop shape"></div>
+          <div class="race-axis" id="race-axis" aria-hidden="true"></div>
+          <div class="race-cv"><canvas id="race-cv" height="150" role="img" aria-label="Illustration: a row of array elements processed with the check on or off"></canvas></div>
+          <div class="race-read" aria-live="polite">
+            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse. </b><span class="rr-meta">as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">The compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.</span></span></div>
+            <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
+          </div>
+          <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
+          <noscript><p class="ns">Needs JavaScript for the animation. The numbers: loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span> times as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned.</p></noscript>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band" id="band" aria-label="The contrast">
+      <div class="band-in wide">
+        <div class="band-n band-g">
+          <b class="band-num"><span data-v="googlePct">0.30</span>%</b>
+          <span class="band-l">Google&rsquo;s reported average, over whole services</span>
+        </div>
+        <span class="band-vs" aria-hidden="true">vs</span>
+        <div class="band-n band-w">
+          <output class="band-num" id="band-worst"><span data-v="bandWorst">8.0</span>&times;</output>
+          <span class="band-l" id="band-wl">The slowest of this study&rsquo;s eight loops (<span data-v="bandName">reverse</span>, <span data-v="heroCpu">EPYC 7763</span>): one loop, a comparable check</span>
+        </div>
+        <p class="band-s">A comparable bounds check, very different cost: Google&rsquo;s figure averages whole services, this one is a single loop. This neither confirms nor contradicts Google&rsquo;s average.</p>
+      </div>
+    </section>
+
+    <section class="mech" id="mech" aria-labelledby="mech-h">
+      <div class="mech-in wide">
+        <div class="mech-head">
+          <h2 id="mech-h">Why does the check slow it down?</h2>
+          <p class="mech-gist">SIMD: one instruction, four elements. A check before every element can stop the compiler from grouping them.</p>
+          <p class="mech-note">An illustration of the mechanism, inferred from the compiler&rsquo;s remarks and the machine code; steps are not time, and the speeds are measured above.</p>
+        </div>
+        <div class="mech-card" id="mech-card">
+          <div class="mech-tiles" id="mech-tiles" role="radiogroup" aria-label="Loop shape for the demo"></div>
+          <div class="mech-ctl">
+            <div class="seg" id="mech-chk" role="radiogroup" aria-label="Bounds check">
+              <button type="button" role="radio" data-on="0" aria-checked="false">Check off</button>
+              <button type="button" role="radio" data-on="1" aria-checked="true">Check on</button>
+            </div>
+            <button type="button" class="mech-step" id="mech-step">Step</button>
+            <span class="mech-count" id="mech-count" aria-hidden="true"></span>
+          </div>
+          <div class="mech-row" id="mech-row" aria-hidden="true"></div>
+          <p class="mech-say" id="mech-say" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+</div>
+
+<div class="words wide" id="words" role="group" aria-label="Words used here"><p class="w-plain">A bounds check makes the program stop if an index is out of range; this page measures what that costs, loop by loop.</p><details class="w-fold"><summary>Words used here</summary><div class="w-row"><button type="button" class="w-chip" aria-expanded="false" data-def="the first two test runs, before the rules were written; they said no-go.">Day-one runs</button><button type="button" class="w-chip" aria-expanded="false" data-def="half the interval width when a program is timed against itself: the noise floor.">A/A half-width</button><button type="button" class="w-chip" aria-expanded="false" data-def="FAST time over NONE time, averaged over every job that drew the same CPU model.">Pooled ratio</button><button type="button" class="w-chip" aria-expanded="false" data-def="the memory address where a loop's code starts; moving it can change speed.">Placement</button><button type="button" class="w-chip" aria-expanded="false" data-def="profile-guided optimization: the compiler sees a sample run first and tunes to it.">PGO</button><button type="button" class="w-chip" aria-expanded="false" data-def="a fresh, pre-planned run, to check results were not fitted to earlier ones.">Holdout</button></div><p class="w-def" id="w-def" aria-live="polite" hidden></p></details><noscript><p class="w-ns"><b>Day-one runs</b>: the first two test runs, before the rules were written; they said no-go. <b>A/A half-width</b>: half the interval width when a program is timed against itself: the noise floor. <b>Pooled ratio</b>: FAST time over NONE time, averaged over every job that drew the same CPU model. <b>Placement</b>: the memory address where a loop's code starts; moving it can change speed. <b>PGO</b>: profile-guided optimization: the compiler sees a sample run first and tunes to it. <b>Holdout</b>: a fresh, pre-planned run, to check results were not fitted to earlier ones.</p></noscript></div>
+  <div class="figpair wide" id="figures">
+    <div class="headline" id="headline">
+      <p class="hl-big">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span>&times; to <span data-v="lostMax">8.0</span>&times; as long in cache</p>
+      <p class="hl-small">Loops that keep it: near 1&times; on the AMD models (one exception: <span data-v="avx2Exc"></span>), <span data-v="intelRange"></span>&times; on Intel (forward add)</p>
+    </div>
+    <figure id="fig1" class="fig">
+      <div class="controls" id="controls">
+        <div class="ctl">
+          <span class="ctl-label" id="cpu-label">CPU</span>
+          <div class="seg" id="cpu-seg" role="radiogroup" aria-labelledby="cpu-label"></div>
+          <span class="few" id="cpu-few"></span>
+        </div>
+        <div class="ctl">
+          <span class="ctl-label" id="col-label">Loops</span>
+          <div class="seg" id="col-seg" role="radiogroup" aria-labelledby="col-label">
+            <button type="button" role="radio" data-col="aligned" aria-checked="true">aligned</button>
+            <button type="button" role="radio" data-col="compiled" aria-checked="false">as compiled</button>
+          </div>
+          <span class="hint-wrap"><button type="button" class="hint" id="col-hint" aria-expanded="false" aria-describedby="col-tip" aria-label="What does aligned mean?">?</button><span class="tip-text" role="tooltip" id="col-tip">Aligned: every hot loop starts on a 64-byte boundary, so where the code happens to land cannot sway the result. As compiled: the binary exactly as clang emitted it.</span></span>
+        </div>
+      </div>
+      <div id="fig1-state" class="state" aria-live="polite"></div>
+      <div id="sample-mark" class="sample-mark" hidden>SAMPLE DATA</div>
+      <div class="axis top" id="axis" aria-hidden="true"></div>
+      <div class="rows" id="rows" role="listbox" aria-label="Loop shapes, in a fixed order. Use the arrow keys to select one." tabindex="-1"></div>
+      <figcaption id="fig1-cap"><b>Figure 1.</b> &hellip;</figcaption>
+    </figure>
+
+    <figure id="fig2" class="fig" aria-live="polite">
+      <p class="f2-closed">Tap a loop above to see its machine code, checks off and on.</p>
+      <div id="fig2-body"></div>
+      <figcaption id="fig2-cap"></figcaption>
+    </figure>
+  </div>
+
+  <div class="col fcol fcol2">
+    <p class="jump"><a href="#fig1">Jump to Figure 1 &darr;</a><a class="jd" href="details.html">Full details</a></p>
+    <div class="abstract">
+      <details class="fold" id="abs-fold"><summary>Abstract</summary>
+      <p> Google reported that hardening libc++ (checking every <code>vector[i]</code> against its size) cost its services <span data-v="googlePct">0.30</span>% on average (<a data-href="claimUrl" href="#">Google Security Blog, Nov 15 2024</a><a class="cite" href="#ref-google" aria-label="Reference 1">[1]</a>). We timed small loops with the checks off and on: loops that lose SIMD under the check take several times as long; forward loops that keep it cost almost nothing on the AMD models.</p>
+      <details class="abs-more"><summary>Scope, census, rewrites, other compilers</summary>
+      <p>The scope is <span data-v="clang">clang 18.1.3</span> with <span data-v="libcxx">libc++ 18.1.3</span> in FAST mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
+      <ul class="findings">
+        <li><b><span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times;</b> as long in cache for loops that lose SIMD (several array elements per instruction) under the check; forward loops that keep SIMD stay near 1&times; on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</li>
+        <li><b><span data-v="c2Lost">444</span> of <span data-v="c2Vec">4,968</span></b> vectorized loops in numeric projects lose SIMD (<span data-v="c1Lost">1</span> of <span data-v="c1Vec">593</span> in general libraries); counted, not timed.</li>
+        <li><b><span data-v="fixMin">0.99</span> to <span data-v="fixMax">1.09</span>&times;</b> for the reverse and matrix-multiply loops after small rewrites, checks still on.</li>
+        <li><b>Other compilers</b>, compiled only: clang always loses the reverse and strided loops, never a forward one; GCC at <code>-O3</code> usually loses the forward add too, and pays at <code>-O2</code>. <span data-v="verMain"></span></li>
+      </ul>
+      <p>This neither confirms nor contradicts Google&rsquo;s average over whole services. Six real programs timed whole: <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% slower with checks on, five detectably on one AMD model, fewer on two others (section 7).</p>
+      </details>
+      </details>
+      <details class="fold" id="limits-fold"><summary>Limits: what this cannot tell you</summary>
+      <aside class="cannot" id="cannot" aria-label="What this cannot tell you">
+        <ul>
+          <li>Your production average: these are single loops, not services.</li>
+          <li>Six real programs timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
+          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">28</span> compilers in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
+          <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the stored samples leaves every verdict on the two best-sampled AMD models unchanged and the third is fragile (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
+        </ul>
+        <p class="cannot-more"><a href="details.html#limits-full">Every limit, in full &rarr;</a></p>
+      </aside>
+      </details>
+    </div>
+    </div>
+  <div class="col body">
+    <section id="result">
+      <h2><span class="secno">1</span>Result</h2>
+      <p class="gist">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times; as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned.</p>
+      <p>Every ratio is the time a loop takes with the checks on divided by its time with them off (1&times; is free, 2&times; twice as long), at two working-set sizes that fit the fastest cache (L1) and the second (L2).</p>
+      <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged.</p>
+      <p class="tcap" id="cpu-cap"><b>Table 1.</b> Per CPU model, pooled over every job that drew it. &ldquo;Pattern&rdquo; asks whether every judged forward loop stayed at most 2% above 1&times; (aligned, interval included) and every loop that loses SIMD stayed far above it (interval above 1.5&times; in both columns), by rules written before these runs. Placement-sensitive cells are left out of the 2% test and shown in their own column (section 3).</p>
+      <div class="tablewrap">
+        <table class="tbl" id="cpu-table">
+          <thead><tr><th scope="col">CPU model</th><th scope="col" class="num">Jobs</th><th scope="col" class="num">Lose SIMD, aligned</th><th scope="col" class="num">Lose SIMD, as compiled</th><th scope="col" class="num">Forward loops judged, aligned</th><th scope="col">Placement-sensitive, judged separately (aligned)</th><th scope="col">Pattern</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="tnote" id="cpu-note">Jobs: the pooled runs, <span data-v="nJobs"></span> jobs, sizes L1 and L2, column as named. Every model with a verdict is AMD; on <span data-v="intelCounts"></span>, the forward add at L1 cost <span data-v="intelRange"></span>&times; aligned in every job.</p>
+      <p class="more-link"><a href="details.html#holdout-full"><span data-v="holdoutShort"></span>; run-to-run movement, instruction counts &rarr;</a></p>
+    </section>
+
+    <section id="why">
+      <h2><span class="secno">2</span>Why the cost is so uneven</h2>
+      <p class="gist">SIMD does several array elements per instruction. A check inside the loop can stop the compiler from using it.</p>
+      <p>SIMD (single instruction, multiple data) handles several array elements with one instruction: here one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once. A compiler uses it only when it can prove that safe, and the bounds check makes the proof harder, because it can stop the loop at any element.</p>
+      <p>Figure 2 shows both outcomes. In the reverse loop the check sits inside the loop with nothing to hoist it out, the compiler reports that it <q>could not determine number of loop iterations</q>, and the four-at-a-time loop is replaced by a loop that handles one element per pass plus a compare and a jump to the trap. In the forward loops the compiler tests the sizes once before the loop and keeps the SIMD body; the check only runs on the few elements left over at the end, and in the forward sum the compiler removes it altogether.<a class="fnref" href="details.html#fn-novec" id="fnref-novec">1</a></p>
+    </section>
+
+    <section id="placement">
+      <h2><span class="secno">3</span>A control that caught us</h2>
+      <p class="gist">A forward loop looked slow on some CPUs because of where its code landed, not because of the check.</p>
+      <p>One forward loop, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was: clang emits a shorter SIMD loop (<span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span>) that is slow as placed on these AMD cores; the hardware reason is inferred.</p>
+      <p>Rebuilding both binaries with every hot loop aligned to 64 bytes (<code>-falign-loops=64</code>) removes the effect, which is why every figure offers the aligned build and why such a <em>placement-sensitive</em> loop is flagged and not used to judge the forward side.</p>
+      <details class="wd" id="wd-placement" open><summary>The interactive: four loop placements</summary><div id="w-placement" class="widget"><p class="wfb">Interactive: pick one of four measured loop start addresses and see the forward add change speed. It needs JavaScript; the measured placements are in Table 2 on the details page.</p></div></details>
+      <p class="more-link"><a href="details.html#placement-full">Table 2, Figure 3, why the aligned forward add is faster</a> and <a href="details.html#layout-full">the layout sweep &rarr;</a></p>
+    </section>
+
+    <section id="census">
+      <h2><span class="secno">4</span>How common are these loops in real code?</h2>
+      <p class="gist">Counted, not timed: <span data-v="c2Lost">444</span> of <span data-v="c2Vec">4,968</span> vectorized loops in numeric projects lose SIMD, <span data-v="c1Lost">1</span> of <span data-v="c1Vec">593</span> in general libraries.</p>
+      <p class="callout" id="census-not"><strong>Counted, not timed.</strong> How often a loop runs (its hotness) is unknown when compiling, so these counts make no claim about runtime cost, nor about Google&rsquo;s average.</p>
+      <p>Each project was compiled twice with <span data-v="corpusClang"></span>, checks off and on, and the compiler&rsquo;s own records say which loops it vectorized; a loop is <em>lost</em> when it is vectorized only with the checks off. Census 1: <span data-v="c1Projects"></span> general libraries. Census 2: <span data-v="c2Projects"></span> projects of numeric, physics, graphics, machine-learning and compression code (including Stockfish and EnTT), listed in <a data-href="planUrl" href="#">its plan</a> before the first compile.</p>
+      <figure class="fig" id="fig4">
+        <div class="fig-title">Share of vectorized loops lost under the check, by category</div>
+        <div class="c-head" aria-hidden="true"><span>Category (projects)</span><span class="c-scale" id="c-scale"></span><span class="val">lost of vectorized</span></div>
+        <div id="census-rows" class="c-rows"></div>
+        <figcaption id="fig4-cap"><b>Figure 4.</b> Census 1 is shown as one total here; its categories and every project per category are on <a href="details.html#census-full">the details page</a>. <span class="key key-lost" aria-hidden="true"></span> Filled dots: every copy of a loop counted (a template loop compiled into 96 functions counts 96 times). <span class="key key-open-lost" aria-hidden="true"></span> Rings: distinct source locations, each counted once. Linear scale. Baseline x86-64, FAST against NONE.</figcaption>
+      </figure>
+      <p id="census-p1">Census 2 loses <span data-v="c2Lost">444</span> of <span data-v="c2Vec">4,968</span> vectorized loops (<span data-v="c2Pct"></span>%); one project, <span data-v="bigName"></span>, holds <span data-v="bigLost"></span> of them. Without it, <span data-v="woLost"></span> of <span data-v="woVec"></span> (<span data-v="woPct"></span>%). Census 1 loses <span data-v="c1Lost">1</span> of <span data-v="c1Vec">593</span>.</p>
+      <p id="census-ctl-sum"><span data-v="censusCtlSum"></span></p>
+      <p class="more-link"><a href="details.html#census-full">Real loops quoted from these projects, the loop shapes, the AVX2 run, every control and every project per category &rarr;</a></p>
+    </section>
+
+    <section id="mitigate">
+      <h2><span class="secno">5</span>What to change</h2>
+      <p class="gist">One up-front size check (with raw row pointers behind it for matrix multiply) brings the reverse and matrix-multiply loops back to <span data-v="fixMin">0.99</span> to <span data-v="fixMax">1.09</span>&times; with checks still on.</p>
+      <p>Can a loop keep the checks and not pay? For the four shapes that pay, rewrites that do the same work were built, checked for vectorization and for the original&rsquo;s result, timed (aligned, against the original with checks off), and given a safety test: run on an input one element too short, the checked build must still stop the program. Select a shape to see every rewrite tried.</p>
+      <p class="callout warn" id="mit-unsafe"><strong>Fast but silently unsafe.</strong> <code>std::transform</code> over <code>rbegin()</code> and <code>rend()</code> runs the reverse loop at <span data-v="rtRange"></span> times, and its checked build <span data-v="rtOutcome"></span> on the short input: libc++ 18&rsquo;s vector iterators are not checked in FAST mode, so the out-of-range write goes through. It is not in the table below.</p>
+      <div id="mit-toggle-box" class="mit-toggle"></div>
+      <details class="wd" id="wd-mitigation" open><summary>The interactive: the up-front size check, before and after</summary><div id="w-mitigation" class="widget"><p class="wfb">Interactive: the up-front size check, before and after. It needs JavaScript; the measured ratios are in Table 3 below.</p></div></details>
+      <p class="tcap" id="mit-cap"><b>Table 3.</b> Per loop shape: the original and the best safe rewrite with checks on, time &divide; original without checks, range over every job and both sizes, with each cell whose own A/A control (the same binary timed against a copy of itself) exceeded <span data-v="mitAa"></span>% left out. <span id="mit-cpus"></span> A <em>span</em> (<code>std::span</code>) is a view of a vector&rsquo;s elements with its own checked bounds; &ldquo;the span variant&rdquo; takes it once with <code>first(2*n)</code>, so libc++ checks the bound once instead of at every element.</p>
+      <p class="tnote" id="mit-note">Jobs: the <span data-v="mitJobs"></span> jobs of the rewrite runs, aligned, sizes L1 and L2. The ranges differ from Figure 1&rsquo;s because each part uses its own jobs, sizes and column.</p>
+      <div class="tablewrap">
+        <table class="tbl mit" id="mit-table">
+          <thead><tr><th scope="col">Loop shape</th><th scope="col" class="num">Original</th><th scope="col">Best safe rewrite</th><th scope="col" class="num">Rewrite</th><th scope="col">Short input<a class="fnref" href="#fn-short" id="fnref-short">2</a></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <aside class="sidenote" id="fn-short"><span class="fnno">2</span> The checked build run once on an input one element too short: <em>stops</em> means the check stopped the program before the bad access; <em>runs through</em> means the out-of-range access happened unchecked.</aside>
+      <div id="mit-detail" class="mit-detail" aria-live="polite"></div>
+
+      <p id="mit-caveat">Measured under our strictest rule; ranges shown: the rule committed before the first timed run, for calling a rewrite <em>better</em>, could be applied in only <span data-v="mitUsable"></span> of <span data-v="mitJobs"></span> jobs (<a href="details.html#mitigate-full">the rule in full</a>).</p>
+    </section>
+
+    <section id="siblings">
+      <h2><span class="secno">6</span>Is it only libc++ with clang 18?</h2>
+      <p class="gist">Which loops lose SIMD under the checks, by compiler (compile-only): clang always loses the reverse and strided loops; GCC differs.</p>
+      <p id="ce-find"><span data-v="ceFind"></span></p>
+      <figure class="fig ce-fig" id="fig-ce">
+        <div class="fig-title">Which loops lose SIMD under the checks, by compiler (compile-only)</div>
+        <div class="controls ce-controls">
+          <div class="ctl ce-tsel"><span class="ctl-label" id="ce-t-label">Target</span><div class="seg" id="ce-tseg" role="radiogroup" aria-labelledby="ce-t-label"></div></div>
+          <div class="ctl"><span class="ctl-label" id="ce-o-label">Optimization</span><div class="seg" id="ce-oseg" role="radiogroup" aria-labelledby="ce-o-label"></div></div>
+        </div>
+        <div class="ce-panels" id="ce-panels"></div>
+        <p class="ce-remark" id="ce-remark" aria-live="polite">Hover or tap a cell for the compiler&rsquo;s remark.</p>
+        <figcaption id="fig-ce-cap"><b>Figure 5.</b> <span class="key key-lost sq" aria-hidden="true"></span> lost under the checks, <span class="key key-kept sq" aria-hidden="true"></span> kept, <span class="key key-none sq" aria-hidden="true"></span> not vectorized in either build. <span data-v="ceCap"></span> Column heads open the loop in Compiler Explorer.</figcaption>
+      </figure>
+      <p id="sib-short">Timed on few jobs (aligned): clang with libc++ keeps the forward loops near 1&times; on the AMD models (one exception: <span data-v="avx2Exc"></span>). GCC 14 with assertions costs up to <span data-v="gccO2Max"></span> times at <code>-O2</code> and the forward add <span data-v="gccO3AddMin"></span> to <span data-v="gccO3AddMax"></span> times at <code>-O3</code>.</p>
+      <p class="more-link"><a href="details.html#siblings-full">Every compiler row and the timed toolchain table &rarr;</a></p>
+    </section>
+
+    <section id="realworld">
+      <h2><span class="secno">7</span>Real programs</h2>
+      <p class="gist">Six real programs timed whole; where the slowdown is detectable it is <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% with checks on, on the model with the most jobs.</p>
+      <p class="callout" id="rw-status"><strong>Timed.</strong> <span data-v="rwStatus"></span></p>
+      <div id="rw-chart" class="rw-chart"></div>
+      <details class="wd" id="wd-programs" open><summary>Open the interactive: the real programs, by CPU model</summary><div id="w-programs" class="widget"><p class="wfb">Interactive: the real programs, by CPU model. It needs JavaScript; the measured ratios are in Table 9 below.</p></div></details>
+      <p class="tcap" id="rw-t-cap"><b>Table 9.</b> <span data-v="rwTCap"></span></p>
+      <div class="tablewrap"><table class="tbl dense" id="rw-time-table"><thead><tr><th scope="col">Program</th><th scope="col" class="num">As compiled</th><th scope="col" class="num">Aligned</th><th scope="col" class="num">A/A floor</th><th scope="col">Reading</th></tr></thead><tbody></tbody></table></div>
+      <p id="rw-finding"><span data-v="rwFinding"></span></p>
+      <p id="rw-other-short"><span data-v="rwOtherShort"></span></p>
+      <p id="rw-share"><span data-v="rwShare"></span></p>
+      <p id="rw-expect"><span data-v="rwExpect"></span></p>
+      <p id="rw-limits"><span data-v="rwLimits"></span></p>
+      <p class="more-link"><a href="details.html#realworld-full">Figure 6, Tables 5, 10 and 11, the Amdahl estimate &rarr;</a></p>
+    </section>
+
+    <section id="method">
+      <h2><span class="secno">8</span>Method and controls</h2>
+      <p class="gist">Builds, the A/A noise floor and the written pass rules; every number is read from the runs&rsquo; data files.</p>
+      <dl class="method">
+        <dt>Builds</dt>
+        <dd><code data-v="commonFlags"></code> on <span data-v="clang">clang 18.1.3</span> and <span data-v="libcxx">libc++ 18.1.3</span>, with <code>_LIBCPP_HARDENING_MODE_NONE</code> (checks off) and <code>_FAST</code> (checks on, a trap on an index out of range), plus an aligned pair.</dd>
+        <dt>A/A</dt>
+        <dd>The unchecked binary against a byte-identical copy: <span data-v="aaMin"></span>% to <span data-v="aaMax"></span>% half-width per CPU model, ceiling <span data-v="aaCeil"></span>%.</dd>
+        <dt class="q">Tuned until it passed?</dt>
+        <dd id="tuned">Partly, once, and openly: the forward rule was loosened once, after the day-one runs failed it, and every rule file was committed before the runs it judges.</dd>
+        <dt>Verdict</dt>
+        <dd>Computed by script from the <a data-href="criteriaUrl" href="#" data-title="criteriaFile">written pass rules</a>; every number here is read from the runs&rsquo; data files.</dd>
+      </dl>
+      <p class="more-link"><a href="details.html#method-full">The full rule history, the original rule applied to today&rsquo;s data, and every control &rarr;</a></p>
+    </section>
+
+    <section id="related">
+      <h2><span class="secno">9</span>Related work</h2>
+      <p class="gist">How this differs from the closest measurements.</p>
+      <p id="rel-summary"><span data-v="relSummary"></span> <span id="rel-none"><span data-v="relNone"></span></span></p>
+      <p class="tcap" id="rel-cap"><b>Table 7.</b> The five measurements closest to this one, in each source&rsquo;s own words as reported (not re-checked here).</p>
+      <div class="tablewrap"><table class="tbl rel" id="rel-table"><thead><tr><th scope="col">Source</th><th scope="col">What it measured</th><th scope="col">How it differs from this study</th></tr></thead><tbody></tbody></table></div>
+      <p class="more-link"><a href="details.html#related-full">All ten sources read, what each measured and how it relates, and the ones not read in full &rarr;</a></p>
+    </section>
+
+    <section id="average">
+      <h2><span class="secno">10</span>How can 0.30% be true?</h2>
+      <p class="gist">An average over whole services can sit next to an 8&times; loop. This study does not show the average is wrong.</p>
+      <p><b>What Google reported.</b> An average cost of 0.30% across its services after hardened libc++ became the default in server-side production (<a href="https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html">Google Security Blog, Nov 15 2024</a>). The post credits the compiler removing redundant checks and the design of the checks, adds that profile-guided optimization helps, and says the cost stays small without it. It also describes one fix to an unneeded check that moved the figure from 0.35% to 0.30%.</p>
+      <p><b>Why it can sit beside an 8&times; loop.</b> An average over whole services can sit beside a slow loop if few services spend much time in such loops (an inference, not something this study tested). The post itself says a handful of performance-critical code paths still use explicitly unsafe accesses. In the programs timed here, the loops that lose SIMD hold about 0 to 6% of the instructions, yet where the cost is detectable it was <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% on EPYC 7763, the model with the most jobs, and the lost loops&rsquo; share of instructions did not predict it. Those programs were picked because they contain such loops, so that range is not an estimate for typical code. The two programs without such loops showed no detectable cost on that model; that is two programs, not a rule.</p>
+      <p><b>What cannot be said.</b> How the 0.30% was computed (CPU time or latency, which services, which time window) is not stated in the post. No Google service was measured here. This study neither confirms nor refutes the average; it shows which loop shapes would push a program above it.</p>
+    </section>
+
+    <section id="reproduce">
+      <h2><span class="secno">11</span>Reproduce</h2>
+      <p class="gist">Two commands: run the measurement on GitHub, and check every number on a laptop.</p>
+      <p>In a checkout of the repository (or your own fork), with the GitHub CLI. Each run starts <span data-v="jobsPerRun"></span> runners, and each writes one results file named after the CPU model it drew; the pooled file is then recomputed from them.</p>
+      <div class="cmdline"><pre><code id="cmd-measure"></code></pre><button type="button" class="copy" data-copy="cmd-measure">Copy</button></div>
+      <p>To check every number on a laptop, no compiler needed (tests, every interval and verdict recomputed from the raw samples, this page against its data):</p>
+      <div class="cmdline"><pre><code id="cmd-check"></code></pre><button type="button" class="copy" data-copy="cmd-check">Copy</button></div>
+    </section>
+
+    <section id="references" class="refs">
+      <h2>References</h2>
+      <ol class="reflist" id="reflist"></ol>
+      <details class="cite-box" id="cite">
+        <summary>Cite this</summary>
+        <div class="cmdline"><pre><code id="cmd-cite"></code></pre><button type="button" class="copy" data-copy="cmd-cite">Copy</button></div>
+      </details>
+    </section>
+
+    <footer class="foot small">
+      <p>The heavy material (every cell, every run, the full toolchain table, the census per project, the rule history) is on <a href="details.html">the details page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the audit: <a data-href="repoUrl" href="#">the repository</a>. The page reads <code>data/index.json</code> and the files beside it, written by <code>scripts/build_site_data.py</code>.</p>
+    </footer>
+  </div>
+</main>
+<div id="tip" class="tooltip" role="status" hidden></div>
+<script src="app.js"></script>
+<script src="race.js"></script>
+<script src="hero.js"></script>
+<script src="story.js"></script>
+</body>
+</html>

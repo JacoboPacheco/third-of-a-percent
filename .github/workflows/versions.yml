@@ -1,0 +1,160 @@
+name: versions
+
+# Does the loop-shape finding hold on libc++ / clang newer than 18? (versions/PLAN.md, written before any
+# run; rules by reference to harness/criteria-v3.json and versions/criteria.json.) For each LLVM major
+# version in the input list, ten jobs run the UNCHANGED harness (harness/run.py, criteria-v3: eight
+# kernels, L1 and L2, NONE/FAST/aligned/A-A/layout A-A/NOVEC, 40 per side, ABBA, taskset) with
+# HARNESS_CXX=clang++-N from apt.llvm.org, plus a macro probe. The last job pools every job of a CPU model
+# per version with harness/pool.py (unchanged) and prints versions/analyze.py's report against clang 18
+# (results/s4-pooled/pooled.json). Whatever comes out is published.
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "comma-separated LLVM major versions (apt.llvm.org noble has 19, 20, 21)"
+        default: "19,20,21"
+      jobs:
+        description: "matrix job numbers per version as a JSON list (10 for a pooled run; fewer only for a smoke test)"
+        default: "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+
+permissions:
+  contents: read
+
+jobs:
+  prep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      list: ${{ steps.p.outputs.list }}
+    steps:
+      - name: Versions input to a JSON list (digits only)
+        id: p
+        env:
+          V: ${{ inputs.versions }}
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json, os, re
+          v = [x.strip() for x in os.environ["V"].split(",") if x.strip()]
+          assert v and all(re.fullmatch(r"\d{2}", x) for x in v), f"bad versions {v}"
+          print("list=" + json.dumps(v))
+          EOF
+
+  measure:
+    needs: prep
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(needs.prep.outputs.list) }}
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### clang ${{ matrix.version }}, job ${{ matrix.job }}, runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+
+      - name: Install clang and libc++ ${{ matrix.version }} (apt.llvm.org), valgrind, numpy
+        run: bash versions/install.sh "${{ matrix.version }}"
+
+      - name: Offline check (tests, criteria, workflow)
+        run: python3 versions/check.py
+
+      - name: Runner facts
+        run: |
+          lscpu
+          nproc
+          free -m
+
+      - name: Macro probe, then the unchanged harness with clang++-${{ matrix.version }}
+        run: python3 versions/run_version.py --version "${{ matrix.version }}" --out out
+
+      - name: Schema check of the results
+        if: always()
+        run: python3 harness/schema.py out/results.json
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          t = json.load(open("out/toolchain.json"))
+          print(f"{t['clang']}\n\nprobe: {json.dumps(t['probe'])}\n")
+          r = json.load(open("out/results.json"))
+          print(f"A/A ({r['controls']['aa']['n_per_side']} per side): half-width {r['controls']['aa']['half_width_pct']:.3f}%\n")
+          print("| cell | FAST/NONE | 95% CI (one job) | aligned |\n|---|---|---|---|")
+          for c in r["cells"]:
+              print(f"| {c['cell_id']} | {c['ratio']:.3f} | {c['ci95'][0]:.3f} to {c['ci95'][1]:.3f} | {c['aligned']['ratio']:.3f} |")
+          EOF
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: versions-${{ matrix.version }}-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn
+
+  pool:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download every job's results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: versions-*
+          path: matrix/
+
+      - name: Any results?
+        id: have
+        run: |
+          if ls matrix/versions-*/results.json >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No job produced a results.json (install or build failed on every job); nothing to pool. See the measure jobs' logs." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install numpy (Ubuntu noble apt)
+        if: steps.have.outputs.found == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
+
+      - name: Pool per CPU model, once per version (harness/pool.py, unchanged)
+        if: steps.have.outputs.found == 'true'
+        run: |
+          ls matrix
+          for v in $(ls -d matrix/versions-*/ | sed -E 's#matrix/versions-([0-9]+)-.*#\1#' | sort -u); do
+            echo "== pooling clang $v"
+            python3 harness/pool.py "matrix/pooled-$v.json" matrix/versions-$v-*/results.json
+            python3 harness/pool_check.py "matrix/pooled-$v.json" || echo "pool_check failed for $v"
+          done
+
+      - name: Report against clang 18 (versions/analyze.py)
+        if: steps.have.outputs.found == 'true'
+        run: |
+          python3 versions/analyze.py matrix --out matrix/analysis.json | tee matrix/report.txt
+          { echo '### Versions column, pooled per CPU model and toolchain'; echo; echo '```'; cat matrix/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload analysis
+        if: steps.have.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: versions-analysis
+          path: |
+            matrix/analysis.json
+            matrix/report.txt
+            matrix/pooled-*.json
+            matrix/versions-*/toolchain.json
+          if-no-files-found: warn

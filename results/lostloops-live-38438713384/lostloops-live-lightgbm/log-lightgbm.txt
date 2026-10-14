@@ -1,0 +1,103 @@
+run_live: lightgbm: 35 translation units, root /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/lightgbm/deps/src/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63
+lostloops: compiling 35 file(s) twice (NONE and FAST) with clang++-18 ...
+lostloops 0.1: libc++ hardening NONE vs FAST, Ubuntu clang version 18.1.3 (1ubuntu1)
+
+Files compiled: 35 of 35
+Vectorized loops with hardening off: 2553 (262 source locations); with FAST: 2223
+LOST under FAST: 331 (12.96% of the vectorized), at 38 source locations (38 in your project)
+Gained (vectorized only with FAST): 1; moved to another function: 0
+Check traps (ud2) added: 1193; code size (.text) change: +0.58%
+
+where                                        shape                          fns   check in the loop        compiler says (hardened)
+include/LightGBM/utils/common.h:643:3        other                          7     yes: vector[] index o... cost model: vectorization not beneficial
+    for (size_t i = 0; i < data->size(); ++i) {
+include/LightGBM/utils/common.h:652:3        other                          6     yes: vector[] index o... cost model: vectorization not beneficial
+    for (size_t i = 0; i < data.size(); ++i) {
+src/boosting/rf.hpp:104:7                    strided                        1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (data_size_t i = 0; i < num_data_; ++i) {
+src/io/bin.cpp:657:3                         other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
+src/io/dataset.cpp:1179:3                    forward, bounded by a variable 1     yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < num_total_features_; ++i) {
+src/io/dataset_loader.cpp:1346:7             strided                        1     yes: vector[] index o... could not determine number of loop iterations
+    for (int k = 0; k < num_class_; ++k) {
+src/io/dataset_loader.cpp:1424:9             strided                        1     yes: vector[] index o... could not determine number of loop iterations
+    for (int k = 0; k < num_class_; ++k) {
+src/io/metadata.cpp:469:3                    forward, bounded by a variable 1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (data_size_t i = 0; i < num_data_; ++i) {
+src/io/metadata.cpp:538:3                    forward, bounded by a variable 1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (data_size_t i = 0; i < num_weights_; ++i) {
+src/io/multi_val_dense_bin.hpp:47:5          strided                        1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (auto i = 0; i < num_feature_; ++i) {
+src/io/multi_val_dense_bin.hpp:283:9         indirect                       1     no                       cost model: vectorization not beneficial
+    for (int j = 0; j < num_feature_; ++j) {
+src/io/multi_val_sparse_bin.hpp:62:7         indirect                       4     yes: vector[] index o... could not determine number of loop iterations
+    for (auto val : values) {
+src/io/multi_val_sparse_bin.hpp:71:7         indirect                       4     yes: vector[] index o... could not determine number of loop iterations
+    for (auto val : values) {
+src/io/multi_val_sparse_bin.hpp:364:9        forward, bounded by a variable 6     yes: vector[] index o... could not determine number of loop iterations
+    for (auto j = j_start; j < j_end; ++j) {
+src/io/tree.cpp:388:5                        forward, bounded by a variable 1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (int i = 0; i < num_leaves_; ++i) {
+src/metric/map_metric.hpp:122:9              other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < eval_at_.size(); ++j) {
+src/metric/map_metric.hpp:132:9              other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < eval_at_.size(); ++j) {
+src/metric/map_metric.hpp:139:5              other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < result.size(); ++j) {
+src/metric/rank_metric.hpp:110:11            other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < eval_at_.size(); ++j) {
+src/metric/rank_metric.hpp:130:11            other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < eval_at_.size(); ++j) {
+src/metric/rank_metric.hpp:138:5             other                          1     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < result.size(); ++j) {
+src/network/linker_topo.cpp:114:5            forward, bounded by a variable 1     yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < rest; ++i) {
+src/network/linker_topo.cpp:164:7            indirect                       1     yes: vector[] index o... could not determine number of loop iterations
+    for (int j = 0; j < distance[i]; ++j) {
+src/network/linker_topo.cpp:173:7            indirect                       1     yes: vector[] index o... could not determine number of loop iterations
+    for (int j = 0; j < distance[i]; ++j) {
+src/objective/multiclass_objective.hpp:98:9  forward, bounded by a variable 1     yes: vector[] index o... could not determine number of loop iterations
+    for (int k = 0; k < num_class_; ++k) {
+src/objective/multiclass_objective.hpp:119:9 forward, bounded by a variable 1     yes: vector[] index o... could not determine number of loop iterations
+    for (int k = 0; k < num_class_; ++k) {
+src/objective/regression_objective.hpp:120:7 forward, bounded by a variable 1     no                       (no remark for this loop in the hardened build)
+    for (data_size_t i = 0; i < num_data; ++i) {
+src/treelearner/feature_histogram.cpp:373:9  forward, bounded by a variable 32    yes: vector[] index o... cost model: vectorization not beneficial
+    for (int i = 0; i < output->num_cat_threshold; ++i) {
+src/treelearner/feature_histogram.cpp:378:9  reverse index                  32    yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < output->num_cat_threshold; ++i) {
+src/treelearner/feature_histogram.cpp:731:9  forward, bounded by a variable 96    yes: vector[] index o... cost model: vectorization not beneficial
+    for (int i = 0; i < output->num_cat_threshold; ++i) {
+src/treelearner/feature_histogram.cpp:736:9  reverse index                  96    yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < output->num_cat_threshold; ++i) {
+src/treelearner/linear_tree_learner.cpp:1... other                          4     yes: vector[] index o... could not determine number of loop iterations
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
+src/treelearner/linear_tree_learner.cpp:2... forward, bounded by a variable 4     yes: vector[] index o... could not determine number of loop iterations
+    for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
+src/treelearner/linear_tree_learner.cpp:3... forward, bounded by a variable 4     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
+src/treelearner/linear_tree_learner.cpp:3... forward, bounded by a variable 4     yes: vector[] index o... could not determine number of loop iterations
+    for (size_t feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+src/treelearner/linear_tree_learner.cpp:3... forward, bounded by a variable 2     yes: vector[] index o... cost model: vectorization not beneficial
+    for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
+src/treelearner/serial_tree_learner.cpp:9... forward, bounded by a variable 1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+src/treelearner/serial_tree_learner.cpp:9... forward, bounded by a variable 1     yes: vector[] index o... could not determine number of loop iterations
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+
+What to try, by shape (from timed tests of small kernels under FAST, not of your code):
+  reverse index: One size check before the loop (if (c.size() < n) abort();), or index a std::span(c).first(n) taken once: in our reverse-loop test either brought SIMD back (1.00x on 2 of 3 CPUs, 1.06x to 1.09x on the third). Do not switch to std::transform over rbegin()/rend(): libc++ 18 FAST does not check those iterators, so it is fast but unchecked.
+  strided: A size check with operator[] does not help here (clang 18 cannot prove 2*i+1 < size()). Take std::span(a).first(2*n) once and add #pragma clang loop interleave_count(2), or use raw data() pointers behind one size check (safety then rests on that one line).
+  indirect: The check on a[idx[i]] depends on the data and cannot leave the loop. Move out what can: one size check (or spans) for the arrays indexed by i; in our gather test that cut 1.6x-1.8x to about 1.3x in L1. Clamping or validating the indexes first was slower.
+  forward, bounded by a variable: The loop runs to a variable, not the container's size(), so clang cannot prove each index is in range. Try one check before the loop that the bound fits (if (v.size() < n) abort();) or index a std::span(v).first(n): that worked in our reverse-loop test, where the index is the loop counter itself; this exact shape was not timed.
+  other: No measured fix for this shape. Read the compiler's remark; if the loop indexes a container with the loop counter, the up-front size check or span (see the reverse and forward rows) is the first thing to try.
+
+This tool counts loops; it times nothing. A lost loop is only a candidate for a cost: how often it runs is unknown at compile time. Time the code with hardening off and on before changing anything.
+Report: /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/out-lightgbm/report/report.md, /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/out-lightgbm/report/report.json
+clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+totals: equal
+lists: equal
+details: equal
+checks: equal
+RESULT lightgbm: PASS

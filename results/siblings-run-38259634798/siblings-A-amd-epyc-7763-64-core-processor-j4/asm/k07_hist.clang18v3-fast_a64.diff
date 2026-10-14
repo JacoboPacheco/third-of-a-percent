@@ -1,0 +1,63 @@
+--- k07_hist.clang18v3.none_a64.s
++++ k07_hist.clang18v3.clang18v3-fast_a64.s
+@@ -1,41 +1,25 @@
+ <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+-mov    (%rsi),%rdx
+-mov    0x8(%rsi),%r8
+-sub    %rdx,%r8
++mov    (%rsi),%rax
++mov    0x8(%rsi),%rcx
++sub    %rax,%rcx
+ je     <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-sar    $0x2,%r8
+-mov    (%rdi),%rax
+-cmp    $0x1,%r8
+-mov    %r8,%rsi
+-adc    $0x0,%rsi
+-mov    %esi,%ecx
+-and    $0x3,%ecx
+-cmp    $0x4,%r8
+-jae    <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++sar    $0x2,%rcx
++mov    (%rdi),%rdx
++mov    0x8(%rdi),%rsi
++sub    %rdx,%rsi
++sar    $0x2,%rsi
++cmp    $0x1,%rcx
++adc    $0x0,%rcx
+ xor    %edi,%edi
+-jmp    <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-and    $0xfffffffffffffffc,%rsi
+-xor    %edi,%edi
++data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+ nopw   0x0(%rax,%rax,1)
+-movzbl (%rdx,%rdi,4),%r8d
+-incl   (%rax,%r8,4)
+-movzbl 0x4(%rdx,%rdi,4),%r8d
+-incl   (%rax,%r8,4)
+-movzbl 0x8(%rdx,%rdi,4),%r8d
+-incl   (%rax,%r8,4)
+-movzbl 0xc(%rdx,%rdi,4),%r8d
+-incl   (%rax,%r8,4)
+-add    $0x4,%rdi
+-cmp    %rdi,%rsi
+-jne    <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-test   %rcx,%rcx
+-je     <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-lea    (%rdx,%rdi,4),%rdx
+-xor    %esi,%esi
+-nopl   0x0(%rax,%rax,1)
+-movzbl (%rdx,%rsi,4),%edi
+-incl   (%rax,%rdi,4)
+-inc    %rsi
+-cmp    %rsi,%rcx
++movzbl (%rax,%rdi,4),%r8d
++cmp    %r8,%rsi
++jbe    <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++incl   (%rdx,%r8,4)
++inc    %rdi
++cmp    %rdi,%rcx
+ jne    <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ ret
++ud2
++nopl   0x0(%rax)

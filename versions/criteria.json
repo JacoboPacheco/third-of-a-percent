@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "written": "Tue Oct 13 2026, by `date`, with PLAN.md, before any run of versions.yml",
+  "rule_for_changes": "No number or rule here changes after a result of versions.yml exists; a change is a new file version written before the run it applies to, with the reason.",
+  "reference": {
+    "file": "harness/criteria-v3.json",
+    "sha256": "b01beceab72f79e9b837483eb7f30403980598358c618ebc79a8dcdb97b55596",
+    "what_is_read_from_it": ["verdict.forward_point_max_ratio", "verdict.forward_ci_hi_floor_pct", "verdict.forward_ci_hi_aa_multiplier", "verdict.lost_ci_lo_min_ratio", "verdict.aa_half_width_max_pct", "v3.pooling.minimum_jobs"]
+  },
+  "default_versions": [19, 20, 21],
+  "baseline": {"pooled_file": "results/s4-pooled/pooled.json", "toolchain": "clang 18 / Ubuntu libc++-18-dev 1:18.1.3"},
+  "judged_kernels": ["k04_rev", "k05_stride2", "k08_matmul"],
+  "sizes": ["L1", "L2"],
+  "columns": ["as_compiled", "aligned"],
+  "hold": "class lost (vectorized in NONE, not in FAST, from clang's remark) and pooled ci95_lo >= lost_ci_lo_min_ratio in both columns at both sizes",
+  "forms": {
+    "per_cpu_model": ["GENERALISES (3 of 3 hold)", "PARTIAL (1 or 2 hold)", "DOES_NOT_GENERALISE (0 of 3 hold)", "INCONCLUSIVE"],
+    "per_toolchain": ["the same form on every non-inconclusive CPU model", "MIXED_BY_CPU_MODEL", "INCONCLUSIVE (no usable CPU model)"]
+  },
+  "inconclusive_when": ["pooled verdict form is inconclusive in harness/pool.py", "macro probe: FAST does not trap, or NONE does not run clean"],
+  "forward_rule_descriptive": "kept in-cache cell passes when aligned ratio <= forward_point_max_ratio and aligned ci95_hi <= 1 + max(forward_ci_hi_floor_pct/100, forward_ci_hi_aa_multiplier * pooled A/A half-width/100); printed, not part of the form",
+  "descriptive_only": ["ratio against clang 18 on the same CPU model", "vectorization widths", "forward rule result"]
+}

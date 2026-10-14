@@ -1,0 +1,115 @@
+name: environment
+
+# What did the shared runner do while we timed (steal, frequency, core sharing), and does it move any ratio?
+# (environment/PLAN.md, thresholds fixed before any run.) Ten jobs run the harness's eight kernels NONE vs FAST
+# (harness/run.py imported unchanged: sizes L1 and L2, 20 per side, ABBA, taskset) while sampling /proc/stat steal and
+# frequency per process. The last job groups the jobs by CPU model and prints environment/analyze.py's report.
+
+on:
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "matrix job numbers as a JSON list (10 for the pre-registered run; fewer only for a smoke test)"
+        default: "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18 and libc++-18 (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev python3-numpy
+          clang++-18 --version
+          dpkg-query -W clang-18 libc++-18-dev
+
+      - name: Offline check (tests, thresholds, workflow)
+        run: python3 environment/check.py
+
+      - name: Runner facts
+        run: |
+          lscpu
+          nproc
+          cat /sys/devices/system/cpu/cpu1/topology/thread_siblings_list || true
+          cat /sys/fs/cgroup/cpu.max || true
+          ls /sys/devices/system/cpu/cpu1/cpufreq 2>&1 | head -20 || true
+          head -12 /proc/stat
+
+      - name: Time NONE vs FAST while sampling steal and frequency
+        run: python3 environment/runner.py --job "${{ matrix.job }}" --out out --build build/environment
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 environment/analyze.py out | tee out/report.txt || true
+          { echo '```'; cat out/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/environment.json
+          if-no-files-found: warn
+
+  analyse:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download every job's results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: environment-*
+          path: matrix/
+
+      - name: Any results?
+        id: have
+        run: |
+          if ls matrix/*/environment.json >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No job produced an environment.json; nothing to analyse. See the measure jobs' logs." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Group by CPU model and report
+        if: steps.have.outputs.found == 'true'
+        run: |
+          ls matrix
+          python3 environment/analyze.py matrix --out matrix/analysis.json | tee matrix/report.txt
+          { echo '### Environment column, per CPU model'; echo; echo '```'; cat matrix/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload analysis
+        if: steps.have.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-analysis
+          path: |
+            matrix/analysis.json
+            matrix/report.txt
+            matrix/*/environment.json
+          if-no-files-found: warn

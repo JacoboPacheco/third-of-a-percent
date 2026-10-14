@@ -1,0 +1,66 @@
+--- k02_add_fwd.gcc14O2.none.s
++++ k02_add_fwd.gcc14O2.gcc14-O2-assert.s
+@@ -1,24 +1,48 @@
+ <_Z16kern_k02_add_fwdRSt6vectorIiSaIiEERKS1_S4_>:
+ endbr64
+ mov    0x8(%rsi),%rax
+-mov    (%rsi),%rcx
+-mov    %rax,%rsi
+-sub    %rcx,%rsi
++mov    (%rsi),%r9
++mov    %rax,%r10
++sub    %r9,%r10
++sar    $0x2,%r10
++cmp    %r9,%rax
++je     <_Z16kern_k02_add_fwdRSt6vectorIiSaIiEERKS1_S4_+off>
++sub    $0x8,%rsp
++mov    (%rdx),%r11
++mov    0x8(%rdx),%rsi
++xor    %eax,%eax
++sub    %r11,%rsi
+ sar    $0x2,%rsi
+-cmp    %rcx,%rax
++mov    (%r9,%rax,4),%edx
++cmp    %rax,%rsi
+ je     <_Z16kern_k02_add_fwdRSt6vectorIiSaIiEERKS1_S4_+off>
+-mov    (%rdx),%r8
+-mov    (%rdi),%rdi
+-xor    %eax,%eax
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   0x0(%rax,%rax,1)
+-mov    (%r8,%rax,4),%edx
+-add    (%rcx,%rax,4),%edx
+-mov    %edx,(%rdi,%rax,4)
++mov    (%r11,%rax,4),%ecx
++mov    (%rdi),%r8
++add    %edx,%ecx
++mov    0x8(%rdi),%rdx
++sub    %r8,%rdx
++sar    $0x2,%rdx
++cmp    %rdx,%rax
++jae    <_Z16kern_k02_add_fwdRSt6vectorIiSaIiEERKS1_S4_+off>
++mov    %ecx,(%r8,%rax,4)
+ add    $0x1,%rax
+-cmp    %rsi,%rax
++cmp    %r10,%rax
+ jb     <_Z16kern_k02_add_fwdRSt6vectorIiSaIiEERKS1_S4_+off>
++add    $0x8,%rsp
+ ret
+ cs nopw 0x0(%rax,%rax,1)
+-xchg   %ax,%ax
++lea    0x90d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x942(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x47d,%esi
++lea    0xa0e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
++lea    0x8ed(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0xa22(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0x9ee(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
++ret
++cs nopw 0x0(%rax,%rax,1)
++nopl   0x0(%rax,%rax,1)

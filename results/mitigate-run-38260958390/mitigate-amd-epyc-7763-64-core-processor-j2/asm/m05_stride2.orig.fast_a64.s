@@ -1,0 +1,29 @@
+0000000000001280 <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+    1280:	mov    (%rdi),%rax
+    1283:	mov    0x8(%rdi),%rcx
+    1287:	sub    %rax,%rcx
+    128a:	je     12e4 <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+0x64>
+    128c:	sar    $0x2,%rcx
+    1290:	mov    (%rsi),%rdx
+    1293:	mov    0x8(%rsi),%rsi
+    1297:	sub    %rdx,%rsi
+    129a:	sar    $0x2,%rsi
+    129e:	cmp    $0x1,%rcx
+    12a2:	adc    $0x0,%rcx
+    12a6:	xor    %edi,%edi
+    12a8:	data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+    12b7:	nopw   0x0(%rax,%rax,1)
+    12c0:	cmp    %rdi,%rsi
+    12c3:	jbe    12e5 <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+0x65>
+    12c5:	lea    0x1(%rdi),%r8
+    12c9:	cmp    %r8,%rsi
+    12cc:	jbe    12e5 <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+0x65>
+    12ce:	mov    0x4(%rdx,%rdi,4),%r8d
+    12d3:	add    (%rdx,%rdi,4),%r8d
+    12d7:	mov    %r8d,(%rax,%rdi,2)
+    12db:	add    $0x2,%rdi
+    12df:	dec    %rcx
+    12e2:	jne    12c0 <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+0x40>
+    12e4:	ret
+    12e5:	ud2
+    12e7:	nopw   0x0(%rax,%rax,1)

@@ -1,0 +1,33 @@
+{
+  "what": "The rules for reading the mitigation experiment (mitigate/run.py). Written and committed BEFORE the first timed run of .github/workflows/mitigate.yml. Compiler Explorer (clang 18.1.0, x86-64) was used to check that each rewrite compiles and to read its vectorization remark; no timing of any rewrite existed when this file was written.",
+  "added_after_the_first_timed_run": "Run 38256846461 (the first timed run) existed when three variants were added: m05_stride2.span_il2 and m08_matmul.span_il2 (the span rewrite plus #pragma clang loop interleave_count(2), because the span rewrites vectorized with interleave 1 under FAST and stayed 1.1x to 1.4x slower) and m06_gather.clamp (clamp every index into range, trap after the loop). They are judged by the same rules below; no rule or threshold was changed.",
+  "rule_for_changes": "No threshold here is changed after a timed result of mitigate/run.py exists. If one looks unfair, the result is reported against it as written and the objection is written beside it.",
+  "method": {
+    "toolchain": "clang++-18 -O2 -std=c++20 -stdlib=libc++, libc++-18-dev from Ubuntu noble apt, baseline x86-64 (SSE2), as in the main study",
+    "builds_per_variant": {
+      "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -DV_<variant>",
+      "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -DV_<variant>",
+      "none_a64": "the none flags plus -falign-loops=64",
+      "fast_a64": "the fast flags plus -falign-loops=64"
+    },
+    "sizes": "L1 = half of L1d, L2 = half of L2, from /sys/devices/system/cpu/cpu0/cache, working set counting every array (harness/run.py rule)",
+    "iterations": "calibrated on the ORIGINAL kernel's NONE build only (about 75 ms per process), the same count for every variant of that kernel at that size",
+    "pairs_per_variant_and_size": {
+      "vs_original": "original NONE (A) against variant FAST (B)",
+      "vs_own": "variant NONE (A) against variant FAST (B)",
+      "vs_original_aligned": "original NONE -falign-loops=64 against variant FAST -falign-loops=64 (THE HEADLINE)",
+      "vs_own_aligned": "variant NONE -falign-loops=64 against variant FAST -falign-loops=64"
+    },
+    "timing": "20 processes per side in ABBA order, each pinned with taskset -c 1, time measured inside the binary",
+    "statistics": "ratio = median(B) / median(A); 95% percentile bootstrap, 10,000 resamples, seed 20261011 (mitigate/stats.py, a copy of harness/stats.py)",
+    "aa": "per job, for every kernel at every size: the original NONE binary against a byte-identical copy; its half-width is the noise of that kernel and size in that job",
+    "checksum": "every variant's output checksum must equal the original NONE checksum at the same size; a mismatch stops the run",
+    "safety": "each variant's NONE and FAST builds run once on an input one element too short (see each source file's header). trapped = killed by SIGILL (ud2) before the kernel returned; returned = the kernel returned, so the out-of-range access went unchecked; anything else is reported as crashed with its signal. A variant KEEPS SAFETY when its FAST build trapped. The original's NONE build must return (that proves the short input really is out of range)."
+  },
+  "reading": {
+    "recovered": "A variant RECOVERS the speed on a job when, at both L1 and L2, the upper end of the 95% interval of vs_original_aligned is at most 1 + (that job's A/A half-width for the kernel and size) / 100. It recovers on a CPU model when it recovers on every usable job of that model.",
+    "headline_claim": "A rewrite is called better (it recovers the speed with hardening on) only when it keeps safety AND recovers on every CPU model drawn. Otherwise its ratios are reported without that word.",
+    "usable_job": "a job whose A/A half-widths are all at most 2% (the main study's limit); other jobs are reported but not used for the claim",
+    "ranking": "per loop shape: keeps safety first, then the lower worst-case vs_original_aligned ratio across CPU models, then the smaller code change"
+  }
+}

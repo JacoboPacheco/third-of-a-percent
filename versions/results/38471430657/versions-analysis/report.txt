@@ -1,0 +1,480 @@
+Versions column (versions/PLAN.md). One pooled result per toolchain and CPU model; no number is dropped.
+Judged kernels: k04_rev, k05_stride2, k08_matmul.
+
+== clang/libc++ 19: INCONCLUSIVE   (Ubuntu clang version 19.1.7 (++20250804090312+cd708029e0b2-1~exp1~20250804210325.79))
+   packages: clang-19 1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79, libc++-19-dev 1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79, libc++abi-19-dev 1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79, libunwind-19-dev 1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79
+   macro probe: NONE clean True, FAST traps True (exit codes 0/-4)
+-- AMD EPYC 7763 64-Core Processor: INCONCLUSIVE  (6 jobs, 1 run(s), A/A half-width 0.068%)
+   inconclusive: pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.999, 1.001]   1.000   1.00 (18: 1.000, class18 kept)
+   k01_sum_fwd.L2  kept      1.001 [0.999, 1.003]   1.000   1.00 (18: 1.000, class18 kept)
+   k02_add_fwd.L1  kept      1.009 [1.008, 1.010]   1.007   0.64 (18: 1.585, class18 kept)
+   k02_add_fwd.L2  kept      0.999 [0.993, 1.002]   1.001   0.76 (18: 1.320, class18 kept)
+   k03_stencil.L1  kept      1.056 [1.051, 1.057]   1.003   1.05 (18: 1.006, class18 kept)
+   k03_stencil.L2  kept      1.000 [0.997, 1.004]   0.999   1.00 (18: 1.002, class18 kept)
+   k04_rev.L1      lost      8.006 [7.997, 8.017]   8.001   1.05 (18: 7.625, class18 lost)
+   k04_rev.L2      lost      7.786 [7.719, 7.828]   7.816   1.01 (18: 7.672, class18 lost)
+   k05_stride2.L1  lost      5.064 [5.057, 5.071]   5.061   1.00 (18: 5.078, class18 lost)
+   k05_stride2.L2  lost      5.003 [4.942, 5.049]   4.973   1.00 (18: 5.005, class18 lost)
+   k06_gather.L1   off_axis  1.839 [1.837, 1.840]   1.839   1.00 (18: 1.836, class18 off_axis)
+   k06_gather.L2   off_axis  1.183 [1.181, 1.185]   1.185   1.00 (18: 1.183, class18 off_axis)
+   k07_hist.L1     off_axis  1.088 [1.071, 1.095]   1.079   0.99 (18: 1.094, class18 off_axis)
+   k07_hist.L2     off_axis  1.100 [1.092, 1.110]   1.092   1.00 (18: 1.100, class18 off_axis)
+   k08_matmul.L1   kept      1.612 [1.610, 1.613]   1.615   0.50 (18: 3.192, class18 lost)
+   k08_matmul.L2   kept      1.149 [1.149, 1.150]   1.146   0.30 (18: 3.793, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.007 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 1.001 ci_hi 1.007 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.003 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 0.999 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.615 ci_hi 1.616 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.146 ci_hi 1.146 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V45 96-Core Processor: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.389%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.998, 1.001]   1.000   1.00 (18: 1.003, class18 kept)
+   k01_sum_fwd.L2  kept      1.001 [0.999, 1.002]   1.000   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.021 [1.011, 1.025]   1.024   1.04 (18: 0.985, class18 kept)
+   k02_add_fwd.L2  kept      1.000 [0.998, 1.001]   1.000   1.09 (18: 0.914, class18 kept)
+   k03_stencil.L1  kept      0.982 [0.980, 0.996]   1.011   0.98 (18: 1.001, class18 kept)
+   k03_stencil.L2  kept      0.999 [0.987, 1.009]   1.001   1.00 (18: 1.003, class18 kept)
+   k04_rev.L1      lost      5.210 [5.201, 5.240]   5.420   0.94 (18: 5.541, class18 lost)
+   k04_rev.L2      lost      5.426 [5.389, 5.471]   5.816   0.94 (18: 5.778, class18 lost)
+   k05_stride2.L1  lost      2.804 [2.756, 2.850]   2.867   1.00 (18: 2.797, class18 lost)
+   k05_stride2.L2  lost      2.906 [2.898, 2.923]   3.006   1.00 (18: 2.901, class18 lost)
+   k06_gather.L1   off_axis  1.565 [1.563, 1.572]   1.719   1.00 (18: 1.562, class18 off_axis)
+   k06_gather.L2   off_axis  1.299 [1.291, 1.306]   1.303   1.00 (18: 1.300, class18 off_axis)
+   k07_hist.L1     off_axis  1.234 [1.230, 1.243]   1.229   1.00 (18: 1.235, class18 off_axis)
+   k07_hist.L2     off_axis  1.224 [1.212, 1.238]   1.229   1.00 (18: 1.229, class18 off_axis)
+   k08_matmul.L1   kept      1.497 [1.490, 1.501]   1.720   0.31 (18: 4.809, class18 lost)
+   k08_matmul.L2   kept      1.035 [1.032, 1.037]   1.156   0.25 (18: 4.116, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.024 ci_hi 1.039 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.000 ci_hi 1.002 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.011 ci_hi 1.018 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.001 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.720 ci_hi 1.723 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.156 ci_hi 1.158 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V74 80-Core Processor: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.157%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.001 [1.000, 1.002]   1.000   1.00 (18: 1.001, class18 kept)
+   k01_sum_fwd.L2  kept      1.000 [0.999, 1.001]   0.999   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.007 [1.006, 1.008]   1.001   0.63 (18: 1.599, class18 kept)
+   k02_add_fwd.L2  kept      0.997 [0.980, 1.019]   1.001   0.75 (18: 1.327, class18 kept)
+   k03_stencil.L1  kept      1.001 [1.000, 1.009]   1.039   1.01 (18: 0.993, class18 kept)
+   k03_stencil.L2  kept      1.001 [0.999, 1.003]   1.003   1.00 (18: 0.996, class18 kept)
+   k04_rev.L1      lost      6.677 [6.670, 6.680]   5.500   1.02 (18: 6.558, class18 lost)
+   k04_rev.L2      lost      5.658 [5.540, 5.805]   5.760   0.98 (18: 5.773, class18 lost)
+   k05_stride2.L1  lost      5.110 [5.105, 5.114]   5.084   1.00 (18: 5.126, class18 lost)
+   k05_stride2.L2  lost      5.041 [5.017, 5.091]   5.148   0.97 (18: 5.171, class18 lost)
+   k06_gather.L1   off_axis  1.585 [1.584, 1.588]   1.584   0.99 (18: 1.595, class18 off_axis)
+   k06_gather.L2   off_axis  1.004 [1.002, 1.005]   1.007   1.00 (18: 1.005, class18 off_axis)
+   k07_hist.L1     off_axis  1.201 [1.196, 1.211]   1.112   1.00 (18: 1.201, class18 off_axis)
+   k07_hist.L2     off_axis  1.110 [1.096, 1.133]   1.130   0.99 (18: 1.126, class18 off_axis)
+   k08_matmul.L1   kept      1.699 [1.698, 1.700]   1.647   0.40 (18: 4.244, class18 lost)
+   k08_matmul.L2   kept      1.108 [1.107, 1.108]   1.103   0.24 (18: 4.659, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 0.999 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.001 ci_hi 1.002 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 1.001 ci_hi 1.007 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.039 ci_hi 1.044 limit 1.020 -> does not pass (description only)
+   forward k03_stencil.L2: aligned 1.003 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.647 ci_hi 1.648 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.103 ci_hi 1.104 limit 1.020 -> does not pass (description only)
+-- Intel(R) Xeon(R) 6973P-C: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.171%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      0.999 [0.996, 1.001]   1.000   no clang 18 pool for this CPU model
+   k01_sum_fwd.L2  kept      1.000 [0.935, 1.096]   1.004   no clang 18 pool for this CPU model
+   k02_add_fwd.L1  kept      1.014 [0.990, 1.031]   1.026   no clang 18 pool for this CPU model
+   k02_add_fwd.L2  kept      1.000 [0.999, 1.001]   1.000   no clang 18 pool for this CPU model
+   k03_stencil.L1  kept      0.999 [0.994, 1.000]   1.004   no clang 18 pool for this CPU model
+   k03_stencil.L2  kept      0.996 [0.972, 1.008]   0.968   no clang 18 pool for this CPU model
+   k04_rev.L1      lost      6.586 [6.516, 6.695]   6.567   no clang 18 pool for this CPU model
+   k04_rev.L2      lost      3.673 [3.654, 3.713]   3.696   no clang 18 pool for this CPU model
+   k05_stride2.L1  lost      4.961 [4.927, 4.984]   4.957   no clang 18 pool for this CPU model
+   k05_stride2.L2  lost      4.079 [3.522, 4.243]   3.643   no clang 18 pool for this CPU model
+   k06_gather.L1   off_axis  2.161 [2.150, 2.187]   2.158   no clang 18 pool for this CPU model
+   k06_gather.L2   off_axis  1.030 [1.029, 1.031]   1.000   no clang 18 pool for this CPU model
+   k07_hist.L1     off_axis  1.242 [1.212, 1.285]   1.228   no clang 18 pool for this CPU model
+   k07_hist.L2     off_axis  1.148 [1.125, 1.165]   1.151   no clang 18 pool for this CPU model
+   k08_matmul.L1   kept      1.507 [1.504, 1.510]   1.464   no clang 18 pool for this CPU model
+   k08_matmul.L2   kept      1.021 [0.976, 1.028]   1.143   no clang 18 pool for this CPU model
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.004 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.026 ci_hi 1.028 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.000 ci_hi 1.006 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.004 ci_hi 1.011 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 0.968 ci_hi 1.017 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.464 ci_hi 1.657 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.143 ci_hi 1.157 limit 1.020 -> does not pass (description only)
+-- Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.192%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.999, 1.001]   1.000   no clang 18 pool for this CPU model
+   k01_sum_fwd.L2  kept      1.000 [0.999, 1.001]   1.000   no clang 18 pool for this CPU model
+   k02_add_fwd.L1  kept      1.033 [1.032, 1.034]   1.044   no clang 18 pool for this CPU model
+   k02_add_fwd.L2  kept      1.001 [1.000, 1.002]   1.001   no clang 18 pool for this CPU model
+   k03_stencil.L1  kept      1.001 [1.000, 1.002]   1.002   no clang 18 pool for this CPU model
+   k03_stencil.L2  kept      1.000 [0.999, 1.028]   0.999   no clang 18 pool for this CPU model
+   k04_rev.L1      lost      6.139 [6.135, 6.144]   6.112   no clang 18 pool for this CPU model
+   k04_rev.L2      lost      4.864 [4.856, 4.869]   4.970   no clang 18 pool for this CPU model
+   k05_stride2.L1  lost      4.587 [4.552, 4.655]   4.340   no clang 18 pool for this CPU model
+   k05_stride2.L2  lost      3.913 [3.910, 3.916]   3.913   no clang 18 pool for this CPU model
+   k06_gather.L1   off_axis  1.538 [1.529, 1.564]   1.515   no clang 18 pool for this CPU model
+   k06_gather.L2   off_axis  1.003 [1.002, 1.003]   1.003   no clang 18 pool for this CPU model
+   k07_hist.L1     off_axis  1.410 [1.372, 1.431]   1.399   no clang 18 pool for this CPU model
+   k07_hist.L2     off_axis  1.282 [1.274, 1.289]   1.271   no clang 18 pool for this CPU model
+   k08_matmul.L1   kept      1.717 [1.715, 1.719]   1.589   no clang 18 pool for this CPU model
+   k08_matmul.L2   kept      1.097 [1.091, 1.104]   1.079   no clang 18 pool for this CPU model
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.044 ci_hi 1.046 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.001 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.002 ci_hi 1.002 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 0.999 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.589 ci_hi 1.594 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.079 ci_hi 1.093 limit 1.020 -> does not pass (description only)
+   vectorization (remarks, first job): k01_sum_fwd none w2 fast w2; k02_add_fwd none w4 fast w4; k03_stencil none w4 fast w4; k04_rev none w4 fast no; k05_stride2 none w4 fast no; k06_gather none no fast no; k07_hist none no fast no; k08_matmul none w4 fast w4
+
+== clang/libc++ 20: INCONCLUSIVE   (Ubuntu clang version 20.1.8 (++20250804090239+87f0227cb601-1~exp1~20250804210352.139))
+   packages: clang-20 1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139, libc++-20-dev 1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139, libc++abi-20-dev 1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139, libunwind-20-dev 1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139
+   macro probe: NONE clean True, FAST traps True (exit codes 0/-4)
+-- AMD EPYC 7763 64-Core Processor: INCONCLUSIVE  (5 jobs, 1 run(s), A/A half-width 0.100%)
+   inconclusive: pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.999, 1.001]   0.992   1.00 (18: 1.000, class18 kept)
+   k01_sum_fwd.L2  kept      1.000 [0.999, 1.001]   1.001   1.00 (18: 1.000, class18 kept)
+   k02_add_fwd.L1  kept      1.008 [1.007, 1.009]   1.007   0.64 (18: 1.585, class18 kept)
+   k02_add_fwd.L2  kept      0.996 [0.976, 1.009]   0.992   0.75 (18: 1.320, class18 kept)
+   k03_stencil.L1  kept      1.055 [1.049, 1.057]   1.004   1.05 (18: 1.006, class18 kept)
+   k03_stencil.L2  kept      1.000 [0.996, 1.004]   1.002   1.00 (18: 1.002, class18 kept)
+   k04_rev.L1      lost      8.005 [8.002, 8.008]   8.020   1.05 (18: 7.625, class18 lost)
+   k04_rev.L2      lost      7.796 [7.720, 7.835]   7.762   1.02 (18: 7.672, class18 lost)
+   k05_stride2.L1  lost      5.062 [5.055, 5.068]   5.054   1.00 (18: 5.078, class18 lost)
+   k05_stride2.L2  lost      4.944 [4.866, 5.018]   4.992   0.99 (18: 5.005, class18 lost)
+   k06_gather.L1   off_axis  1.837 [1.836, 1.838]   1.839   1.00 (18: 1.836, class18 off_axis)
+   k06_gather.L2   off_axis  1.181 [1.179, 1.183]   1.185   1.00 (18: 1.183, class18 off_axis)
+   k07_hist.L1     off_axis  1.079 [1.057, 1.092]   1.092   0.99 (18: 1.094, class18 off_axis)
+   k07_hist.L2     off_axis  1.092 [1.081, 1.106]   1.099   0.99 (18: 1.100, class18 off_axis)
+   k08_matmul.L1   kept      1.612 [1.610, 1.613]   1.645   0.50 (18: 3.192, class18 lost)
+   k08_matmul.L2   kept      1.150 [1.149, 1.151]   1.147   0.30 (18: 3.793, class18 lost)
+   forward k01_sum_fwd.L1: aligned 0.992 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.001 ci_hi 1.002 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.007 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 0.992 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.004 ci_hi 1.005 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.002 ci_hi 1.005 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.645 ci_hi 1.647 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.147 ci_hi 1.148 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V45 96-Core Processor: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.419%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.994, 1.004]   1.004   1.00 (18: 1.003, class18 kept)
+   k01_sum_fwd.L2  kept      1.002 [0.997, 1.006]   1.005   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.010 [0.999, 1.021]   1.015   1.03 (18: 0.985, class18 kept)
+   k02_add_fwd.L2  kept      0.993 [0.985, 1.002]   0.997   1.09 (18: 0.914, class18 kept)
+   k03_stencil.L1  kept      0.984 [0.976, 0.999]   0.997   0.98 (18: 1.001, class18 kept)
+   k03_stencil.L2  kept      0.997 [0.994, 1.005]   1.001   0.99 (18: 1.003, class18 kept)
+   k04_rev.L1      lost      5.219 [5.199, 5.244]   5.437   0.94 (18: 5.541, class18 lost)
+   k04_rev.L2      lost      5.403 [5.354, 5.460]   5.779   0.94 (18: 5.778, class18 lost)
+   k05_stride2.L1  lost      2.800 [2.783, 2.820]   2.852   1.00 (18: 2.797, class18 lost)
+   k05_stride2.L2  lost      2.903 [2.887, 2.912]   3.048   1.00 (18: 2.901, class18 lost)
+   k06_gather.L1   off_axis  1.558 [1.550, 1.567]   1.717   1.00 (18: 1.562, class18 off_axis)
+   k06_gather.L2   off_axis  1.303 [1.297, 1.308]   1.302   1.00 (18: 1.300, class18 off_axis)
+   k07_hist.L1     off_axis  1.238 [1.231, 1.249]   1.236   1.00 (18: 1.235, class18 off_axis)
+   k07_hist.L2     off_axis  1.224 [1.208, 1.232]   1.224   1.00 (18: 1.229, class18 off_axis)
+   k08_matmul.L1   kept      1.492 [1.471, 1.508]   1.695   0.31 (18: 4.809, class18 lost)
+   k08_matmul.L2   kept      1.040 [1.037, 1.043]   1.159   0.25 (18: 4.116, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.004 ci_hi 1.012 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.005 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.015 ci_hi 1.024 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 0.997 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 0.997 ci_hi 1.013 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.001 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.695 ci_hi 1.704 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.159 ci_hi 1.163 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V74 80-Core Processor: INCONCLUSIVE  (2 jobs, 1 run(s), A/A half-width 0.082%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 2 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.999, 1.001]   1.000   1.00 (18: 1.001, class18 kept)
+   k01_sum_fwd.L2  kept      1.000 [0.999, 1.001]   1.000   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.006 [1.005, 1.007]   1.002   0.63 (18: 1.599, class18 kept)
+   k02_add_fwd.L2  kept      0.997 [0.989, 1.013]   0.996   0.75 (18: 1.327, class18 kept)
+   k03_stencil.L1  kept      1.001 [0.999, 1.002]   1.039   1.01 (18: 0.993, class18 kept)
+   k03_stencil.L2  kept      1.001 [0.999, 1.005]   1.000   1.00 (18: 0.996, class18 kept)
+   k04_rev.L1      lost      6.676 [6.671, 6.681]   5.482   1.02 (18: 6.558, class18 lost)
+   k04_rev.L2      lost      5.675 [5.456, 5.878]   5.652   0.98 (18: 5.773, class18 lost)
+   k05_stride2.L1  lost      5.102 [5.096, 5.106]   5.079   1.00 (18: 5.126, class18 lost)
+   k05_stride2.L2  lost      5.274 [5.193, 5.282]   5.279   1.02 (18: 5.171, class18 lost)
+   k06_gather.L1   off_axis  1.585 [1.584, 1.587]   1.584   0.99 (18: 1.595, class18 off_axis)
+   k06_gather.L2   off_axis  1.004 [1.003, 1.006]   1.005   1.00 (18: 1.005, class18 off_axis)
+   k07_hist.L1     off_axis  1.204 [1.182, 1.265]   1.108   1.00 (18: 1.201, class18 off_axis)
+   k07_hist.L2     off_axis  1.121 [1.107, 1.131]   1.127   1.00 (18: 1.126, class18 off_axis)
+   k08_matmul.L1   kept      1.698 [1.697, 1.699]   1.648   0.40 (18: 4.244, class18 lost)
+   k08_matmul.L2   kept      1.108 [1.108, 1.109]   1.103   0.24 (18: 4.659, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.002 ci_hi 1.003 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 0.996 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.039 ci_hi 1.051 limit 1.020 -> does not pass (description only)
+   forward k03_stencil.L2: aligned 1.000 ci_hi 1.003 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.648 ci_hi 1.650 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.103 ci_hi 1.104 limit 1.020 -> does not pass (description only)
+-- INTEL(R) XEON(R) PLATINUM 8573C: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.512%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.002 [0.998, 1.004]   0.999   1.00 (18: 1.001, class18 kept)
+   k01_sum_fwd.L2  kept      1.001 [0.998, 1.005]   1.000   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.008 [1.004, 1.013]   1.009   0.95 (18: 1.056, class18 kept)
+   k02_add_fwd.L2  kept      1.002 [1.001, 1.005]   1.003   0.98 (18: 1.025, class18 kept)
+   k03_stencil.L1  kept      0.999 [0.996, 1.002]   1.010   0.98 (18: 1.018, class18 kept)
+   k03_stencil.L2  kept      1.010 [0.996, 1.031]   1.003   1.00 (18: 1.012, class18 kept)
+   k04_rev.L1      lost      6.598 [6.582, 6.608]   6.574   1.06 (18: 6.253, class18 lost)
+   k04_rev.L2      lost      4.107 [4.098, 4.112]   4.111   1.00 (18: 4.116, class18 lost)
+   k05_stride2.L1  lost      4.368 [4.358, 4.378]   4.367   1.00 (18: 4.358, class18 lost)
+   k05_stride2.L2  lost      3.799 [3.789, 3.822]   3.815   1.01 (18: 3.779, class18 lost)
+   k06_gather.L1   off_axis  2.179 [2.173, 2.185]   2.174   0.76 (18: 2.855, class18 off_axis)
+   k06_gather.L2   off_axis  1.050 [1.046, 1.067]   1.044   1.00 (18: 1.050, class18 off_axis)
+   k07_hist.L1     off_axis  1.180 [1.170, 1.215]   1.189   1.00 (18: 1.176, class18 off_axis)
+   k07_hist.L2     off_axis  1.085 [1.073, 1.102]   1.080   1.00 (18: 1.087, class18 off_axis)
+   k08_matmul.L1   kept      1.498 [1.496, 1.503]   1.527   0.36 (18: 4.216, class18 lost)
+   k08_matmul.L2   kept      1.085 [1.084, 1.087]   1.086   0.31 (18: 3.533, class18 lost)
+   forward k01_sum_fwd.L1: aligned 0.999 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.009 ci_hi 1.012 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 1.003 ci_hi 1.042 limit 1.020 -> does not pass (description only)
+   forward k03_stencil.L1: aligned 1.010 ci_hi 1.013 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.003 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.527 ci_hi 1.530 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.086 ci_hi 1.087 limit 1.020 -> does not pass (description only)
+-- Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.161%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.001 [0.999, 1.001]   1.000   no clang 18 pool for this CPU model
+   k01_sum_fwd.L2  kept      0.999 [0.999, 1.000]   1.000   no clang 18 pool for this CPU model
+   k02_add_fwd.L1  kept      1.030 [1.028, 1.030]   1.044   no clang 18 pool for this CPU model
+   k02_add_fwd.L2  kept      1.001 [1.001, 1.002]   1.000   no clang 18 pool for this CPU model
+   k03_stencil.L1  kept      1.001 [1.000, 1.002]   1.001   no clang 18 pool for this CPU model
+   k03_stencil.L2  kept      0.999 [0.985, 1.000]   1.000   no clang 18 pool for this CPU model
+   k04_rev.L1      lost      6.153 [6.149, 6.159]   6.148   no clang 18 pool for this CPU model
+   k04_rev.L2      lost      4.990 [4.985, 4.996]   5.000   no clang 18 pool for this CPU model
+   k05_stride2.L1  lost      4.487 [4.422, 4.548]   4.298   no clang 18 pool for this CPU model
+   k05_stride2.L2  lost      3.912 [3.910, 3.915]   3.910   no clang 18 pool for this CPU model
+   k06_gather.L1   off_axis  1.539 [1.538, 1.541]   1.513   no clang 18 pool for this CPU model
+   k06_gather.L2   off_axis  1.002 [1.001, 1.003]   1.002   no clang 18 pool for this CPU model
+   k07_hist.L1     off_axis  1.410 [1.407, 1.436]   1.396   no clang 18 pool for this CPU model
+   k07_hist.L2     off_axis  1.277 [1.267, 1.287]   1.279   no clang 18 pool for this CPU model
+   k08_matmul.L1   kept      1.718 [1.716, 1.719]   1.590   no clang 18 pool for this CPU model
+   k08_matmul.L2   kept      1.093 [1.089, 1.101]   1.103   no clang 18 pool for this CPU model
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.044 ci_hi 1.045 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.001 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.000 ci_hi 1.003 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.590 ci_hi 1.592 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.103 ci_hi 1.108 limit 1.020 -> does not pass (description only)
+   vectorization (remarks, first job): k01_sum_fwd none w2 fast w2; k02_add_fwd none w4 fast w4; k03_stencil none w4 fast w4; k04_rev none w4 fast no; k05_stride2 none w4 fast no; k06_gather none no fast no; k07_hist none no fast no; k08_matmul none w4 fast w4
+
+== clang/libc++ 21: INCONCLUSIVE   (Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70))
+   packages: clang-21 1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70, libc++-21-dev 1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70, libc++abi-21-dev 1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70, libunwind-21-dev 1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70
+   macro probe: NONE clean True, FAST traps True (exit codes 0/-4)
+-- AMD EPYC 7763 64-Core Processor: INCONCLUSIVE  (4 jobs, 1 run(s), A/A half-width 0.075%)
+   inconclusive: pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      0.999 [0.998, 1.000]   1.000   1.00 (18: 1.000, class18 kept)
+   k01_sum_fwd.L2  kept      0.999 [0.997, 1.002]   1.001   1.00 (18: 1.000, class18 kept)
+   k02_add_fwd.L1  kept      1.007 [1.006, 1.007]   1.010   0.64 (18: 1.585, class18 kept)
+   k02_add_fwd.L2  kept      0.999 [0.984, 1.014]   1.000   0.76 (18: 1.320, class18 kept)
+   k03_stencil.L1  kept      1.056 [1.048, 1.057]   1.004   1.05 (18: 1.006, class18 kept)
+   k03_stencil.L2  kept      0.997 [0.994, 1.003]   1.000   1.00 (18: 1.002, class18 kept)
+   k04_rev.L1      lost      4.832 [4.829, 4.835]   4.834   0.63 (18: 7.625, class18 lost)
+   k04_rev.L2      lost      4.680 [4.614, 4.716]   4.697   0.61 (18: 7.672, class18 lost)
+   k05_stride2.L1  lost      5.046 [5.038, 5.052]   5.050   0.99 (18: 5.078, class18 lost)
+   k05_stride2.L2  lost      4.945 [4.828, 5.018]   5.007   0.99 (18: 5.005, class18 lost)
+   k06_gather.L1   off_axis  1.838 [1.836, 1.839]   1.835   1.00 (18: 1.836, class18 off_axis)
+   k06_gather.L2   off_axis  1.186 [1.180, 1.190]   1.185   1.00 (18: 1.183, class18 off_axis)
+   k07_hist.L1     off_axis  1.085 [1.062, 1.094]   1.091   0.99 (18: 1.094, class18 off_axis)
+   k07_hist.L2     off_axis  1.092 [1.077, 1.107]   1.098   0.99 (18: 1.100, class18 off_axis)
+   k08_matmul.L1   kept      1.610 [1.609, 1.611]   1.645   0.50 (18: 3.192, class18 lost)
+   k08_matmul.L2   kept      1.150 [1.150, 1.151]   1.147   0.30 (18: 3.793, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.001 ci_hi 1.004 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.010 ci_hi 1.011 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.004 ci_hi 1.005 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.000 ci_hi 1.006 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.645 ci_hi 1.646 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.147 ci_hi 1.148 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V45 96-Core Processor: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.957%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      0.994 [0.980, 1.009]   1.004   0.99 (18: 1.003, class18 kept)
+   k01_sum_fwd.L2  kept      0.999 [0.995, 1.003]   1.000   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.023 [1.010, 1.035]   1.020   1.04 (18: 0.985, class18 kept)
+   k02_add_fwd.L2  kept      1.002 [0.987, 1.019]   1.002   1.10 (18: 0.914, class18 kept)
+   k03_stencil.L1  kept      0.999 [0.986, 1.015]   1.007   1.00 (18: 1.001, class18 kept)
+   k03_stencil.L2  kept      0.999 [0.993, 1.004]   1.001   1.00 (18: 1.003, class18 kept)
+   k04_rev.L1      lost      5.222 [5.177, 5.252]   5.348   0.94 (18: 5.541, class18 lost)
+   k04_rev.L2      lost      5.401 [5.313, 5.529]   5.812   0.93 (18: 5.778, class18 lost)
+   k05_stride2.L1  lost      4.480 [4.465, 4.495]   2.769   1.60 (18: 2.797, class18 lost)
+   k05_stride2.L2  lost      4.710 [4.677, 4.732]   2.892   1.62 (18: 2.901, class18 lost)
+   k06_gather.L1   off_axis  1.316 [1.313, 1.322]   1.590   0.84 (18: 1.562, class18 off_axis)
+   k06_gather.L2   off_axis  1.306 [1.298, 1.315]   1.317   1.00 (18: 1.300, class18 off_axis)
+   k07_hist.L1     off_axis  1.239 [1.227, 1.243]   1.235   1.00 (18: 1.235, class18 off_axis)
+   k07_hist.L2     off_axis  1.223 [1.215, 1.234]   1.229   1.00 (18: 1.229, class18 off_axis)
+   k08_matmul.L1   kept      1.495 [1.476, 1.523]   1.694   0.31 (18: 4.809, class18 lost)
+   k08_matmul.L2   kept      1.037 [1.027, 1.050]   1.162   0.25 (18: 4.116, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.004 ci_hi 1.007 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.007 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.020 ci_hi 1.025 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.002 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.007 ci_hi 1.033 limit 1.020 -> does not pass (description only)
+   forward k03_stencil.L2: aligned 1.001 ci_hi 1.008 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.694 ci_hi 1.731 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.162 ci_hi 1.168 limit 1.020 -> does not pass (description only)
+-- AMD EPYC 9V74 80-Core Processor: INCONCLUSIVE  (2 jobs, 1 run(s), A/A half-width 0.083%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 2 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.999, 1.001]   1.000   1.00 (18: 1.001, class18 kept)
+   k01_sum_fwd.L2  kept      1.000 [0.998, 1.000]   1.000   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.004 [1.003, 1.005]   1.000   0.63 (18: 1.599, class18 kept)
+   k02_add_fwd.L2  kept      1.006 [0.998, 1.014]   1.000   0.76 (18: 1.327, class18 kept)
+   k03_stencil.L1  kept      1.001 [0.998, 1.001]   1.036   1.01 (18: 0.993, class18 kept)
+   k03_stencil.L2  kept      1.000 [0.997, 1.001]   0.999   1.00 (18: 0.996, class18 kept)
+   k04_rev.L1      lost      4.844 [4.842, 4.846]   4.846   0.74 (18: 6.558, class18 lost)
+   k04_rev.L2      lost      4.683 [4.596, 4.728]   4.677   0.81 (18: 5.773, class18 lost)
+   k05_stride2.L1  lost      5.254 [5.251, 5.258]   5.243   1.03 (18: 5.126, class18 lost)
+   k05_stride2.L2  lost      5.194 [5.137, 5.264]   5.241   1.00 (18: 5.171, class18 lost)
+   k06_gather.L1   off_axis  1.586 [1.585, 1.587]   1.578   0.99 (18: 1.595, class18 off_axis)
+   k06_gather.L2   off_axis  1.005 [1.003, 1.007]   1.006   1.00 (18: 1.005, class18 off_axis)
+   k07_hist.L1     off_axis  1.102 [1.054, 1.113]   1.110   0.92 (18: 1.201, class18 off_axis)
+   k07_hist.L2     off_axis  1.116 [1.106, 1.132]   1.120   0.99 (18: 1.126, class18 off_axis)
+   k08_matmul.L1   kept      1.699 [1.698, 1.700]   1.648   0.40 (18: 4.244, class18 lost)
+   k08_matmul.L2   kept      1.108 [1.108, 1.109]   1.103   0.24 (18: 4.659, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.000 ci_hi 1.000 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.000 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L2: aligned 1.000 ci_hi 1.003 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.036 ci_hi 1.045 limit 1.020 -> does not pass (description only)
+   forward k03_stencil.L2: aligned 0.999 ci_hi 1.001 limit 1.020 -> passes (description only)
+   forward k08_matmul.L1: aligned 1.648 ci_hi 1.649 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.103 ci_hi 1.104 limit 1.020 -> does not pass (description only)
+-- INTEL(R) XEON(R) PLATINUM 8573C: INCONCLUSIVE  (2 jobs, 1 run(s), A/A half-width 0.433%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 2 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      1.000 [0.994, 1.006]   1.000   1.00 (18: 1.001, class18 kept)
+   k01_sum_fwd.L2  kept      0.997 [0.986, 1.006]   0.998   1.00 (18: 0.999, class18 kept)
+   k02_add_fwd.L1  kept      1.038 [1.031, 1.045]   1.024   0.98 (18: 1.056, class18 kept)
+   k02_add_fwd.L2  kept      1.001 [0.973, 1.034]   1.001   0.98 (18: 1.025, class18 kept)
+   k03_stencil.L1  kept      0.996 [0.988, 1.003]   1.008   0.98 (18: 1.018, class18 kept)
+   k03_stencil.L2  kept      1.001 [0.984, 1.013]   1.004   0.99 (18: 1.012, class18 kept)
+   k04_rev.L1      lost      5.678 [5.605, 5.728]   5.697   0.91 (18: 6.253, class18 lost)
+   k04_rev.L2      lost      3.585 [3.551, 3.616]   3.583   0.87 (18: 4.116, class18 lost)
+   k05_stride2.L1  lost      4.271 [4.244, 4.305]   4.306   0.98 (18: 4.358, class18 lost)
+   k05_stride2.L2  lost      3.768 [3.679, 3.876]   3.752   1.00 (18: 3.779, class18 lost)
+   k06_gather.L1   off_axis  2.018 [1.997, 2.037]   2.174   0.71 (18: 2.855, class18 off_axis)
+   k06_gather.L2   off_axis  1.043 [1.033, 1.053]   1.046   0.99 (18: 1.050, class18 off_axis)
+   k07_hist.L1     off_axis  1.185 [1.123, 1.305]   1.195   1.01 (18: 1.176, class18 off_axis)
+   k07_hist.L2     off_axis  1.080 [1.065, 1.093]   1.079   0.99 (18: 1.087, class18 off_axis)
+   k08_matmul.L1   kept      1.525 [1.510, 1.547]   1.521   0.36 (18: 4.216, class18 lost)
+   k08_matmul.L2   kept      1.085 [1.079, 1.093]   1.083   0.31 (18: 3.533, class18 lost)
+   forward k01_sum_fwd.L1: aligned 1.000 ci_hi 1.002 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 0.998 ci_hi 1.005 limit 1.020 -> passes (description only)
+   forward k02_add_fwd.L1: aligned 1.024 ci_hi 1.033 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 1.001 ci_hi 1.014 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.008 ci_hi 1.015 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.004 ci_hi 1.025 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L1: aligned 1.521 ci_hi 1.534 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.083 ci_hi 1.088 limit 1.020 -> does not pass (description only)
+-- Intel(R) Xeon(R) 6973P-C: INCONCLUSIVE  (1 jobs, 1 run(s), A/A half-width 0.677%)
+   inconclusive: pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled
+   inconclusive: 1 jobs (minimum 3)
+   k04_rev: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k05_stride2: HOLDS - lost, ci95_lo at least 1.5 in both columns at L1 and L2
+   k08_matmul: does not hold - class kept (not lost)
+   cell            class     FAST/NONE as compiled [CI]     aligned     this/clang18
+   k01_sum_fwd.L1  kept      0.986 [0.940, 1.014]   1.001   no clang 18 pool for this CPU model
+   k01_sum_fwd.L2  kept      0.997 [0.988, 1.009]   1.031   no clang 18 pool for this CPU model
+   k02_add_fwd.L1  kept      1.027 [1.019, 1.035]   1.023   no clang 18 pool for this CPU model
+   k02_add_fwd.L2  kept      0.994 [0.986, 1.009]   0.992   no clang 18 pool for this CPU model
+   k03_stencil.L1  kept      1.002 [0.988, 1.028]   1.005   no clang 18 pool for this CPU model
+   k03_stencil.L2  kept      1.001 [0.985, 1.020]   1.010   no clang 18 pool for this CPU model
+   k04_rev.L1      lost      5.574 [5.540, 5.653]   5.531   no clang 18 pool for this CPU model
+   k04_rev.L2      lost      3.120 [3.085, 3.179]   3.174   no clang 18 pool for this CPU model
+   k05_stride2.L1  lost      4.646 [4.587, 4.687]   4.783   no clang 18 pool for this CPU model
+   k05_stride2.L2  lost      4.028 [3.991, 4.134]   4.020   no clang 18 pool for this CPU model
+   k06_gather.L1   off_axis  2.144 [2.121, 2.254]   2.149   no clang 18 pool for this CPU model
+   k06_gather.L2   off_axis  1.026 [0.993, 1.039]   1.049   no clang 18 pool for this CPU model
+   k07_hist.L1     off_axis  1.250 [1.211, 1.267]   1.258   no clang 18 pool for this CPU model
+   k07_hist.L2     off_axis  1.132 [1.112, 1.164]   1.132   no clang 18 pool for this CPU model
+   k08_matmul.L1   kept      1.491 [1.464, 1.509]   1.484   no clang 18 pool for this CPU model
+   k08_matmul.L2   kept      1.087 [1.042, 1.125]   1.154   no clang 18 pool for this CPU model
+   forward k01_sum_fwd.L1: aligned 1.001 ci_hi 1.012 limit 1.020 -> passes (description only)
+   forward k01_sum_fwd.L2: aligned 1.031 ci_hi 1.068 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L1: aligned 1.023 ci_hi 1.027 limit 1.020 -> does not pass (description only)
+   forward k02_add_fwd.L2: aligned 0.992 ci_hi 1.003 limit 1.020 -> passes (description only)
+   forward k03_stencil.L1: aligned 1.005 ci_hi 1.017 limit 1.020 -> passes (description only)
+   forward k03_stencil.L2: aligned 1.010 ci_hi 1.039 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L1: aligned 1.484 ci_hi 1.548 limit 1.020 -> does not pass (description only)
+   forward k08_matmul.L2: aligned 1.154 ci_hi 1.192 limit 1.020 -> does not pass (description only)
+   vectorization (remarks, first job): k01_sum_fwd none w2 fast w2; k02_add_fwd none w4 fast w4; k03_stencil none w4 fast w4; k04_rev none w4 fast no; k05_stride2 none w4 fast no; k06_gather none no fast no; k07_hist none no fast no; k08_matmul none w4 fast w4
+

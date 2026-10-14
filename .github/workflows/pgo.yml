@@ -1,0 +1,190 @@
+name: pgo
+
+# The PGO column of the real-program study (pgo/PLAN.md, written before any PGO build).
+#
+# mode=build: per program group and per hardening mode (NONE, FAST) in its own job: fetch the pinned
+#   sources (realworld/fetch.py, sha256 checked), build an instrumented binary (-fprofile-instr-generate),
+#   run it once per row of the program on the row's own fixed input (the training input equals the timed
+#   input: a stated limit), merge the profiles with llvm-profdata-18, rebuild with -fprofile-instr-use
+#   (plain and with -falign-loops=64). NONE and FAST each use their OWN profile. Uploads the binaries
+#   ("pgobin-<group>-<mode>", named <program>.none/.fast/.none_a64/.fast_a64 as realworld/measure.py
+#   reads them) and the records and profiles ("pgometa-<group>-<mode>"). No timing.
+# mode=measure: downloads the binaries of the build run given in bins_run and times every row with
+#   realworld/measure.py UNCHANGED (ABBA, 40 processes per side, taskset, A/A copy, aligned pair,
+#   layout A/A) on a matrix of jobs; tags each job file as PGO (pgo/tag_job.py); the last job pools per
+#   CPU model (pgo/pool_pgo.py, which imports realworld/pool_rw.py), checks it (pgo/check.py), compares
+#   with results/realworld-pooled/realworld.json (pgo/analyze.py) and uploads everything as
+#   "pgo-run-<run id>".
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "build (instrument, train, merge, rebuild; no timing) or measure (time the binaries of bins_run)"
+        default: "build"
+      bins_run:
+        description: "measure: the run id of the pgo build run whose binaries are timed"
+        default: ""
+      rows:
+        description: "measure: comma-separated rows, or all"
+        default: "all"
+      pairs:
+        description: "measure: pairs per row (fast, aa, aligned, layout)"
+        default: "fast,aa,aligned,layout"
+      jobs:
+        description: "measure: matrix job numbers as a JSON list"
+        default: "[1, 2, 3, 4]"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    if: inputs.mode == 'build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {group: lightgbm, mode: none, programs: "lightgbm"}
+          - {group: lightgbm, mode: fast, programs: "lightgbm"}
+          - {group: draco, mode: none, programs: "draco"}
+          - {group: draco, mode: fast, programs: "draco"}
+          - {group: small, mode: none, programs: "tinydnn spectra meshopt fmt"}
+          - {group: small, mode: fast, programs: "tinydnn spectra meshopt fmt"}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-18, libc++-18, the profile runtime, llvm-profdata-18 and binutils (Ubuntu noble apt)
+        timeout-minutes: 8
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev libclang-rt-18-dev llvm-18 binutils
+          clang++-18 --version
+          llvm-profdata-18 --version
+          dpkg-query -W clang-18 libc++-18-dev libc++abi-18-dev libclang-rt-18-dev llvm-18 binutils
+
+      - name: Fetch the pinned sources (sha256 checked)
+        run: python3 realworld/fetch.py build/rw-deps ${{ matrix.programs }}
+
+      - name: Instrument, train, merge, rebuild (own profile for this mode)
+        run: |
+          mkdir -p pgobin pgometa
+          python3 pgo/build_pgo.py --mode ${{ matrix.mode }} --deps build/rw-deps --work build/pgo-work --bin pgobin \
+            --out pgometa/pgo-build-${{ matrix.mode }}-${{ matrix.group }}.json ${{ matrix.programs }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pgobin-${{ matrix.group }}-${{ matrix.mode }}
+          path: pgobin/
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pgometa-${{ matrix.group }}-${{ matrix.mode }}
+          path: pgometa/
+          if-no-files-found: warn
+
+  measure:
+    if: inputs.mode == 'measure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      # First, before anything else: every result is read against the CPU it got.
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU, cores: $(nproc)"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@v4
+
+      - name: Install the libc++-18 runtime (Ubuntu noble apt)
+        timeout-minutes: 6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc++-18-dev libc++abi-18-dev
+          dpkg-query -W libc++-18-dev libc++abi-18-dev
+
+      - name: PGO binaries of the build run
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pgobin-*
+          merge-multiple: true
+          path: pgobin
+          run-id: ${{ inputs.bins_run }}
+          github-token: ${{ github.token }}
+
+      - name: Time every row (realworld/measure.py, unchanged)
+        env:
+          ROWS: ${{ inputs.rows }}
+          PAIRS: ${{ inputs.pairs }}
+        run: |
+          chmod +x pgobin/*
+          sha256sum pgobin/*
+          if [ "$ROWS" = "all" ]; then
+            ROWS="$(python3 -c 'import json; print(" ".join(r["row"] for r in json.load(open("realworld/programs.json"))["rows"]))')"
+          else
+            ROWS="$(echo "$ROWS" | tr ',' ' ')"
+          fi
+          mkdir -p out
+          F=out/results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}.json
+          python3 realworld/measure.py --bin pgobin --out "$F" --job ${{ matrix.job }} --pairs "$PAIRS" $ROWS
+          python3 pgo/tag_job.py "$F" --bin pgobin --bins-run "${{ inputs.bins_run }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pgoresults-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn
+
+  pool:
+    needs: measure
+    if: always() && inputs.mode == 'measure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install numpy (Ubuntu noble apt)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pgoresults-*
+          path: run/jobs
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pgometa-*
+          merge-multiple: true
+          path: run/meta
+          run-id: ${{ inputs.bins_run }}
+          github-token: ${{ github.token }}
+
+      - name: Pool per CPU model, check without a compiler, compare with the non-PGO pool
+        run: |
+          ls -R run | head -60
+          python3 pgo/pool_pgo.py run/pgo.json run
+          python3 pgo/check.py --pooled run/pgo.json --no-report
+          python3 pgo/analyze.py --pgo run/pgo.json --baseline results/realworld-pooled/realworld.json --report run/report.md --write > /dev/null
+          cat run/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pgo-run-${{ github.run_id }}
+          path: run/
+          if-no-files-found: warn

@@ -1,0 +1,6754 @@
+{
+ "kind": "versions",
+ "criteria_problems": [],
+ "baseline_file": "results/s4-pooled/pooled.json",
+ "numbers_from_criteria_v3": {
+  "fwd_point": 1.02,
+  "fwd_floor": 0.02,
+  "fwd_mult": 2.0,
+  "lost_lo": 1.5,
+  "aa_max": 2.0,
+  "min_jobs": 3
+ },
+ "versions": {
+  "19": {
+   "toolchain": {
+    "version": 19,
+    "clang": "Ubuntu clang version 19.1.7 (++20250804090312+cd708029e0b2-1~exp1~20250804210325.79)",
+    "packages": {
+     "clang-19": "1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79",
+     "libc++-19-dev": "1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79",
+     "libc++abi-19-dev": "1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79",
+     "libunwind-19-dev": "1:19.1.7~++20250804090312+cd708029e0b2-1~exp1~20250804210325.79"
+    },
+    "compiler": "clang++-19",
+    "probe": {
+     "built": true,
+     "none_exit": 0,
+     "fast_exit": -4,
+     "none_runs_clean": true,
+     "fast_traps": true
+    },
+    "vectorization": {
+     "k01_sum_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 2
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 2
+      }
+     },
+     "k02_add_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k03_stencil": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k04_rev": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k05_stride2": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k06_gather": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k07_hist": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k08_matmul": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     }
+    }
+   },
+   "form": "INCONCLUSIVE",
+   "cpus": {
+    "AMD EPYC 7763 64-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+     ],
+     "jobs": 6,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.06820002528113434,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0000295117983593,
+       "aligned": 0.9998217148670795,
+       "aligned_ci95": [
+        0.9992746745369602,
+        1.0003933346729605
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 1.0010231337148197,
+       "aligned": 1.0002345074536851,
+       "aligned_ci95": [
+        0.9990056057895752,
+        1.0014943922116504
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0087252542410652,
+       "aligned": 1.0072017862725016,
+       "aligned_ci95": [
+        1.0064100450461813,
+        1.0076690412144627
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.999213342791705,
+       "aligned": 1.0009664332335204,
+       "aligned_ci95": [
+        0.9925844068048041,
+        1.007261806191939
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0558577753831622,
+       "aligned": 1.0034878207269076,
+       "aligned_ci95": [
+        1.0028672640848604,
+        1.0042627415416572
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9998519600776068,
+       "aligned": 0.9994330018190816,
+       "aligned_ci95": [
+        0.9931277008938193,
+        1.0037655948192732
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6115947479684263,
+       "aligned": 1.614869242129694,
+       "aligned_ci95": [
+        1.6136391856357084,
+        1.6160119005510236
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.1492988726706577,
+       "aligned": 1.1458573147802635,
+       "aligned_ci95": [
+        1.1449043101197705,
+        1.1464096344785861
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0000295117983593,
+       "as_compiled_ci95": [
+        0.999426476981713,
+        1.0005716951502872
+       ],
+       "aligned": 0.9998217148670795,
+       "aligned_ci95": [
+        0.9992746745369602,
+        1.0003933346729605
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0010231337148197,
+       "as_compiled_ci95": [
+        0.9989993640007566,
+        1.0032528350927366
+       ],
+       "aligned": 1.0002345074536851,
+       "aligned_ci95": [
+        0.9990056057895752,
+        1.0014943922116504
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0087252542410652,
+       "as_compiled_ci95": [
+        1.0078786175348704,
+        1.0098637722533366
+       ],
+       "aligned": 1.0072017862725016,
+       "aligned_ci95": [
+        1.0064100450461813,
+        1.0076690412144627
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.999213342791705,
+       "as_compiled_ci95": [
+        0.993321731226548,
+        1.0020198048421027
+       ],
+       "aligned": 1.0009664332335204,
+       "aligned_ci95": [
+        0.9925844068048041,
+        1.007261806191939
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0558577753831622,
+       "as_compiled_ci95": [
+        1.0511773431197695,
+        1.0569259562561557
+       ],
+       "aligned": 1.0034878207269076,
+       "aligned_ci95": [
+        1.0028672640848604,
+        1.0042627415416572
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9998519600776068,
+       "as_compiled_ci95": [
+        0.9973986383872597,
+        1.0040509945750944
+       ],
+       "aligned": 0.9994330018190816,
+       "aligned_ci95": [
+        0.9931277008938193,
+        1.0037655948192732
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 8.005566944419252,
+       "as_compiled_ci95": [
+        7.9967910385036385,
+        8.016565437521423
+       ],
+       "aligned": 8.000683184864132,
+       "aligned_ci95": [
+        7.989546400855943,
+        8.01163525772116
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 7.785813025859326,
+       "as_compiled_ci95": [
+        7.719314555661231,
+        7.828376223051078
+       ],
+       "aligned": 7.815837115663546,
+       "aligned_ci95": [
+        7.778663532176756,
+        7.8400344708575105
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.064032652707547,
+       "as_compiled_ci95": [
+        5.057287065414591,
+        5.071457996999764
+       ],
+       "aligned": 5.06140154105474,
+       "aligned_ci95": [
+        5.053803443633199,
+        5.069374038744792
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 5.0025415538232485,
+       "as_compiled_ci95": [
+        4.941725545475754,
+        5.049428405638293
+       ],
+       "aligned": 4.973449463924101,
+       "aligned_ci95": [
+        4.892242134703118,
+        5.026027039532756
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.8386595270635717,
+       "as_compiled_ci95": [
+        1.8374021802126395,
+        1.839528755138519
+       ],
+       "aligned": 1.838525549538882,
+       "aligned_ci95": [
+        1.8376675496309764,
+        1.839465635478613
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.183087784548789,
+       "as_compiled_ci95": [
+        1.1808410450759506,
+        1.1852148842451222
+       ],
+       "aligned": 1.184645466159101,
+       "aligned_ci95": [
+        1.1820828646121277,
+        1.1867429905211737
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.087903002828832,
+       "as_compiled_ci95": [
+        1.0709302517389725,
+        1.0949818441013202
+       ],
+       "aligned": 1.0787197813736038,
+       "aligned_ci95": [
+        1.0520050345682248,
+        1.092764401984079
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.100000143556946,
+       "as_compiled_ci95": [
+        1.0915870012677475,
+        1.1096993495223308
+       ],
+       "aligned": 1.0920561259588615,
+       "aligned_ci95": [
+        1.082235136308295,
+        1.1009044127833445
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6115947479684263,
+       "as_compiled_ci95": [
+        1.6103969709512205,
+        1.6128930802511539
+       ],
+       "aligned": 1.614869242129694,
+       "aligned_ci95": [
+        1.6136391856357084,
+        1.6160119005510236
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.1492988726706577,
+       "as_compiled_ci95": [
+        1.148501931159793,
+        1.1500869048719813
+       ],
+       "aligned": 1.1458573147802635,
+       "aligned_ci95": [
+        1.1449043101197705,
+        1.1464096344785861
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 1.0000295117983593,
+       "clang18": 0.9996276569821486,
+       "this_over_clang18": 1.0004020044997792,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 1.0010231337148197,
+       "clang18": 0.9995924873318692,
+       "this_over_clang18": 1.0014312296271546,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0087252542410652,
+       "clang18": 1.5849933478414413,
+       "this_over_clang18": 0.6364223897941403,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.999213342791705,
+       "clang18": 1.320223545473868,
+       "this_over_clang18": 0.7568516303298145,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.0558577753831622,
+       "clang18": 1.0062881968210469,
+       "this_over_clang18": 1.0492598230990982,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.9998519600776068,
+       "clang18": 1.002168526507219,
+       "this_over_clang18": 0.9976884462359978,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 8.005566944419252,
+       "clang18": 7.624542375346873,
+       "this_over_clang18": 1.0499734345112148,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 7.785813025859326,
+       "clang18": 7.672053052976627,
+       "this_over_clang18": 1.0148278397056396,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.064032652707547,
+       "clang18": 5.078406360120372,
+       "this_over_clang18": 0.9971696421291335,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 5.0025415538232485,
+       "clang18": 5.004588673744613,
+       "this_over_clang18": 0.9995909514138286,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.8386595270635717,
+       "clang18": 1.8364956150667628,
+       "this_over_clang18": 1.0011782832363203,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.183087784548789,
+       "clang18": 1.1834452101762913,
+       "this_over_clang18": 0.9996979787281838,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.087903002828832,
+       "clang18": 1.0940776843703997,
+       "this_over_clang18": 0.9943562677223227,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.100000143556946,
+       "clang18": 1.100075061441707,
+       "this_over_clang18": 0.9999318974791931,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6115947479684263,
+       "clang18": 3.1916465741300826,
+       "this_over_clang18": 0.5049414809995633,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.1492988726706577,
+       "clang18": 3.7926702358212823,
+       "this_over_clang18": 0.3030315849281274,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V45 96-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.389187784219569,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9998614720851896,
+       "aligned": 1.000378942459045,
+       "aligned_ci95": [
+        0.999116206472805,
+        1.0040015449417732
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 1.0005267889775162,
+       "aligned": 1.000274399640637,
+       "aligned_ci95": [
+        0.9986899846578282,
+        1.0011900232940876
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0209630684197304,
+       "aligned": 1.0237379787582903,
+       "aligned_ci95": [
+        1.012415484160922,
+        1.0386186210313475
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9998932441299756,
+       "aligned": 0.9996810982864206,
+       "aligned_ci95": [
+        0.9975530630459503,
+        1.0022755188658947
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.982340985918414,
+       "aligned": 1.0108779749723398,
+       "aligned_ci95": [
+        1.0065723922719183,
+        1.0175438596491229
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9991863046662175,
+       "aligned": 1.0013492734742833,
+       "aligned_ci95": [
+        0.9984847946785975,
+        1.0042714722903947
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.496797607392227,
+       "aligned": 1.719595829087824,
+       "aligned_ci95": [
+        1.7104916275482198,
+        1.7230645928668564
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0347534365513695,
+       "aligned": 1.1564222471819008,
+       "aligned_ci95": [
+        1.1548941919331634,
+        1.1577688900843197
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9998614720851896,
+       "as_compiled_ci95": [
+        0.9979608979789596,
+        1.0014268685011778
+       ],
+       "aligned": 1.000378942459045,
+       "aligned_ci95": [
+        0.999116206472805,
+        1.0040015449417732
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0005267889775162,
+       "as_compiled_ci95": [
+        0.9992219261550325,
+        1.0024906099958542
+       ],
+       "aligned": 1.000274399640637,
+       "aligned_ci95": [
+        0.9986899846578282,
+        1.0011900232940876
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0209630684197304,
+       "as_compiled_ci95": [
+        1.011497726691531,
+        1.025414052950421
+       ],
+       "aligned": 1.0237379787582903,
+       "aligned_ci95": [
+        1.012415484160922,
+        1.0386186210313475
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9998932441299756,
+       "as_compiled_ci95": [
+        0.9984474847348478,
+        1.0008901553515168
+       ],
+       "aligned": 0.9996810982864206,
+       "aligned_ci95": [
+        0.9975530630459503,
+        1.0022755188658947
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.982340985918414,
+       "as_compiled_ci95": [
+        0.9802048267647212,
+        0.9958244859909887
+       ],
+       "aligned": 1.0108779749723398,
+       "aligned_ci95": [
+        1.0065723922719183,
+        1.0175438596491229
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9991863046662175,
+       "as_compiled_ci95": [
+        0.9868604478868476,
+        1.009088927697201
+       ],
+       "aligned": 1.0013492734742833,
+       "aligned_ci95": [
+        0.9984847946785975,
+        1.0042714722903947
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 5.209946887875925,
+       "as_compiled_ci95": [
+        5.201405328480138,
+        5.240151551451512
+       ],
+       "aligned": 5.420313810803507,
+       "aligned_ci95": [
+        5.363454154778259,
+        5.454627515341801
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 5.425956698018416,
+       "as_compiled_ci95": [
+        5.388785665556403,
+        5.470686149631973
+       ],
+       "aligned": 5.815812993796648,
+       "aligned_ci95": [
+        5.802493763788157,
+        5.845443797949596
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 2.804406430338004,
+       "as_compiled_ci95": [
+        2.7557103648625847,
+        2.8503033236258646
+       ],
+       "aligned": 2.8674218502487325,
+       "aligned_ci95": [
+        2.821645195144323,
+        2.9016114815424
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 2.9058448552039406,
+       "as_compiled_ci95": [
+        2.898104849438128,
+        2.9225452693350693
+       ],
+       "aligned": 3.006021252996266,
+       "aligned_ci95": [
+        2.984233017569759,
+        3.049544280843347
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5654039289787938,
+       "as_compiled_ci95": [
+        1.5630513145117417,
+        1.5715506776165524
+       ],
+       "aligned": 1.7185342231309655,
+       "aligned_ci95": [
+        1.6803116555190465,
+        1.7514409074911885
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.29890703645921,
+       "as_compiled_ci95": [
+        1.291212799238605,
+        1.3055987873192347
+       ],
+       "aligned": 1.3033717443467787,
+       "aligned_ci95": [
+        1.2994716128495494,
+        1.307723490231185
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.2338074892216984,
+       "as_compiled_ci95": [
+        1.2304773098704298,
+        1.2429487372179007
+       ],
+       "aligned": 1.2289411828300107,
+       "aligned_ci95": [
+        1.2164663342898259,
+        1.2507439387287187
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.2237532421584099,
+       "as_compiled_ci95": [
+        1.211532420369602,
+        1.2383167928282028
+       ],
+       "aligned": 1.2291272676950367,
+       "aligned_ci95": [
+        1.2147731607869356,
+        1.2462953238767518
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.496797607392227,
+       "as_compiled_ci95": [
+        1.4904392070498003,
+        1.5011986744380874
+       ],
+       "aligned": 1.719595829087824,
+       "aligned_ci95": [
+        1.7104916275482198,
+        1.7230645928668564
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0347534365513695,
+       "as_compiled_ci95": [
+        1.0316640508095867,
+        1.0369728229037896
+       ],
+       "aligned": 1.1564222471819008,
+       "aligned_ci95": [
+        1.1548941919331634,
+        1.1577688900843197
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9998614720851896,
+       "clang18": 1.0028250511102184,
+       "this_over_clang18": 0.9970447696517475,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 1.0005267889775162,
+       "clang18": 0.9992863382993651,
+       "this_over_clang18": 1.0012413365725206,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0209630684197304,
+       "clang18": 0.9852090681282925,
+       "this_over_clang18": 1.0362907746671106,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.9998932441299756,
+       "clang18": 0.9137300830559448,
+       "this_over_clang18": 1.0942982645223418,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 0.982340985918414,
+       "clang18": 1.0013495807567045,
+       "this_over_clang18": 0.9810170242205264,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.9991863046662175,
+       "clang18": 1.003253167216188,
+       "this_over_clang18": 0.9959463247335115,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 5.209946887875925,
+       "clang18": 5.5408649393887695,
+       "this_over_clang18": 0.940276824082027,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 5.425956698018416,
+       "clang18": 5.778359264567022,
+       "this_over_clang18": 0.9390133859087746,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 2.804406430338004,
+       "clang18": 2.7974263780271245,
+       "this_over_clang18": 1.0024951692618993,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 2.9058448552039406,
+       "clang18": 2.9009660371158597,
+       "this_over_clang18": 1.0016817908330053,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.5654039289787938,
+       "clang18": 1.5624249048865408,
+       "this_over_clang18": 1.0019066670551244,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.29890703645921,
+       "clang18": 1.3000707774058058,
+       "this_over_clang18": 0.9991048633914239,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.2338074892216984,
+       "clang18": 1.234902573600699,
+       "this_over_clang18": 0.9991132220448713,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.2237532421584099,
+       "clang18": 1.2287371508671898,
+       "this_over_clang18": 0.9959438772521344,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.496797607392227,
+       "clang18": 4.809365110110197,
+       "this_over_clang18": 0.31122561359412587,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.0347534365513695,
+       "clang18": 4.115833463381024,
+       "this_over_clang18": 0.25140799445790823,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V74 80-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.15667517835838418,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0005811716748385,
+       "aligned": 0.9999358072578772,
+       "aligned_ci95": [
+        0.9995534909633126,
+        1.0003846088159445
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9999698147594314,
+       "aligned": 0.9990574664773874,
+       "aligned_ci95": [
+        0.997126396192917,
+        0.9999619290923205
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0066429146075164,
+       "aligned": 1.0008353370503102,
+       "aligned_ci95": [
+        0.9997969875573022,
+        1.0018803765994666
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.997180866186405,
+       "aligned": 1.0007733652530209,
+       "aligned_ci95": [
+        0.9898764925967743,
+        1.0066742912671522
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0009866019983371,
+       "aligned": 1.0394638257531,
+       "aligned_ci95": [
+        1.0184828454345314,
+        1.0436869564246716
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.000930271469965,
+       "aligned": 1.00259308230566,
+       "aligned_ci95": [
+        0.9997444519305606,
+        1.0039689275552943
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6986023814200244,
+       "aligned": 1.6465411590407628,
+       "aligned_ci95": [
+        1.64594487442909,
+        1.648002399947696
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.107600798316171,
+       "aligned": 1.1029042941725509,
+       "aligned_ci95": [
+        1.101729927681707,
+        1.1042400024525587
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0005811716748385,
+       "as_compiled_ci95": [
+        0.9997217668351525,
+        1.0015000521846258
+       ],
+       "aligned": 0.9999358072578772,
+       "aligned_ci95": [
+        0.9995534909633126,
+        1.0003846088159445
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9999698147594314,
+       "as_compiled_ci95": [
+        0.9991181633524706,
+        1.0008029952724387
+       ],
+       "aligned": 0.9990574664773874,
+       "aligned_ci95": [
+        0.997126396192917,
+        0.9999619290923205
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0066429146075164,
+       "as_compiled_ci95": [
+        1.0058367036083826,
+        1.0075741153131137
+       ],
+       "aligned": 1.0008353370503102,
+       "aligned_ci95": [
+        0.9997969875573022,
+        1.0018803765994666
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.997180866186405,
+       "as_compiled_ci95": [
+        0.9803583949837319,
+        1.0194420100657788
+       ],
+       "aligned": 1.0007733652530209,
+       "aligned_ci95": [
+        0.9898764925967743,
+        1.0066742912671522
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0009866019983371,
+       "as_compiled_ci95": [
+        0.9996261073232223,
+        1.0089021128483153
+       ],
+       "aligned": 1.0394638257531,
+       "aligned_ci95": [
+        1.0184828454345314,
+        1.0436869564246716
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.000930271469965,
+       "as_compiled_ci95": [
+        0.999012808390917,
+        1.003156128904718
+       ],
+       "aligned": 1.00259308230566,
+       "aligned_ci95": [
+        0.9997444519305606,
+        1.0039689275552943
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.676751469009705,
+       "as_compiled_ci95": [
+        6.670432999264791,
+        6.679765907109949
+       ],
+       "aligned": 5.499695552295812,
+       "aligned_ci95": [
+        5.48482584173267,
+        5.507654558948965
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 5.658489200358438,
+       "as_compiled_ci95": [
+        5.540387039323746,
+        5.804920822520741
+       ],
+       "aligned": 5.7600719870381285,
+       "aligned_ci95": [
+        5.718550961678464,
+        5.779084185449317
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.110128295606561,
+       "as_compiled_ci95": [
+        5.105374629685173,
+        5.113759011762721
+       ],
+       "aligned": 5.0840591478828046,
+       "aligned_ci95": [
+        5.080478730228551,
+        5.092540538272743
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 5.040897341301929,
+       "as_compiled_ci95": [
+        5.017353619657259,
+        5.0914132628059985
+       ],
+       "aligned": 5.147672879707641,
+       "aligned_ci95": [
+        5.050551775351528,
+        5.178073754029761
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5851608751233977,
+       "as_compiled_ci95": [
+        1.58350120704187,
+        1.587563097745735
+       ],
+       "aligned": 1.5838272629744514,
+       "aligned_ci95": [
+        1.5827027257769086,
+        1.584440467254052
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0038372441680736,
+       "as_compiled_ci95": [
+        1.0022046342974522,
+        1.005200653069502
+       ],
+       "aligned": 1.007172685748047,
+       "aligned_ci95": [
+        1.006035583407734,
+        1.010305304215847
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.2009612476287885,
+       "as_compiled_ci95": [
+        1.195741971064427,
+        1.2110081868843834
+       ],
+       "aligned": 1.1117501224515267,
+       "aligned_ci95": [
+        1.0999599321285098,
+        1.1205546642234758
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1097290288682176,
+       "as_compiled_ci95": [
+        1.0961946642398213,
+        1.1328854525907066
+       ],
+       "aligned": 1.129528966799997,
+       "aligned_ci95": [
+        1.1125547853243778,
+        1.1439144895437998
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6986023814200244,
+       "as_compiled_ci95": [
+        1.697519533366833,
+        1.69982920323868
+       ],
+       "aligned": 1.6465411590407628,
+       "aligned_ci95": [
+        1.64594487442909,
+        1.648002399947696
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.107600798316171,
+       "as_compiled_ci95": [
+        1.1068735750192047,
+        1.108334003436465
+       ],
+       "aligned": 1.1029042941725509,
+       "aligned_ci95": [
+        1.101729927681707,
+        1.1042400024525587
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 1.0005811716748385,
+       "clang18": 1.0006077054667306,
+       "this_over_clang18": 0.9999734823230452,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.9999698147594314,
+       "clang18": 0.9993179350930297,
+       "this_over_clang18": 1.0006523245941152,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0066429146075164,
+       "clang18": 1.5993271037109864,
+       "this_over_clang18": 0.6294165291588946,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.997180866186405,
+       "clang18": 1.3265207286456289,
+       "this_over_clang18": 0.7517265615626841,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.0009866019983371,
+       "clang18": 0.9929989889884763,
+       "this_over_clang18": 1.0080439286428655,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 1.000930271469965,
+       "clang18": 0.9962124933733326,
+       "this_over_clang18": 1.0047357146472409,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 6.676751469009705,
+       "clang18": 6.557811794598258,
+       "this_over_clang18": 1.0181370978821653,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 5.658489200358438,
+       "clang18": 5.77315219228488,
+       "this_over_clang18": 0.9801385814703316,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.110128295606561,
+       "clang18": 5.125818000904762,
+       "this_over_clang18": 0.9969390826409693,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 5.040897341301929,
+       "clang18": 5.170741945043726,
+       "this_over_clang18": 0.974888593334994,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.5851608751233977,
+       "clang18": 1.5947338165593734,
+       "this_over_clang18": 0.9939971540475455,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.0038372441680736,
+       "clang18": 1.004565476812097,
+       "this_over_clang18": 0.9992750769752367,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.2009612476287885,
+       "clang18": 1.200806724649954,
+       "this_over_clang18": 1.000128682639481,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.1097290288682176,
+       "clang18": 1.125896954446584,
+       "this_over_clang18": 0.9856399597542979,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6986023814200244,
+       "clang18": 4.244415989653,
+       "this_over_clang18": 0.4001969612688442,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.107600798316171,
+       "clang18": 4.659377801691175,
+       "this_over_clang18": 0.23771431411167274,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "Intel(R) Xeon(R) 6973P-C": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.1706307775877658,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9991559729201958,
+       "aligned": 1.0003732763270667,
+       "aligned_ci95": [
+        0.9994115453480346,
+        1.0009771650561539
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9998783698321037,
+       "aligned": 1.0043477388374662,
+       "aligned_ci95": [
+        0.99765884065377,
+        1.0084914289364941
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0141559770890956,
+       "aligned": 1.0261344031433925,
+       "aligned_ci95": [
+        1.0239698090819949,
+        1.0276725823618227
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.0000163919872214,
+       "aligned": 1.0003577861379318,
+       "aligned_ci95": [
+        0.9959285080535996,
+        1.0058857969244936
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.9988636342185787,
+       "aligned": 1.0042069795794548,
+       "aligned_ci95": [
+        0.9726178652477154,
+        1.011207439799874
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9959461469767819,
+       "aligned": 0.9680776861713064,
+       "aligned_ci95": [
+        0.9649908714089798,
+        1.0171093937130276
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.5074933409547941,
+       "aligned": 1.4638285225405832,
+       "aligned_ci95": [
+        1.3077810986580363,
+        1.6569240162825394
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.020860005409024,
+       "aligned": 1.1434591720281913,
+       "aligned_ci95": [
+        1.1299326795919344,
+        1.1568449959164664
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9991559729201958,
+       "as_compiled_ci95": [
+        0.9960569647079017,
+        1.0014397040126326
+       ],
+       "aligned": 1.0003732763270667,
+       "aligned_ci95": [
+        0.9994115453480346,
+        1.0009771650561539
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9998783698321037,
+       "as_compiled_ci95": [
+        0.9350822447300619,
+        1.0956201754326298
+       ],
+       "aligned": 1.0043477388374662,
+       "aligned_ci95": [
+        0.99765884065377,
+        1.0084914289364941
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0141559770890956,
+       "as_compiled_ci95": [
+        0.9900114073862828,
+        1.0306921881724744
+       ],
+       "aligned": 1.0261344031433925,
+       "aligned_ci95": [
+        1.0239698090819949,
+        1.0276725823618227
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0000163919872214,
+       "as_compiled_ci95": [
+        0.9991070275220846,
+        1.0012434816258815
+       ],
+       "aligned": 1.0003577861379318,
+       "aligned_ci95": [
+        0.9959285080535996,
+        1.0058857969244936
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.9988636342185787,
+       "as_compiled_ci95": [
+        0.9944358525773412,
+        1.0003681648774483
+       ],
+       "aligned": 1.0042069795794548,
+       "aligned_ci95": [
+        0.9726178652477154,
+        1.011207439799874
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9959461469767819,
+       "as_compiled_ci95": [
+        0.971523523404463,
+        1.0078227877380854
+       ],
+       "aligned": 0.9680776861713064,
+       "aligned_ci95": [
+        0.9649908714089798,
+        1.0171093937130276
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.585851808742906,
+       "as_compiled_ci95": [
+        6.516156175747757,
+        6.694836946347674
+       ],
+       "aligned": 6.566866582491583,
+       "aligned_ci95": [
+        6.475005564210995,
+        6.62818200040088
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 3.672702318945243,
+       "as_compiled_ci95": [
+        3.6539843043794717,
+        3.712740717393206
+       ],
+       "aligned": 3.6961076406488664,
+       "aligned_ci95": [
+        3.4840217786255536,
+        3.9150281695877402
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.960982525552259,
+       "as_compiled_ci95": [
+        4.926776027924812,
+        4.98400549439664
+       ],
+       "aligned": 4.957127570331128,
+       "aligned_ci95": [
+        4.951483538055977,
+        4.959706403107739
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 4.079424594764885,
+       "as_compiled_ci95": [
+        3.522203294156939,
+        4.242736654327914
+       ],
+       "aligned": 3.643274386878487,
+       "aligned_ci95": [
+        3.5438648312344454,
+        3.745553885893568
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 2.161327888474266,
+       "as_compiled_ci95": [
+        2.1503342857545005,
+        2.186736604942618
+       ],
+       "aligned": 2.158487403385362,
+       "aligned_ci95": [
+        2.1409866837912026,
+        2.1787943631671998
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0303929576010524,
+       "as_compiled_ci95": [
+        1.029407080699861,
+        1.0310930504987226
+       ],
+       "aligned": 0.9998674085476725,
+       "aligned_ci95": [
+        0.8861599150954182,
+        1.199187417251477
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.2422792036456096,
+       "as_compiled_ci95": [
+        1.212076330368157,
+        1.2847279995035925
+       ],
+       "aligned": 1.2281954837809048,
+       "aligned_ci95": [
+        1.1520639337900416,
+        1.2922559758646353
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1475515450542446,
+       "as_compiled_ci95": [
+        1.1253341168969633,
+        1.1650674836326023
+       ],
+       "aligned": 1.1512819615712697,
+       "aligned_ci95": [
+        1.1403827732337237,
+        1.15667500336661
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.5074933409547941,
+       "as_compiled_ci95": [
+        1.50436292731092,
+        1.5099412171537334
+       ],
+       "aligned": 1.4638285225405832,
+       "aligned_ci95": [
+        1.3077810986580363,
+        1.6569240162825394
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.020860005409024,
+       "as_compiled_ci95": [
+        0.9764048764565691,
+        1.0281780048979416
+       ],
+       "aligned": 1.1434591720281913,
+       "aligned_ci95": [
+        1.1299326795919344,
+        1.1568449959164664
+       ]
+      }
+     ],
+     "vs_clang18": {},
+     "in_clang18_pool": false
+    },
+    "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.19226017571110088,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0001231462018576,
+       "aligned": 1.0003859256536365,
+       "aligned_ci95": [
+        0.9995819328830131,
+        1.0012954815998683
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9997807027979896,
+       "aligned": 1.000416413610723,
+       "aligned_ci95": [
+        0.9992296339668825,
+        1.0010477630249215
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.032963936082648,
+       "aligned": 1.0444964749613233,
+       "aligned_ci95": [
+        1.0420867601275692,
+        1.0456763655633177
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.000846440849708,
+       "aligned": 1.0007159407100275,
+       "aligned_ci95": [
+        1.0000874407267517,
+        1.0013531661501682
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0013327704410506,
+       "aligned": 1.0016418611038798,
+       "aligned_ci95": [
+        1.0006882350049433,
+        1.0021625641285017
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.0003876835673764,
+       "aligned": 0.9993841227942125,
+       "aligned_ci95": [
+        0.9595703944551692,
+        1.0007507373540094
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.7172795738050666,
+       "aligned": 1.589440541399829,
+       "aligned_ci95": [
+        1.5876513971363349,
+        1.594197664181057
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.097100619652274,
+       "aligned": 1.0790628495072438,
+       "aligned_ci95": [
+        1.0521912111784386,
+        1.0929932635999502
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0001231462018576,
+       "as_compiled_ci95": [
+        0.9987235633602753,
+        1.0012678630528762
+       ],
+       "aligned": 1.0003859256536365,
+       "aligned_ci95": [
+        0.9995819328830131,
+        1.0012954815998683
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9997807027979896,
+       "as_compiled_ci95": [
+        0.9989133924591762,
+        1.0008471944553583
+       ],
+       "aligned": 1.000416413610723,
+       "aligned_ci95": [
+        0.9992296339668825,
+        1.0010477630249215
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.032963936082648,
+       "as_compiled_ci95": [
+        1.0317046710747662,
+        1.034266723746353
+       ],
+       "aligned": 1.0444964749613233,
+       "aligned_ci95": [
+        1.0420867601275692,
+        1.0456763655633177
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.000846440849708,
+       "as_compiled_ci95": [
+        1.0002026590230997,
+        1.0017862609468982
+       ],
+       "aligned": 1.0007159407100275,
+       "aligned_ci95": [
+        1.0000874407267517,
+        1.0013531661501682
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0013327704410506,
+       "as_compiled_ci95": [
+        1.0004371456302854,
+        1.002385747821263
+       ],
+       "aligned": 1.0016418611038798,
+       "aligned_ci95": [
+        1.0006882350049433,
+        1.0021625641285017
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.0003876835673764,
+       "as_compiled_ci95": [
+        0.9986719483709395,
+        1.028434635095145
+       ],
+       "aligned": 0.9993841227942125,
+       "aligned_ci95": [
+        0.9595703944551692,
+        1.0007507373540094
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.139014734839216,
+       "as_compiled_ci95": [
+        6.134852083042862,
+        6.144434910937982
+       ],
+       "aligned": 6.112405674477402,
+       "aligned_ci95": [
+        6.107650178531527,
+        6.1221134331632925
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 4.863621171921948,
+       "as_compiled_ci95": [
+        4.856305403346584,
+        4.868620019382029
+       ],
+       "aligned": 4.969550038446198,
+       "aligned_ci95": [
+        4.964199893204974,
+        4.975697227663151
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.586796804540091,
+       "as_compiled_ci95": [
+        4.5521757274823536,
+        4.655473419883346
+       ],
+       "aligned": 4.340285278580517,
+       "aligned_ci95": [
+        4.321443371961725,
+        4.3476332259828645
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 3.9129756186712203,
+       "as_compiled_ci95": [
+        3.9103321760662366,
+        3.915896849730249
+       ],
+       "aligned": 3.9125620273668447,
+       "aligned_ci95": [
+        3.9098921242454265,
+        3.9161059637337186
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5383741130239463,
+       "as_compiled_ci95": [
+        1.5290421058785792,
+        1.5638041968210115
+       ],
+       "aligned": 1.514514784523435,
+       "aligned_ci95": [
+        1.5131864536869855,
+        1.5191866453839924
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0027688720417767,
+       "as_compiled_ci95": [
+        1.002018415079396,
+        1.0033127619469548
+       ],
+       "aligned": 1.0029310290816318,
+       "aligned_ci95": [
+        1.0020915705677893,
+        1.0037450546440188
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.4100951875065875,
+       "as_compiled_ci95": [
+        1.3715810736558496,
+        1.4308452628259778
+       ],
+       "aligned": 1.398862248809252,
+       "aligned_ci95": [
+        1.394246365976916,
+        1.405971815264406
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.2824327762149486,
+       "as_compiled_ci95": [
+        1.2737833400766085,
+        1.2894426976486517
+       ],
+       "aligned": 1.2712996826734493,
+       "aligned_ci95": [
+        1.261952057525365,
+        1.27959577597696
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.7172795738050666,
+       "as_compiled_ci95": [
+        1.715222170165342,
+        1.7192146080819204
+       ],
+       "aligned": 1.589440541399829,
+       "aligned_ci95": [
+        1.5876513971363349,
+        1.594197664181057
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.097100619652274,
+       "as_compiled_ci95": [
+        1.091149293117097,
+        1.1041273649825554
+       ],
+       "aligned": 1.0790628495072438,
+       "aligned_ci95": [
+        1.0521912111784386,
+        1.0929932635999502
+       ]
+      }
+     ],
+     "vs_clang18": {},
+     "in_clang18_pool": false
+    }
+   },
+   "pooled_runs": [
+    "38471430657"
+   ]
+  },
+  "20": {
+   "toolchain": {
+    "version": 20,
+    "clang": "Ubuntu clang version 20.1.8 (++20250804090239+87f0227cb601-1~exp1~20250804210352.139)",
+    "packages": {
+     "clang-20": "1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139",
+     "libc++-20-dev": "1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139",
+     "libc++abi-20-dev": "1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139",
+     "libunwind-20-dev": "1:20.1.8~++20250804090239+87f0227cb601-1~exp1~20250804210352.139"
+    },
+    "compiler": "clang++-20",
+    "probe": {
+     "built": true,
+     "none_exit": 0,
+     "fast_exit": -4,
+     "none_runs_clean": true,
+     "fast_traps": true
+    },
+    "vectorization": {
+     "k01_sum_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 2
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 2
+      }
+     },
+     "k02_add_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k03_stencil": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k04_rev": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k05_stride2": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k06_gather": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k07_hist": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k08_matmul": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     }
+    }
+   },
+   "form": "INCONCLUSIVE",
+   "cpus": {
+    "AMD EPYC 7763 64-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+     ],
+     "jobs": 5,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.10042996717995467,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9998850171201508,
+       "aligned": 0.9921754719822184,
+       "aligned_ci95": [
+        0.9774261480895927,
+        1.0001811302302877
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 1.0003796858315837,
+       "aligned": 1.000869089344707,
+       "aligned_ci95": [
+        1.0002940311121833,
+        1.0017880295975907
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.007705722853048,
+       "aligned": 1.0070413439649977,
+       "aligned_ci95": [
+        1.0063988449435295,
+        1.0077583002447372
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9955613726455916,
+       "aligned": 0.9918854775058844,
+       "aligned_ci95": [
+        0.9813942430326064,
+        1.001311419756949
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0548746764042725,
+       "aligned": 1.0040227779286366,
+       "aligned_ci95": [
+        1.0029181514043,
+        1.0047560112233411
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.000306535639276,
+       "aligned": 1.0017841760071342,
+       "aligned_ci95": [
+        0.9988665330722768,
+        1.0047740538550245
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6116509167717337,
+       "aligned": 1.6451328834955683,
+       "aligned_ci95": [
+        1.6439741312794582,
+        1.6465697997343602
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.1497715554891885,
+       "aligned": 1.146891372877815,
+       "aligned_ci95": [
+        1.1459386166180183,
+        1.1479819428304392
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9998850171201508,
+       "as_compiled_ci95": [
+        0.9992439703199384,
+        1.0006229662508657
+       ],
+       "aligned": 0.9921754719822184,
+       "aligned_ci95": [
+        0.9774261480895927,
+        1.0001811302302877
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0003796858315837,
+       "as_compiled_ci95": [
+        0.9991943083060266,
+        1.00096385471276
+       ],
+       "aligned": 1.000869089344707,
+       "aligned_ci95": [
+        1.0002940311121833,
+        1.0017880295975907
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.007705722853048,
+       "as_compiled_ci95": [
+        1.007018384485519,
+        1.0085781742234778
+       ],
+       "aligned": 1.0070413439649977,
+       "aligned_ci95": [
+        1.0063988449435295,
+        1.0077583002447372
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9955613726455916,
+       "as_compiled_ci95": [
+        0.9761913854168531,
+        1.0088293371846784
+       ],
+       "aligned": 0.9918854775058844,
+       "aligned_ci95": [
+        0.9813942430326064,
+        1.001311419756949
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0548746764042725,
+       "as_compiled_ci95": [
+        1.048724320773987,
+        1.0565042672102607
+       ],
+       "aligned": 1.0040227779286366,
+       "aligned_ci95": [
+        1.0029181514043,
+        1.0047560112233411
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.000306535639276,
+       "as_compiled_ci95": [
+        0.9958790403705297,
+        1.0042950382592224
+       ],
+       "aligned": 1.0017841760071342,
+       "aligned_ci95": [
+        0.9988665330722768,
+        1.0047740538550245
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 8.00479008763825,
+       "as_compiled_ci95": [
+        8.001730915115806,
+        8.00793469001745
+       ],
+       "aligned": 8.02012977802195,
+       "aligned_ci95": [
+        8.003104810039257,
+        8.061153890006048
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 7.796364504145574,
+       "as_compiled_ci95": [
+        7.720091325547422,
+        7.834801422316957
+       ],
+       "aligned": 7.762134933182537,
+       "aligned_ci95": [
+        7.655900595685391,
+        7.825301536479036
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.061981556378146,
+       "as_compiled_ci95": [
+        5.054857386639732,
+        5.068391244436174
+       ],
+       "aligned": 5.053843665059214,
+       "aligned_ci95": [
+        5.046207627737163,
+        5.060429967882739
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 4.943644277157552,
+       "as_compiled_ci95": [
+        4.866160797726105,
+        5.018366429319021
+       ],
+       "aligned": 4.99234239302532,
+       "aligned_ci95": [
+        4.909805770937095,
+        5.052834842763493
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.8370741936739905,
+       "as_compiled_ci95": [
+        1.835678789513269,
+        1.838158116642867
+       ],
+       "aligned": 1.8390785971106396,
+       "aligned_ci95": [
+        1.8374078580244488,
+        1.8406355018694027
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1808475775890765,
+       "as_compiled_ci95": [
+        1.1790382081474047,
+        1.1833221015620814
+       ],
+       "aligned": 1.1850505002576297,
+       "aligned_ci95": [
+        1.1824340608275903,
+        1.1871750771425413
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.0786693331755952,
+       "as_compiled_ci95": [
+        1.0567296103948307,
+        1.091645923760985
+       ],
+       "aligned": 1.0919237527426016,
+       "aligned_ci95": [
+        1.0699622016707095,
+        1.096541934638464
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0923334171031902,
+       "as_compiled_ci95": [
+        1.0811024898095942,
+        1.1057817854858811
+       ],
+       "aligned": 1.0993473332304475,
+       "aligned_ci95": [
+        1.0885000428286837,
+        1.1125792872913163
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6116509167717337,
+       "as_compiled_ci95": [
+        1.6102767082901746,
+        1.6133202041183956
+       ],
+       "aligned": 1.6451328834955683,
+       "aligned_ci95": [
+        1.6439741312794582,
+        1.6465697997343602
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.1497715554891885,
+       "as_compiled_ci95": [
+        1.14898264824891,
+        1.1506357362046251
+       ],
+       "aligned": 1.146891372877815,
+       "aligned_ci95": [
+        1.1459386166180183,
+        1.1479819428304392
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9998850171201508,
+       "clang18": 0.9996276569821486,
+       "this_over_clang18": 1.0002574559999462,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 1.0003796858315837,
+       "clang18": 0.9995924873318692,
+       "this_over_clang18": 1.000787519423856,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.007705722853048,
+       "clang18": 1.5849933478414413,
+       "this_over_clang18": 0.6357791496257158,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.9955613726455916,
+       "clang18": 1.320223545473868,
+       "this_over_clang18": 0.7540854547388448,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.0548746764042725,
+       "clang18": 1.0062881968210469,
+       "this_over_clang18": 1.0482828674098679,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 1.000306535639276,
+       "clang18": 1.002168526507219,
+       "this_over_clang18": 0.9981420381715312,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 8.00479008763825,
+       "clang18": 7.624542375346873,
+       "this_over_clang18": 1.049871545539686,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 7.796364504145574,
+       "clang18": 7.672053052976627,
+       "this_over_clang18": 1.0162031532251614,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.061981556378146,
+       "clang18": 5.078406360120372,
+       "this_over_clang18": 0.9967657563067015,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 4.943644277157552,
+       "clang18": 5.004588673744613,
+       "this_over_clang18": 0.9878222965841745,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.8370741936739905,
+       "clang18": 1.8364956150667628,
+       "this_over_clang18": 1.0003150449162421,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.1808475775890765,
+       "clang18": 1.1834452101762913,
+       "this_over_clang18": 0.9978050250532275,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.0786693331755952,
+       "clang18": 1.0940776843703997,
+       "this_over_clang18": 0.9859165839730372,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.0923334171031902,
+       "clang18": 1.100075061441707,
+       "this_over_clang18": 0.9929626217247658,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6116509167717337,
+       "clang18": 3.1916465741300826,
+       "this_over_clang18": 0.5049590796910233,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.1497715554891885,
+       "clang18": 3.7926702358212823,
+       "this_over_clang18": 0.3031562155416899,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V45 96-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.4186913226794653,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9998267494722339,
+       "aligned": 1.0037505071731967,
+       "aligned_ci95": [
+        0.9957621499843475,
+        1.0116784558470842
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 1.0024886567938653,
+       "aligned": 1.0046354420375034,
+       "aligned_ci95": [
+        0.9941433609449102,
+        1.0081718448508488
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0100001913912229,
+       "aligned": 1.0146830860476985,
+       "aligned_ci95": [
+        1.0061195494278652,
+        1.0244413565420363
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9933973539500796,
+       "aligned": 0.9973467467610114,
+       "aligned_ci95": [
+        0.9896536891509481,
+        1.0075877565066444
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.9838351259819842,
+       "aligned": 0.9967177761156818,
+       "aligned_ci95": [
+        0.9836667730814223,
+        1.0128535913287509
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9969677293169511,
+       "aligned": 1.0006544469832457,
+       "aligned_ci95": [
+        0.9932016553254701,
+        1.0044100989561955
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.491518824491432,
+       "aligned": 1.6948103739388276,
+       "aligned_ci95": [
+        1.6858334092917817,
+        1.7035680425266817
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0404254795162218,
+       "aligned": 1.1586162288975532,
+       "aligned_ci95": [
+        1.1525990502898484,
+        1.1625554034798766
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9998267494722339,
+       "as_compiled_ci95": [
+        0.9943260098642646,
+        1.0038037591458888
+       ],
+       "aligned": 1.0037505071731967,
+       "aligned_ci95": [
+        0.9957621499843475,
+        1.0116784558470842
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0024886567938653,
+       "as_compiled_ci95": [
+        0.9970008178906733,
+        1.0061017444670521
+       ],
+       "aligned": 1.0046354420375034,
+       "aligned_ci95": [
+        0.9941433609449102,
+        1.0081718448508488
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0100001913912229,
+       "as_compiled_ci95": [
+        0.9990759517224199,
+        1.021094604154608
+       ],
+       "aligned": 1.0146830860476985,
+       "aligned_ci95": [
+        1.0061195494278652,
+        1.0244413565420363
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9933973539500796,
+       "as_compiled_ci95": [
+        0.9854423930494126,
+        1.0016708270896022
+       ],
+       "aligned": 0.9973467467610114,
+       "aligned_ci95": [
+        0.9896536891509481,
+        1.0075877565066444
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.9838351259819842,
+       "as_compiled_ci95": [
+        0.976190153754483,
+        0.9988630045730258
+       ],
+       "aligned": 0.9967177761156818,
+       "aligned_ci95": [
+        0.9836667730814223,
+        1.0128535913287509
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9969677293169511,
+       "as_compiled_ci95": [
+        0.9938065483674693,
+        1.0052188271338096
+       ],
+       "aligned": 1.0006544469832457,
+       "aligned_ci95": [
+        0.9932016553254701,
+        1.0044100989561955
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 5.218655333001763,
+       "as_compiled_ci95": [
+        5.198893123254397,
+        5.244292311379106
+       ],
+       "aligned": 5.437469627429806,
+       "aligned_ci95": [
+        5.408449190677681,
+        5.467356760499163
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 5.403085587873886,
+       "as_compiled_ci95": [
+        5.353823693687752,
+        5.460090773642583
+       ],
+       "aligned": 5.779046570607495,
+       "aligned_ci95": [
+        5.7402784874199995,
+        5.833557113396962
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 2.7999724524602385,
+       "as_compiled_ci95": [
+        2.7831342106859114,
+        2.81953098080548
+       ],
+       "aligned": 2.8523014425035775,
+       "aligned_ci95": [
+        2.831369774585455,
+        2.8719498259643754
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 2.9027867621865666,
+       "as_compiled_ci95": [
+        2.8869264409970623,
+        2.911799677598125
+       ],
+       "aligned": 3.0476041386003585,
+       "aligned_ci95": [
+        3.0097287287594043,
+        3.07793364236255
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5580587205422958,
+       "as_compiled_ci95": [
+        1.5502889936906352,
+        1.5669884789973514
+       ],
+       "aligned": 1.7170107091629143,
+       "aligned_ci95": [
+        1.7105766169527277,
+        1.726616980878013
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.3027294265707774,
+       "as_compiled_ci95": [
+        1.297264022039116,
+        1.3077110972367778
+       ],
+       "aligned": 1.302100123510472,
+       "aligned_ci95": [
+        1.2973385379363866,
+        1.3080705781113737
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.23784899406849,
+       "as_compiled_ci95": [
+        1.2307705848625776,
+        1.2490587215542608
+       ],
+       "aligned": 1.236440395947128,
+       "aligned_ci95": [
+        1.2281565728431394,
+        1.2441468175227208
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.223544858755772,
+       "as_compiled_ci95": [
+        1.2075378722959111,
+        1.2316189401656088
+       ],
+       "aligned": 1.2240279720813776,
+       "aligned_ci95": [
+        1.2143782875808777,
+        1.2355754793523326
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.491518824491432,
+       "as_compiled_ci95": [
+        1.4713261224607381,
+        1.5075272941577824
+       ],
+       "aligned": 1.6948103739388276,
+       "aligned_ci95": [
+        1.6858334092917817,
+        1.7035680425266817
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0404254795162218,
+       "as_compiled_ci95": [
+        1.0368275811991259,
+        1.0425903192681913
+       ],
+       "aligned": 1.1586162288975532,
+       "aligned_ci95": [
+        1.1525990502898484,
+        1.1625554034798766
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9998267494722339,
+       "clang18": 1.0028250511102184,
+       "this_over_clang18": 0.9970101448556107,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 1.0024886567938653,
+       "clang18": 0.9992863382993651,
+       "this_over_clang18": 1.0032046054987103,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0100001913912229,
+       "clang18": 0.9852090681282925,
+       "this_over_clang18": 1.025163312097836,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.9933973539500796,
+       "clang18": 0.9137300830559448,
+       "this_over_clang18": 1.0871890642230906,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 0.9838351259819842,
+       "clang18": 1.0013495807567045,
+       "this_over_clang18": 0.9825091505391305,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.9969677293169511,
+       "clang18": 1.003253167216188,
+       "this_over_clang18": 0.9937349433775747,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 5.218655333001763,
+       "clang18": 5.5408649393887695,
+       "this_over_clang18": 0.9418485002049968,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 5.403085587873886,
+       "clang18": 5.778359264567022,
+       "this_over_clang18": 0.9350553228847645,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 2.7999724524602385,
+       "clang18": 2.7974263780271245,
+       "this_over_clang18": 1.000910148861508,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 2.9027867621865666,
+       "clang18": 2.9009660371158597,
+       "this_over_clang18": 1.0006276271584749,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.5580587205422958,
+       "clang18": 1.5624249048865408,
+       "this_over_clang18": 0.9972055077139453,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.3027294265707774,
+       "clang18": 1.3000707774058058,
+       "this_over_clang18": 1.0020450034037969,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.23784899406849,
+       "clang18": 1.234902573600699,
+       "this_over_clang18": 1.002385953783544,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.223544858755772,
+       "clang18": 1.2287371508671898,
+       "this_over_clang18": 0.9957742857308797,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.491518824491432,
+       "clang18": 4.809365110110197,
+       "this_over_clang18": 0.31012800865460943,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.0404254795162218,
+       "clang18": 4.115833463381024,
+       "this_over_clang18": 0.25278609758460585,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V74 80-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "2 jobs (minimum 3)"
+     ],
+     "jobs": 2,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.08246440119686338,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9996000991619207,
+       "aligned": 0.9998493603519939,
+       "aligned_ci95": [
+        0.9993193907934987,
+        1.0005970469428553
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9999418097367012,
+       "aligned": 1.0001496746949348,
+       "aligned_ci95": [
+        0.999509086680751,
+        1.000581310760315
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0061168472270374,
+       "aligned": 1.0021080247177738,
+       "aligned_ci95": [
+        1.0011881318076377,
+        1.0026280641238272
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9970212621545791,
+       "aligned": 0.9959043378983737,
+       "aligned_ci95": [
+        0.9847223268062297,
+        1.0044095726933078
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.000796011393724,
+       "aligned": 1.0392702425657252,
+       "aligned_ci95": [
+        1.024418923678331,
+        1.0514177946506518
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.0011425258330018,
+       "aligned": 0.9999070042020428,
+       "aligned_ci95": [
+        0.9981468460407422,
+        1.0025800049363327
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6980095667385509,
+       "aligned": 1.6480303777539933,
+       "aligned_ci95": [
+        1.6465916008032677,
+        1.650269171900392
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.1084727673219485,
+       "aligned": 1.1028811731223191,
+       "aligned_ci95": [
+        1.1015407686404182,
+        1.1041175339573648
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9996000991619207,
+       "as_compiled_ci95": [
+        0.9988343736683106,
+        1.0005307639945866
+       ],
+       "aligned": 0.9998493603519939,
+       "aligned_ci95": [
+        0.9993193907934987,
+        1.0005970469428553
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9999418097367012,
+       "as_compiled_ci95": [
+        0.9988147272803173,
+        1.0009139463293768
+       ],
+       "aligned": 1.0001496746949348,
+       "aligned_ci95": [
+        0.999509086680751,
+        1.000581310760315
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0061168472270374,
+       "as_compiled_ci95": [
+        1.0049614094352832,
+        1.0070473276716225
+       ],
+       "aligned": 1.0021080247177738,
+       "aligned_ci95": [
+        1.0011881318076377,
+        1.0026280641238272
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9970212621545791,
+       "as_compiled_ci95": [
+        0.9886987100010312,
+        1.0132060460027776
+       ],
+       "aligned": 0.9959043378983737,
+       "aligned_ci95": [
+        0.9847223268062297,
+        1.0044095726933078
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.000796011393724,
+       "as_compiled_ci95": [
+        0.9986557517481764,
+        1.0019508866595583
+       ],
+       "aligned": 1.0392702425657252,
+       "aligned_ci95": [
+        1.024418923678331,
+        1.0514177946506518
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.0011425258330018,
+       "as_compiled_ci95": [
+        0.9985504126052159,
+        1.004704560627187
+       ],
+       "aligned": 0.9999070042020428,
+       "aligned_ci95": [
+        0.9981468460407422,
+        1.0025800049363327
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.675864794541815,
+       "as_compiled_ci95": [
+        6.671262112979306,
+        6.6813403700722915
+       ],
+       "aligned": 5.482082789062194,
+       "aligned_ci95": [
+        5.3942168134589785,
+        5.50361622393558
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 5.674872792421214,
+       "as_compiled_ci95": [
+        5.455500054693689,
+        5.87807476834727
+       ],
+       "aligned": 5.651692371815377,
+       "aligned_ci95": [
+        5.414366789519348,
+        5.864858415044772
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.101898159517746,
+       "as_compiled_ci95": [
+        5.09643612559624,
+        5.105928111351207
+       ],
+       "aligned": 5.079385410674267,
+       "aligned_ci95": [
+        5.0710014260883876,
+        5.088379721008837
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 5.273560997138847,
+       "as_compiled_ci95": [
+        5.193392417808978,
+        5.282406907833782
+       ],
+       "aligned": 5.278986432615983,
+       "aligned_ci95": [
+        5.256387585665002,
+        5.284990531645416
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5851777569491867,
+       "as_compiled_ci95": [
+        1.5837563862160113,
+        1.5866853874020865
+       ],
+       "aligned": 1.5841414865955632,
+       "aligned_ci95": [
+        1.5829849575025419,
+        1.585275534151708
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.003814806998631,
+       "as_compiled_ci95": [
+        1.0025371079495582,
+        1.0057943858969394
+       ],
+       "aligned": 1.0046146929746538,
+       "aligned_ci95": [
+        1.0034482677665533,
+        1.005890019481543
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.204086846769856,
+       "as_compiled_ci95": [
+        1.1821806502793641,
+        1.2654876686111634
+       ],
+       "aligned": 1.1080177735176895,
+       "aligned_ci95": [
+        1.0702894389248638,
+        1.1172109018422556
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.12118934905748,
+       "as_compiled_ci95": [
+        1.1067038296563556,
+        1.1312205723144255
+       ],
+       "aligned": 1.1273049495416678,
+       "aligned_ci95": [
+        1.1092009704212396,
+        1.1455459591667183
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6980095667385509,
+       "as_compiled_ci95": [
+        1.696626335667759,
+        1.6991136727906804
+       ],
+       "aligned": 1.6480303777539933,
+       "aligned_ci95": [
+        1.6465916008032677,
+        1.650269171900392
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.1084727673219485,
+       "as_compiled_ci95": [
+        1.1078941025929034,
+        1.1092098986179908
+       ],
+       "aligned": 1.1028811731223191,
+       "aligned_ci95": [
+        1.1015407686404182,
+        1.1041175339573648
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9996000991619207,
+       "clang18": 1.0006077054667306,
+       "this_over_clang18": 0.9989930056511609,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.9999418097367012,
+       "clang18": 0.9993179350930297,
+       "this_over_clang18": 1.0006243004571047,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0061168472270374,
+       "clang18": 1.5993271037109864,
+       "this_over_clang18": 0.6290875987110466,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.9970212621545791,
+       "clang18": 1.3265207286456289,
+       "this_over_clang18": 0.7516062437807006,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.000796011393724,
+       "clang18": 0.9929989889884763,
+       "this_over_clang18": 1.0078519943038313,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 1.0011425258330018,
+       "clang18": 0.9962124933733326,
+       "this_over_clang18": 1.004948775981493,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 6.675864794541815,
+       "clang18": 6.557811794598258,
+       "this_over_clang18": 1.0180018889899827,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 5.674872792421214,
+       "clang18": 5.77315219228488,
+       "this_over_clang18": 0.9829764751403912,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.101898159517746,
+       "clang18": 5.125818000904762,
+       "this_over_clang18": 0.9953334587020464,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 5.273560997138847,
+       "clang18": 5.170741945043726,
+       "this_over_clang18": 1.019884777308153,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.5851777569491867,
+       "clang18": 1.5947338165593734,
+       "this_over_clang18": 0.9940077400309953,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.003814806998631,
+       "clang18": 1.004565476812097,
+       "this_over_clang18": 0.9992527417766254,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.204086846769856,
+       "clang18": 1.200806724649954,
+       "this_over_clang18": 1.0027315987265628,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.12118934905748,
+       "clang18": 1.125896954446584,
+       "this_over_clang18": 0.9958187955207518,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6980095667385509,
+       "clang18": 4.244415989653,
+       "this_over_clang18": 0.40005729195204803,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.1084727673219485,
+       "clang18": 4.659377801691175,
+       "this_over_clang18": 0.23790145691118147,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "INTEL(R) XEON(R) PLATINUM 8573C": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.5119665010862862,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0018141538065528,
+       "aligned": 0.9993046759477517,
+       "aligned_ci95": [
+        0.9976940545765641,
+        1.0007852209954557
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 1.0007449646235893,
+       "aligned": 0.999721288476026,
+       "aligned_ci95": [
+        0.9974095375698168,
+        1.0012757836509043
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0080489820109646,
+       "aligned": 1.0086772936238255,
+       "aligned_ci95": [
+        1.0051591723338447,
+        1.0115292462301493
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.002087380551743,
+       "aligned": 1.0033568607588863,
+       "aligned_ci95": [
+        0.9769760113485809,
+        1.0423604214904505
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.9986301556833028,
+       "aligned": 1.0102807229840134,
+       "aligned_ci95": [
+        1.0062344453419696,
+        1.012708932484897
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.0097319560199036,
+       "aligned": 1.0027184576407524,
+       "aligned_ci95": [
+        0.9786525718427037,
+        1.0043683190175159
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.4984933605769453,
+       "aligned": 1.5272997429525175,
+       "aligned_ci95": [
+        1.525302855932537,
+        1.5298955911259502
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.085210314482017,
+       "aligned": 1.086022800762733,
+       "aligned_ci95": [
+        1.08458155249916,
+        1.0872216064178537
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0018141538065528,
+       "as_compiled_ci95": [
+        0.9983536434381067,
+        1.003514215458382
+       ],
+       "aligned": 0.9993046759477517,
+       "aligned_ci95": [
+        0.9976940545765641,
+        1.0007852209954557
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0007449646235893,
+       "as_compiled_ci95": [
+        0.9975802198327117,
+        1.0050517699105412
+       ],
+       "aligned": 0.999721288476026,
+       "aligned_ci95": [
+        0.9974095375698168,
+        1.0012757836509043
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0080489820109646,
+       "as_compiled_ci95": [
+        1.0040387156183688,
+        1.0127337883271927
+       ],
+       "aligned": 1.0086772936238255,
+       "aligned_ci95": [
+        1.0051591723338447,
+        1.0115292462301493
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.002087380551743,
+       "as_compiled_ci95": [
+        1.0008159372477665,
+        1.0045267002773668
+       ],
+       "aligned": 1.0033568607588863,
+       "aligned_ci95": [
+        0.9769760113485809,
+        1.0423604214904505
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.9986301556833028,
+       "as_compiled_ci95": [
+        0.9955045276535913,
+        1.0017345859794262
+       ],
+       "aligned": 1.0102807229840134,
+       "aligned_ci95": [
+        1.0062344453419696,
+        1.012708932484897
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.0097319560199036,
+       "as_compiled_ci95": [
+        0.9958723988905778,
+        1.0307221509625153
+       ],
+       "aligned": 1.0027184576407524,
+       "aligned_ci95": [
+        0.9786525718427037,
+        1.0043683190175159
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.597848820649151,
+       "as_compiled_ci95": [
+        6.5817089018843395,
+        6.608368830547888
+       ],
+       "aligned": 6.5736516376355665,
+       "aligned_ci95": [
+        6.566598757064899,
+        6.579210603318414
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 4.106795065294309,
+       "as_compiled_ci95": [
+        4.097885675530637,
+        4.112317204660758
+       ],
+       "aligned": 4.110895017996993,
+       "aligned_ci95": [
+        4.108202451938566,
+        4.116661601854154
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.3680363681757655,
+       "as_compiled_ci95": [
+        4.358390366131868,
+        4.3777460461514766
+       ],
+       "aligned": 4.367394106775581,
+       "aligned_ci95": [
+        4.357037163626662,
+        4.375026615398104
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 3.798814593418922,
+       "as_compiled_ci95": [
+        3.7891194805918067,
+        3.8223000344203313
+       ],
+       "aligned": 3.815269081604962,
+       "aligned_ci95": [
+        3.795214657581015,
+        3.836470987296418
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 2.1786504190078566,
+       "as_compiled_ci95": [
+        2.1726787562732826,
+        2.1851677907890927
+       ],
+       "aligned": 2.173953139620502,
+       "aligned_ci95": [
+        2.17108757994165,
+        2.176530668437168
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0497129514704036,
+       "as_compiled_ci95": [
+        1.0458679767444263,
+        1.0672278211792683
+       ],
+       "aligned": 1.044141152973176,
+       "aligned_ci95": [
+        1.042646730675476,
+        1.0455916489692765
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.1803949711414297,
+       "as_compiled_ci95": [
+        1.1703292559615066,
+        1.215348535747377
+       ],
+       "aligned": 1.1891253367274883,
+       "aligned_ci95": [
+        1.168007242522616,
+        1.2341300908756871
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0852797084976848,
+       "as_compiled_ci95": [
+        1.07299636519928,
+        1.1021562125037914
+       ],
+       "aligned": 1.0802772064088175,
+       "aligned_ci95": [
+        1.062670232126242,
+        1.0952727534590798
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.4984933605769453,
+       "as_compiled_ci95": [
+        1.4956803963846004,
+        1.503299047403981
+       ],
+       "aligned": 1.5272997429525175,
+       "aligned_ci95": [
+        1.525302855932537,
+        1.5298955911259502
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.085210314482017,
+       "as_compiled_ci95": [
+        1.0835251245622808,
+        1.086925199481343
+       ],
+       "aligned": 1.086022800762733,
+       "aligned_ci95": [
+        1.08458155249916,
+        1.0872216064178537
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 1.0018141538065528,
+       "clang18": 1.0007280083770829,
+       "this_over_clang18": 1.0010853552817327,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 1.0007449646235893,
+       "clang18": 0.9988916151249335,
+       "this_over_clang18": 1.0018554060026061,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0080489820109646,
+       "clang18": 1.0563584144135025,
+       "this_over_clang18": 0.9542679532407004,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 1.002087380551743,
+       "clang18": 1.0248977858322739,
+       "this_over_clang18": 0.9777437266468406,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 0.9986301556833028,
+       "clang18": 1.0175935228185746,
+       "this_over_clang18": 0.981364497011787,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 1.0097319560199036,
+       "clang18": 1.0120295119172913,
+       "this_over_clang18": 0.9977297540532836,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 6.597848820649151,
+       "clang18": 6.252820609251598,
+       "this_over_clang18": 1.0551796114040204,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 4.106795065294309,
+       "clang18": 4.115864794340404,
+       "this_over_clang18": 0.997796397719729,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 4.3680363681757655,
+       "clang18": 4.357780962542537,
+       "this_over_clang18": 1.0023533550037,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 3.798814593418922,
+       "clang18": 3.779254750340478,
+       "this_over_clang18": 1.0051755820579922,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 2.1786504190078566,
+       "clang18": 2.8553952353765504,
+       "this_over_clang18": 0.7629943455868206,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.0497129514704036,
+       "clang18": 1.049728247010333,
+       "this_over_clang18": 0.999985429047972,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.1803949711414297,
+       "clang18": 1.1759899317245068,
+       "this_over_clang18": 1.0037458138867423,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.0852797084976848,
+       "clang18": 1.0872151459909025,
+       "this_over_clang18": 0.9982198210718876,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.4984933605769453,
+       "clang18": 4.215656786339067,
+       "this_over_clang18": 0.35545905099125896,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.085210314482017,
+       "clang18": 3.533443179461339,
+       "this_over_clang18": 0.3071254465870465,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.1611155902766337,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0008191894109555,
+       "aligned": 1.0001326281340117,
+       "aligned_ci95": [
+        0.9991726420297851,
+        1.000919987123767
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9994708534758052,
+       "aligned": 0.9998833588756347,
+       "aligned_ci95": [
+        0.9989321206154487,
+        1.0009513824489817
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0295581973669983,
+       "aligned": 1.044476269902229,
+       "aligned_ci95": [
+        1.043615019080596,
+        1.0452228614255081
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.0013457834769852,
+       "aligned": 1.0004761955997516,
+       "aligned_ci95": [
+        0.999846978010758,
+        1.0010448600995534
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0009496338299526,
+       "aligned": 1.0008443345425881,
+       "aligned_ci95": [
+        1.0003851848202974,
+        1.0014188785452287
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9989875198262128,
+       "aligned": 0.9997051635776745,
+       "aligned_ci95": [
+        0.9974463415739594,
+        1.002605529458321
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.7176946491321647,
+       "aligned": 1.5903150256113623,
+       "aligned_ci95": [
+        1.588876188948378,
+        1.5922647652118456
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0925430143848642,
+       "aligned": 1.1032369654099305,
+       "aligned_ci95": [
+        1.0860494929499025,
+        1.1079476622268307
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0008191894109555,
+       "as_compiled_ci95": [
+        0.9994506758480781,
+        1.0014752116407937
+       ],
+       "aligned": 1.0001326281340117,
+       "aligned_ci95": [
+        0.9991726420297851,
+        1.000919987123767
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9994708534758052,
+       "as_compiled_ci95": [
+        0.9990802742437025,
+        1.0004381851735837
+       ],
+       "aligned": 0.9998833588756347,
+       "aligned_ci95": [
+        0.9989321206154487,
+        1.0009513824489817
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0295581973669983,
+       "as_compiled_ci95": [
+        1.0283845265074243,
+        1.0302375661575554
+       ],
+       "aligned": 1.044476269902229,
+       "aligned_ci95": [
+        1.043615019080596,
+        1.0452228614255081
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0013457834769852,
+       "as_compiled_ci95": [
+        1.000794714580387,
+        1.0018954903994746
+       ],
+       "aligned": 1.0004761955997516,
+       "aligned_ci95": [
+        0.999846978010758,
+        1.0010448600995534
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0009496338299526,
+       "as_compiled_ci95": [
+        1.000473450510054,
+        1.0016046221881458
+       ],
+       "aligned": 1.0008443345425881,
+       "aligned_ci95": [
+        1.0003851848202974,
+        1.0014188785452287
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9989875198262128,
+       "as_compiled_ci95": [
+        0.9850805627908205,
+        1.0001311475201256
+       ],
+       "aligned": 0.9997051635776745,
+       "aligned_ci95": [
+        0.9974463415739594,
+        1.002605529458321
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 6.152927660394147,
+       "as_compiled_ci95": [
+        6.149073846979029,
+        6.1590122958062965
+       ],
+       "aligned": 6.148029977849447,
+       "aligned_ci95": [
+        6.141110678187527,
+        6.152330818782456
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 4.990283891986718,
+       "as_compiled_ci95": [
+        4.985231838975197,
+        4.9963327543077245
+       ],
+       "aligned": 4.999955319885029,
+       "aligned_ci95": [
+        4.995786815458281,
+        5.005726165110986
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.486606497880748,
+       "as_compiled_ci95": [
+        4.422113500921196,
+        4.548153193772157
+       ],
+       "aligned": 4.2981046277531645,
+       "aligned_ci95": [
+        4.284199369026384,
+        4.3215271203851024
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 3.9124773392642958,
+       "as_compiled_ci95": [
+        3.9102715440055036,
+        3.915167998195938
+       ],
+       "aligned": 3.9102131364581076,
+       "aligned_ci95": [
+        3.907729290236375,
+        3.915284247124001
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5392317591409816,
+       "as_compiled_ci95": [
+        1.537678313984369,
+        1.5410011685253968
+       ],
+       "aligned": 1.513436517011771,
+       "aligned_ci95": [
+        1.511828136229181,
+        1.5162293729307914
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.002041970301377,
+       "as_compiled_ci95": [
+        1.0010320855259307,
+        1.0028746946340839
+       ],
+       "aligned": 1.0023309874897777,
+       "aligned_ci95": [
+        1.0014653854528617,
+        1.0030501979838795
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.4104377236233718,
+       "as_compiled_ci95": [
+        1.4065046550738385,
+        1.4360905694000052
+       ],
+       "aligned": 1.396090541520695,
+       "aligned_ci95": [
+        1.3920389386162424,
+        1.4071766443978546
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.2766869887636179,
+       "as_compiled_ci95": [
+        1.2670009533651765,
+        1.287174473999619
+       ],
+       "aligned": 1.2787727747943127,
+       "aligned_ci95": [
+        1.2707002480296563,
+        1.2954001419638295
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.7176946491321647,
+       "as_compiled_ci95": [
+        1.715915914336587,
+        1.7190324969796666
+       ],
+       "aligned": 1.5903150256113623,
+       "aligned_ci95": [
+        1.588876188948378,
+        1.5922647652118456
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0925430143848642,
+       "as_compiled_ci95": [
+        1.088585604018736,
+        1.100772505471591
+       ],
+       "aligned": 1.1032369654099305,
+       "aligned_ci95": [
+        1.0860494929499025,
+        1.1079476622268307
+       ]
+      }
+     ],
+     "vs_clang18": {},
+     "in_clang18_pool": false
+    }
+   },
+   "pooled_runs": [
+    "38471430657"
+   ]
+  },
+  "21": {
+   "toolchain": {
+    "version": 21,
+    "clang": "Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)",
+    "packages": {
+     "clang-21": "1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70",
+     "libc++-21-dev": "1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70",
+     "libc++abi-21-dev": "1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70",
+     "libunwind-21-dev": "1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70"
+    },
+    "compiler": "clang++-21",
+    "probe": {
+     "built": true,
+     "none_exit": 0,
+     "fast_exit": -4,
+     "none_runs_clean": true,
+     "fast_traps": true
+    },
+    "vectorization": {
+     "k01_sum_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 2
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 2
+      }
+     },
+     "k02_add_fwd": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k03_stencil": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     },
+     "k04_rev": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k05_stride2": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k06_gather": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k07_hist": {
+      "none": {
+       "vectorized": false,
+       "width": null
+      },
+      "fast": {
+       "vectorized": false,
+       "width": null
+      }
+     },
+     "k08_matmul": {
+      "none": {
+       "vectorized": true,
+       "width": 4
+      },
+      "fast": {
+       "vectorized": true,
+       "width": 4
+      }
+     }
+    }
+   },
+   "form": "INCONCLUSIVE",
+   "cpus": {
+    "AMD EPYC 7763 64-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: mixed picture: forward rule (aligned) missed by k08_matmul.L1, k08_matmul.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+     ],
+     "jobs": 4,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.07509310512061051,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9991631710261517,
+       "aligned": 1.0000704122783446,
+       "aligned_ci95": [
+        0.999489444894971,
+        1.000627803210805
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.999332118888951,
+       "aligned": 1.0012497978640182,
+       "aligned_ci95": [
+        0.9996533717727007,
+        1.0037772005035084
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.0065691712516451,
+       "aligned": 1.0099056941747253,
+       "aligned_ci95": [
+        1.00920043186625,
+        1.0105113765471057
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9994771295885507,
+       "aligned": 1.0000996133686744,
+       "aligned_ci95": [
+        0.9989951324804964,
+        1.0009356025905232
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0556427510288604,
+       "aligned": 1.0037049924709744,
+       "aligned_ci95": [
+        1.0027278156927064,
+        1.0047363578253137
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9972277188288713,
+       "aligned": 0.9998405239421719,
+       "aligned_ci95": [
+        0.9919667426340104,
+        1.0055649215816604
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6102067067717727,
+       "aligned": 1.6450951965319036,
+       "aligned_ci95": [
+        1.6434084401271318,
+        1.6463416655828302
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.1504006945681744,
+       "aligned": 1.146887211670829,
+       "aligned_ci95": [
+        1.146217600065032,
+        1.1477053958946029
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9991631710261517,
+       "as_compiled_ci95": [
+        0.9984506410505338,
+        1.000016963061687
+       ],
+       "aligned": 1.0000704122783446,
+       "aligned_ci95": [
+        0.999489444894971,
+        1.000627803210805
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.999332118888951,
+       "as_compiled_ci95": [
+        0.9967427881047252,
+        1.0018525174344237
+       ],
+       "aligned": 1.0012497978640182,
+       "aligned_ci95": [
+        0.9996533717727007,
+        1.0037772005035084
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0065691712516451,
+       "as_compiled_ci95": [
+        1.0055935023967713,
+        1.007440185226317
+       ],
+       "aligned": 1.0099056941747253,
+       "aligned_ci95": [
+        1.00920043186625,
+        1.0105113765471057
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9994771295885507,
+       "as_compiled_ci95": [
+        0.9839060740490385,
+        1.013570719463006
+       ],
+       "aligned": 1.0000996133686744,
+       "aligned_ci95": [
+        0.9989951324804964,
+        1.0009356025905232
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0556427510288604,
+       "as_compiled_ci95": [
+        1.0476578757701553,
+        1.0571824941698824
+       ],
+       "aligned": 1.0037049924709744,
+       "aligned_ci95": [
+        1.0027278156927064,
+        1.0047363578253137
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9972277188288713,
+       "as_compiled_ci95": [
+        0.9937179329350866,
+        1.0027756346589378
+       ],
+       "aligned": 0.9998405239421719,
+       "aligned_ci95": [
+        0.9919667426340104,
+        1.0055649215816604
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 4.832475925987947,
+       "as_compiled_ci95": [
+        4.829357406618626,
+        4.834666517719145
+       ],
+       "aligned": 4.833692124087055,
+       "aligned_ci95": [
+        4.83170486885522,
+        4.836159022251086
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 4.680488215826429,
+       "as_compiled_ci95": [
+        4.613871286551759,
+        4.716117438315642
+       ],
+       "aligned": 4.697215500099269,
+       "aligned_ci95": [
+        4.637653384611141,
+        4.747973994991853
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.046305988207515,
+       "as_compiled_ci95": [
+        5.037915298162766,
+        5.051936122392483
+       ],
+       "aligned": 5.0504164770241635,
+       "aligned_ci95": [
+        5.04544800743666,
+        5.056018534001994
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 4.945180190414583,
+       "as_compiled_ci95": [
+        4.8284241062377635,
+        5.01766616190619
+       ],
+       "aligned": 5.007156955439772,
+       "aligned_ci95": [
+        4.918396782883405,
+        5.07931609083139
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.8378796423232242,
+       "as_compiled_ci95": [
+        1.8364001691274425,
+        1.839287610066053
+       ],
+       "aligned": 1.8350588848218683,
+       "aligned_ci95": [
+        1.8330440075640109,
+        1.8367506370561126
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1855600249335052,
+       "as_compiled_ci95": [
+        1.1801054119769776,
+        1.1901528991330292
+       ],
+       "aligned": 1.18468560912943,
+       "aligned_ci95": [
+        1.1818703467084453,
+        1.1879767352152957
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.0853044883238643,
+       "as_compiled_ci95": [
+        1.0618369163983903,
+        1.094434474736817
+       ],
+       "aligned": 1.0912200611956897,
+       "aligned_ci95": [
+        1.07651606682075,
+        1.1075756433774728
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0922331758439185,
+       "as_compiled_ci95": [
+        1.0774557986084103,
+        1.1066209149604465
+       ],
+       "aligned": 1.0975606908179882,
+       "aligned_ci95": [
+        1.0841210248953763,
+        1.1109167161853983
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6102067067717727,
+       "as_compiled_ci95": [
+        1.6086290328158248,
+        1.6112918723196261
+       ],
+       "aligned": 1.6450951965319036,
+       "aligned_ci95": [
+        1.6434084401271318,
+        1.6463416655828302
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.1504006945681744,
+       "as_compiled_ci95": [
+        1.149523067907803,
+        1.1512068069270622
+       ],
+       "aligned": 1.146887211670829,
+       "aligned_ci95": [
+        1.146217600065032,
+        1.1477053958946029
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9991631710261517,
+       "clang18": 0.9996276569821486,
+       "this_over_clang18": 0.9995353410314805,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.999332118888951,
+       "clang18": 0.9995924873318692,
+       "this_over_clang18": 0.9997395254103868,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.0065691712516451,
+       "clang18": 1.5849933478414413,
+       "this_over_clang18": 0.6350620793598054,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 0.9994771295885507,
+       "clang18": 1.320223545473868,
+       "this_over_clang18": 0.757051434974831,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.0556427510288604,
+       "clang18": 1.0062881968210469,
+       "this_over_clang18": 1.04904614241102,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.9972277188288713,
+       "clang18": 1.002168526507219,
+       "this_over_clang18": 0.9950698834101609,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 4.832475925987947,
+       "clang18": 7.624542375346873,
+       "this_over_clang18": 0.6338053732396101,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 4.680488215826429,
+       "clang18": 7.672053052976627,
+       "this_over_clang18": 0.6100698448651211,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.046305988207515,
+       "clang18": 5.078406360120372,
+       "this_over_clang18": 0.9936790462132109,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 4.945180190414583,
+       "clang18": 5.004588673744613,
+       "this_over_clang18": 0.9881291975818708,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.8378796423232242,
+       "clang18": 1.8364956150667628,
+       "this_over_clang18": 1.0007536240463122,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.1855600249335052,
+       "clang18": 1.1834452101762913,
+       "this_over_clang18": 1.0017869984508188,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.0853044883238643,
+       "clang18": 1.0940776843703997,
+       "this_over_clang18": 0.9919811945971789,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.0922331758439185,
+       "clang18": 1.100075061441707,
+       "this_over_clang18": 0.9928714995252131,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6102067067717727,
+       "clang18": 3.1916465741300826,
+       "this_over_clang18": 0.5045065828476487,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.1504006945681744,
+       "clang18": 3.7926702358212823,
+       "this_over_clang18": 0.3033220984262718,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V45 96-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.9569820746165969,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9943548549567304,
+       "aligned": 1.0041531717668082,
+       "aligned_ci95": [
+        0.9979336375478055,
+        1.0071971387444922
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9989755386714616,
+       "aligned": 1.0003274137521918,
+       "aligned_ci95": [
+        0.9973975627354431,
+        1.0067317310940402
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.02320564320571,
+       "aligned": 1.0200770549332332,
+       "aligned_ci95": [
+        1.009453795018837,
+        1.024845609719592
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.0024548007009764,
+       "aligned": 1.0021692550447456,
+       "aligned_ci95": [
+        0.9945496901506573,
+        1.007585457199617
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.9987855485314459,
+       "aligned": 1.0067308931319119,
+       "aligned_ci95": [
+        0.9869352689978518,
+        1.0332971293218276
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.999335735505963,
+       "aligned": 1.0007115636322446,
+       "aligned_ci95": [
+        0.99530194691647,
+        1.0080976146100766
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.494737221414333,
+       "aligned": 1.6938407864801803,
+       "aligned_ci95": [
+        1.6782131049604838,
+        1.7307461767563077
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0371330165619732,
+       "aligned": 1.1621016402204025,
+       "aligned_ci95": [
+        1.155554670304052,
+        1.1675976868987559
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9943548549567304,
+       "as_compiled_ci95": [
+        0.9802034909824346,
+        1.0091642274701134
+       ],
+       "aligned": 1.0041531717668082,
+       "aligned_ci95": [
+        0.9979336375478055,
+        1.0071971387444922
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9989755386714616,
+       "as_compiled_ci95": [
+        0.994585815837552,
+        1.0028040974004353
+       ],
+       "aligned": 1.0003274137521918,
+       "aligned_ci95": [
+        0.9973975627354431,
+        1.0067317310940402
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.02320564320571,
+       "as_compiled_ci95": [
+        1.010091104853404,
+        1.0350633209042963
+       ],
+       "aligned": 1.0200770549332332,
+       "aligned_ci95": [
+        1.009453795018837,
+        1.024845609719592
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0024548007009764,
+       "as_compiled_ci95": [
+        0.9870585032122025,
+        1.0185809792308897
+       ],
+       "aligned": 1.0021692550447456,
+       "aligned_ci95": [
+        0.9945496901506573,
+        1.007585457199617
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.9987855485314459,
+       "as_compiled_ci95": [
+        0.9858395591917182,
+        1.0154414834890375
+       ],
+       "aligned": 1.0067308931319119,
+       "aligned_ci95": [
+        0.9869352689978518,
+        1.0332971293218276
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.999335735505963,
+       "as_compiled_ci95": [
+        0.9929598389264812,
+        1.0044910033784524
+       ],
+       "aligned": 1.0007115636322446,
+       "aligned_ci95": [
+        0.99530194691647,
+        1.0080976146100766
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 5.221612604875471,
+       "as_compiled_ci95": [
+        5.17744630464099,
+        5.2515263846489315
+       ],
+       "aligned": 5.347910019843609,
+       "aligned_ci95": [
+        5.3013189155954175,
+        5.376171740553527
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 5.4005775620258145,
+       "as_compiled_ci95": [
+        5.313208908643951,
+        5.529316914018794
+       ],
+       "aligned": 5.812119524510281,
+       "aligned_ci95": [
+        5.694877084434684,
+        5.914922993015763
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.479557881233767,
+       "as_compiled_ci95": [
+        4.465184348035886,
+        4.4951302414231264
+       ],
+       "aligned": 2.7686769563582776,
+       "aligned_ci95": [
+        2.7562951230885493,
+        2.783680916993887
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 4.71023449692606,
+       "as_compiled_ci95": [
+        4.6769236078681065,
+        4.732242658171346
+       ],
+       "aligned": 2.891885620485048,
+       "aligned_ci95": [
+        2.881003027208104,
+        2.905385083201349
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.3159516686010249,
+       "as_compiled_ci95": [
+        1.3126265032763587,
+        1.3215625906983373
+       ],
+       "aligned": 1.5904343924222586,
+       "aligned_ci95": [
+        1.5827721206226637,
+        1.5959456065709385
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.3059921571284987,
+       "as_compiled_ci95": [
+        1.2978439910857689,
+        1.3148696505343451
+       ],
+       "aligned": 1.317286728535317,
+       "aligned_ci95": [
+        1.311051926775536,
+        1.321719446264235
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.2394039891658957,
+       "as_compiled_ci95": [
+        1.2271802295176615,
+        1.2427901245746982
+       ],
+       "aligned": 1.2354245164557767,
+       "aligned_ci95": [
+        1.2272592036544563,
+        1.2426465364643433
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.2228571390576852,
+       "as_compiled_ci95": [
+        1.2154173372293207,
+        1.2342175793339443
+       ],
+       "aligned": 1.2292446922191604,
+       "aligned_ci95": [
+        1.2073687275866396,
+        1.2414139227460081
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.494737221414333,
+       "as_compiled_ci95": [
+        1.4763210708821501,
+        1.5226665029305093
+       ],
+       "aligned": 1.6938407864801803,
+       "aligned_ci95": [
+        1.6782131049604838,
+        1.7307461767563077
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0371330165619732,
+       "as_compiled_ci95": [
+        1.0271362794600791,
+        1.0504098652406693
+       ],
+       "aligned": 1.1621016402204025,
+       "aligned_ci95": [
+        1.155554670304052,
+        1.1675976868987559
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 0.9943548549567304,
+       "clang18": 1.0028250511102184,
+       "this_over_clang18": 0.9915536651740893,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.9989755386714616,
+       "clang18": 0.9992863382993651,
+       "this_over_clang18": 0.9996889784078982,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.02320564320571,
+       "clang18": 0.9852090681282925,
+       "this_over_clang18": 1.0385670172013375,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 1.0024548007009764,
+       "clang18": 0.9137300830559448,
+       "this_over_clang18": 1.0971016707125305,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 0.9987855485314459,
+       "clang18": 1.0013495807567045,
+       "this_over_clang18": 0.9974394234795394,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.999335735505963,
+       "clang18": 1.003253167216188,
+       "this_over_clang18": 0.9960952710260611,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 5.221612604875471,
+       "clang18": 5.5408649393887695,
+       "this_over_clang18": 0.9423822204645695,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 5.4005775620258145,
+       "clang18": 5.778359264567022,
+       "this_over_clang18": 0.9346212851703822,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 4.479557881233767,
+       "clang18": 2.7974263780271245,
+       "this_over_clang18": 1.6013139492853998,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 4.71023449692606,
+       "clang18": 2.9009660371158597,
+       "this_over_clang18": 1.6236779185491517,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.3159516686010249,
+       "clang18": 1.5624249048865408,
+       "this_over_clang18": 0.8422495471528507,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.3059921571284987,
+       "clang18": 1.3000707774058058,
+       "this_over_clang18": 1.0045546595043915,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.2394039891658957,
+       "clang18": 1.234902573600699,
+       "this_over_clang18": 1.0036451584614254,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.2228571390576852,
+       "clang18": 1.2287371508671898,
+       "this_over_clang18": 0.995214589381175,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.494737221414333,
+       "clang18": 4.809365110110197,
+       "this_over_clang18": 0.3107972023733678,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.0371330165619732,
+       "clang18": 4.115833463381024,
+       "this_over_clang18": 0.25198614710469897,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "AMD EPYC 9V74 80-Core Processor": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "2 jobs (minimum 3)"
+     ],
+     "jobs": 2,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.08335399321797166,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0001201839399532,
+       "aligned": 0.9997772275790022,
+       "aligned_ci95": [
+        0.9992369630157546,
+        1.0003357908050632
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9995086852826652,
+       "aligned": 0.999761006114213,
+       "aligned_ci95": [
+        0.9992064730301026,
+        1.000168962458517
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.004037896526297,
+       "aligned": 0.9999217534925533,
+       "aligned_ci95": [
+        0.9991671132061986,
+        1.0005815917810386
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.0059586620844516,
+       "aligned": 0.999762542783345,
+       "aligned_ci95": [
+        0.9968507535773495,
+        1.0028241880626234
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0005607260007845,
+       "aligned": 1.0357447903705446,
+       "aligned_ci95": [
+        1.0260205310251893,
+        1.0446745570112437
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 0.9995296310396161,
+       "aligned": 0.9987763827943024,
+       "aligned_ci95": [
+        0.9974004620126677,
+        1.0005816621394625
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.6988940829067811,
+       "aligned": 1.6475659517228125,
+       "aligned_ci95": [
+        1.6464612567951977,
+        1.648676832927883
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.1082812389209227,
+       "aligned": 1.102788056720164,
+       "aligned_ci95": [
+        1.102019523300499,
+        1.1036558560538305
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0001201839399532,
+       "as_compiled_ci95": [
+        0.9992086462104854,
+        1.0007931345344125
+       ],
+       "aligned": 0.9997772275790022,
+       "aligned_ci95": [
+        0.9992369630157546,
+        1.0003357908050632
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9995086852826652,
+       "as_compiled_ci95": [
+        0.9984811909263636,
+        1.0003195200458017
+       ],
+       "aligned": 0.999761006114213,
+       "aligned_ci95": [
+        0.9992064730301026,
+        1.000168962458517
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.004037896526297,
+       "as_compiled_ci95": [
+        1.0031407629261542,
+        1.004944855397923
+       ],
+       "aligned": 0.9999217534925533,
+       "aligned_ci95": [
+        0.9991671132061986,
+        1.0005815917810386
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0059586620844516,
+       "as_compiled_ci95": [
+        0.9983125407882569,
+        1.0136918218575528
+       ],
+       "aligned": 0.999762542783345,
+       "aligned_ci95": [
+        0.9968507535773495,
+        1.0028241880626234
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0005607260007845,
+       "as_compiled_ci95": [
+        0.9983100903623734,
+        1.0013703809562131
+       ],
+       "aligned": 1.0357447903705446,
+       "aligned_ci95": [
+        1.0260205310251893,
+        1.0446745570112437
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 0.9995296310396161,
+       "as_compiled_ci95": [
+        0.9967279881890939,
+        1.0013279564811424
+       ],
+       "aligned": 0.9987763827943024,
+       "aligned_ci95": [
+        0.9974004620126677,
+        1.0005816621394625
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 4.843768751281496,
+       "as_compiled_ci95": [
+        4.841643911384259,
+        4.845630338933709
+       ],
+       "aligned": 4.846321369168916,
+       "aligned_ci95": [
+        4.8443859081997545,
+        4.849164858341325
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 4.683166397534372,
+       "as_compiled_ci95": [
+        4.596068986227492,
+        4.728355729554399
+       ],
+       "aligned": 4.6774655595756185,
+       "aligned_ci95": [
+        4.625165841905027,
+        4.7241368369200005
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 5.254333521604449,
+       "as_compiled_ci95": [
+        5.250619066992962,
+        5.258381113447299
+       ],
+       "aligned": 5.2433037260563,
+       "aligned_ci95": [
+        5.239920487790939,
+        5.247019243328095
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 5.193982722826368,
+       "as_compiled_ci95": [
+        5.1372566383009,
+        5.263838370216845
+       ],
+       "aligned": 5.240744290164459,
+       "aligned_ci95": [
+        5.154829348070276,
+        5.279247435196921
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 1.5859434870612334,
+       "as_compiled_ci95": [
+        1.5846393497005817,
+        1.5870133189964541
+       ],
+       "aligned": 1.5778276307127763,
+       "aligned_ci95": [
+        1.5758371749042703,
+        1.5794663745083295
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.005281310078381,
+       "as_compiled_ci95": [
+        1.0034579023971217,
+        1.0067226270158014
+       ],
+       "aligned": 1.0064882840515874,
+       "aligned_ci95": [
+        1.0050738556321808,
+        1.007632050538285
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.1021821440283208,
+       "as_compiled_ci95": [
+        1.0536977500849471,
+        1.1132227889491795
+       ],
+       "aligned": 1.1097264914772715,
+       "aligned_ci95": [
+        1.0701424973736489,
+        1.1158020646843838
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1160623813846167,
+       "as_compiled_ci95": [
+        1.1064727541365083,
+        1.1324974514150823
+       ],
+       "aligned": 1.1200928109700166,
+       "aligned_ci95": [
+        1.1072036653962591,
+        1.1301719115252136
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.6988940829067811,
+       "as_compiled_ci95": [
+        1.6977639719791089,
+        1.6997538272576982
+       ],
+       "aligned": 1.6475659517228125,
+       "aligned_ci95": [
+        1.6464612567951977,
+        1.648676832927883
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.1082812389209227,
+       "as_compiled_ci95": [
+        1.1076790865837556,
+        1.108948565065785
+       ],
+       "aligned": 1.102788056720164,
+       "aligned_ci95": [
+        1.102019523300499,
+        1.1036558560538305
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 1.0001201839399532,
+       "clang18": 1.0006077054667306,
+       "this_over_clang18": 0.9995127745627843,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.9995086852826652,
+       "clang18": 0.9993179350930297,
+       "this_over_clang18": 1.0001908803824457,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.004037896526297,
+       "clang18": 1.5993271037109864,
+       "this_over_clang18": 0.6277877078407447,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 1.0059586620844516,
+       "clang18": 1.3265207286456289,
+       "this_over_clang18": 0.7583437185422126,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 1.0005607260007845,
+       "clang18": 0.9929989889884763,
+       "this_over_clang18": 1.007615050061643,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 0.9995296310396161,
+       "clang18": 0.9962124933733326,
+       "this_over_clang18": 1.0033297491131146,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 4.843768751281496,
+       "clang18": 6.557811794598258,
+       "this_over_clang18": 0.7386257646599986,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 4.683166397534372,
+       "clang18": 5.77315219228488,
+       "this_over_clang18": 0.8111974605126221,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 5.254333521604449,
+       "clang18": 5.125818000904762,
+       "this_over_clang18": 1.0250721973891783,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 5.193982722826368,
+       "clang18": 5.170741945043726,
+       "this_over_clang18": 1.0044946698229484,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 1.5859434870612334,
+       "clang18": 1.5947338165593734,
+       "this_over_clang18": 0.9944879017382945,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.005281310078381,
+       "clang18": 1.004565476812097,
+       "this_over_clang18": 1.0007125799988226,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.1021821440283208,
+       "clang18": 1.200806724649954,
+       "this_over_clang18": 0.9178680643628281,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.1160623813846167,
+       "clang18": 1.125896954446584,
+       "this_over_clang18": 0.9912651215343226,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.6988940829067811,
+       "clang18": 4.244415989653,
+       "this_over_clang18": 0.4002656872107565,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.1082812389209227,
+       "clang18": 4.659377801691175,
+       "this_over_clang18": 0.23786035090750943,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "INTEL(R) XEON(R) PLATINUM 8573C": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "2 jobs (minimum 3)"
+     ],
+     "jobs": 2,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.4331246458987248,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 1.0003157101449824,
+       "aligned": 0.9998155626044648,
+       "aligned_ci95": [
+        0.9935060381095007,
+        1.002382659379417
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9970978935728618,
+       "aligned": 0.9975560087950234,
+       "aligned_ci95": [
+        0.9920743466193717,
+        1.0048730033950004
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.038197315037956,
+       "aligned": 1.0244982298040122,
+       "aligned_ci95": [
+        1.018834994971276,
+        1.0332136281014312
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 1.0013311447584248,
+       "aligned": 1.001099066265929,
+       "aligned_ci95": [
+        0.9883395376369781,
+        1.013574091164266
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 0.9960483382044446,
+       "aligned": 1.0075301633319071,
+       "aligned_ci95": [
+        1.000430013996176,
+        1.0149284484919023
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.0007348664042741,
+       "aligned": 1.0037904099839368,
+       "aligned_ci95": [
+        0.9835475880743785,
+        1.0246718099658279
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.525117293036228,
+       "aligned": 1.5213258358522328,
+       "aligned_ci95": [
+        1.5094005635750563,
+        1.5341720871307467
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0851572512943595,
+       "aligned": 1.0828564123887947,
+       "aligned_ci95": [
+        1.0776112111951983,
+        1.088457405408604
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.0003157101449824,
+       "as_compiled_ci95": [
+        0.9940456627727141,
+        1.0057300901649748
+       ],
+       "aligned": 0.9998155626044648,
+       "aligned_ci95": [
+        0.9935060381095007,
+        1.002382659379417
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9970978935728618,
+       "as_compiled_ci95": [
+        0.9857762003019737,
+        1.0063349774876087
+       ],
+       "aligned": 0.9975560087950234,
+       "aligned_ci95": [
+        0.9920743466193717,
+        1.0048730033950004
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.038197315037956,
+       "as_compiled_ci95": [
+        1.030629555154155,
+        1.045283160319439
+       ],
+       "aligned": 1.0244982298040122,
+       "aligned_ci95": [
+        1.018834994971276,
+        1.0332136281014312
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 1.0013311447584248,
+       "as_compiled_ci95": [
+        0.972944558091309,
+        1.0340872000034407
+       ],
+       "aligned": 1.001099066265929,
+       "aligned_ci95": [
+        0.9883395376369781,
+        1.013574091164266
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 0.9960483382044446,
+       "as_compiled_ci95": [
+        0.9879491719340863,
+        1.002522432590735
+       ],
+       "aligned": 1.0075301633319071,
+       "aligned_ci95": [
+        1.000430013996176,
+        1.0149284484919023
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.0007348664042741,
+       "as_compiled_ci95": [
+        0.9839214204201889,
+        1.0131832813773824
+       ],
+       "aligned": 1.0037904099839368,
+       "aligned_ci95": [
+        0.9835475880743785,
+        1.0246718099658279
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 5.677771792950988,
+       "as_compiled_ci95": [
+        5.605183753072291,
+        5.728321520791958
+       ],
+       "aligned": 5.696880221853526,
+       "aligned_ci95": [
+        5.649162695332892,
+        5.7251997344026355
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 3.5852590821335815,
+       "as_compiled_ci95": [
+        3.5505107603335087,
+        3.6164733797050745
+       ],
+       "aligned": 3.583035648734092,
+       "aligned_ci95": [
+        3.5509257650646617,
+        3.615626416243392
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.271109112078535,
+       "as_compiled_ci95": [
+        4.2435755970385385,
+        4.304963051591654
+       ],
+       "aligned": 4.306467240069169,
+       "aligned_ci95": [
+        4.265674367334846,
+        4.343645734701305
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 3.7678211557015393,
+       "as_compiled_ci95": [
+        3.678860182775952,
+        3.876184591290791
+       ],
+       "aligned": 3.752023540096504,
+       "aligned_ci95": [
+        3.654995663182548,
+        3.8478647001821127
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 2.017755290019692,
+       "as_compiled_ci95": [
+        1.9973287124998391,
+        2.036599559135948
+       ],
+       "aligned": 2.173521613209131,
+       "aligned_ci95": [
+        2.1606562613267166,
+        2.1868298475242156
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0428678142361996,
+       "as_compiled_ci95": [
+        1.0326544833456468,
+        1.05311829261061
+       ],
+       "aligned": 1.04599033826842,
+       "aligned_ci95": [
+        1.0392610746444308,
+        1.0533093944016094
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.1847377894100986,
+       "as_compiled_ci95": [
+        1.1230922091276723,
+        1.3046839539952617
+       ],
+       "aligned": 1.1947333036279257,
+       "aligned_ci95": [
+        1.1565815510238033,
+        1.2953766844879993
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0797050557287862,
+       "as_compiled_ci95": [
+        1.0651489206905898,
+        1.0933790288234388
+       ],
+       "aligned": 1.078937472545827,
+       "aligned_ci95": [
+        1.0580765191979473,
+        1.0998764367477438
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.525117293036228,
+       "as_compiled_ci95": [
+        1.5099083384140266,
+        1.547104772330577
+       ],
+       "aligned": 1.5213258358522328,
+       "aligned_ci95": [
+        1.5094005635750563,
+        1.5341720871307467
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0851572512943595,
+       "as_compiled_ci95": [
+        1.0785695434385636,
+        1.0931500106349608
+       ],
+       "aligned": 1.0828564123887947,
+       "aligned_ci95": [
+        1.0776112111951983,
+        1.088457405408604
+       ]
+      }
+     ],
+     "vs_clang18": {
+      "k01_sum_fwd.L1": {
+       "this": 1.0003157101449824,
+       "clang18": 1.0007280083770829,
+       "this_over_clang18": 0.9995880017061088,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k01_sum_fwd.L2": {
+       "this": 0.9970978935728618,
+       "clang18": 0.9988916151249335,
+       "this_over_clang18": 0.9982042881080273,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L1": {
+       "this": 1.038197315037956,
+       "clang18": 1.0563584144135025,
+       "this_over_clang18": 0.9828078243825703,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k02_add_fwd.L2": {
+       "this": 1.0013311447584248,
+       "clang18": 1.0248977858322739,
+       "this_over_clang18": 0.9770058620482708,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L1": {
+       "this": 0.9960483382044446,
+       "clang18": 1.0175935228185746,
+       "this_over_clang18": 0.9788273174592805,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k03_stencil.L2": {
+       "this": 1.0007348664042741,
+       "clang18": 1.0120295119172913,
+       "this_over_clang18": 0.9888396085489449,
+       "class_this": "kept",
+       "class_clang18": "kept"
+      },
+      "k04_rev.L1": {
+       "this": 5.677771792950988,
+       "clang18": 6.252820609251598,
+       "this_over_clang18": 0.9080336935542698,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k04_rev.L2": {
+       "this": 3.5852590821335815,
+       "clang18": 4.115864794340404,
+       "this_over_clang18": 0.8710828127939377,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L1": {
+       "this": 4.271109112078535,
+       "clang18": 4.357780962542537,
+       "this_over_clang18": 0.9801110126440513,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k05_stride2.L2": {
+       "this": 3.7678211557015393,
+       "clang18": 3.779254750340478,
+       "this_over_clang18": 0.996974643046249,
+       "class_this": "lost",
+       "class_clang18": "lost"
+      },
+      "k06_gather.L1": {
+       "this": 2.017755290019692,
+       "clang18": 2.8553952353765504,
+       "this_over_clang18": 0.7066465843400499,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k06_gather.L2": {
+       "this": 1.0428678142361996,
+       "clang18": 1.049728247010333,
+       "this_over_clang18": 0.9934645630488916,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L1": {
+       "this": 1.1847377894100986,
+       "clang18": 1.1759899317245068,
+       "this_over_clang18": 1.0074387181808298,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k07_hist.L2": {
+       "this": 1.0797050557287862,
+       "clang18": 1.0872151459909025,
+       "this_over_clang18": 0.9930923605232969,
+       "class_this": "off_axis",
+       "class_clang18": "off_axis"
+      },
+      "k08_matmul.L1": {
+       "this": 1.525117293036228,
+       "clang18": 4.215656786339067,
+       "this_over_clang18": 0.3617745396111007,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      },
+      "k08_matmul.L2": {
+       "this": 1.0851572512943595,
+       "clang18": 3.533443179461339,
+       "this_over_clang18": 0.3071104291706165,
+       "class_this": "kept",
+       "class_clang18": "lost"
+      }
+     },
+     "in_clang18_pool": true
+    },
+    "Intel(R) Xeon(R) 6973P-C": {
+     "form": "INCONCLUSIVE",
+     "inconclusive_because": [
+      "pooled verdict inconclusive: too few jobs: fewer than minimum_jobs pooled",
+      "1 jobs (minimum 3)"
+     ],
+     "jobs": 1,
+     "runs": [
+      "38471430657"
+     ],
+     "aa_half_width_pct": 0.6766300176592022,
+     "kernels": {
+      "k04_rev": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k05_stride2": {
+       "holds": true,
+       "reason": "lost, ci95_lo at least 1.5 in both columns at L1 and L2"
+      },
+      "k08_matmul": {
+       "holds": false,
+       "reason": "class kept (not lost)"
+      }
+     },
+     "n_hold": 2,
+     "forward": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "as_compiled": 0.9855581647603368,
+       "aligned": 1.0012840359530066,
+       "aligned_ci95": [
+        0.993187737928271,
+        1.0117681492109039
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "as_compiled": 0.9965711086847584,
+       "aligned": 1.0308124411578499,
+       "aligned_ci95": [
+        1.011327165704234,
+        1.067609718318972
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "as_compiled": 1.026531143369383,
+       "aligned": 1.0234699352218266,
+       "aligned_ci95": [
+        1.0193556286168017,
+        1.026870576339737
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "as_compiled": 0.9942868535214102,
+       "aligned": 0.9923043310921617,
+       "aligned_ci95": [
+        0.9709787810591419,
+        1.0028315851554668
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "as_compiled": 1.0019721869398124,
+       "aligned": 1.0053275226855183,
+       "aligned_ci95": [
+        0.9895279697869108,
+        1.0174134331245457
+       ],
+       "limit": 1.02,
+       "passes": true
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "as_compiled": 1.0013024858979163,
+       "aligned": 1.0099815915934083,
+       "aligned_ci95": [
+        1.0012237591160755,
+        1.038507637691929
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "as_compiled": 1.4906258954582003,
+       "aligned": 1.4843989630178742,
+       "aligned_ci95": [
+        1.4314809706868576,
+        1.5478669367336966
+       ],
+       "limit": 1.02,
+       "passes": false
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "as_compiled": 1.0866223581676233,
+       "aligned": 1.1536793641724674,
+       "aligned_ci95": [
+        1.0921206477759875,
+        1.1915844522787604
+       ],
+       "limit": 1.02,
+       "passes": false
+      }
+     ],
+     "cells": [
+      {
+       "cell_id": "k01_sum_fwd.L1",
+       "class": "kept",
+       "as_compiled": 0.9855581647603368,
+       "as_compiled_ci95": [
+        0.9399058357417132,
+        1.0135089219674558
+       ],
+       "aligned": 1.0012840359530066,
+       "aligned_ci95": [
+        0.993187737928271,
+        1.0117681492109039
+       ]
+      },
+      {
+       "cell_id": "k01_sum_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9965711086847584,
+       "as_compiled_ci95": [
+        0.9876919695271364,
+        1.0094522396127792
+       ],
+       "aligned": 1.0308124411578499,
+       "aligned_ci95": [
+        1.011327165704234,
+        1.067609718318972
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L1",
+       "class": "kept",
+       "as_compiled": 1.026531143369383,
+       "as_compiled_ci95": [
+        1.0187641236309555,
+        1.0351962348552735
+       ],
+       "aligned": 1.0234699352218266,
+       "aligned_ci95": [
+        1.0193556286168017,
+        1.026870576339737
+       ]
+      },
+      {
+       "cell_id": "k02_add_fwd.L2",
+       "class": "kept",
+       "as_compiled": 0.9942868535214102,
+       "as_compiled_ci95": [
+        0.9857734912860608,
+        1.0094318300592102
+       ],
+       "aligned": 0.9923043310921617,
+       "aligned_ci95": [
+        0.9709787810591419,
+        1.0028315851554668
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L1",
+       "class": "kept",
+       "as_compiled": 1.0019721869398124,
+       "as_compiled_ci95": [
+        0.9879683768025113,
+        1.0278363271322897
+       ],
+       "aligned": 1.0053275226855183,
+       "aligned_ci95": [
+        0.9895279697869108,
+        1.0174134331245457
+       ]
+      },
+      {
+       "cell_id": "k03_stencil.L2",
+       "class": "kept",
+       "as_compiled": 1.0013024858979163,
+       "as_compiled_ci95": [
+        0.9851418766447106,
+        1.0198027683786894
+       ],
+       "aligned": 1.0099815915934083,
+       "aligned_ci95": [
+        1.0012237591160755,
+        1.038507637691929
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L1",
+       "class": "lost",
+       "as_compiled": 5.573657769372251,
+       "as_compiled_ci95": [
+        5.5396887638701635,
+        5.652565857788183
+       ],
+       "aligned": 5.5314127541375715,
+       "aligned_ci95": [
+        5.484118707351615,
+        5.594495961518674
+       ]
+      },
+      {
+       "cell_id": "k04_rev.L2",
+       "class": "lost",
+       "as_compiled": 3.1196371470245947,
+       "as_compiled_ci95": [
+        3.084556424051307,
+        3.1790837939648946
+       ],
+       "aligned": 3.173871736813554,
+       "aligned_ci95": [
+        3.1625229261330334,
+        3.190795119971867
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L1",
+       "class": "lost",
+       "as_compiled": 4.6462038702483035,
+       "as_compiled_ci95": [
+        4.587497801160986,
+        4.687128572519001
+       ],
+       "aligned": 4.78278027702307,
+       "aligned_ci95": [
+        4.7387441462922135,
+        4.8418123365815555
+       ]
+      },
+      {
+       "cell_id": "k05_stride2.L2",
+       "class": "lost",
+       "as_compiled": 4.028251149126726,
+       "as_compiled_ci95": [
+        3.9905841706650698,
+        4.133955443581166
+       ],
+       "aligned": 4.020109660892531,
+       "aligned_ci95": [
+        3.9674477551920218,
+        4.0652657018457505
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L1",
+       "class": "off_axis",
+       "as_compiled": 2.1444180215640523,
+       "as_compiled_ci95": [
+        2.120766012071541,
+        2.2536420889448694
+       ],
+       "aligned": 2.148535734263208,
+       "aligned_ci95": [
+        2.0664090343507,
+        2.1953849759697173
+       ]
+      },
+      {
+       "cell_id": "k06_gather.L2",
+       "class": "off_axis",
+       "as_compiled": 1.0260948976422104,
+       "as_compiled_ci95": [
+        0.9934005166899922,
+        1.0390945216066574
+       ],
+       "aligned": 1.0492250636442042,
+       "aligned_ci95": [
+        1.0149054755424427,
+        1.0693744379350125
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L1",
+       "class": "off_axis",
+       "as_compiled": 1.2495788414528204,
+       "as_compiled_ci95": [
+        1.2110025051652413,
+        1.2673452412904262
+       ],
+       "aligned": 1.2576578554631688,
+       "aligned_ci95": [
+        1.24534852179901,
+        1.2777353655402062
+       ]
+      },
+      {
+       "cell_id": "k07_hist.L2",
+       "class": "off_axis",
+       "as_compiled": 1.1315979848813054,
+       "as_compiled_ci95": [
+        1.112417945254397,
+        1.164041720520801
+       ],
+       "aligned": 1.132086292432599,
+       "aligned_ci95": [
+        1.089907217203004,
+        1.1582224562357644
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L1",
+       "class": "kept",
+       "as_compiled": 1.4906258954582003,
+       "as_compiled_ci95": [
+        1.4641567153188018,
+        1.5086858704012478
+       ],
+       "aligned": 1.4843989630178742,
+       "aligned_ci95": [
+        1.4314809706868576,
+        1.5478669367336966
+       ]
+      },
+      {
+       "cell_id": "k08_matmul.L2",
+       "class": "kept",
+       "as_compiled": 1.0866223581676233,
+       "as_compiled_ci95": [
+        1.0416223929557586,
+        1.1246168926321907
+       ],
+       "aligned": 1.1536793641724674,
+       "aligned_ci95": [
+        1.0921206477759875,
+        1.1915844522787604
+       ]
+      }
+     ],
+     "vs_clang18": {},
+     "in_clang18_pool": false
+    }
+   },
+   "pooled_runs": [
+    "38471430657"
+   ]
+  }
+ }
+}

@@ -1,0 +1,279 @@
+{
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "libcxx_package": "1:18.1.3-1ubuntu1",
+  "builds": {
+   "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "none_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64",
+   "fast_a64": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64",
+   "none_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -gline-tables-only",
+   "fast_g": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -gline-tables-only"
+  },
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG: the census flags)"
+ },
+ "programs": {
+  "lightgbm": {
+   "program": "lightgbm",
+   "root": "LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63",
+   "sources": 35,
+   "c_sources": 4,
+   "builds": {
+    "none": {
+     "binary": "lightgbm.none",
+     "sha256": "ef7247d8e9e1e7b48b1c7444e89cc0d7d8a9b283138477156efd539e3dfa4688",
+     "bytes": 7377264,
+     "text_sha256": "1aecad6a3ce01b37d7cdfdd84c11ac7213854fd4067880f770a856fcb1987eec",
+     "traps": 3,
+     "compile_seconds": 605.6,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/lightgbm.none realworld/drivers/lightgbm_train.cpp build/rw-work/lightgbm/liblightgbm.none.a"
+    },
+    "fast": {
+     "binary": "lightgbm.fast",
+     "sha256": "810fde422df1f20cbec6d22fa84d6145c057754cc41bddd98a418ec83fc14e8c",
+     "bytes": 7428048,
+     "text_sha256": "5b1a9043ce4255ba772e9449eadbefe829955dfcaf015f8af15fa9ea94ceef27",
+     "traps": 1148,
+     "compile_seconds": 559.1,
+     "link_command": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -Ibuild/rw-deps/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -Ibuild/rw-deps/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -Ibuild/rw-deps/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -Ibuild/rw-deps/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -Ibuild/rw-deps/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -o rwbin/lightgbm.fast realworld/drivers/lightgbm_train.cpp build/rw-work/lightgbm/liblightgbm.fast.a"
+    }
+   },
+   "text_identical": {},
+   "example_compile": "clang++-18 -O2 -std=c++17 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE -DUSE_SOCKET -DMM_MALLOC -I<deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/include -I<deps>/lightgbm/fmt-8303d140a1a11f19b982a9f664bbe59a1ccda3f4/include -I<deps>/lightgbm/fast_double_parser-252029ddac664370bdda3f0761675785d92a1573/include -I<deps>/lightgbm/eigen-3147391d946bb4b6c68edd901f2add6ac1f31f8c -I<deps>/lightgbm/arrow-nanoarrow-a579fbf5d192e85b6249935e117de7d02a6dc4e9/src -I<deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/_census_gen -pthread -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -c <deps>/lightgbm/LightGBM-8f7036f03627054d5a54a6f965b13f4b9ff2cb63/src/boosting/boosting.cpp -o /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/rw-work/lightgbm/none/src__boosting__boosting.cpp.o",
+   "lost_locations": [
+    {
+     "location": "include/LightGBM/utils/common.h:643:3",
+     "vectorized_none": 13,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "include/LightGBM/utils/common.h:652:3",
+     "vectorized_none": 6,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/boosting/rf.hpp:104:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/bin.cpp:657:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/dataset.cpp:1179:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/dataset_loader.cpp:1346:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/dataset_loader.cpp:1424:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/metadata.cpp:469:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/metadata.cpp:538:3",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/multi_val_dense_bin.hpp:47:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/multi_val_dense_bin.hpp:283:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:62:7",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:71:7",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/multi_val_sparse_bin.hpp:364:9",
+     "vectorized_none": 6,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/io/tree.cpp:388:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/map_metric.hpp:122:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/map_metric.hpp:132:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/map_metric.hpp:139:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:110:11",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:130:11",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/metric/rank_metric.hpp:138:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/network/linker_topo.cpp:114:5",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/network/linker_topo.cpp:164:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/network/linker_topo.cpp:173:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/objective/multiclass_objective.hpp:98:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/objective/multiclass_objective.hpp:119:9",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/objective/regression_objective.hpp:120:7",
+     "vectorized_none": 2,
+     "vectorized_fast": 1,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:373:9",
+     "vectorized_none": 32,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:378:9",
+     "vectorized_none": 32,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:731:9",
+     "vectorized_none": 96,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/feature_histogram.cpp:736:9",
+     "vectorized_none": 96,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:188:5",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:297:9",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:312:7",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:315:7",
+     "vectorized_none": 4,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/linear_tree_learner.cpp:324:5",
+     "vectorized_none": 2,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/serial_tree_learner.cpp:956:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    },
+    {
+     "location": "src/treelearner/serial_tree_learner.cpp:961:7",
+     "vectorized_none": 1,
+     "vectorized_fast": 0,
+     "lost_here_too": true
+    }
+   ],
+   "vectorized_remarks_total": {
+    "none": 2558,
+    "fast": 2228
+   }
+  }
+ }
+}

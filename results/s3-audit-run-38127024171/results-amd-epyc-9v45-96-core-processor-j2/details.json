@@ -1,0 +1,6986 @@
+{
+ "note": "everything the run saw that results.json (schema 1) has no key for",
+ "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  2\nOn-line CPU(s) list:                     0,1\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 9V45 96-Core Processor\nCPU family:                              26\nModel:                                   2\nThread(s) per core:                      2\nCore(s) per socket:                      1\nSocket(s):                               1\nStepping:                                1\nBogoMIPS:                                5192.24\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx_vnni avx512_bf16 clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm avx512_vp2intersect\nVirtualization:                          AMD-V\nHypervisor vendor:                       Microsoft\nVirtualization type:                     full\nL1d cache:                               48 KiB (1 instance)\nL1i cache:                               32 KiB (1 instance)\nL2 cache:                                1 MiB (1 instance)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0,1\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Vulnerable: Safe RET, no microcode\nVulnerability Spec store bypass:         Vulnerable\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Not affected\n",
+ "cache_bytes": {
+  "l1d": 49152,
+  "l2": 1048576,
+  "l3": 33554432,
+  "llc": 33554432
+ },
+ "size_targets_bytes": {
+  "L1": 24576,
+  "L2": 524288,
+  "RAM": 134217728
+ },
+ "reps_per_side": 20,
+ "pinned_cpu": "1",
+ "target_ns_per_process": 75000000.0,
+ "remark_flags": "-Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize",
+ "kernels_requested": [
+  "k01_sum_fwd",
+  "k02_add_fwd",
+  "k03_stencil",
+  "k04_rev",
+  "k05_stride2",
+  "k06_gather",
+  "k07_hist",
+  "k08_matmul"
+ ],
+ "sizes_requested": [
+  "L1",
+  "L2",
+  "RAM"
+ ],
+ "kernels": {
+  "k01_sum_fwd": {
+   "loop_line": 6,
+   "none": {
+    "sha256": "ca32ef2b4660b39b3695f7644259d2ceea28bc2a491d9dd64a374ce03b387bb1",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k01_sum_fwd.none kernels/k01_sum_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 48,
+    "vectorization": {
+     "vectorized": true,
+     "width": 2,
+     "remarks": [
+      "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x1294",
+      "bytes": 52,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 13,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12a8",
+      "end": "0x12ae",
+      "bytes": 6,
+      "start_mod64": 40,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 3,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "d2e821f0f3900c5d73f6e9e9bbec5b0e432ec26a7837d1ec625baa1df9ea503c",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k01_sum_fwd.fast kernels/k01_sum_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 48,
+    "vectorization": {
+     "vectorized": true,
+     "width": 2,
+     "remarks": [
+      "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x1294",
+      "bytes": 52,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 13,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12a8",
+      "end": "0x12ae",
+      "bytes": 6,
+      "start_mod64": 40,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 3,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "01aee5bb188453bde1dcacfdeaff385e18b24b1752edf56c152e3248ed55b8e0",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k01_sum_fwd.novec kernels/k01_sum_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 52,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x12a8",
+      "bytes": 72,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 19,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12c0",
+      "end": "0x12cf",
+      "bytes": 15,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 5,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "d47e2c0bc4d8f86e9b052c304e331e6c0b16e98aec90ecf412c728aa11fa69cd",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k01_sum_fwd.none_a64 kernels/k01_sum_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 48,
+    "vectorization": {
+     "vectorized": true,
+     "width": 2,
+     "remarks": [
+      "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x12b4",
+      "bytes": 52,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 13,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12c8",
+      "end": "0x12ce",
+      "bytes": 6,
+      "start_mod64": 8,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 3,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "a64a7c2b0f9023170a79199057cc3a5ca85cbe4b13fd88fc8d2784458b4710d4",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k01_sum_fwd.fast_a64 kernels/k01_sum_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 48,
+    "vectorization": {
+     "vectorized": true,
+     "width": 2,
+     "remarks": [
+      "vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x12b4",
+      "bytes": 52,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 13,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12c8",
+      "end": "0x12ce",
+      "bytes": 6,
+      "start_mod64": 8,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 3,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k02_add_fwd": {
+   "loop_line": 6,
+   "none": {
+    "sha256": "aad29e333585ffb4ee492ae1a4ece2a808c34d62965b61dffefd167408df815a",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k02_add_fwd.none kernels/k02_add_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 74,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1270",
+      "end": "0x1284",
+      "bytes": 20,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12a0",
+      "end": "0x12e2",
+      "bytes": 66,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1252",
+      "end": "0x12f7",
+      "bytes": 165,
+      "start_mod64": 18,
+      "crosses64": true,
+      "windows64": 3,
+      "min_windows64": 3,
+      "extra_window": false,
+      "insns": 37,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1252",
+      "end": "0x1307",
+      "bytes": 181,
+      "start_mod64": 18,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 3,
+      "extra_window": true,
+      "insns": 41,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1320",
+      "end": "0x1358",
+      "bytes": 56,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 11,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1252",
+      "end": "0x1361",
+      "bytes": 271,
+      "start_mod64": 18,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 5,
+      "extra_window": false,
+      "insns": 58,
+      "simd": true,
+      "innermost": false
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "e16887dca269b9387edc6bc136754244652307697c1e335e0d46b87de011b21f",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k02_add_fwd.fast kernels/k02_add_fwd.cpp",
+    "traps": 1,
+    "asm_lines": 71,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]",
+      "vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12b0",
+      "end": "0x12cf",
+      "bytes": 31,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 7,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12f0",
+      "end": "0x130e",
+      "bytes": 30,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 10,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "40f0b8a71ba670d01b9ad4837eeccb6781cef88fd7b0b79b0d42e58932d43a5d",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k02_add_fwd.novec kernels/k02_add_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 50,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x12a2",
+      "bytes": 66,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12c0",
+      "end": "0x12d4",
+      "bytes": 20,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "4ad4ef4c4132af7d4150dc8bbfafcc63a0400864acecbd07ec4f842e62802fc3",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k02_add_fwd.none_a64 kernels/k02_add_fwd.cpp",
+    "traps": 0,
+    "asm_lines": 80,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12c0",
+      "end": "0x12d4",
+      "bytes": 20,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1300",
+      "end": "0x1342",
+      "bytes": 66,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1272",
+      "end": "0x1357",
+      "bytes": 229,
+      "start_mod64": 50,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 4,
+      "extra_window": true,
+      "insns": 43,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1272",
+      "end": "0x1367",
+      "bytes": 245,
+      "start_mod64": 50,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 4,
+      "extra_window": true,
+      "insns": 47,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1380",
+      "end": "0x13b8",
+      "bytes": 56,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 11,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1272",
+      "end": "0x13c1",
+      "bytes": 335,
+      "start_mod64": 50,
+      "crosses64": true,
+      "windows64": 7,
+      "min_windows64": 6,
+      "extra_window": true,
+      "insns": 64,
+      "simd": true,
+      "innermost": false
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "d09a02437e79a4695671876e38f66eb3c1fbec7b1c992d8c042ed99dcb8fc2e6",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k02_add_fwd.fast_a64 kernels/k02_add_fwd.cpp",
+    "traps": 1,
+    "asm_lines": 74,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]",
+      "vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1300",
+      "end": "0x131f",
+      "bytes": 31,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1340",
+      "end": "0x135e",
+      "bytes": 30,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 10,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k03_stencil": {
+   "loop_line": 5,
+   "none": {
+    "sha256": "e9a01d8c4863ca27ac05142262a5ab3d640b12a12162586876990fe9c81cd2bb",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k03_stencil.none kernels/k03_stencil.cpp",
+    "traps": 0,
+    "asm_lines": 80,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x12d0",
+      "bytes": 80,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1320",
+      "end": "0x1357",
+      "bytes": 55,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 14,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "d317327f7f61bb38ac210e35419804e80c9b3bcd6d5a22efe834c4dc1f20fef6",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k03_stencil.fast kernels/k03_stencil.cpp",
+    "traps": 1,
+    "asm_lines": 79,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12d0",
+      "end": "0x1320",
+      "bytes": 80,
+      "start_mod64": 16,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1330",
+      "end": "0x1355",
+      "bytes": 37,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 11,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "c28633ce1a61fa82ea2824c078611885b006e3feaa7f702f054e903169b96c38",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k03_stencil.novec kernels/k03_stencil.cpp",
+    "traps": 0,
+    "asm_lines": 43,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1270",
+      "end": "0x12a7",
+      "bytes": 55,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 13,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "5e14e080f806025371f5048960060ed51c98bdd406cb21e922bbe1b86688f458",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k03_stencil.none_a64 kernels/k03_stencil.cpp",
+    "traps": 0,
+    "asm_lines": 84,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12c0",
+      "end": "0x1310",
+      "bytes": 80,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1380",
+      "end": "0x13b7",
+      "bytes": 55,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 14,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "efc9fbdb1a70e679d4afadf8e66c2e9469907fecd86097e769b0e50df15ead6a",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k03_stencil.fast_a64 kernels/k03_stencil.cpp",
+    "traps": 1,
+    "asm_lines": 82,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1300",
+      "end": "0x1350",
+      "bytes": 80,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 15,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1380",
+      "end": "0x13a5",
+      "bytes": 37,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 11,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k04_rev": {
+   "loop_line": 5,
+   "none": {
+    "sha256": "4f02ef127f5df0d825138c1683bf6c55026c3731ca6be5f0aaef09d4eae16e51",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k04_rev.none kernels/k04_rev.cpp",
+    "traps": 0,
+    "asm_lines": 74,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1270",
+      "end": "0x129b",
+      "bytes": 43,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 9,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x12c0",
+      "end": "0x12d9",
+      "bytes": 25,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12e0",
+      "end": "0x1314",
+      "bytes": 52,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 16,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12e0",
+      "end": "0x131e",
+      "bytes": 62,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 20,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "993b48f94ba0bb5853b00665f39194ad9af665161265ddf803288580b893fd4b",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k04_rev.fast kernels/k04_rev.cpp",
+    "traps": 1,
+    "asm_lines": 24,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x126e",
+      "bytes": 30,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "38191b86ce4be15b44b479862b0939ed0d7dae4bae3bb479416840ca2de6b88d",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k04_rev.novec kernels/k04_rev.cpp",
+    "traps": 0,
+    "asm_lines": 42,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1240",
+      "end": "0x1259",
+      "bytes": 25,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1260",
+      "end": "0x1294",
+      "bytes": 52,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 16,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1260",
+      "end": "0x129e",
+      "bytes": 62,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 20,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "11a617c6322421e7e9cf880f7a34f960c4cee5e49f3078beb020a4cac9a18164",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k04_rev.none_a64 kernels/k04_rev.cpp",
+    "traps": 0,
+    "asm_lines": 81,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12c0",
+      "end": "0x12eb",
+      "bytes": 43,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1340",
+      "end": "0x1359",
+      "bytes": 25,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1380",
+      "end": "0x13b4",
+      "bytes": 52,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 16,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1380",
+      "end": "0x13be",
+      "bytes": 62,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 20,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "e4026ef2b7b128a974ca2dcde53faf695a0f04d9178b13218121cf360eeb0845",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k04_rev.fast_a64 kernels/k04_rev.cpp",
+    "traps": 1,
+    "asm_lines": 25,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x129e",
+      "bytes": 30,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k05_stride2": {
+   "loop_line": 5,
+   "none": {
+    "sha256": "1316eb66eb3ba516b966a332033e8d201dd9873c847ae4823abe598fb45886cd",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k05_stride2.none kernels/k05_stride2.cpp",
+    "traps": 0,
+    "asm_lines": 65,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1290",
+      "end": "0x12af",
+      "bytes": 31,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12c0",
+      "end": "0x130b",
+      "bytes": 75,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 17,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x125c",
+      "end": "0x1314",
+      "bytes": 184,
+      "start_mod64": 28,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 3,
+      "extra_window": true,
+      "insns": 44,
+      "simd": true,
+      "innermost": false
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "74b48ba873299c8dda06939b8c6492173840627bc89af6913b63bc0f0712a4e8",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k05_stride2.fast kernels/k05_stride2.cpp",
+    "traps": 1,
+    "asm_lines": 28,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x1274",
+      "bytes": 36,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 11,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "7418d98565ae8c415d73f3ba2c217df93f3fd20683bb35fa8b55645dddc3085b",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k05_stride2.novec kernels/k05_stride2.cpp",
+    "traps": 0,
+    "asm_lines": 33,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x1275",
+      "bytes": 37,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "bfa16b316f4042a956fa889498424ff8a6d41c9b983bda9122b90c40cbfa0162",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k05_stride2.none_a64 kernels/k05_stride2.cpp",
+    "traps": 0,
+    "asm_lines": 67,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12c0",
+      "end": "0x12df",
+      "bytes": 31,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1300",
+      "end": "0x134b",
+      "bytes": 75,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 17,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x127c",
+      "end": "0x1354",
+      "bytes": 216,
+      "start_mod64": 60,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 4,
+      "extra_window": true,
+      "insns": 46,
+      "simd": true,
+      "innermost": false
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "af90e29a8b314f36e869280735135de61d23d553122840d03d26e5e3b1881fc4",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k05_stride2.fast_a64 kernels/k05_stride2.cpp",
+    "traps": 1,
+    "asm_lines": 29,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x12a4",
+      "bytes": 36,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 11,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k06_gather": {
+   "loop_line": 6,
+   "none": {
+    "sha256": "08a329a15242770cb64af78ccb085babdadad3841b338314707e2a70bfe054d4",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k06_gather.none kernels/k06_gather.cpp",
+    "traps": 0,
+    "asm_lines": 49,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x129f",
+      "bytes": 63,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12b0",
+      "end": "0x12c4",
+      "bytes": 20,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "33a2049fd624f1a171b6a9951c66fc54a25824cfabdccc9aa6161dd829f5d142",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k06_gather.fast kernels/k06_gather.cpp",
+    "traps": 1,
+    "asm_lines": 31,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x127e",
+      "bytes": 30,
+      "start_mod64": 32,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 10,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "725db23748af7f2f3b65cd91b44d04f45505d7f5a11d2660921f49de8cb1bd3e",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k06_gather.novec kernels/k06_gather.cpp",
+    "traps": 0,
+    "asm_lines": 49,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x129f",
+      "bytes": 63,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12b0",
+      "end": "0x12c4",
+      "bytes": 20,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "ef927c064781f3decaa8fbab2eb8d4ff360b493b30976e246c13b77ed7ca1dee",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k06_gather.none_a64 kernels/k06_gather.cpp",
+    "traps": 0,
+    "asm_lines": 52,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x12bf",
+      "bytes": 63,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 15,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1300",
+      "end": "0x1314",
+      "bytes": 20,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 6,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "95e7a38e0b50db7717ff50fd2013b54d3b3ef1ed5cb16ee8bafe10a2d8c65b4c",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k06_gather.fast_a64 kernels/k06_gather.cpp",
+    "traps": 1,
+    "asm_lines": 31,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x129e",
+      "bytes": 30,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 10,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k07_hist": {
+   "loop_line": 7,
+   "none": {
+    "sha256": "e3268c4f0f298cec922ecf6ad390f2c9fd5830ff166191400178982c4533a4c1",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k07_hist.none kernels/k07_hist.cpp",
+    "traps": 0,
+    "asm_lines": 30,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x126c",
+      "bytes": 28,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "e56dec0366ce269ea63ebfa36c3ce4cad4745e209d135768f60a3f4e05b791a5",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k07_hist.fast kernels/k07_hist.cpp",
+    "traps": 1,
+    "asm_lines": 24,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x1266",
+      "bytes": 22,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "e3268c4f0f298cec922ecf6ad390f2c9fd5830ff166191400178982c4533a4c1",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k07_hist.novec kernels/k07_hist.cpp",
+    "traps": 0,
+    "asm_lines": 30,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1250",
+      "end": "0x126c",
+      "bytes": 28,
+      "start_mod64": 16,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "19fb3cd30f5012ff063e06e8532fc9bd31109d72dc2ab2a11134252759215124",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k07_hist.none_a64 kernels/k07_hist.cpp",
+    "traps": 0,
+    "asm_lines": 31,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x129c",
+      "bytes": 28,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "9b94261f31058ef4626499acd40e8ff3f81d2ce3d6a69d815357b0c398754f97",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k07_hist.fast_a64 kernels/k07_hist.cpp",
+    "traps": 1,
+    "asm_lines": 25,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]",
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1280",
+      "end": "0x1296",
+      "bytes": 22,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 7,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   }
+  },
+  "k08_matmul": {
+   "loop_line": 11,
+   "none": {
+    "sha256": "adcd4611e16df8c9d6707ac54a08ef947378e9c867d88121afc4bc6fed7d82dd",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k08_matmul.none kernels/k08_matmul.cpp",
+    "traps": 0,
+    "asm_lines": 141,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1290",
+      "end": "0x1322",
+      "bytes": 146,
+      "start_mod64": 16,
+      "crosses64": true,
+      "windows64": 3,
+      "min_windows64": 3,
+      "extra_window": false,
+      "insns": 36,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1360",
+      "end": "0x13ce",
+      "bytes": 110,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 3,
+      "min_windows64": 2,
+      "extra_window": true,
+      "insns": 23,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1310",
+      "end": "0x13da",
+      "bytes": 202,
+      "start_mod64": 16,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 4,
+      "extra_window": false,
+      "insns": 44,
+      "simd": true,
+      "innermost": false
+     },
+     {
+      "start": "0x1310",
+      "end": "0x141b",
+      "bytes": 267,
+      "start_mod64": 16,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 5,
+      "extra_window": false,
+      "insns": 60,
+      "simd": true,
+      "innermost": false
+     },
+     {
+      "start": "0x1420",
+      "end": "0x1443",
+      "bytes": 35,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast": {
+    "sha256": "a03b1a2960ff929903153732f980993168bbf663def98c16d63e7e464ad8aeaa",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k08_matmul.fast kernels/k08_matmul.cpp",
+    "traps": 1,
+    "asm_lines": 74,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]",
+      "the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12b0",
+      "end": "0x12d6",
+      "bytes": 38,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 12,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1280",
+      "end": "0x12e6",
+      "bytes": 102,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 29,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1260",
+      "end": "0x1304",
+      "bytes": 164,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 3,
+      "extra_window": true,
+      "insns": 45,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   },
+   "novec": {
+    "sha256": "b33de0a44aeb592a183afa7fbb7991d74688c46ec97894af1bb3920369b66878",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fno-vectorize -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k08_matmul.novec kernels/k08_matmul.cpp",
+    "traps": 0,
+    "asm_lines": 68,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "loop not vectorized [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1260",
+      "end": "0x129b",
+      "bytes": 59,
+      "start_mod64": 32,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 17,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12b0",
+      "end": "0x12d3",
+      "bytes": 35,
+      "start_mod64": 48,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 1,
+      "extra_window": true,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x1290",
+      "end": "0x12d8",
+      "bytes": 72,
+      "start_mod64": 16,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 20,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   },
+   "none_a64": {
+    "sha256": "a74e58b18d20a9e8532abd69f8580f81a3442517c737c8d8c59d577491a99f1c",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k08_matmul.none_a64 kernels/k08_matmul.cpp",
+    "traps": 0,
+    "asm_lines": 146,
+    "vectorization": {
+     "vectorized": true,
+     "width": 4,
+     "remarks": [
+      "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x12c0",
+      "end": "0x1352",
+      "bytes": 146,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 3,
+      "min_windows64": 3,
+      "extra_window": false,
+      "insns": 36,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x13c0",
+      "end": "0x142e",
+      "bytes": 110,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 23,
+      "simd": true,
+      "innermost": true
+     },
+     {
+      "start": "0x1340",
+      "end": "0x143a",
+      "bytes": 250,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 4,
+      "extra_window": false,
+      "insns": 48,
+      "simd": true,
+      "innermost": false
+     },
+     {
+      "start": "0x1340",
+      "end": "0x147b",
+      "bytes": 315,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 5,
+      "min_windows64": 5,
+      "extra_window": false,
+      "insns": 64,
+      "simd": true,
+      "innermost": false
+     },
+     {
+      "start": "0x1480",
+      "end": "0x14a3",
+      "bytes": 35,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 9,
+      "simd": false,
+      "innermost": true
+     }
+    ]
+   },
+   "fast_a64": {
+    "sha256": "005f4cea77eb5b04b6643a4d0bdcfcb89744515dbb1d75d224528a8e43062c31",
+    "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -o build/k08_matmul.fast_a64 kernels/k08_matmul.cpp",
+    "traps": 1,
+    "asm_lines": 77,
+    "vectorization": {
+     "vectorized": false,
+     "width": null,
+     "remarks": [
+      "the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]",
+      "the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]"
+     ]
+    },
+    "loops": [
+     {
+      "start": "0x1300",
+      "end": "0x1326",
+      "bytes": 38,
+      "start_mod64": 0,
+      "crosses64": false,
+      "windows64": 1,
+      "min_windows64": 1,
+      "extra_window": false,
+      "insns": 12,
+      "simd": false,
+      "innermost": true
+     },
+     {
+      "start": "0x12c0",
+      "end": "0x1336",
+      "bytes": 118,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 2,
+      "min_windows64": 2,
+      "extra_window": false,
+      "insns": 30,
+      "simd": false,
+      "innermost": false
+     },
+     {
+      "start": "0x1280",
+      "end": "0x1354",
+      "bytes": 212,
+      "start_mod64": 0,
+      "crosses64": true,
+      "windows64": 4,
+      "min_windows64": 4,
+      "extra_window": false,
+      "insns": 48,
+      "simd": false,
+      "innermost": false
+     }
+    ]
+   }
+  }
+ },
+ "cells": {
+  "k01_sum_fwd.L1": {
+   "n": 6144,
+   "iters": 92478,
+   "calibration_ns_one_call": 811.0,
+   "fast_pair": {
+    "a_ns": [
+     691.29,
+     696.576,
+     693.383,
+     694.819,
+     693.003,
+     694.435,
+     692.568,
+     693.059,
+     692.939,
+     691.182,
+     690.966,
+     692.601,
+     691.449,
+     709.836,
+     694.154,
+     693.687,
+     693.457,
+     691.054,
+     690.921,
+     691.256
+    ],
+    "b_ns": [
+     693.455,
+     691.747,
+     694.991,
+     691.674,
+     695.112,
+     694.331,
+     692.64,
+     694.607,
+     694.09,
+     691.895,
+     691.338,
+     694.705,
+     691.224,
+     699.543,
+     691.348,
+     693.363,
+     692.618,
+     691.159,
+     694.656,
+     691.568
+    ],
+    "a_checksums": [
+     "000000000c11fdf8"
+    ],
+    "b_checksums": [
+     "000000000c11fdf8"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     681.921,
+     693.903,
+     726.988,
+     695.932,
+     684.6,
+     680.879,
+     683.841,
+     681.105,
+     681.455,
+     680.61,
+     682.539,
+     681.887,
+     685.928,
+     681.726,
+     683.715,
+     689.377,
+     684.171,
+     681.956,
+     680.608,
+     681.828
+    ],
+    "b_ns": [
+     685.089,
+     681.84,
+     705.502,
+     699.652,
+     682.021,
+     685.153,
+     681.436,
+     681.144,
+     681.747,
+     681.359,
+     684.51,
+     682.834,
+     681.796,
+     681.084,
+     682.091,
+     687.597,
+     682.344,
+     680.487,
+     681.051,
+     682.501
+    ],
+    "a_checksums": [
+     "000000000c11fdf8"
+    ],
+    "b_checksums": [
+     "000000000c11fdf8"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     690.466,
+     694.217,
+     691.736,
+     690.406,
+     692.456,
+     691.858,
+     690.762,
+     690.938,
+     690.922,
+     691.615,
+     690.795,
+     691.276,
+     690.387,
+     691.721,
+     692.925,
+     690.447,
+     690.959,
+     690.243,
+     690.305,
+     691.21
+    ],
+    "b_ns": [
+     680.644,
+     680.631,
+     684.638,
+     681.372,
+     682.05,
+     683.068,
+     688.221,
+     682.864,
+     687.723,
+     686.916,
+     680.562,
+     680.938,
+     680.833,
+     694.989,
+     681.327,
+     686.649,
+     681.287,
+     684.976,
+     684.735,
+     684.267
+    ],
+    "a_checksums": [
+     "000000000c11fdf8"
+    ],
+    "b_checksums": [
+     "000000000c11fdf8"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     691.6,
+     694.449,
+     690.57,
+     691.861,
+     693.546,
+     690.632,
+     690.844,
+     692.0,
+     691.48,
+     695.356,
+     715.34,
+     693.805,
+     692.223,
+     691.571,
+     722.246,
+     692.514,
+     695.79,
+     691.576,
+     690.792,
+     701.882
+    ],
+    "b_ns": [
+     797.99,
+     762.29,
+     752.77,
+     751.804,
+     752.765,
+     751.848,
+     752.564,
+     752.575,
+     753.331,
+     753.009,
+     753.582,
+     754.416,
+     755.718,
+     755.095,
+     762.524,
+     754.304,
+     766.97,
+     753.925,
+     754.681,
+     753.049
+    ],
+    "a_checksums": [
+     "000000000c11fdf8"
+    ],
+    "b_checksums": [
+     "000000000c11fdf8"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.0890636841029229,
+    "ci95": [
+     1.0854817762204052,
+     1.091041527041848
+    ],
+    "half_width_pct": 0.2779875410721444
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 11.1
+  },
+  "k01_sum_fwd.L2": {
+   "n": 131072,
+   "iters": 5137,
+   "calibration_ns_one_call": 14601.0,
+   "fast_pair": {
+    "a_ns": [
+     14598.364,
+     14598.549,
+     14564.658,
+     14561.139,
+     14605.25,
+     14968.416,
+     15082.698,
+     15158.46,
+     15130.129,
+     14980.154,
+     14726.881,
+     14577.351,
+     14605.94,
+     14790.675,
+     14569.352,
+     14618.232,
+     14570.382,
+     14600.04,
+     14579.597,
+     14595.619
+    ],
+    "b_ns": [
+     14584.738,
+     14638.934,
+     14616.501,
+     14568.274,
+     14571.637,
+     14584.933,
+     15202.51,
+     15189.135,
+     15003.877,
+     15195.997,
+     14585.939,
+     14619.047,
+     15155.651,
+     15149.78,
+     14575.232,
+     14573.203,
+     14599.025,
+     14589.961,
+     14609.203,
+     14569.056
+    ],
+    "a_checksums": [
+     "0000000100682a00"
+    ],
+    "b_checksums": [
+     "0000000100682a00"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     14580.177,
+     14571.193,
+     14683.281,
+     14781.559,
+     14609.19,
+     14555.922,
+     14582.857,
+     14575.155,
+     14570.807,
+     14554.099,
+     14566.662,
+     15284.126,
+     15298.415,
+     14570.932,
+     14835.864,
+     14721.234,
+     14566.672,
+     15177.785,
+     16117.366,
+     14574.807
+    ],
+    "b_ns": [
+     14580.356,
+     14565.321,
+     14649.166,
+     14851.281,
+     14562.404,
+     14575.724,
+     14562.775,
+     14577.131,
+     14571.788,
+     14622.533,
+     14577.248,
+     14844.509,
+     15382.757,
+     15019.106,
+     14594.444,
+     14557.764,
+     15492.829,
+     15931.55,
+     14586.271,
+     14591.49
+    ],
+    "a_checksums": [
+     "0000000100682a00"
+    ],
+    "b_checksums": [
+     "0000000100682a00"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     14562.666,
+     32416.969,
+     20258.529,
+     14571.308,
+     15119.035,
+     14566.922,
+     14560.915,
+     14567.814,
+     14590.398,
+     14614.735,
+     14588.396,
+     15413.287,
+     15133.742,
+     14981.224,
+     14629.146,
+     14996.329,
+     14941.804,
+     15308.28,
+     15248.171,
+     15295.104
+    ],
+    "b_ns": [
+     14572.287,
+     16362.742,
+     14598.805,
+     14602.144,
+     14881.798,
+     14558.174,
+     14597.664,
+     14594.654,
+     14590.568,
+     14639.58,
+     14637.716,
+     14835.94,
+     15247.005,
+     15199.778,
+     14813.731,
+     15033.864,
+     14920.405,
+     15021.644,
+     15222.97,
+     15175.302
+    ],
+    "a_checksums": [
+     "0000000100682a00"
+    ],
+    "b_checksums": [
+     "0000000100682a00"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     15277.919,
+     14691.282,
+     14787.981,
+     14665.57,
+     14580.545,
+     14586.668,
+     14816.713,
+     14569.27,
+     14605.358,
+     17601.281,
+     14582.477,
+     15097.364,
+     14692.245,
+     14733.203,
+     14644.286,
+     15452.128,
+     15005.036,
+     14633.633,
+     14614.603,
+     14590.971
+    ],
+    "b_ns": [
+     16685.896,
+     16227.034,
+     15941.284,
+     15902.244,
+     15911.374,
+     15905.601,
+     16141.495,
+     15937.837,
+     15925.514,
+     15922.516,
+     16508.367,
+     16083.142,
+     16016.108,
+     15992.895,
+     15910.033,
+     15908.734,
+     15905.673,
+     15889.25,
+     15904.861,
+     15914.495
+    ],
+    "a_checksums": [
+     "0000000100682a00"
+    ],
+    "b_checksums": [
+     "0000000100682a00"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.0848584855079149,
+    "ci95": [
+     1.0755054249167377,
+     1.0920900805517435
+    ],
+    "half_width_pct": 0.8292327817502887
+   },
+   "seconds": 12.8
+  },
+  "k01_sum_fwd.RAM": {
+   "n": 33554432,
+   "iters": 17,
+   "calibration_ns_one_call": 4294919.0,
+   "fast_pair": {
+    "a_ns": [
+     4352204.706,
+     4333581.706,
+     4375510.529,
+     4410031.294,
+     4461800.706,
+     4365922.765,
+     4367103.353,
+     4371980.588,
+     4375489.941,
+     4366462.941,
+     4364543.647,
+     4362596.647,
+     4387644.471,
+     4364180.118,
+     4389315.824,
+     4338720.941,
+     4413738.706,
+     4425783.765,
+     4323923.0,
+     4355852.941
+    ],
+    "b_ns": [
+     4333425.588,
+     4327568.647,
+     4371050.353,
+     4425491.353,
+     4370167.882,
+     4369644.176,
+     4377665.529,
+     4363519.765,
+     4426768.588,
+     4371610.0,
+     4363569.882,
+     4361258.176,
+     4370628.0,
+     4356449.118,
+     4356735.412,
+     4342068.294,
+     4328334.235,
+     4329031.176,
+     4321568.882,
+     4326330.647
+    ],
+    "a_checksums": [
+     "000000ffff000000"
+    ],
+    "b_checksums": [
+     "000000ffff000000"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     4337934.471,
+     4332778.529,
+     4350124.412,
+     4304620.059,
+     4356167.529,
+     4327748.353,
+     4345727.0,
+     4381830.353,
+     4354529.882,
+     4357344.471,
+     4363504.647,
+     4340827.353,
+     4343205.529,
+     4342076.765,
+     4326051.765,
+     4314586.412,
+     4328806.471,
+     4333335.0,
+     4331753.765,
+     4338558.647
+    ],
+    "b_ns": [
+     4356732.529,
+     4347510.529,
+     4332453.882,
+     4318671.588,
+     4344351.059,
+     4325771.529,
+     4350873.353,
+     4346367.353,
+     4340061.647,
+     4347567.353,
+     4368647.588,
+     4329048.0,
+     4356846.471,
+     4340390.176,
+     4331657.118,
+     4318871.059,
+     4317549.647,
+     4316798.529,
+     4340882.706,
+     4434062.765
+    ],
+    "a_checksums": [
+     "000000ffff000000"
+    ],
+    "b_checksums": [
+     "000000ffff000000"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 9.5
+  },
+  "k02_add_fwd.L1": {
+   "n": 2048,
+   "iters": 300000,
+   "calibration_ns_one_call": 250.0,
+   "fast_pair": {
+    "a_ns": [
+     147.954,
+     147.937,
+     147.789,
+     147.68,
+     147.709,
+     147.597,
+     147.692,
+     148.097,
+     148.34,
+     147.774,
+     147.701,
+     147.675,
+     148.498,
+     148.743,
+     149.096,
+     147.988,
+     147.876,
+     148.226,
+     147.642,
+     147.951
+    ],
+    "b_ns": [
+     142.419,
+     140.179,
+     151.752,
+     147.739,
+     155.299,
+     141.869,
+     148.892,
+     142.058,
+     147.565,
+     140.998,
+     149.007,
+     143.862,
+     143.362,
+     140.924,
+     143.974,
+     146.994,
+     143.386,
+     140.721,
+     143.651,
+     147.155
+    ],
+    "a_checksums": [
+     "804294ede3d1b733"
+    ],
+    "b_checksums": [
+     "804294ede3d1b733"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     147.454,
+     147.798,
+     148.149,
+     147.628,
+     147.747,
+     148.019,
+     150.684,
+     155.634,
+     154.268,
+     154.559,
+     153.119,
+     153.061,
+     147.779,
+     147.666,
+     148.888,
+     147.985,
+     147.616,
+     147.962,
+     147.819,
+     147.891
+    ],
+    "b_ns": [
+     122.841,
+     123.425,
+     122.836,
+     122.759,
+     123.034,
+     122.967,
+     128.13,
+     129.437,
+     129.179,
+     130.206,
+     127.428,
+     143.472,
+     123.483,
+     122.912,
+     123.18,
+     122.881,
+     122.836,
+     122.849,
+     123.577,
+     124.422
+    ],
+    "a_checksums": [
+     "804294ede3d1b733"
+    ],
+    "b_checksums": [
+     "804294ede3d1b733"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     147.794,
+     147.657,
+     150.487,
+     148.465,
+     150.354,
+     148.088,
+     151.319,
+     147.876,
+     147.581,
+     147.937,
+     150.233,
+     150.289,
+     147.852,
+     154.948,
+     152.23,
+     148.543,
+     147.965,
+     147.623,
+     147.699,
+     151.306
+    ],
+    "b_ns": [
+     148.206,
+     147.644,
+     147.653,
+     147.594,
+     147.512,
+     147.522,
+     151.426,
+     147.579,
+     147.632,
+     152.471,
+     147.561,
+     149.457,
+     147.502,
+     148.266,
+     148.609,
+     148.247,
+     148.002,
+     147.474,
+     147.552,
+     148.295
+    ],
+    "a_checksums": [
+     "804294ede3d1b733"
+    ],
+    "b_checksums": [
+     "804294ede3d1b733"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     150.081,
+     147.794,
+     147.914,
+     151.627,
+     148.173,
+     147.584,
+     148.059,
+     148.672,
+     150.053,
+     147.7,
+     147.953,
+     147.903,
+     147.944,
+     147.684,
+     147.578,
+     147.607,
+     147.858,
+     147.511,
+     147.813,
+     147.574
+    ],
+    "b_ns": [
+     378.267,
+     378.331,
+     378.175,
+     383.355,
+     377.76,
+     377.756,
+     394.01,
+     377.8,
+     382.334,
+     378.605,
+     410.935,
+     377.882,
+     377.968,
+     395.676,
+     377.515,
+     378.019,
+     394.667,
+     389.855,
+     378.11,
+     400.798
+    ],
+    "a_checksums": [
+     "804294ede3d1b733"
+    ],
+    "b_checksums": [
+     "804294ede3d1b733"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 2.5581398494054324,
+    "ci95": [
+     2.5551551227281624,
+     2.615500666382524
+    ],
+    "half_width_pct": 3.017277182718092
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 9.1
+  },
+  "k02_add_fwd.L2": {
+   "n": 43690,
+   "iters": 23772,
+   "calibration_ns_one_call": 3155.0,
+   "fast_pair": {
+    "a_ns": [
+     3046.823,
+     3043.976,
+     3051.303,
+     3045.711,
+     3045.955,
+     3195.464,
+     3057.637,
+     3044.779,
+     3046.11,
+     3045.283,
+     3048.989,
+     3049.515,
+     3045.066,
+     3050.021,
+     3046.162,
+     3047.824,
+     3051.932,
+     3048.436,
+     3045.055,
+     3053.06
+    ],
+    "b_ns": [
+     2767.61,
+     2777.731,
+     2776.845,
+     2776.612,
+     2774.846,
+     2780.537,
+     2780.985,
+     2771.833,
+     2771.422,
+     2786.933,
+     2775.4,
+     2776.075,
+     2791.349,
+     2778.355,
+     2773.928,
+     2819.652,
+     2770.839,
+     2776.361,
+     2776.403,
+     2769.154
+    ],
+    "a_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "b_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     3046.297,
+     3047.082,
+     3046.574,
+     3075.47,
+     3049.647,
+     3048.385,
+     3046.024,
+     4176.569,
+     4005.227,
+     3142.548,
+     3236.192,
+     3046.271,
+     3051.948,
+     3053.05,
+     3046.246,
+     3050.78,
+     3045.812,
+     3046.773,
+     3068.72,
+     3046.994
+    ],
+    "b_ns": [
+     2772.68,
+     2748.884,
+     2767.25,
+     2851.538,
+     2745.821,
+     2752.273,
+     2752.568,
+     2770.682,
+     2748.161,
+     2747.199,
+     2878.532,
+     2855.459,
+     2754.17,
+     2754.217,
+     2744.601,
+     2745.063,
+     2800.308,
+     2772.353,
+     2748.063,
+     2744.981
+    ],
+    "a_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "b_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     3129.596,
+     3048.72,
+     3047.012,
+     3183.092,
+     3065.729,
+     3051.115,
+     3045.544,
+     3047.822,
+     3085.04,
+     3061.267,
+     3080.152,
+     3049.586,
+     3049.054,
+     3059.385,
+     3135.168,
+     3076.787,
+     3049.683,
+     3047.292,
+     3051.244,
+     3050.097
+    ],
+    "b_ns": [
+     3146.392,
+     3048.228,
+     3084.963,
+     3124.03,
+     3049.037,
+     3061.727,
+     3053.889,
+     3049.816,
+     3072.962,
+     3052.036,
+     3052.942,
+     3053.015,
+     3048.26,
+     3048.19,
+     3185.873,
+     3185.629,
+     3051.296,
+     3051.696,
+     3051.72,
+     3125.422
+    ],
+    "a_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "b_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     3048.249,
+     3198.137,
+     3072.451,
+     3061.239,
+     3051.722,
+     3047.886,
+     3050.714,
+     3167.096,
+     3117.991,
+     3047.244,
+     3050.432,
+     3048.617,
+     3045.813,
+     3048.697,
+     3043.702,
+     3048.665,
+     3046.779,
+     3198.338,
+     3081.167,
+     3048.827
+    ],
+    "b_ns": [
+     7938.442,
+     7941.135,
+     7943.699,
+     7967.617,
+     7957.255,
+     7962.237,
+     8352.79,
+     8100.648,
+     8053.792,
+     7935.843,
+     7951.588,
+     7960.419,
+     7939.695,
+     7948.311,
+     7922.482,
+     7927.98,
+     8141.405,
+     8364.08,
+     7935.457,
+     7935.649
+    ],
+    "a_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "b_checksums": [
+     "b004b8fc1330c2d1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 2.6068574887539615,
+    "ci95": [
+     2.591689831080475,
+     2.612296857804974
+    ],
+    "half_width_pct": 1.030351336224955
+   },
+   "seconds": 14.2
+  },
+  "k02_add_fwd.RAM": {
+   "n": 11184810,
+   "iters": 28,
+   "calibration_ns_one_call": 2637379.0,
+   "fast_pair": {
+    "a_ns": [
+     2611630.107,
+     2595306.893,
+     2610931.964,
+     2583538.643,
+     2600688.5,
+     2595502.214,
+     2601830.179,
+     2612732.143,
+     2594918.464,
+     2611184.821,
+     2603225.821,
+     2624576.571,
+     2624638.429,
+     2610509.536,
+     2624470.714,
+     2608457.214,
+     5124218.5,
+     2623303.964,
+     2706551.571,
+     2615232.286
+    ],
+    "b_ns": [
+     2641065.786,
+     2657826.107,
+     2638418.607,
+     2642961.821,
+     2648205.321,
+     2640387.964,
+     2632602.107,
+     2659562.643,
+     2648651.75,
+     2676791.5,
+     2664909.143,
+     2665058.679,
+     2664508.929,
+     2659026.821,
+     2654734.0,
+     2657038.5,
+     2659238.214,
+     2668314.571,
+     2710183.75,
+     2668715.536
+    ],
+    "a_checksums": [
+     "b0c52ac125714ed1"
+    ],
+    "b_checksums": [
+     "b0c52ac125714ed1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     2604467.679,
+     2595503.857,
+     2593513.393,
+     2616115.214,
+     2595830.036,
+     2613761.75,
+     2595850.786,
+     2633784.036,
+     2617831.714,
+     2616234.0,
+     2605264.429,
+     2607108.286,
+     2614569.714,
+     2608848.357,
+     2596900.964,
+     2603104.821,
+     2608778.607,
+     2625799.643,
+     2600759.179,
+     2613405.857
+    ],
+    "b_ns": [
+     2629661.643,
+     2622975.5,
+     2648126.464,
+     2625008.107,
+     2636635.393,
+     2646626.0,
+     2659158.25,
+     2635207.571,
+     2621071.571,
+     2640596.679,
+     2624808.893,
+     2629476.929,
+     2616581.679,
+     2637492.036,
+     2613937.0,
+     2613026.0,
+     2623440.429,
+     2626362.286,
+     2636409.0,
+     2625101.821
+    ],
+    "a_checksums": [
+     "b0c52ac125714ed1"
+    ],
+    "b_checksums": [
+     "b0c52ac125714ed1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 9.6
+  },
+  "k03_stencil.L1": {
+   "n": 3072,
+   "iters": 136116,
+   "calibration_ns_one_call": 551.0,
+   "fast_pair": {
+    "a_ns": [
+     414.756,
+     388.235,
+     390.508,
+     393.714,
+     482.119,
+     390.995,
+     391.64,
+     390.773,
+     393.654,
+     393.138,
+     393.37,
+     392.581,
+     397.571,
+     393.167,
+     392.513,
+     392.663,
+     400.002,
+     398.908,
+     399.4,
+     408.763
+    ],
+    "b_ns": [
+     396.147,
+     388.932,
+     392.969,
+     402.849,
+     397.51,
+     390.864,
+     401.806,
+     393.662,
+     392.435,
+     465.397,
+     392.672,
+     392.735,
+     392.36,
+     393.661,
+     392.547,
+     389.967,
+     392.053,
+     399.519,
+     393.75,
+     399.682
+    ],
+    "a_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "b_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     396.681,
+     391.805,
+     483.056,
+     484.294,
+     391.094,
+     482.755,
+     459.457,
+     392.427,
+     464.013,
+     392.764,
+     481.73,
+     393.154,
+     385.253,
+     483.501,
+     392.446,
+     461.61,
+     390.186,
+     393.496,
+     395.708,
+     391.812
+    ],
+    "b_ns": [
+     392.372,
+     399.261,
+     394.801,
+     401.634,
+     401.403,
+     483.103,
+     474.545,
+     392.808,
+     393.052,
+     394.959,
+     396.864,
+     387.231,
+     385.738,
+     392.017,
+     392.76,
+     400.571,
+     399.829,
+     390.916,
+     396.751,
+     392.79
+    ],
+    "a_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "b_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     480.451,
+     392.18,
+     399.579,
+     400.059,
+     409.471,
+     390.028,
+     381.356,
+     391.324,
+     392.44,
+     395.638,
+     392.853,
+     389.933,
+     478.78,
+     392.031,
+     393.512,
+     391.009,
+     390.928,
+     391.349,
+     486.305,
+     392.338
+    ],
+    "b_ns": [
+     392.616,
+     392.384,
+     392.549,
+     391.798,
+     473.826,
+     483.177,
+     379.105,
+     382.268,
+     393.176,
+     464.569,
+     391.079,
+     390.994,
+     400.027,
+     391.844,
+     391.664,
+     392.252,
+     386.665,
+     381.54,
+     392.673,
+     391.815
+    ],
+    "a_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "b_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     394.493,
+     491.933,
+     481.689,
+     473.477,
+     391.088,
+     408.788,
+     391.404,
+     391.584,
+     393.586,
+     399.887,
+     399.379,
+     390.468,
+     392.99,
+     398.899,
+     585.601,
+     399.217,
+     392.132,
+     401.711,
+     390.545,
+     394.502
+    ],
+    "b_ns": [
+     942.802,
+     924.202,
+     970.759,
+     919.28,
+     913.034,
+     943.589,
+     916.508,
+     915.319,
+     912.673,
+     915.709,
+     915.03,
+     905.05,
+     939.632,
+     928.976,
+     943.733,
+     952.085,
+     915.173,
+     913.296,
+     915.832,
+     913.618
+    ],
+    "a_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "b_checksums": [
+     "f730c867d239c1e2"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 2.309475284250965,
+    "ci95": [
+     2.285015681176849,
+     2.3602872053375883
+    ],
+    "half_width_pct": 3.763576208036956
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 11.0
+  },
+  "k03_stencil.L2": {
+   "n": 65536,
+   "iters": 9234,
+   "calibration_ns_one_call": 8122.0,
+   "fast_pair": {
+    "a_ns": [
+     8053.576,
+     8049.203,
+     8079.651,
+     8015.166,
+     8074.075,
+     8078.349,
+     8058.058,
+     8089.184,
+     8131.947,
+     8059.381,
+     8019.529,
+     8097.777,
+     8082.218,
+     8072.775,
+     8098.102,
+     8073.277,
+     8522.957,
+     8040.391,
+     8064.481,
+     8184.83
+    ],
+    "b_ns": [
+     8063.209,
+     8142.779,
+     8050.795,
+     8087.872,
+     8094.763,
+     8049.683,
+     8177.035,
+     8127.069,
+     8512.022,
+     8099.591,
+     8164.258,
+     8030.831,
+     8151.471,
+     8094.402,
+     8071.187,
+     8046.687,
+     8080.253,
+     8045.69,
+     8080.362,
+     8153.66
+    ],
+    "a_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "b_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     8041.393,
+     8028.774,
+     8083.553,
+     8159.177,
+     8134.071,
+     8130.018,
+     8052.004,
+     8046.095,
+     8117.84,
+     8032.345,
+     8014.398,
+     8137.326,
+     8034.186,
+     8187.338,
+     8057.137,
+     8084.831,
+     8126.323,
+     8033.644,
+     8089.877,
+     8117.256
+    ],
+    "b_ns": [
+     8073.77,
+     8039.385,
+     8143.56,
+     8113.487,
+     8075.293,
+     8083.231,
+     8067.269,
+     8514.987,
+     8082.023,
+     8102.658,
+     8137.498,
+     8030.645,
+     8135.014,
+     8031.315,
+     8116.512,
+     8107.094,
+     8101.203,
+     7983.863,
+     8060.491,
+     8132.154
+    ],
+    "a_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "b_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     8072.661,
+     8068.883,
+     8111.575,
+     8025.602,
+     8090.904,
+     8105.218,
+     8055.917,
+     8071.674,
+     8109.235,
+     8050.109,
+     8050.76,
+     8085.792,
+     8037.446,
+     7935.169,
+     7925.964,
+     8062.328,
+     8043.006,
+     8052.575,
+     7985.216,
+     8054.885
+    ],
+    "b_ns": [
+     8141.911,
+     8506.773,
+     8165.262,
+     8132.045,
+     8117.828,
+     8081.383,
+     8135.769,
+     8038.397,
+     8068.377,
+     8056.173,
+     8067.429,
+     8104.0,
+     8023.292,
+     8072.64,
+     7937.432,
+     7841.991,
+     8052.798,
+     8061.304,
+     7922.024,
+     8064.046
+    ],
+    "a_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "b_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     8158.159,
+     8098.189,
+     8070.968,
+     8085.887,
+     8041.846,
+     8045.549,
+     8129.691,
+     8231.163,
+     8203.464,
+     8097.403,
+     8132.98,
+     8068.925,
+     8069.826,
+     7983.665,
+     7959.843,
+     8088.78,
+     8150.902,
+     8085.95,
+     8094.465,
+     8039.352
+    ],
+    "b_ns": [
+     22857.873,
+     22913.422,
+     23114.389,
+     22865.441,
+     23396.244,
+     22492.595,
+     22971.335,
+     23278.236,
+     22956.18,
+     22763.389,
+     22895.16,
+     22848.946,
+     23099.693,
+     22826.779,
+     23098.899,
+     22907.49,
+     23047.347,
+     23484.759,
+     22752.18,
+     22851.268
+    ],
+    "a_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "b_checksums": [
+     "c8747525b8b1aeea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 2.8328702859336756,
+    "ci95": [
+     2.8220313716564793,
+     2.85303309545198
+    ],
+    "half_width_pct": 1.550086189775035
+   },
+   "seconds": 15.1
+  },
+  "k03_stencil.RAM": {
+   "n": 16777216,
+   "iters": 24,
+   "calibration_ns_one_call": 3096171.0,
+   "fast_pair": {
+    "a_ns": [
+     3131788.042,
+     3134699.917,
+     3093925.458,
+     3045646.417,
+     2993914.375,
+     3106083.708,
+     3164163.125,
+     3106799.792,
+     3205513.458,
+     3059897.417,
+     3152006.292,
+     3156599.75,
+     3129928.375,
+     3173841.708,
+     3139676.667,
+     3175843.0,
+     3077588.333,
+     2868519.875,
+     3033940.833,
+     2890940.75
+    ],
+    "b_ns": [
+     3146118.542,
+     2909374.333,
+     2896974.625,
+     3212227.875,
+     3094799.208,
+     3220040.792,
+     3117410.167,
+     3177217.125,
+     2993829.875,
+     3077126.792,
+     3067328.458,
+     3186866.917,
+     3182769.583,
+     3295970.292,
+     2939665.0,
+     3036891.083,
+     2867815.917,
+     2953762.667,
+     3092236.833,
+     3145643.875
+    ],
+    "a_checksums": [
+     "8c9fa9e5f993aaea"
+    ],
+    "b_checksums": [
+     "8c9fa9e5f993aaea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     3171712.708,
+     3022111.542,
+     3073925.0,
+     2947915.625,
+     3073672.125,
+     3091739.417,
+     2859755.583,
+     3184346.083,
+     3086955.625,
+     3119167.333,
+     3119648.5,
+     3185261.625,
+     2892396.25,
+     4515976.958,
+     3061576.583,
+     3191366.125,
+     3054788.125,
+     3130026.875,
+     2871773.875,
+     3060521.5
+    ],
+    "b_ns": [
+     3044260.375,
+     3122456.0,
+     3185315.833,
+     3091070.958,
+     3014989.708,
+     3069132.0,
+     2910066.75,
+     3210941.958,
+     3268245.25,
+     3150890.875,
+     3250330.208,
+     3156058.958,
+     3135779.208,
+     2878350.75,
+     3117407.667,
+     3124362.583,
+     3008434.5,
+     2934810.667,
+     3149753.0,
+     3034265.667
+    ],
+    "a_checksums": [
+     "8c9fa9e5f993aaea"
+    ],
+    "b_checksums": [
+     "8c9fa9e5f993aaea"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 9.6
+  },
+  "k04_rev.L1": {
+   "n": 3072,
+   "iters": 300000,
+   "calibration_ns_one_call": 250.0,
+   "fast_pair": {
+    "a_ns": [
+     142.077,
+     141.067,
+     142.018,
+     144.044,
+     142.122,
+     136.707,
+     137.986,
+     139.857,
+     141.506,
+     142.128,
+     142.298,
+     141.978,
+     141.299,
+     142.142,
+     141.016,
+     141.564,
+     141.765,
+     142.867,
+     142.163,
+     141.838
+    ],
+    "b_ns": [
+     785.828,
+     785.279,
+     780.752,
+     782.972,
+     786.065,
+     763.428,
+     788.514,
+     756.533,
+     789.752,
+     783.914,
+     811.272,
+     785.672,
+     792.677,
+     785.132,
+     799.392,
+     787.539,
+     795.033,
+     788.046,
+     785.146,
+     881.256
+    ],
+    "a_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "b_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     141.566,
+     140.051,
+     139.186,
+     141.798,
+     142.402,
+     141.468,
+     141.086,
+     141.399,
+     142.196,
+     142.659,
+     141.825,
+     141.466,
+     142.092,
+     140.976,
+     136.374,
+     136.118,
+     135.725,
+     135.9,
+     135.868,
+     139.228
+    ],
+    "b_ns": [
+     787.588,
+     787.199,
+     787.355,
+     785.42,
+     799.03,
+     787.839,
+     787.504,
+     787.572,
+     792.824,
+     785.278,
+     782.118,
+     787.311,
+     782.079,
+     795.748,
+     757.917,
+     756.614,
+     760.576,
+     757.692,
+     755.223,
+     757.722
+    ],
+    "a_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "b_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     135.767,
+     135.694,
+     136.711,
+     136.641,
+     136.269,
+     138.328,
+     135.965,
+     145.464,
+     143.902,
+     135.579,
+     135.609,
+     136.59,
+     138.588,
+     136.488,
+     138.306,
+     138.567,
+     135.659,
+     136.175,
+     137.185,
+     136.715
+    ],
+    "b_ns": [
+     135.886,
+     135.478,
+     136.301,
+     135.521,
+     135.68,
+     136.111,
+     135.74,
+     136.006,
+     138.91,
+     135.747,
+     135.608,
+     135.63,
+     136.521,
+     135.786,
+     135.695,
+     135.69,
+     136.174,
+     136.163,
+     135.361,
+     135.556
+    ],
+    "a_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "b_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     135.68,
+     136.851,
+     137.438,
+     143.881,
+     145.652,
+     136.775,
+     136.257,
+     136.355,
+     135.614,
+     135.791,
+     136.429,
+     136.561,
+     136.599,
+     136.777,
+     137.283,
+     137.815,
+     136.359,
+     144.483,
+     146.379,
+     142.432
+    ],
+    "b_ns": [
+     397.862,
+     398.532,
+     415.064,
+     424.67,
+     421.225,
+     408.627,
+     411.25,
+     400.251,
+     399.058,
+     398.582,
+     398.855,
+     398.08,
+     397.585,
+     398.173,
+     400.741,
+     398.67,
+     398.056,
+     419.817,
+     416.014,
+     415.968
+    ],
+    "a_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "b_checksums": [
+     "64c8e07c284e88db"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 2.9219636485933203,
+    "ci95": [
+     2.8997302779373175,
+     3.0206613685049395
+    ],
+    "half_width_pct": 6.046554528381098
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 16.8
+  },
+  "k04_rev.L2": {
+   "n": 65536,
+   "iters": 25295,
+   "calibration_ns_one_call": 2965.0,
+   "fast_pair": {
+    "a_ns": [
+     2873.877,
+     2762.777,
+     2746.773,
+     2752.123,
+     2767.421,
+     2754.214,
+     2744.86,
+     2750.651,
+     2766.569,
+     2742.483,
+     2751.059,
+     2781.693,
+     2746.924,
+     2871.847,
+     2742.854,
+     2756.468,
+     2765.428,
+     2955.766,
+     2936.123,
+     2876.011
+    ],
+    "b_ns": [
+     16732.817,
+     16010.719,
+     16220.612,
+     18315.855,
+     15999.992,
+     16010.888,
+     16047.487,
+     15986.155,
+     16826.763,
+     16045.271,
+     16185.278,
+     16165.022,
+     16005.812,
+     16048.911,
+     16001.853,
+     15988.341,
+     16387.829,
+     16881.091,
+     16902.501,
+     16723.137
+    ],
+    "a_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "b_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     2862.085,
+     2871.888,
+     2864.427,
+     2882.886,
+     2868.478,
+     2777.422,
+     2742.992,
+     2754.448,
+     2742.818,
+     2756.639,
+     2754.03,
+     2746.935,
+     2748.497,
+     2747.386,
+     2818.917,
+     2748.33,
+     2745.285,
+     2752.197,
+     2770.555,
+     2744.984
+    ],
+    "b_ns": [
+     16698.385,
+     17220.849,
+     16766.483,
+     16726.622,
+     16667.472,
+     15995.982,
+     15990.071,
+     15967.34,
+     16011.886,
+     16301.266,
+     15995.005,
+     16261.192,
+     15979.939,
+     16116.554,
+     16884.024,
+     16028.476,
+     16045.86,
+     15969.062,
+     15995.591,
+     15991.422
+    ],
+    "a_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "b_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     2751.349,
+     2748.232,
+     2824.564,
+     2749.987,
+     2743.182,
+     2749.236,
+     2759.914,
+     2769.27,
+     2761.317,
+     2773.812,
+     2764.515,
+     2764.433,
+     2755.025,
+     2747.063,
+     2782.253,
+     2767.538,
+     2761.711,
+     2775.423,
+     2746.07,
+     2756.761
+    ],
+    "b_ns": [
+     2770.74,
+     2756.88,
+     2851.596,
+     2771.333,
+     2751.618,
+     2748.113,
+     2808.079,
+     2875.342,
+     2744.111,
+     2748.607,
+     2749.296,
+     2741.16,
+     2790.827,
+     2753.122,
+     2743.976,
+     2757.576,
+     2750.164,
+     2752.596,
+     2753.1,
+     2742.531
+    ],
+    "a_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "b_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     2760.302,
+     2747.548,
+     2764.297,
+     2746.962,
+     2773.388,
+     2758.881,
+     2744.018,
+     2765.814,
+     2754.909,
+     2752.084,
+     2771.026,
+     2766.318,
+     2770.053,
+     2754.703,
+     2765.301,
+     2762.503,
+     2774.575,
+     2746.832,
+     2774.255,
+     2759.979
+    ],
+    "b_ns": [
+     9063.082,
+     9080.051,
+     9043.819,
+     9043.391,
+     9104.573,
+     9077.786,
+     9042.363,
+     9236.711,
+     9072.948,
+     9075.132,
+     9306.037,
+     9035.904,
+     9042.309,
+     9033.332,
+     9058.457,
+     9044.514,
+     9051.742,
+     9055.758,
+     9035.439,
+     9070.615
+    ],
+    "a_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "b_checksums": [
+     "bf8d1b00ff21b983"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 3.279894003137898,
+    "ci95": [
+     3.270981000788846,
+     3.289905943750383
+    ],
+    "half_width_pct": 0.9462471480768508
+   },
+   "seconds": 28.5
+  },
+  "k04_rev.RAM": {
+   "n": 16777216,
+   "iters": 27,
+   "calibration_ns_one_call": 2768595.0,
+   "fast_pair": {
+    "a_ns": [
+     2971489.148,
+     2718778.852,
+     2702407.444,
+     2781095.407,
+     2780534.963,
+     2829083.556,
+     2827946.333,
+     2749072.963,
+     2729749.037,
+     2745851.556,
+     2732135.556,
+     2749352.333,
+     2729352.148,
+     2745547.37,
+     2747659.444,
+     2735749.074,
+     2740449.037,
+     2707295.63,
+     2718168.481,
+     2715565.222
+    ],
+    "b_ns": [
+     4816991.111,
+     4799209.037,
+     4820158.037,
+     4714214.222,
+     4611283.074,
+     4575538.333,
+     4476462.556,
+     4779400.259,
+     4736385.074,
+     4621255.481,
+     4763408.63,
+     4770805.926,
+     4513216.444,
+     5072865.741,
+     4938115.444,
+     4146287.889,
+     4731607.593,
+     4843681.481,
+     4223549.963,
+     4785749.556
+    ],
+    "a_checksums": [
+     "a0bed9e4a4950383"
+    ],
+    "b_checksums": [
+     "a0bed9e4a4950383"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     2709810.741,
+     2760653.185,
+     2756750.296,
+     2788226.852,
+     2836577.778,
+     2822847.704,
+     2810336.815,
+     2844931.333,
+     2869058.037,
+     2843037.37,
+     2818287.926,
+     2823030.556,
+     2840349.296,
+     2826532.407,
+     2820753.444,
+     2838646.963,
+     2817731.37,
+     2819779.222,
+     2821862.704,
+     2825174.667
+    ],
+    "b_ns": [
+     4813411.519,
+     4768319.148,
+     4509509.407,
+     4804552.037,
+     4816752.407,
+     4245898.481,
+     4380148.111,
+     4456768.593,
+     4997649.0,
+     5007383.481,
+     4502249.333,
+     4269527.778,
+     4840887.259,
+     4762373.63,
+     4230601.593,
+     4848981.222,
+     4263496.852,
+     4551266.667,
+     4872948.815,
+     4244813.815
+    ],
+    "a_checksums": [
+     "a0bed9e4a4950383"
+    ],
+    "b_checksums": [
+     "a0bed9e4a4950383"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 11.6
+  },
+  "k05_stride2.L1": {
+   "n": 2048,
+   "iters": 219941,
+   "calibration_ns_one_call": 341.0,
+   "fast_pair": {
+    "a_ns": [
+     234.982,
+     234.656,
+     236.961,
+     234.419,
+     234.642,
+     235.228,
+     234.68,
+     234.437,
+     234.723,
+     234.249,
+     234.711,
+     234.575,
+     234.438,
+     234.516,
+     234.566,
+     234.718,
+     234.552,
+     234.588,
+     234.459,
+     234.678
+    ],
+    "b_ns": [
+     659.196,
+     658.136,
+     679.777,
+     659.883,
+     659.753,
+     659.864,
+     658.655,
+     663.137,
+     658.08,
+     659.328,
+     657.047,
+     658.514,
+     658.083,
+     659.494,
+     658.844,
+     657.446,
+     658.789,
+     658.708,
+     657.863,
+     658.58
+    ],
+    "a_checksums": [
+     "eef95956fa230f03"
+    ],
+    "b_checksums": [
+     "eef95956fa230f03"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     234.259,
+     234.525,
+     234.97,
+     241.721,
+     234.716,
+     235.099,
+     234.293,
+     239.159,
+     234.211,
+     234.231,
+     234.901,
+     234.173,
+     234.89,
+     234.047,
+     234.835,
+     234.314,
+     234.202,
+     234.474,
+     234.731,
+     234.342
+    ],
+    "b_ns": [
+     670.385,
+     669.04,
+     667.909,
+     780.579,
+     674.342,
+     668.408,
+     680.075,
+     692.156,
+     668.527,
+     673.466,
+     668.606,
+     669.024,
+     668.999,
+     668.172,
+     670.51,
+     668.612,
+     672.73,
+     668.258,
+     668.282,
+     671.871
+    ],
+    "a_checksums": [
+     "eef95956fa230f03"
+    ],
+    "b_checksums": [
+     "eef95956fa230f03"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     234.389,
+     234.201,
+     234.77,
+     234.557,
+     234.507,
+     234.608,
+     234.292,
+     234.299,
+     234.491,
+     234.701,
+     234.602,
+     235.779,
+     234.522,
+     234.458,
+     234.444,
+     234.53,
+     234.552,
+     234.692,
+     234.349,
+     234.343
+    ],
+    "b_ns": [
+     234.541,
+     234.133,
+     234.618,
+     234.286,
+     234.417,
+     234.273,
+     234.588,
+     235.129,
+     234.124,
+     234.416,
+     234.342,
+     234.3,
+     234.121,
+     234.131,
+     235.755,
+     234.332,
+     236.75,
+     234.881,
+     234.319,
+     234.079
+    ],
+    "a_checksums": [
+     "eef95956fa230f03"
+    ],
+    "b_checksums": [
+     "eef95956fa230f03"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     234.265,
+     234.32,
+     235.072,
+     234.539,
+     234.716,
+     235.328,
+     234.732,
+     234.704,
+     234.678,
+     234.869,
+     234.887,
+     234.444,
+     234.865,
+     235.09,
+     234.796,
+     235.074,
+     244.949,
+     235.157,
+     237.157,
+     236.96
+    ],
+    "b_ns": [
+     368.363,
+     357.465,
+     376.963,
+     361.49,
+     358.591,
+     357.367,
+     356.745,
+     356.253,
+     358.073,
+     357.453,
+     357.08,
+     356.662,
+     359.788,
+     356.976,
+     356.846,
+     356.815,
+     370.093,
+     364.457,
+     362.838,
+     356.922
+    ],
+    "a_checksums": [
+     "eef95956fa230f03"
+    ],
+    "b_checksums": [
+     "eef95956fa230f03"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.521963494232906,
+    "ci95": [
+     1.5192823508374562,
+     1.5360033732199556
+    ],
+    "half_width_pct": 0.8360511191249698
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 13.4
+  },
+  "k05_stride2.L2": {
+   "n": 43690,
+   "iters": 15161,
+   "calibration_ns_one_call": 4947.0,
+   "fast_pair": {
+    "a_ns": [
+     4939.199,
+     4944.825,
+     4907.639,
+     4891.096,
+     4891.861,
+     4886.344,
+     4903.922,
+     5138.991,
+     4905.496,
+     5108.616,
+     5201.55,
+     4895.837,
+     6452.967,
+     5063.336,
+     5050.239,
+     4932.549,
+     4929.097,
+     4859.174,
+     4872.673,
+     5112.354
+    ],
+    "b_ns": [
+     14381.815,
+     14289.926,
+     14310.071,
+     14325.544,
+     14236.447,
+     14329.109,
+     14769.112,
+     14470.428,
+     14329.72,
+     14313.663,
+     15203.748,
+     15223.596,
+     14955.194,
+     15008.328,
+     14315.164,
+     14423.823,
+     14886.972,
+     14875.229,
+     14326.961,
+     14481.281
+    ],
+    "a_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "b_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     5058.663,
+     4857.936,
+     4966.215,
+     4888.178,
+     4916.697,
+     4887.998,
+     4877.771,
+     4958.518,
+     5029.023,
+     4857.373,
+     4855.751,
+     4985.157,
+     5066.028,
+     4859.968,
+     4855.111,
+     4856.947,
+     4858.347,
+     4861.266,
+     4857.096,
+     4878.108
+    ],
+    "b_ns": [
+     15448.099,
+     14940.56,
+     14397.187,
+     15027.194,
+     15850.775,
+     15000.913,
+     14846.962,
+     15147.884,
+     14517.401,
+     14885.015,
+     14516.282,
+     15162.03,
+     14852.593,
+     14706.572,
+     14839.907,
+     15143.997,
+     14790.154,
+     14846.201,
+     14514.81,
+     15193.538
+    ],
+    "a_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "b_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     4853.276,
+     5160.9,
+     5016.723,
+     4870.98,
+     4876.954,
+     4885.146,
+     4864.815,
+     4868.813,
+     4856.421,
+     4865.118,
+     4864.885,
+     4863.309,
+     5105.571,
+     5012.202,
+     4892.646,
+     4852.791,
+     4858.384,
+     4917.662,
+     4859.558,
+     4865.293
+    ],
+    "b_ns": [
+     4862.318,
+     4867.384,
+     4861.886,
+     4860.429,
+     4886.489,
+     4970.217,
+     4866.105,
+     4875.176,
+     4860.395,
+     4857.971,
+     4857.414,
+     4940.946,
+     4943.571,
+     5051.057,
+     4858.637,
+     4859.572,
+     4856.116,
+     4855.322,
+     4859.732,
+     4859.661
+    ],
+    "a_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "b_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     4852.2,
+     4862.316,
+     4860.566,
+     4880.669,
+     4863.047,
+     4865.676,
+     4869.029,
+     4972.215,
+     4898.453,
+     4889.214,
+     4900.803,
+     4866.695,
+     4907.9,
+     4902.835,
+     4877.137,
+     4929.181,
+     5014.642,
+     5010.873,
+     5078.171,
+     4856.258
+    ],
+    "b_ns": [
+     8071.862,
+     8093.046,
+     8285.037,
+     11980.775,
+     8105.968,
+     8081.723,
+     8101.069,
+     8170.426,
+     8235.655,
+     8078.593,
+     8216.553,
+     8481.478,
+     8191.53,
+     8375.811,
+     8077.199,
+     9066.79,
+     8130.956,
+     8581.43,
+     8418.544,
+     8098.042
+    ],
+    "a_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "b_checksums": [
+     "fa2a8cafca0f2d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.6747340781870161,
+    "ci95": [
+     1.6539048474700526,
+     1.7059440112279398
+    ],
+    "half_width_pct": 2.60195818789436
+   },
+   "seconds": 19.4
+  },
+  "k05_stride2.RAM": {
+   "n": 11184810,
+   "iters": 25,
+   "calibration_ns_one_call": 2979545.0,
+   "fast_pair": {
+    "a_ns": [
+     2980146.16,
+     2958680.48,
+     2971280.92,
+     2985601.64,
+     2979902.36,
+     2970745.52,
+     2950892.68,
+     2966321.72,
+     2955274.44,
+     2969351.84,
+     2966305.68,
+     2989149.72,
+     2958984.76,
+     2962164.68,
+     2967954.12,
+     2975508.2,
+     2965329.4,
+     2986439.72,
+     2969993.96,
+     2976069.04
+    ],
+    "b_ns": [
+     4025501.96,
+     4055936.2,
+     4028077.44,
+     4004421.4,
+     4089042.0,
+     4093495.4,
+     4005279.48,
+     4009787.8,
+     4087323.4,
+     4062166.68,
+     4001061.6,
+     4019154.16,
+     4021437.96,
+     4125751.88,
+     3997569.56,
+     4031196.92,
+     4019486.68,
+     4015514.76,
+     4036748.0,
+     4005933.28
+    ],
+    "a_checksums": [
+     "51405d4831d30d4d"
+    ],
+    "b_checksums": [
+     "51405d4831d30d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     2962058.16,
+     2960780.64,
+     2959870.08,
+     2968478.12,
+     2966459.52,
+     2972305.04,
+     2969940.32,
+     2963644.12,
+     2979195.32,
+     2970479.48,
+     2991005.32,
+     2967613.24,
+     2983746.88,
+     2966435.88,
+     2968035.84,
+     2988632.16,
+     2963219.88,
+     2985252.36,
+     2963241.92,
+     2953769.68
+    ],
+    "b_ns": [
+     4026606.48,
+     4014406.68,
+     4041404.52,
+     4015640.96,
+     4004514.36,
+     4020417.64,
+     4013861.48,
+     4004451.44,
+     4046627.52,
+     4014437.56,
+     4119760.12,
+     4074855.2,
+     4034868.8,
+     4035963.24,
+     4031574.28,
+     4020809.44,
+     4036845.76,
+     4023080.04,
+     4031754.16,
+     3997945.0
+    ],
+    "a_checksums": [
+     "51405d4831d30d4d"
+    ],
+    "b_checksums": [
+     "51405d4831d30d4d"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 10.6
+  },
+  "k06_gather.L1": {
+   "n": 2048,
+   "iters": 143954,
+   "calibration_ns_one_call": 521.0,
+   "fast_pair": {
+    "a_ns": [
+     393.443,
+     391.318,
+     392.53,
+     391.757,
+     390.33,
+     390.395,
+     392.154,
+     395.013,
+     396.545,
+     391.264,
+     390.55,
+     393.345,
+     390.166,
+     389.951,
+     389.762,
+     390.397,
+     390.682,
+     413.15,
+     403.579,
+     392.605
+    ],
+    "b_ns": [
+     614.956,
+     609.738,
+     614.737,
+     611.431,
+     609.213,
+     607.665,
+     607.812,
+     607.133,
+     609.6,
+     612.172,
+     607.903,
+     609.524,
+     611.134,
+     608.13,
+     611.078,
+     608.606,
+     610.1,
+     610.836,
+     609.923,
+     607.714
+    ],
+    "a_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "b_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     384.354,
+     385.625,
+     384.686,
+     391.542,
+     388.782,
+     385.383,
+     386.127,
+     385.976,
+     384.771,
+     384.45,
+     384.571,
+     385.178,
+     387.14,
+     384.657,
+     385.71,
+     386.192,
+     385.31,
+     386.021,
+     385.132,
+     384.494
+    ],
+    "b_ns": [
+     662.621,
+     664.389,
+     664.344,
+     662.797,
+     664.024,
+     662.417,
+     662.478,
+     662.039,
+     662.906,
+     664.619,
+     662.817,
+     666.193,
+     665.627,
+     670.283,
+     662.532,
+     665.193,
+     664.392,
+     662.319,
+     671.566,
+     649.399
+    ],
+    "a_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "b_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     391.84,
+     391.936,
+     390.922,
+     390.342,
+     390.035,
+     390.814,
+     389.984,
+     394.867,
+     392.973,
+     390.019,
+     391.279,
+     392.75,
+     390.301,
+     402.686,
+     410.503,
+     391.04,
+     391.572,
+     390.639,
+     390.252,
+     579.131
+    ],
+    "b_ns": [
+     396.347,
+     398.444,
+     386.491,
+     384.821,
+     384.651,
+     384.867,
+     384.575,
+     386.936,
+     385.414,
+     385.545,
+     386.175,
+     394.935,
+     384.644,
+     384.598,
+     393.197,
+     396.905,
+     385.743,
+     385.396,
+     384.959,
+     384.26
+    ],
+    "a_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "b_checksums": [
+     "fb0186d01d42c471"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 8.8
+  },
+  "k06_gather.L2": {
+   "n": 43690,
+   "iters": 6604,
+   "calibration_ns_one_call": 11357.0,
+   "fast_pair": {
+    "a_ns": [
+     12128.67,
+     12280.633,
+     11988.432,
+     11950.716,
+     11914.151,
+     11976.951,
+     11918.551,
+     11928.396,
+     11925.508,
+     11917.7,
+     11940.335,
+     11962.688,
+     11925.076,
+     11969.345,
+     11955.507,
+     12086.134,
+     11923.944,
+     12006.6,
+     11949.654,
+     11959.163
+    ],
+    "b_ns": [
+     15697.495,
+     15641.233,
+     15551.95,
+     15585.525,
+     15548.383,
+     15547.946,
+     15542.03,
+     15596.874,
+     15691.837,
+     15584.574,
+     15561.53,
+     15595.534,
+     15710.303,
+     15577.067,
+     15559.216,
+     15555.592,
+     15590.82,
+     15636.189,
+     15548.495,
+     15644.995
+    ],
+    "a_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "b_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     11983.958,
+     12732.945,
+     12729.868,
+     12695.012,
+     12524.239,
+     12864.563,
+     12612.993,
+     12096.309,
+     11988.863,
+     11921.571,
+     11954.498,
+     11944.081,
+     12337.756,
+     11950.215,
+     11938.739,
+     11920.529,
+     11965.056,
+     11948.132,
+     11933.114,
+     11914.99
+    ],
+    "b_ns": [
+     15934.92,
+     16576.373,
+     17393.233,
+     16481.291,
+     16032.249,
+     16346.265,
+     16234.445,
+     15661.724,
+     15537.214,
+     15541.769,
+     15580.173,
+     15523.245,
+     15527.29,
+     15528.993,
+     15511.991,
+     15551.276,
+     15922.781,
+     15723.051,
+     15833.042,
+     15539.237
+    ],
+    "a_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "b_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     12093.784,
+     11936.632,
+     11934.216,
+     11910.27,
+     11894.841,
+     11908.471,
+     11976.48,
+     11915.195,
+     11912.429,
+     12095.1,
+     12035.317,
+     11922.156,
+     11932.685,
+     11910.978,
+     11915.5,
+     11964.472,
+     12067.424,
+     11922.416,
+     11990.617,
+     11927.076
+    ],
+    "b_ns": [
+     11920.745,
+     11908.879,
+     11932.28,
+     11945.624,
+     11978.545,
+     11906.022,
+     11916.59,
+     11910.796,
+     12421.298,
+     12297.435,
+     12067.008,
+     11928.862,
+     11910.107,
+     11912.757,
+     11915.511,
+     11919.168,
+     12008.011,
+     12012.215,
+     11932.744,
+     11912.071
+    ],
+    "a_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "b_checksums": [
+     "c31c1f4115392da9"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 10.8
+  },
+  "k06_gather.RAM": {
+   "n": 11184810,
+   "iters": 3,
+   "calibration_ns_one_call": 27412264.0,
+   "fast_pair": {
+    "a_ns": [
+     27725197.333,
+     27782279.0,
+     28044073.0,
+     27708973.0,
+     28093580.333,
+     27490283.667,
+     27545052.0,
+     27707554.667,
+     27548006.667,
+     27718307.333,
+     28000414.667,
+     27721755.667,
+     27733289.333,
+     27856109.333,
+     27758774.0,
+     27651728.0,
+     27744199.0,
+     27524007.333,
+     27556967.0,
+     27668239.667
+    ],
+    "b_ns": [
+     36793108.333,
+     36916489.0,
+     36956388.667,
+     36952335.667,
+     36732044.333,
+     36722496.667,
+     36904064.0,
+     36979870.333,
+     36780870.0,
+     36670408.667,
+     37097212.0,
+     37007077.667,
+     36738126.333,
+     36770007.333,
+     36957730.667,
+     36808314.333,
+     37037352.667,
+     36841944.667,
+     37837864.333,
+     36733104.0
+    ],
+    "a_checksums": [
+     "6913fbbd15b223c3"
+    ],
+    "b_checksums": [
+     "6913fbbd15b223c3"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     27561043.0,
+     27686790.333,
+     29053645.0,
+     27977767.667,
+     27980244.667,
+     27598846.0,
+     27769554.0,
+     28008460.0,
+     27681796.333,
+     27711754.333,
+     27648189.667,
+     27745705.0,
+     27804656.333,
+     28386560.333,
+     27630974.0,
+     27838863.667,
+     27855261.667,
+     27886582.0,
+     27677784.0,
+     27699416.0
+    ],
+    "b_ns": [
+     36806773.667,
+     36931970.333,
+     36868305.667,
+     40368356.667,
+     37104654.667,
+     37916288.0,
+     37109411.667,
+     37037117.333,
+     37083229.333,
+     37469408.333,
+     37022739.0,
+     37626662.667,
+     37167788.667,
+     37002552.333,
+     37031438.667,
+     37039036.667,
+     37658480.333,
+     37634414.333,
+     37163025.0,
+     37096092.0
+    ],
+    "a_checksums": [
+     "6913fbbd15b223c3"
+    ],
+    "b_checksums": [
+     "6913fbbd15b223c3"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 15.9
+  },
+  "k07_hist.L1": {
+   "n": 5888,
+   "iters": 59429,
+   "calibration_ns_one_call": 1262.0,
+   "fast_pair": {
+    "a_ns": [
+     1120.205,
+     1137.334,
+     1120.446,
+     1136.641,
+     1119.388,
+     1120.091,
+     1123.009,
+     1120.07,
+     1144.727,
+     1122.053,
+     1134.259,
+     1385.308,
+     1120.986,
+     1149.137,
+     1172.716,
+     1122.948,
+     1122.403,
+     1120.05,
+     1120.533,
+     1136.034
+    ],
+    "b_ns": [
+     1390.12,
+     1410.919,
+     1394.433,
+     1390.618,
+     1402.327,
+     1393.815,
+     1390.726,
+     1391.438,
+     1409.991,
+     1395.999,
+     1394.427,
+     1392.566,
+     1394.423,
+     1392.201,
+     1434.58,
+     1402.471,
+     1392.266,
+     1390.529,
+     1396.379,
+     1409.623
+    ],
+    "a_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "b_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     1119.822,
+     1139.995,
+     1123.271,
+     1122.585,
+     1121.237,
+     1121.269,
+     1149.017,
+     1133.823,
+     1331.265,
+     1119.74,
+     1420.09,
+     1120.812,
+     1133.52,
+     1122.297,
+     1132.339,
+     1120.065,
+     1124.084,
+     1146.162,
+     1134.721,
+     1124.833
+    ],
+    "b_ns": [
+     1437.299,
+     1408.854,
+     1395.761,
+     1390.239,
+     1390.363,
+     1391.123,
+     1392.769,
+     1392.25,
+     1392.446,
+     1392.243,
+     1396.94,
+     1391.425,
+     1391.99,
+     1395.714,
+     1391.473,
+     1397.147,
+     1392.337,
+     1429.209,
+     1403.876,
+     1392.916
+    ],
+    "a_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "b_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     1183.27,
+     1128.955,
+     1119.863,
+     1161.502,
+     1149.436,
+     1123.143,
+     1132.665,
+     1153.53,
+     1132.815,
+     1120.172,
+     1122.846,
+     1120.885,
+     1138.916,
+     1121.04,
+     1140.676,
+     1143.953,
+     1126.743,
+     1130.902,
+     1136.627,
+     1121.786
+    ],
+    "b_ns": [
+     1122.131,
+     1119.931,
+     1123.824,
+     1136.643,
+     1176.823,
+     1127.743,
+     1146.687,
+     1207.085,
+     1122.205,
+     1118.878,
+     1119.582,
+     1124.87,
+     1122.564,
+     1122.12,
+     1122.121,
+     1129.403,
+     1123.068,
+     1123.342,
+     1130.256,
+     1120.429
+    ],
+    "a_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "b_checksums": [
+     "efbef40cd088e1bf"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 9.4
+  },
+  "k07_hist.L2": {
+   "n": 130816,
+   "iters": 3029,
+   "calibration_ns_one_call": 24757.0,
+   "fast_pair": {
+    "a_ns": [
+     24896.559,
+     24790.696,
+     24768.781,
+     25210.285,
+     24904.242,
+     24810.355,
+     25532.257,
+     24788.692,
+     24758.822,
+     25161.407,
+     24759.649,
+     24851.714,
+     24902.063,
+     26134.873,
+     25356.016,
+     25797.132,
+     25561.773,
+     24812.709,
+     24841.881,
+     24942.08
+    ],
+    "b_ns": [
+     30911.12,
+     30442.015,
+     30476.613,
+     30543.983,
+     30573.38,
+     30492.877,
+     31313.364,
+     30472.533,
+     30520.548,
+     32635.246,
+     31226.992,
+     30895.752,
+     30555.205,
+     31720.67,
+     30540.412,
+     30505.63,
+     31594.136,
+     31158.435,
+     30644.612,
+     30804.795
+    ],
+    "a_checksums": [
+     "e255fec9312152e7"
+    ],
+    "b_checksums": [
+     "e255fec9312152e7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     25229.848,
+     24866.563,
+     24887.165,
+     24854.24,
+     25255.179,
+     24859.041,
+     25099.337,
+     25271.468,
+     24848.92,
+     24813.301,
+     24757.979,
+     25031.434,
+     25269.002,
+     24798.231,
+     25080.043,
+     24776.593,
+     24801.48,
+     24851.244,
+     24920.384,
+     24844.856
+    ],
+    "b_ns": [
+     30602.076,
+     31167.825,
+     30497.913,
+     30526.221,
+     30470.205,
+     30501.123,
+     30630.385,
+     30467.619,
+     31018.024,
+     30488.741,
+     30506.571,
+     30502.306,
+     30468.165,
+     30773.265,
+     30494.163,
+     30489.091,
+     31105.564,
+     30490.813,
+     30456.675,
+     30487.583
+    ],
+    "a_checksums": [
+     "e255fec9312152e7"
+    ],
+    "b_checksums": [
+     "e255fec9312152e7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     24826.235,
+     24819.969,
+     25133.856,
+     26435.997,
+     26889.969,
+     26364.619,
+     25834.102,
+     25196.819,
+     25300.018,
+     24802.616,
+     25245.6,
+     25893.022,
+     25545.876,
+     25380.039,
+     24774.177,
+     24801.001,
+     25028.482,
+     24827.502,
+     24847.482,
+     25584.299
+    ],
+    "b_ns": [
+     25163.561,
+     25286.101,
+     24778.656,
+     25658.233,
+     26783.841,
+     27097.589,
+     25687.319,
+     24873.02,
+     24972.062,
+     25173.791,
+     25239.053,
+     25032.757,
+     24816.353,
+     24826.358,
+     24742.86,
+     24792.26,
+     24802.556,
+     24815.685,
+     25634.059,
+     24761.286
+    ],
+    "a_checksums": [
+     "e255fec9312152e7"
+    ],
+    "b_checksums": [
+     "e255fec9312152e7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 10.1
+  },
+  "k07_hist.RAM": {
+   "n": 33554176,
+   "iters": 12,
+   "calibration_ns_one_call": 6441675.0,
+   "fast_pair": {
+    "a_ns": [
+     6449178.833,
+     6454135.333,
+     6433056.417,
+     6459374.0,
+     6439849.0,
+     6447333.5,
+     6437488.0,
+     6796156.917,
+     6454850.583,
+     6441397.167,
+     6816840.25,
+     6435258.0,
+     6450317.917,
+     6480777.25,
+     6448358.083,
+     6540375.25,
+     6443699.417,
+     6446173.167,
+     6446553.667,
+     6443363.167
+    ],
+    "b_ns": [
+     7913986.917,
+     7896150.333,
+     7906928.0,
+     7882304.667,
+     7911960.583,
+     7900264.833,
+     7915518.333,
+     10791629.0,
+     7885587.0,
+     7917311.833,
+     7911471.5,
+     7882777.083,
+     7890256.5,
+     7913070.75,
+     7901639.333,
+     7918270.833,
+     7928222.25,
+     7897295.333,
+     7889840.833,
+     7902715.083
+    ],
+    "a_checksums": [
+     "b9b4b32471625ae3"
+    ],
+    "b_checksums": [
+     "b9b4b32471625ae3"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     6456092.083,
+     6447024.333,
+     6475254.0,
+     6458245.333,
+     6451824.917,
+     6459517.167,
+     6449673.417,
+     6444937.083,
+     6438624.333,
+     6456163.0,
+     6462802.083,
+     6447461.75,
+     6465132.25,
+     6447129.583,
+     6463278.667,
+     6449642.5,
+     6686409.75,
+     15203633.667,
+     6578805.917,
+     6642109.5
+    ],
+    "b_ns": [
+     7901064.333,
+     7930076.667,
+     7931867.75,
+     7915607.583,
+     7897207.667,
+     7898477.083,
+     7912304.333,
+     7896419.0,
+     7910016.0,
+     8243144.417,
+     7911958.083,
+     7900075.333,
+     7894471.917,
+     7890902.5,
+     7914469.333,
+     7913905.917,
+     7907788.5,
+     11995167.583,
+     8091196.917,
+     7955523.0
+    ],
+    "a_checksums": [
+     "b9b4b32471625ae3"
+    ],
+    "b_checksums": [
+     "b9b4b32471625ae3"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds": 11.0
+  },
+  "k08_matmul.L1": {
+   "n": 45,
+   "iters": 7386,
+   "calibration_ns_one_call": 10155.0,
+   "fast_pair": {
+    "a_ns": [
+     10266.91,
+     10277.742,
+     10300.213,
+     10262.914,
+     10934.899,
+     10362.089,
+     10425.348,
+     10226.407,
+     10163.902,
+     10265.718,
+     10348.669,
+     10252.186,
+     10266.592,
+     11320.389,
+     11231.156,
+     10256.681,
+     10261.581,
+     10270.241,
+     10260.092,
+     10314.944
+    ],
+    "b_ns": [
+     50156.401,
+     50334.463,
+     58537.035,
+     57655.841,
+     51291.307,
+     50200.803,
+     50672.317,
+     51757.659,
+     50206.133,
+     50081.514,
+     50589.538,
+     50353.523,
+     50376.078,
+     51982.267,
+     51759.531,
+     51123.782,
+     50315.389,
+     50100.664,
+     50238.165,
+     50145.053
+    ],
+    "a_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "b_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     10247.375,
+     10164.836,
+     10165.178,
+     10179.238,
+     10402.717,
+     10265.458,
+     10414.0,
+     10198.169,
+     10301.721,
+     10551.959,
+     10618.159,
+     10544.847,
+     10439.634,
+     10509.526,
+     10605.27,
+     10426.339,
+     10380.49,
+     10445.126,
+     10234.0,
+     10305.491
+    ],
+    "b_ns": [
+     39947.988,
+     40010.23,
+     39913.155,
+     40203.914,
+     40219.343,
+     40336.207,
+     40016.362,
+     41758.176,
+     41519.48,
+     41172.942,
+     41831.319,
+     41643.618,
+     41703.091,
+     41730.214,
+     40877.489,
+     41607.022,
+     40531.695,
+     40713.349,
+     40716.029,
+     39901.153
+    ],
+    "a_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "b_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     10238.333,
+     10805.158,
+     10762.667,
+     10532.004,
+     10559.021,
+     10796.256,
+     10710.96,
+     11097.114,
+     10736.316,
+     10645.327,
+     10845.216,
+     10852.663,
+     10856.016,
+     10799.511,
+     10738.323,
+     10925.656,
+     10978.768,
+     10783.107,
+     10804.712,
+     10748.026
+    ],
+    "b_ns": [
+     10308.951,
+     10375.3,
+     10491.04,
+     10355.062,
+     10524.221,
+     10796.433,
+     10561.21,
+     10507.704,
+     10629.624,
+     10640.644,
+     10697.815,
+     10757.455,
+     10654.305,
+     10657.815,
+     10771.84,
+     10759.064,
+     10907.907,
+     10701.704,
+     10693.448,
+     10675.246
+    ],
+    "a_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "b_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     10738.344,
+     10665.341,
+     10917.053,
+     10611.137,
+     10843.108,
+     10838.963,
+     10587.726,
+     10535.781,
+     10416.877,
+     10812.556,
+     10720.209,
+     10180.581,
+     10299.244,
+     10227.41,
+     10213.383,
+     10551.373,
+     10298.758,
+     10285.724,
+     10252.015,
+     10327.354
+    ],
+    "b_ns": [
+     17973.155,
+     17905.604,
+     17961.708,
+     18035.386,
+     17746.559,
+     17809.362,
+     17355.845,
+     17153.814,
+     17132.792,
+     17096.494,
+     17801.804,
+     17124.49,
+     17322.401,
+     17106.854,
+     17231.681,
+     17917.19,
+     17185.868,
+     17191.369,
+     17279.097,
+     17132.411
+    ],
+    "a_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "b_checksums": [
+     "25f2e81cbc68357f"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.640880414682797,
+    "ci95": [
+     1.6156708913479654,
+     1.7109874065710127
+    ],
+    "half_width_pct": 4.765825761152365
+   },
+   "cachegrind": {
+    "none": "ok",
+    "fast": "ok",
+    "iters": 20
+   },
+   "seconds": 24.8
+  },
+  "k08_matmul.L2": {
+   "n": 209,
+   "iters": 75,
+   "calibration_ns_one_call": 1004018.0,
+   "fast_pair": {
+    "a_ns": [
+     1007365.88,
+     1001814.68,
+     1004581.467,
+     1072108.173,
+     1061256.787,
+     1005752.147,
+     1001772.88,
+     1004918.507,
+     1001015.88,
+     1000594.053,
+     1003526.16,
+     1003341.76,
+     1007373.64,
+     1002753.933,
+     1005772.053,
+     1003573.427,
+     1003592.267,
+     1004384.507,
+     1003596.533,
+     1004779.227
+    ],
+    "b_ns": [
+     4146466.707,
+     4157034.733,
+     4142765.44,
+     4188514.747,
+     4321183.4,
+     4148861.333,
+     4219336.307,
+     4146610.653,
+     4147399.84,
+     4160630.36,
+     4141873.733,
+     4144068.467,
+     4159825.827,
+     4140948.213,
+     4140984.8,
+     4145844.307,
+     4149133.08,
+     4144247.0,
+     4142992.733,
+     4224279.813
+    ],
+    "a_checksums": [
+     "fedb9158669325d5"
+    ],
+    "b_checksums": [
+     "fedb9158669325d5"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     1012128.027,
+     1011037.867,
+     1010310.12,
+     1010861.733,
+     1013748.027,
+     1010645.147,
+     1016480.12,
+     1016168.453,
+     1010831.56,
+     1012274.773,
+     1011610.32,
+     1075396.2,
+     1043681.867,
+     1010677.467,
+     1023438.493,
+     1010256.707,
+     1039797.267,
+     1016085.12,
+     1012786.08,
+     1354559.307
+    ],
+    "b_ns": [
+     4137176.813,
+     4137101.493,
+     4140284.107,
+     4132654.867,
+     4138532.16,
+     4140370.107,
+     4154121.4,
+     4141023.733,
+     4142847.253,
+     4132210.333,
+     4139379.827,
+     4138768.92,
+     4147183.333,
+     4135091.573,
+     4146043.493,
+     4146593.52,
+     4142726.96,
+     4164681.28,
+     4141246.613,
+     4233416.147
+    ],
+    "a_checksums": [
+     "fedb9158669325d5"
+    ],
+    "b_checksums": [
+     "fedb9158669325d5"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     1063959.36,
+     1032849.8,
+     1037540.4,
+     1023909.013,
+     1004943.4,
+     1010247.573,
+     1004621.32,
+     1007666.267,
+     1004068.093,
+     1004678.067,
+     1005433.6,
+     1003386.013,
+     1012368.867,
+     1009143.787,
+     1753310.387,
+     1005708.667,
+     1056090.187,
+     1007222.933,
+     1006189.787,
+     1005724.16
+    ],
+    "b_ns": [
+     2285160.147,
+     1027093.36,
+     1037610.373,
+     1034281.8,
+     1010944.747,
+     1012453.787,
+     1011349.88,
+     1011371.773,
+     1011183.36,
+     1011527.213,
+     1057085.4,
+     1037494.853,
+     1015751.24,
+     1011501.173,
+     1012559.56,
+     1010429.84,
+     1062799.4,
+     1013596.293,
+     1011890.16,
+     1010371.493
+    ],
+    "a_checksums": [
+     "fedb9158669325d5"
+    ],
+    "b_checksums": [
+     "fedb9158669325d5"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec_pair": {
+    "a_ns": [
+     1002970.053,
+     1002549.693,
+     1000125.013,
+     1004895.587,
+     1004708.387,
+     1003417.253,
+     1002910.373,
+     1005536.28,
+     1007184.867,
+     1002868.307,
+     1027803.613,
+     1064638.667,
+     1053138.453,
+     1004031.24,
+     1015219.253,
+     1001927.173,
+     1005076.667,
+     1008851.493,
+     1002540.347,
+     1051819.147
+    ],
+    "b_ns": [
+     1701825.627,
+     1705773.24,
+     1711058.32,
+     1702799.48,
+     1703761.707,
+     1724557.653,
+     1702157.32,
+     1702187.36,
+     1708908.72,
+     1703232.107,
+     1812734.307,
+     1807088.16,
+     1707415.027,
+     1712730.813,
+     1703321.053,
+     1707244.76,
+     1762680.88,
+     1721642.24,
+     1702904.96,
+     1812612.933
+    ],
+    "a_checksums": [
+     "fedb9158669325d5"
+    ],
+    "b_checksums": [
+     "fedb9158669325d5"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "novec": {
+    "ratio": 1.699170498853721,
+    "ci95": [
+     1.6923500687132353,
+     1.7097153891115031
+    ],
+    "half_width_pct": 0.8682660199133885
+   },
+   "seconds": 23.6
+  }
+ },
+ "aa": {
+  "cell": "k02_add_fwd.L1",
+  "n": 2048,
+  "iters": 288462,
+  "a_ns": [
+   148.656,
+   148.375,
+   147.925,
+   148.305,
+   148.248,
+   154.53,
+   155.292,
+   150.187,
+   148.659,
+   154.884,
+   157.035,
+   153.49,
+   152.947,
+   148.327,
+   148.191,
+   153.281,
+   153.207,
+   157.927,
+   152.829,
+   148.214
+  ],
+  "b_ns": [
+   151.247,
+   148.388,
+   148.129,
+   147.808,
+   150.459,
+   148.903,
+   167.454,
+   154.199,
+   148.932,
+   154.883,
+   157.368,
+   157.012,
+   150.79,
+   148.497,
+   148.002,
+   152.599,
+   158.641,
+   159.08,
+   151.596,
+   148.243
+  ],
+  "a_checksums": [
+   "804294ede3d1b733"
+  ],
+  "b_checksums": [
+   "804294ede3d1b733"
+  ],
+  "checksum_match": true,
+  "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+ },
+ "aa_extra": {
+  "k02_add_fwd.L2": {
+   "n": 43690,
+   "iters": 22422,
+   "ratio": 0.998636164876657,
+   "ci95": [
+    0.9928004549066617,
+    1.00038345757468
+   ],
+   "half_width_pct": 0.37915013340091286,
+   "a_ns": [
+    3178.932,
+    3086.355,
+    3063.478,
+    3209.178,
+    3100.667,
+    3057.999,
+    3049.768,
+    3049.442,
+    3052.655,
+    3048.412,
+    3050.009,
+    3057.4,
+    3048.592,
+    3055.509,
+    3052.361,
+    3083.435,
+    3112.803,
+    3060.287,
+    3046.991,
+    3054.371
+   ],
+   "b_ns": [
+    3165.95,
+    3114.526,
+    3056.983,
+    3153.456,
+    3053.016,
+    3050.791,
+    3053.227,
+    3050.447,
+    3049.683,
+    3052.541,
+    3052.823,
+    3048.051,
+    3048.103,
+    3045.833,
+    3051.365,
+    3052.217,
+    3052.355,
+    3055.108,
+    3048.856,
+    3049.086
+   ],
+   "a_checksums": [
+    "b004b8fc1330c2d1"
+   ],
+   "b_checksums": [
+    "b004b8fc1330c2d1"
+   ],
+   "checksum_match": true,
+   "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+  },
+  "k02_add_fwd.RAM": {
+   "n": 11184810,
+   "iters": 28,
+   "ratio": 0.9994714690748622,
+   "ci95": [
+    0.9958461368769926,
+    1.0030976530210611
+   ],
+   "half_width_pct": 0.36257580720342464,
+   "a_ns": [
+    2605254.964,
+    2609133.25,
+    2608239.071,
+    2628177.393,
+    2600582.607,
+    2615418.714,
+    2594671.643,
+    2620354.286,
+    2607104.179,
+    2595963.929,
+    2599784.286,
+    2610699.143,
+    2592574.929,
+    2604190.107,
+    2644467.0,
+    2609513.786,
+    2608480.464,
+    2604192.643,
+    2594295.714,
+    2596212.821
+   ],
+   "b_ns": [
+    2636973.929,
+    2605607.964,
+    2613657.143,
+    2642407.214,
+    2619109.929,
+    2593836.857,
+    2618120.607,
+    2610288.179,
+    2591313.821,
+    2611946.0,
+    2599842.571,
+    2598930.5,
+    2588864.75,
+    2593371.107,
+    2603996.286,
+    2600912.357,
+    2609806.321,
+    2591211.107,
+    2610764.214,
+    2586734.071
+   ],
+   "a_checksums": [
+    "b0c52ac125714ed1"
+   ],
+   "b_checksums": [
+    "b0c52ac125714ed1"
+   ],
+   "checksum_match": true,
+   "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+  }
+ },
+ "programs": {
+  "json_parse": {
+   "source": "programs/json_parse/json_parse.cpp",
+   "builds": {
+    "none": {
+     "sha256": "3ff33178d14b154e47139880f8c80769e53976d07b497b9cde7f17917a791a10",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/json_parse -o build/json_parse.none programs/json_parse/json_parse.cpp",
+     "traps_whole_binary": 0,
+     "compile_seconds": 2.0,
+     "loop_remarks": {
+      "vectorized": 1,
+      "not_vectorized": 28
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 127,
+      "crosses64": 72,
+      "extra_window": 40,
+      "simd_loops": 24,
+      "simd_crosses64": 19
+     }
+    },
+    "fast": {
+     "sha256": "3a3817ec069a84cad18d5bb9664b585e9bd05f1715d00b0afa13f6a49c90f10b",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/json_parse -o build/json_parse.fast programs/json_parse/json_parse.cpp",
+     "traps_whole_binary": 25,
+     "compile_seconds": 2.0,
+     "loop_remarks": {
+      "vectorized": 1,
+      "not_vectorized": 28
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 127,
+      "crosses64": 72,
+      "extra_window": 38,
+      "simd_loops": 24,
+      "simd_crosses64": 20
+     }
+    },
+    "none_a64": {
+     "sha256": "638c29a76c9b9403c15029e91ba60bd3eb6acffd0c6ef113914d1cadbdde57f5",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/json_parse -o build/json_parse.none_a64 programs/json_parse/json_parse.cpp",
+     "traps_whole_binary": 0,
+     "compile_seconds": 2.0,
+     "loop_remarks": {
+      "vectorized": 1,
+      "not_vectorized": 28
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 127,
+      "crosses64": 68,
+      "extra_window": 30,
+      "simd_loops": 24,
+      "simd_crosses64": 17
+     }
+    },
+    "fast_a64": {
+     "sha256": "efa96e6e5cea7c6c2bec9f3c6b737e87b51ae20158360b9af2654887f7932dbe",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/json_parse -o build/json_parse.fast_a64 programs/json_parse/json_parse.cpp",
+     "traps_whole_binary": 25,
+     "compile_seconds": 2.0,
+     "loop_remarks": {
+      "vectorized": 1,
+      "not_vectorized": 28
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 127,
+      "crosses64": 72,
+      "extra_window": 34,
+      "simd_loops": 24,
+      "simd_crosses64": 17
+     }
+    }
+   },
+   "input": {
+    "path": "build/deps/json_parse/twitter.json",
+    "bytes": 631515,
+    "sha256": "30721e496a8d73cfc50658923c34eb2c0fbe15ee6835005e43ee624d8dedf200"
+   },
+   "iters": 19,
+   "calibration_ns_one_iter": 3934978.0,
+   "run_lines": [
+    "taskset -c 1 build/json_parse.none build/deps/json_parse/twitter.json 19",
+    "taskset -c 1 build/json_parse.fast build/deps/json_parse/twitter.json 19"
+   ],
+   "fast_pair": {
+    "a_ns": [
+     3950855.053,
+     3874282.947,
+     3921996.0,
+     3992434.684,
+     3937502.0,
+     3916096.737,
+     3888061.105,
+     3993183.684,
+     4134365.263,
+     3949799.105,
+     3974881.421,
+     4045072.947,
+     3930021.526,
+     3968820.895,
+     4013978.632,
+     3940597.158,
+     3911632.263,
+     3871046.0,
+     3902820.263,
+     3898147.632
+    ],
+    "b_ns": [
+     3932058.105,
+     3898690.947,
+     3971053.632,
+     3876080.316,
+     3885301.263,
+     3924634.632,
+     3906861.0,
+     3891895.211,
+     3973677.053,
+     3901146.211,
+     3948824.526,
+     3890216.947,
+     3884604.947,
+     3899260.316,
+     3944852.316,
+     4025131.368,
+     3911723.421,
+     3898071.158,
+     3899561.842,
+     3914952.947
+    ],
+    "a_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "b_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aa_pair": {
+    "a_ns": [
+     3865004.947,
+     3892831.368,
+     3879431.0,
+     4001150.737,
+     3967070.632,
+     3859867.684,
+     3932782.158,
+     3947482.0,
+     3997794.842,
+     3870041.789,
+     3896149.684,
+     3930906.737,
+     3910934.316,
+     3894767.105,
+     3875973.789,
+     3980659.316,
+     3919328.947,
+     3890392.105,
+     3885190.632,
+     3849491.105
+    ],
+    "b_ns": [
+     3957150.526,
+     3950499.105,
+     3876852.474,
+     3899750.0,
+     3891480.053,
+     3904691.842,
+     3870997.421,
+     3980098.0,
+     3946063.0,
+     3900247.895,
+     3898073.053,
+     3908331.474,
+     4002005.895,
+     3888891.421,
+     3867749.421,
+     3905052.895,
+     3935034.474,
+     3861114.789,
+     3964553.211,
+     4016315.684
+    ],
+    "a_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "b_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aa": {
+    "ratio": 1.0024166537148211,
+    "ci95": [
+     0.9927658246805156,
+     1.0136742712354758
+    ],
+    "half_width_pct": 1.0454223277480135,
+    "binary_sha256": "3ff33178d14b154e47139880f8c80769e53976d07b497b9cde7f17917a791a10"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     3932507.526,
+     3943867.105,
+     3897244.474,
+     3907521.368,
+     3957279.737,
+     3965787.158,
+     3940054.579,
+     3921559.105,
+     4075869.211,
+     3944649.842,
+     3900874.579,
+     4105603.789,
+     4198342.368,
+     3904071.632,
+     3970683.789,
+     3951683.0,
+     3931728.158,
+     3933766.421,
+     3937045.895,
+     4175242.526
+    ],
+    "b_ns": [
+     3951298.737,
+     3919002.632,
+     3895040.105,
+     3940748.263,
+     3936863.526,
+     3969580.211,
+     3928786.211,
+     3923580.0,
+     3929641.158,
+     3960347.474,
+     3934312.579,
+     3925558.158,
+     4057155.895,
+     4178403.895,
+     3912365.263,
+     3913290.842,
+     3959551.789,
+     4046489.316,
+     3884429.895,
+     3929403.263
+    ],
+    "a_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "b_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     4142803.737,
+     4103644.421,
+     4083666.737,
+     3924622.684,
+     3962327.211,
+     3874252.474,
+     3943343.684,
+     3996215.579,
+     3878852.947,
+     3970603.737,
+     3874544.474,
+     4008333.053,
+     3989748.0,
+     3968169.105,
+     3878575.737,
+     3858499.526,
+     3880788.0,
+     3959736.0,
+     3909138.579,
+     3922822.632
+    ],
+    "b_ns": [
+     4226934.211,
+     4297293.632,
+     3969183.737,
+     3998786.789,
+     3955519.737,
+     3943257.789,
+     3938586.105,
+     4014617.158,
+     3935866.263,
+     4218469.526,
+     3977829.789,
+     3948351.158,
+     3912049.737,
+     3972816.526,
+     3926575.053,
+     3954521.947,
+     3913032.789,
+     3934209.579,
+     3926251.421,
+     3978591.947
+    ],
+    "a_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "b_checksums": [
+     "d73eccadb5a440f7"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds_timing": 13.4,
+   "cachegrind": {
+    "none": {
+     "ir_total_iters_1": 168581907,
+     "ir_total_iters_3": 315181477,
+     "ir_per_iteration": 73299785
+    },
+    "fast": {
+     "ir_total_iters_1": 168705205,
+     "ir_total_iters_3": 315425251,
+     "ir_per_iteration": 73360023
+    },
+    "unit": "instructions per timed iteration, not time"
+   },
+   "seconds": 23.8
+  },
+  "fmt_format": {
+   "source": "programs/fmt_format/fmt_format.cpp",
+   "builds": {
+    "none": {
+     "sha256": "7ce1fedfbe1c939a769d2b962ae3517440f6121708c8f4e372a0d2f3f2c8f203",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/fmt_format/fmt/include -o build/fmt_format.none programs/fmt_format/fmt_format.cpp",
+     "traps_whole_binary": 0,
+     "compile_seconds": 2.1,
+     "loop_remarks": {
+      "vectorized": 4,
+      "not_vectorized": 46
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 445,
+      "crosses64": 225,
+      "extra_window": 162,
+      "simd_loops": 24,
+      "simd_crosses64": 5
+     }
+    },
+    "fast": {
+     "sha256": "03b1fc46a84a10ab848dc9da1c933a7533971bfce511afaec40801f9111ea73d",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/fmt_format/fmt/include -o build/fmt_format.fast programs/fmt_format/fmt_format.cpp",
+     "traps_whole_binary": 7,
+     "compile_seconds": 2.1,
+     "loop_remarks": {
+      "vectorized": 4,
+      "not_vectorized": 46
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 444,
+      "crosses64": 241,
+      "extra_window": 175,
+      "simd_loops": 24,
+      "simd_crosses64": 6
+     }
+    },
+    "none_a64": {
+     "sha256": "6b47749664e76186573f965e61b83b9461a17b5226e94ed8afd071a0d1927009",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/fmt_format/fmt/include -o build/fmt_format.none_a64 programs/fmt_format/fmt_format.cpp",
+     "traps_whole_binary": 0,
+     "compile_seconds": 2.1,
+     "loop_remarks": {
+      "vectorized": 4,
+      "not_vectorized": 46
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 445,
+      "crosses64": 122,
+      "extra_window": 39,
+      "simd_loops": 24,
+      "simd_crosses64": 2
+     }
+    },
+    "fast_a64": {
+     "sha256": "6aa82c7567a3a3b4570a92124e1c1a3d933f5f2925baaa1a89d8becd7cf0183e",
+     "command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -falign-loops=64 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -I build/deps/fmt_format/fmt/include -o build/fmt_format.fast_a64 programs/fmt_format/fmt_format.cpp",
+     "traps_whole_binary": 7,
+     "compile_seconds": 2.1,
+     "loop_remarks": {
+      "vectorized": 4,
+      "not_vectorized": 46
+     },
+     "loop_placement_whole_binary": {
+      "innermost_loops": 444,
+      "crosses64": 121,
+      "extra_window": 40,
+      "simd_loops": 24,
+      "simd_crosses64": 2
+     }
+    }
+   },
+   "input": {
+    "path": "build/fmt_format.input.bin",
+    "bytes": 320000,
+    "sha256": "02ef88f063db2054bae4cedfff4e81bd200ff8cde570bf2738740b06ddd5c10f"
+   },
+   "iters": 33,
+   "calibration_ns_one_iter": 2289034.0,
+   "run_lines": [
+    "taskset -c 1 build/fmt_format.none 20000 33",
+    "taskset -c 1 build/fmt_format.fast 20000 33"
+   ],
+   "fast_pair": {
+    "a_ns": [
+     2274231.909,
+     2298636.364,
+     2341436.152,
+     2278377.788,
+     2276305.606,
+     2264059.818,
+     2265236.424,
+     2282079.061,
+     2288488.576,
+     2292976.182,
+     2275022.485,
+     2302997.758,
+     2280744.667,
+     2287798.152,
+     2284879.273,
+     2320209.424,
+     2269317.636,
+     2270408.939,
+     2266687.364,
+     2318792.455
+    ],
+    "b_ns": [
+     2491149.364,
+     2500711.152,
+     2489950.091,
+     2481292.061,
+     2493427.394,
+     2488779.576,
+     2493604.0,
+     2495929.909,
+     2484960.879,
+     2482986.121,
+     2558304.818,
+     2518776.636,
+     2486316.818,
+     2484102.03,
+     2500451.182,
+     2606609.394,
+     2496486.182,
+     2489579.545,
+     2639585.121,
+     2480193.455
+    ],
+    "a_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "b_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aa_pair": {
+    "a_ns": [
+     2272983.697,
+     2281110.061,
+     2287496.818,
+     2284816.758,
+     2277573.545,
+     2318798.212,
+     2269135.545,
+     2292650.545,
+     2282948.242,
+     2284184.636,
+     2269134.97,
+     2286933.545,
+     2292669.667,
+     2278060.333,
+     2320782.394,
+     2404852.0,
+     2416821.606,
+     2282054.152,
+     2291793.818,
+     2291030.848
+    ],
+    "b_ns": [
+     2292013.242,
+     2286786.667,
+     2294614.97,
+     2264489.848,
+     2296063.182,
+     2290934.97,
+     2277135.03,
+     2273392.788,
+     2266795.394,
+     2280527.061,
+     2281030.818,
+     2284258.636,
+     2270141.606,
+     2311587.212,
+     2415402.242,
+     2439861.061,
+     2444128.606,
+     2331016.121,
+     2274418.273,
+     2269271.515
+    ],
+    "a_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "b_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "aa": {
+    "ratio": 0.9998457921029639,
+    "ci95": [
+     0.9947018762865327,
+     1.0050612744461773
+    ],
+    "half_width_pct": 0.5179699079822297,
+    "binary_sha256": "7ce1fedfbe1c939a769d2b962ae3517440f6121708c8f4e372a0d2f3f2c8f203"
+   },
+   "aligned_pair": {
+    "a_ns": [
+     2287464.333,
+     2269385.333,
+     2272514.212,
+     2304980.697,
+     2310154.455,
+     2341052.545,
+     3352948.455,
+     2269952.818,
+     2281863.879,
+     2290971.727,
+     2275051.212,
+     2277526.424,
+     2293282.97,
+     2276476.061,
+     2285193.0,
+     2272495.606,
+     2345201.939,
+     2288368.667,
+     2286110.758,
+     2286924.394
+    ],
+    "b_ns": [
+     2245172.061,
+     2252835.848,
+     2249923.939,
+     2253518.697,
+     2289683.091,
+     2237804.424,
+     2902946.303,
+     2243447.939,
+     2239554.879,
+     2253087.758,
+     2243080.212,
+     2271848.879,
+     2235333.182,
+     2229218.333,
+     2252397.121,
+     2233712.576,
+     2251934.909,
+     2270006.121,
+     2257658.0,
+     2250757.394
+    ],
+    "a_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "b_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "layout_aa_pair": {
+    "a_ns": [
+     2285321.091,
+     2276660.273,
+     2267614.364,
+     2269181.576,
+     2273739.848,
+     2342060.273,
+     2314188.273,
+     2275142.091,
+     2285385.212,
+     2285774.909,
+     2276808.545,
+     2378041.848,
+     2273956.394,
+     2396028.303,
+     2369583.818,
+     2397097.788,
+     2374281.091,
+     2397209.424,
+     2340994.0,
+     2353502.909
+    ],
+    "b_ns": [
+     2287997.818,
+     2312037.606,
+     2288470.636,
+     2278380.121,
+     2788061.939,
+     2285966.606,
+     2294912.424,
+     2283385.576,
+     2284668.697,
+     2264980.0,
+     2295456.242,
+     2282859.333,
+     2271544.939,
+     2324893.394,
+     2378339.545,
+     2420423.091,
+     2408530.848,
+     2425952.515,
+     2372583.424,
+     2361692.394
+    ],
+    "a_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "b_checksums": [
+     "579637bbd5b764e1"
+    ],
+    "checksum_match": true,
+    "order": "ABBAABBAABBAABBAABBAABBAABBAABBAABBAABBA"
+   },
+   "seconds_timing": 13.3,
+   "cachegrind": {
+    "none": {
+     "ir_total_iters_1": 108899235,
+     "ir_total_iters_3": 212973913,
+     "ir_per_iteration": 52037339
+    },
+    "fast": {
+     "ir_total_iters_1": 109066502,
+     "ir_total_iters_3": 213228271,
+     "ir_per_iteration": 52080884
+    },
+    "unit": "instructions per timed iteration, not time"
+   },
+   "seconds": 23.5
+  }
+ },
+ "programs_rule": "consistent_with_at_most_pct = max(0, 100 * (ci95_hi - 1), aa_half_width_pct): an upper bound never below the program's own A/A floor; whole-program time is never a confirmation of 0.30%",
+ "classes": {
+  "on_axis": [
+   "k01_sum_fwd",
+   "k02_add_fwd",
+   "k03_stencil",
+   "k04_rev",
+   "k05_stride2",
+   "k08_matmul"
+  ],
+  "kept": [
+   "k01_sum_fwd",
+   "k02_add_fwd",
+   "k03_stencil"
+  ],
+  "lost": [
+   "k04_rev",
+   "k05_stride2",
+   "k08_matmul"
+  ],
+  "off_axis": [
+   "k06_gather",
+   "k07_hist"
+  ]
+ },
+ "seconds": 400.5
+}

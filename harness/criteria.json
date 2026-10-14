@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "written": "Sun Oct 11 2026, stage S1, before the first run of harness/run.py or .github/workflows/measure.yml; no number from the S1 harness existed when this file was committed",
+  "supersedes": "dayone/criteria.json for everything after the day-one test. The day-one NO-GO stays on record in docs/dayone-results.md; the forward-loop rule below is the lead's decision after that test and replaces the day-one rule (ci95_hi < 1.02).",
+  "rule_for_changes": "No threshold in this file is changed, loosened or added after a result from the S1 harness exists. If one looks unfair, the result is reported against it as written and the objection is written down beside the result.",
+
+  "design": {
+    "kernels": {
+      "k01_sum_fwd": "s += a[i], i up, int64 accumulator",
+      "k02_add_fwd": "c[i] = a[i] + b[i], i up",
+      "k03_stencil": "c[i] = a[i-1] + a[i] + a[i+1]",
+      "k04_rev": "c[i] = a[i] * 2, i counting down",
+      "k05_stride2": "c[i] = a[2*i] + a[2*i+1]",
+      "k06_gather": "c[i] = a[idx[i]], idx a fixed-seed permutation of 0..n-1",
+      "k07_hist": "h[a[i] & 255]++, h has 256 counters",
+      "k08_matmul": "d x d, order i-k-j, c[i*d+j] += a[i*d+k] * b[k*d+j], inputs masked to 0..3 so no int32 overflows"
+    },
+    "element_type": "int32_t in std::vector, accessed through operator[]; each kernel a noinline function kern_<id>",
+    "size_classes": "working set counts every array of the kernel; L1 = half of L1d, L2 = half of L2, RAM = four times the last-level cache capped at 256 MiB; cache sizes from /sys/devices/system/cpu/cpu0/cache",
+    "in_cache": ["L1", "L2"],
+    "skipped_cells": {
+      "k08_matmul.RAM": "not measured: at a RAM-sized working set one i-k-j call streams all of b once per row, an estimated 10 s or more per call and over 10 minutes per cell; RAM cells are not in N or the limits"
+    },
+    "builds": {
+      "common": "clang++-18 -O2 -std=c++20 -stdlib=libc++ (baseline x86-64, no -march)",
+      "none": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+      "fast": "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+      "novec": "the NONE flags plus -fno-vectorize (timing positive control)",
+      "aa": "the NONE binary of the A/A kernel copied to a second path; the run aborts if the two sha256 differ"
+    },
+    "aa_pair": "k02_add_fwd at the L1 size, NONE against its byte-identical copy, timed like every other pair, in every run",
+    "timing": {
+      "reps_per_side": 20,
+      "order": "ABBA repeated (A B B A A B B A ...), one process per repetition, pinned with taskset -c to one CPU",
+      "clock": "clock_gettime(CLOCK_MONOTONIC) inside the binary around the timed loop; process start, input fill and one warm-up call excluded",
+      "inner_iterations": "calibrated once per cell on the NONE build to about 75 ms per process, reused unchanged for every build of that cell",
+      "ratio": "median(FAST) / median(NONE)",
+      "interval": "percentile bootstrap, 10000 resamples of each side independently, seed 20261011, 95 %, harness/stats.py",
+      "half_width_pct": "(ci95_hi - ci95_lo) / 2 * 100"
+    },
+    "novec_pairs": "timed only for kernels vectorized in NONE (from the remarks), at the in-cache sizes",
+    "cachegrind": "valgrind --tool=cachegrind --cache-sim=no at the L1 size, 20 inner iterations; Ir attributed to kern_<id> divided by the number of calls (inner iterations plus one warm-up); instructions, not time"
+  },
+
+  "classes_from_remarks": {
+    "on_axis": "a kernel whose loop clang reports as vectorized in the NONE build",
+    "kept": "on_axis and vectorized in FAST: the forward class (negative control)",
+    "lost": "on_axis and not vectorized in FAST: the class that pays",
+    "off_axis": "not vectorized in NONE: reported, not used for N, the forward limit or the controls"
+  },
+
+  "verdict": {
+    "aa_half_width_max_pct": 2.0,
+    "forward_point_max_ratio": 1.02,
+    "forward_ci_hi_limit": "1 + max(0.02, 2 * aa_half_width_pct / 100)",
+    "forward_ci_hi_floor_pct": 2.0,
+    "forward_ci_hi_aa_multiplier": 2.0,
+    "lost_ci_lo_min_ratio": 1.5,
+    "ram_cells": "reported, never in N, the forward limit, the lost minimum or the positive control",
+    "positive_control_seen": "at least one in-cache cell of an on_axis kernel has a NOVEC/NONE ratio with ci95_lo > 1 + aa_half_width_pct / 100",
+    "order": [
+      "INCONCLUSIVE (A/A control) if the A/A half-width exceeds aa_half_width_max_pct",
+      "INCONCLUSIVE (checksum) if any measured cell has checksum_match false",
+      "INCONCLUSIVE (positive control) if the positive control is not seen",
+      "INCONCLUSIVE (negative control) if no kernel is in the kept class",
+      "MAP if every in-cache cell of a kept kernel has ratio <= forward_point_max_ratio AND ci95_hi <= the forward ci_hi limit, AND every in-cache cell of a lost kernel has ci95_lo >= lost_ci_lo_min_ratio, AND at least one kernel is in the lost class",
+      "HOLDS_EVERYWHERE if no in-cache cell of an on_axis kernel has ci95_lo above the forward ci_hi limit (X = the largest ci95_hi over those cells, as a percent above 1, floored at 0)",
+      "INCONCLUSIVE (mixed picture) otherwise"
+    ],
+    "N": "median of ratio over the in-cache cells of the lost kernels, with min and max; RAM cells not in N",
+    "forward_limit_pct": "the forward ci_hi limit as a percent: max(2.0, 2 * aa_half_width_pct)"
+  }
+}

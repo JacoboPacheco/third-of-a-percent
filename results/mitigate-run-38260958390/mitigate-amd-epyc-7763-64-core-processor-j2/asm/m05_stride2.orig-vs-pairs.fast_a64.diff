@@ -1,0 +1,47 @@
+--- m05_stride2.orig.fast_a64.s
++++ m05_stride2.pairs.fast_a64.s
+@@ -1,29 +1,35 @@
+ <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+ mov    (%rdi),%rax
+-mov    0x8(%rdi),%rcx
++mov    0x8(%rdi),%rdi
++mov    %rdi,%rcx
+ sub    %rax,%rcx
+-je     <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ sar    $0x2,%rcx
+ mov    (%rsi),%rdx
+ mov    0x8(%rsi),%rsi
+ sub    %rdx,%rsi
+ sar    $0x2,%rsi
++mov    %rsi,%r8
++shr    $1,%r8
++cmp    %rcx,%r8
++jb     <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++cmp    %rax,%rdi
++je     <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ cmp    $0x1,%rcx
+ adc    $0x0,%rcx
+ xor    %edi,%edi
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-nopw   0x0(%rax,%rax,1)
++nopl   0x0(%rax)
+ cmp    %rdi,%rsi
+ jbe    <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ lea    0x1(%rdi),%r8
+ cmp    %r8,%rsi
+ jbe    <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-mov    0x4(%rdx,%rdi,4),%r8d
+-add    (%rdx,%rdi,4),%r8d
+-mov    %r8d,(%rax,%rdi,2)
+-add    $0x2,%rdi
++mov    0x4(%rdx,%rdi,4),%r9d
++add    (%rdx,%rdi,4),%r9d
++mov    %r9d,(%rax,%rdi,2)
++inc    %r8
++mov    %r8,%rdi
+ dec    %rcx
+ jne    <_Z16kern_m05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+ ret
+ ud2
+-nopw   0x0(%rax,%rax,1)
++nopl   0x0(%rax)

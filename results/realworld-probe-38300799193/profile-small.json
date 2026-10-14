@@ -1,0 +1,271 @@
+{
+ "method": "Per row:\n- smoke: each timed build (none, fast, none_a64, fast_a64) run once natively with iters=1; the\n  exact and rounded checksums of every build, and the NONE time per iteration only (used to size\n  the workloads; no FAST time is recorded here).\n- instructions: Cachegrind on the plain none and fast binaries with iters=1 and iters=2; the\n  difference of the two totals is one workload iteration; FAST/NONE of that, labelled instructions.\n- profile: Cachegrind with line-level counts on none_g and fast_g, the same two runs; per line the\n  difference is one iteration; the shares of that iteration on the census lost loops' own lines\n  and in the functions that contain them (common.shares).",
+ "rows": {
+  "tinydnn": {
+   "row": "tinydnn",
+   "program": "tinydnn",
+   "args": [
+    "512",
+    "1"
+   ],
+   "smoke": {
+    "none": {
+     "checksum": "f2aab6845f2479a9",
+     "checksum_r": "2a8a6014b2c17d1a",
+     "ns_per_iteration": 120565666.0,
+     "process_wall_s": 0.238
+    },
+    "fast": {
+     "checksum": "f2aab6845f2479a9",
+     "checksum_r": "2a8a6014b2c17d1a"
+    },
+    "none_a64": {
+     "checksum": "f2aab6845f2479a9",
+     "checksum_r": "2a8a6014b2c17d1a"
+    },
+    "fast_a64": {
+     "checksum": "f2aab6845f2479a9",
+     "checksum_r": "2a8a6014b2c17d1a"
+    }
+   },
+   "checksums_exact_match": true,
+   "checksums_rounded_match": true,
+   "instructions": {
+    "none": 1348928935,
+    "fast": 2321703130,
+    "ratio": 1.7211456213592156,
+    "label": "Cachegrind instructions per workload iteration, not time"
+   },
+   "lost_loops_listed": [
+    "tiny_dnn/core/kernels/fully_connected_op_internal.h:65 in tiny_dnn::kernels::fully_connected_op_internal(std::__1::vector<std::__1::vector<float, tiny_dnn::aligned_allocator<float, 64ul>>, std::__1::allocator<std::__1::vector<float, tiny_dnn::aligned_allocator<float, 64ul>>>> const&, std::__1::vector<float, tiny_dnn::aligned_allocator<float, 64ul>> cons...",
+    "tiny_dnn/layers/layer.h:391 in tiny_dnn::layer::load(std::__1::vector<float, std::__1::allocator<float>> const&, int&)"
+   ],
+   "profile": {
+    "none": {
+     "iteration_ir": 1348928920,
+     "loop_lines_ir": 408896,
+     "loop_lines_share": 0.0003031264241854938,
+     "functions_ir": 220628288,
+     "functions_share": 0.1635581272881302,
+     "per_loop_ir": {
+      "tiny_dnn/core/kernels/fully_connected_op_internal.h:65": 408896
+     },
+     "per_function_ir": {
+      "_ZZN8tiny_dnn7kernels27fully_connected_op_internalERKNSt3__16vectorINS2_IfNS_17aligned_allocatorIfLm64EEEEENS1_9allocatorIS5_EEEERKS5_RS8_SD_SD_SD_RKNS_4core12fully_paramsEbENKUlRKNS_13blocked_rangeEE_clESK_": 220628288
+     },
+     "functions_matched": 1,
+     "functions_listed": 2
+    },
+    "fast": {
+     "iteration_ir": 2321703166,
+     "loop_lines_ir": 1606656,
+     "loop_lines_share": 0.0006920161127953598,
+     "functions_ir": 231311872,
+     "functions_share": 0.09963025221631627,
+     "per_loop_ir": {
+      "tiny_dnn/core/kernels/fully_connected_op_internal.h:65": 1606656
+     },
+     "per_function_ir": {
+      "_ZZN8tiny_dnn7kernels27fully_connected_op_internalERKNSt3__16vectorINS2_IfNS_17aligned_allocatorIfLm64EEEEENS1_9allocatorIS5_EEEERKS5_RS8_SD_SD_SD_RKNS_4core12fully_paramsEbENKUlRKNS_13blocked_rangeEE_clESK_": 231311872
+     },
+     "functions_matched": 1,
+     "functions_listed": 2
+    }
+   }
+  },
+  "spectra": {
+   "row": "spectra",
+   "program": "spectra",
+   "args": [
+    "400",
+    "20000"
+   ],
+   "smoke": {
+    "none": {
+     "checksum": "1c787615afc7fd9c",
+     "checksum_r": "7bf3cd65fd199ac4",
+     "ns_per_iteration": 6853298.0,
+     "process_wall_s": 0.019
+    },
+    "fast": {
+     "checksum": "1c787615afc7fd9c",
+     "checksum_r": "7bf3cd65fd199ac4"
+    },
+    "none_a64": {
+     "checksum": "1c787615afc7fd9c",
+     "checksum_r": "7bf3cd65fd199ac4"
+    },
+    "fast_a64": {
+     "checksum": "1c787615afc7fd9c",
+     "checksum_r": "7bf3cd65fd199ac4"
+    }
+   },
+   "checksums_exact_match": true,
+   "checksums_rounded_match": true,
+   "instructions": {
+    "none": 108826081,
+    "fast": 108827181,
+    "ratio": 1.0000101078711086,
+    "label": "Cachegrind instructions per workload iteration, not time"
+   },
+   "lost_loops_listed": [
+    "include/Spectra/Util/SelectionRule.h:215 in Spectra::SortEigenvalue<double, (Spectra::SortRule)0>::SortEigenvalue(double const*, long)",
+    "include/Spectra/Util/SelectionRule.h:215 in Spectra::SortEigenvalue<double, (Spectra::SortRule)3>::SortEigenvalue(double const*, long)",
+    "include/Spectra/Util/SelectionRule.h:215 in Spectra::SortEigenvalue<double, (Spectra::SortRule)4>::SortEigenvalue(double const*, long)",
+    "include/Spectra/Util/SelectionRule.h:215 in Spectra::SortEigenvalue<double, (Spectra::SortRule)7>::SortEigenvalue(double const*, long)"
+   ],
+   "profile": {
+    "none": {
+     "iteration_ir": 108826057,
+     "loop_lines_ir": 182,
+     "loop_lines_share": 1.6723935886053466e-06,
+     "functions_ir": 606,
+     "functions_share": 5.56851931151011e-06,
+     "per_loop_ir": {
+      "include/Spectra/Util/SelectionRule.h:215": 182
+     },
+     "per_function_ir": {
+      "_ZN7Spectra14SortEigenvalueIdLNS_8SortRuleE3EEC2EPKdl": 606
+     },
+     "functions_matched": 1,
+     "functions_listed": 4
+    },
+    "fast": {
+     "iteration_ir": 108827208,
+     "loop_lines_ir": 352,
+     "loop_lines_share": 3.2344852585026346e-06,
+     "functions_ir": 958,
+     "functions_share": 8.80294567512933e-06,
+     "per_loop_ir": {
+      "include/Spectra/Util/SelectionRule.h:215": 352
+     },
+     "per_function_ir": {
+      "_ZN7Spectra14SortEigenvalueIdLNS_8SortRuleE3EEC2EPKdl": 958
+     },
+     "functions_matched": 1,
+     "functions_listed": 4
+    }
+   }
+  },
+  "meshopt": {
+   "row": "meshopt",
+   "program": "meshopt",
+   "args": [
+    "300"
+   ],
+   "smoke": {
+    "none": {
+     "checksum": "08a1c1bd0d32a502",
+     "checksum_r": "08a1c1bd0d32a502",
+     "ns_per_iteration": 164237941.0,
+     "process_wall_s": 0.347
+    },
+    "fast": {
+     "checksum": "08a1c1bd0d32a502",
+     "checksum_r": "08a1c1bd0d32a502"
+    },
+    "none_a64": {
+     "checksum": "08a1c1bd0d32a502",
+     "checksum_r": "08a1c1bd0d32a502"
+    },
+    "fast_a64": {
+     "checksum": "08a1c1bd0d32a502",
+     "checksum_r": "08a1c1bd0d32a502"
+    }
+   },
+   "checksums_exact_match": true,
+   "checksums_rounded_match": true,
+   "instructions": {
+    "none": 1546317383,
+    "fast": 1546317384,
+    "ratio": 1.0000000006466978,
+    "label": "Cachegrind instructions per workload iteration, not time"
+   },
+   "lost_loops_listed": [],
+   "profile": {
+    "none": {
+     "iteration_ir": 1546317356,
+     "loop_lines_ir": 0,
+     "loop_lines_share": 0.0,
+     "functions_ir": 0,
+     "functions_share": 0.0,
+     "per_loop_ir": {},
+     "per_function_ir": {},
+     "functions_matched": 0,
+     "functions_listed": 0
+    },
+    "fast": {
+     "iteration_ir": 1546317327,
+     "loop_lines_ir": 0,
+     "loop_lines_share": 0.0,
+     "functions_ir": 0,
+     "functions_share": 0.0,
+     "per_loop_ir": {},
+     "per_function_ir": {},
+     "functions_matched": 0,
+     "functions_listed": 0
+    }
+   }
+  },
+  "fmt": {
+   "row": "fmt",
+   "program": "fmt",
+   "args": [
+    "20000"
+   ],
+   "smoke": {
+    "none": {
+     "checksum": "579637bbd5b764e1",
+     "checksum_r": "579637bbd5b764e1",
+     "ns_per_iteration": 3243338.0,
+     "process_wall_s": 0.011
+    },
+    "fast": {
+     "checksum": "579637bbd5b764e1",
+     "checksum_r": "579637bbd5b764e1"
+    },
+    "none_a64": {
+     "checksum": "579637bbd5b764e1",
+     "checksum_r": "579637bbd5b764e1"
+    },
+    "fast_a64": {
+     "checksum": "579637bbd5b764e1",
+     "checksum_r": "579637bbd5b764e1"
+    }
+   },
+   "checksums_exact_match": true,
+   "checksums_rounded_match": true,
+   "instructions": {
+    "none": 52037282,
+    "fast": 52080927,
+    "ratio": 1.0008387255890883,
+    "label": "Cachegrind instructions per workload iteration, not time"
+   },
+   "lost_loops_listed": [],
+   "profile": {
+    "none": {
+     "iteration_ir": 52037282,
+     "loop_lines_ir": 0,
+     "loop_lines_share": 0.0,
+     "functions_ir": 0,
+     "functions_share": 0.0,
+     "per_loop_ir": {},
+     "per_function_ir": {},
+     "functions_matched": 0,
+     "functions_listed": 0
+    },
+    "fast": {
+     "iteration_ir": 52080943,
+     "loop_lines_ir": 0,
+     "loop_lines_share": 0.0,
+     "functions_ir": 0,
+     "functions_share": 0.0,
+     "per_loop_ir": {},
+     "per_function_ir": {},
+     "functions_matched": 0,
+     "functions_listed": 0
+    }
+   }
+  }
+ }
+}

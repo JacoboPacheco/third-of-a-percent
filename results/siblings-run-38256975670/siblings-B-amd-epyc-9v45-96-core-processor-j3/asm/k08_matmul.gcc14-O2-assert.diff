@@ -1,0 +1,125 @@
+--- k08_matmul.gcc14O2.none.s
++++ k08_matmul.gcc14O2.gcc14-O2-assert.s
+@@ -2,48 +2,91 @@
+ endbr64
+ test   %rcx,%rcx
+ je     <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++push   %r15
++mov    %rdx,%r9
++mov    %rcx,%r11
++xor    %edx,%edx
++push   %r14
++mov    %rcx,%r10
++push   %r13
+ push   %r12
+-lea    0x0(,%rcx,4),%r9
++xor    %r12d,%r12d
+ push   %rbp
+-mov    %rcx,%rbp
+ push   %rbx
+-mov    (%rsi),%r10
+ xor    %ebx,%ebx
+-mov    (%rdx),%r12
+-mov    (%rdi),%r11
+-add    %r9,%r10
+-add    %r9,%r12
+-nopl   (%rax)
+-mov    %r10,%r8
+-mov    %r12,%rsi
+-sub    %r9,%r8
+-nopl   0x0(%rax)
+-mov    %rsi,%rdx
+-mov    (%r8),%edi
+-mov    %r11,%rax
+-sub    %r9,%rdx
+-data16 cs nopw 0x0(%rax,%rax,1)
+-nopw   0x0(%rax,%rax,1)
+-mov    (%rdx),%ecx
+-add    $0x4,%rdx
+-imul   %edi,%ecx
+-add    %ecx,(%rax)
+-add    $0x4,%rax
+-cmp    %rdx,%rsi
++sub    $0x28,%rsp
++mov    (%rsi),%r13
++mov    0x8(%rsi),%rax
++sub    %r13,%rax
++sar    $0x2,%rax
++mov    %rax,%r14
++mov    %rbx,0x18(%rsp)
++mov    %rdx,%r8
++mov    %r12,%rcx
++mov    %rdx,%rbx
++mov    %r10,%rsi
++cmp    %r14,%rcx
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++mov    (%r9),%rax
++mov    0x8(%r9),%r10
++mov    %rcx,0x8(%rsp)
++mov    %r13,0x10(%rsp)
++mov    0x0(%r13,%rcx,4),%r15d
++sub    %rax,%r10
++lea    (%rax,%r8,4),%rbp
++mov    %r12,%rax
++sar    $0x2,%r10
++lea    (%r8,%rax,1),%rdx
++cmp    %r10,%rdx
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++mov    (%rdi),%rcx
++mov    0x8(%rdi),%rdx
++mov    0x0(%rbp,%rax,4),%r13d
++sub    %rcx,%rdx
++sar    $0x2,%rdx
++imul   %r15d,%r13d
++cmp    %rdx,%rax
++jae    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++add    %r13d,(%rcx,%rax,4)
++add    $0x1,%rax
++cmp    %r11,%rax
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
+-add    $0x4,%r8
+-add    %r9,%rsi
+-cmp    %r8,%r10
++mov    0x8(%rsp),%rcx
++mov    0x10(%rsp),%r13
++add    %rsi,%r8
++add    $0x1,%rcx
++cmp    %r11,%rcx
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++mov    %rbx,%rdx
++mov    0x18(%rsp),%rbx
++mov    %rsi,%r10
++add    %rsi,%r11
++add    %rsi,%r12
++sub    %rsi,%rdx
+ add    $0x1,%rbx
+-add    %r9,%r10
+-add    %r9,%r11
+-cmp    %rbx,%rbp
++cmp    %rbx,%rsi
+ jne    <_Z15kern_k08_matmulRSt6vectorIiSaIiEERKS1_S4_m+off>
++add    $0x28,%rsp
+ pop    %rbx
+ pop    %rbp
+ pop    %r12
+-ret
++pop    %r13
++pop    %r14
++pop    %r15
+ ret
+ cs nopw 0x0(%rax,%rax,1)
++lea    0x71d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x752(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x47d,%esi
++lea    0x81e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
+ nop
++lea    0x6fd(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x832(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0x7fe(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
++ret
++cs nopw 0x0(%rax,%rax,1)
++nopl   0x0(%rax,%rax,1)

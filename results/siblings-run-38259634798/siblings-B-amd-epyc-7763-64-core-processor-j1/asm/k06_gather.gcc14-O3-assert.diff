@@ -1,0 +1,66 @@
+--- k06_gather.gcc14O3.none.s
++++ k06_gather.gcc14O3.gcc14-O3-assert.s
+@@ -1,24 +1,48 @@
+ <_Z15kern_k06_gatherRSt6vectorIiSaIiEERKS1_S4_>:
+ endbr64
+ mov    0x8(%rdx),%rax
+-mov    (%rdx),%rcx
+-mov    %rax,%r8
+-sub    %rcx,%r8
+-sar    $0x2,%r8
+-cmp    %rcx,%rax
++mov    (%rdx),%r8
++mov    %rax,%r9
++sub    %r8,%r9
++sar    $0x2,%r9
++cmp    %r8,%rax
+ je     <_Z15kern_k06_gatherRSt6vectorIiSaIiEERKS1_S4_+off>
+-mov    (%rsi),%r9
+-mov    (%rdi),%rsi
++sub    $0x8,%rsp
++mov    (%rsi),%r11
++mov    0x8(%rsi),%rsi
++mov    %rdi,%rcx
+ xor    %eax,%eax
+-data16 cs nopw 0x0(%rax,%rax,1)
+-data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   0x0(%rax,%rax,1)
+-movslq (%rcx,%rax,4),%rdx
+-mov    (%r9,%rdx,4),%edx
+-mov    %edx,(%rsi,%rax,4)
++sub    %r11,%rsi
++sar    $0x2,%rsi
++movslq (%r8,%rax,4),%rdx
++cmp    %rsi,%rdx
++jae    <_Z15kern_k06_gatherRSt6vectorIiSaIiEERKS1_S4_+off>
++mov    (%r11,%rdx,4),%r10d
++mov    (%rcx),%rdi
++mov    0x8(%rcx),%rdx
++sub    %rdi,%rdx
++sar    $0x2,%rdx
++cmp    %rdx,%rax
++jae    <_Z15kern_k06_gatherRSt6vectorIiSaIiEERKS1_S4_+off>
++mov    %r10d,(%rdi,%rax,4)
+ add    $0x1,%rax
+-cmp    %r8,%rax
++cmp    %r9,%rax
+ jb     <_Z15kern_k06_gatherRSt6vectorIiSaIiEERKS1_S4_+off>
++add    $0x8,%rsp
++ret
++nopw   0x0(%rax,%rax,1)
++lea    0x67d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x6b2(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x47d,%esi
++lea    0x77e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
++lea    0x65d(%rip),%rcx        # <_IO_stdin_used+off>
++lea    0x792(%rip),%rdx        # <_IO_stdin_used+off>
++mov    $0x46a,%esi
++lea    0x75e(%rip),%rdi        # <_IO_stdin_used+off>
++call   <_ZSt21__glibcxx_assert_failPKciS0_S0_@plt>
++nop
+ ret
+ cs nopw 0x0(%rax,%rax,1)
+-nop
++nopl   0x0(%rax,%rax,1)

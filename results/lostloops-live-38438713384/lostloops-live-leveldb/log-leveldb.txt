@@ -1,0 +1,25 @@
+run_live: leveldb: 39 translation units, root /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/leveldb/deps/src/leveldb-bb74ef739973a70ca9f0d90788a1da89b788c0ad
+lostloops: compiling 39 file(s) twice (NONE and FAST) with clang++-18 ...
+lostloops 0.1: libc++ hardening NONE vs FAST, Ubuntu clang version 18.1.3 (1ubuntu1)
+
+Files compiled: 39 of 39
+Vectorized loops with hardening off: 36 (13 source locations); with FAST: 35
+LOST under FAST: 1 (2.78% of the vectorized), at 1 source locations (1 in your project)
+Gained (vectorized only with FAST): 0; moved to another function: 0
+Check traps (ud2) added: 35; code size (.text) change: +0.16%
+
+where                                        shape                          fns   check in the loop        compiler says (hardened)
+db/c.cc:117:5                                forward, bounded by a variable 1     yes: vector[] index o... cost model: vectorization not beneficial
+    for (int i = 0; i < n; i++) {
+
+What to try, by shape (from timed tests of small kernels under FAST, not of your code):
+  forward, bounded by a variable: The loop runs to a variable, not the container's size(), so clang cannot prove each index is in range. Try one check before the loop that the bound fits (if (v.size() < n) abort();) or index a std::span(v).first(n): that worked in our reverse-loop test, where the index is the loop counter itself; this exact shape was not timed.
+
+This tool counts loops; it times nothing. A lost loop is only a candidate for a cost: how often it runs is unknown at compile time. Time the code with hardening off and on before changing anything.
+Report: /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/out-leveldb/report/report.md, /home/runner/work/third-of-a-percent-public/third-of-a-percent-public/build/live/out-leveldb/report/report.json
+clang: Ubuntu clang version 18.1.3 (1ubuntu1)
+totals: equal
+lists: equal
+details: equal
+checks: equal
+RESULT leveldb: PASS

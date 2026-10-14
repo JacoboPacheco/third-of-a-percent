@@ -1,0 +1,82 @@
+--- m06_gather.orig.fast.s
++++ m06_gather.raw.fast.s
+@@ -1,31 +1,56 @@
+ <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_>:
+ mov    (%rdx),%rax
+-mov    0x8(%rdx),%rcx
+-sub    %rax,%rcx
++mov    0x8(%rdx),%rdx
++mov    %rdx,%r8
++sub    %rax,%r8
++mov    (%rdi),%rcx
++mov    0x8(%rdi),%rdi
++sub    %rcx,%rdi
++cmp    %r8,%rdi
++jb     <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++cmp    %rax,%rdx
+ je     <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-sar    $0x2,%rcx
++sar    $0x2,%r8
++cmp    $0x1,%r8
++mov    %r8,%rdi
++adc    $0x0,%rdi
+ mov    (%rsi),%rdx
+-mov    0x8(%rsi),%rsi
+-sub    %rdx,%rsi
+-sar    $0x2,%rsi
+-mov    (%rdi),%r8
+-mov    0x8(%rdi),%rdi
+-sub    %r8,%rdi
+-sar    $0x2,%rdi
+-cmp    $0x1,%rcx
+-adc    $0x0,%rcx
+-xor    %r9d,%r9d
+-nopw   0x0(%rax,%rax,1)
+-movslq (%rax,%r9,4),%r10
+-cmp    %r10,%rsi
+-jbe    <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-cmp    %r9,%rdi
++mov    %edi,%esi
++and    $0x3,%esi
++cmp    $0x4,%r8
++jae    <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++xor    %r8d,%r8d
++jmp    <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++and    $0xfffffffffffffffc,%rdi
++xor    %r8d,%r8d
++data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++movslq (%rax,%r8,4),%r9
++mov    (%rdx,%r9,4),%r9d
++mov    %r9d,(%rcx,%r8,4)
++movslq 0x4(%rax,%r8,4),%r9
++mov    (%rdx,%r9,4),%r9d
++mov    %r9d,0x4(%rcx,%r8,4)
++movslq 0x8(%rax,%r8,4),%r9
++mov    (%rdx,%r9,4),%r9d
++mov    %r9d,0x8(%rcx,%r8,4)
++movslq 0xc(%rax,%r8,4),%r9
++mov    (%rdx,%r9,4),%r9d
++mov    %r9d,0xc(%rcx,%r8,4)
++add    $0x4,%r8
++cmp    %r8,%rdi
++jne    <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++test   %rsi,%rsi
+ je     <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+-mov    (%rdx,%r10,4),%r10d
+-mov    %r10d,(%r8,%r9,4)
+-inc    %r9
+-cmp    %r9,%rcx
++lea    (%rcx,%r8,4),%rcx
++lea    (%rax,%r8,4),%rax
++xor    %edi,%edi
++xchg   %ax,%ax
++movslq (%rax,%rdi,4),%r8
++mov    (%rdx,%r8,4),%r8d
++mov    %r8d,(%rcx,%rdi,4)
++inc    %rdi
++cmp    %rdi,%rsi
+ jne    <_Z15kern_m06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
+ ret
+ ud2
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++nopw   0x0(%rax,%rax,1)

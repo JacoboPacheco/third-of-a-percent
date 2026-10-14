@@ -1,0 +1,292 @@
+{
+ "kind": "pgo-build",
+ "schema": 1,
+ "mode": "none",
+ "toolchain": {
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "llvm_profdata": "Optimized build.",
+  "common": "-O2 -std=<project std> -stdlib=libc++ -pthread (no -march, no -DNDEBUG), -fprofile-instr-generate, then -fprofile-instr-use=<own profile>"
+ },
+ "programs": {
+  "tinydnn": {
+   "program": "tinydnn",
+   "mode": "none",
+   "instrumented": {
+    "binary": "tinydnn.none_gen",
+    "sha256": "7368af52700d0388481809095c21789c169a7e488774f7821dbc6ef92b5081ae",
+    "bytes": 8210624,
+    "text_sha256": "9560f0b2fa72c611cd72865afc7951c8294ca2ed111fca38047b61e2a3e78db5",
+    "traps": 3,
+    "compile_seconds": 34.7,
+    "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-generate -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.none_gen realworld/drivers/tinydnn_mlp.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "tinydnn",
+      "args": [
+       "512",
+       "1",
+       "1"
+      ],
+      "checksum": "f2aab6845f2479a9",
+      "checksum_r": "2a8a6014b2c17d1a",
+      "seconds": 1.0
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 21136,
+    "max_function_count": 514878848,
+    "file": "tinydnn.none.profdata",
+    "bytes": 5752768,
+    "sha256": "d08dd478d181444be03405e4dd55d44e13ce4042d8705ba228f7e618b5811cba",
+    "raw_files": 1,
+    "raw_bytes": 1798048
+   },
+   "builds": {
+    "pgo": {
+     "binary": "tinydnn.none_pgo",
+     "sha256": "0e32c66f4f4e4ec43f153402a23374ba579c9d682b6271c63e341463623debee",
+     "bytes": 1493624,
+     "text_sha256": "b04442076e5659664e8e42ea2963df3661671dff31889fcfff729344e02d98d1",
+     "traps": 3,
+     "compile_seconds": 20.8,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/tinydnn.none.profdata -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.none_pgo realworld/drivers/tinydnn_mlp.cpp"
+    },
+    "pgo_a64": {
+     "binary": "tinydnn.none_pgo_a64",
+     "sha256": "6ccd87002519bda03187dc90d7d7de4a0efd6add7fe3d9919371c288ff9c3d5e",
+     "bytes": 1497720,
+     "text_sha256": "95e43f8f2d0aa27ce31c75e26cb24118dbb6b895aea0be6cc3d6a7c8c8efebb6",
+     "traps": 3,
+     "compile_seconds": 20.6,
+     "link_command": "clang++-18 -O2 -std=c++14 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/tinydnn.none.profdata -falign-loops=64 -DCNN_SINGLE_THREAD -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5 -Ibuild/rw-deps/tinydnn/tiny-dnn-c0f576f5cb7b35893f62127cb7aec18f77a3bcc5/third_party -pthread -o build/pgo-work/genbin/tinydnn.none_pgo_a64 realworld/drivers/tinydnn_mlp.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "tinydnn.none",
+    "pgo_a64": "tinydnn.none_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": [
+    {
+     "location": "tiny_dnn/core/kernels/fully_connected_op_internal.h:65:9",
+     "vectorized": 0
+    },
+    {
+     "location": "tiny_dnn/layers/layer.h:391:7",
+     "vectorized": 0
+    }
+   ]
+  },
+  "spectra": {
+   "program": "spectra",
+   "mode": "none",
+   "instrumented": {
+    "binary": "spectra.none_gen",
+    "sha256": "090d828ffaa5aef4291db6e3f5ce506822f8d412902c8762f351a268bd18e5cc",
+    "bytes": 1924648,
+    "text_sha256": "5a38c13e891ac29756d5c43a2b3e797ce4714b7f27f33c2fa24ce6161a7f7905",
+    "traps": 0,
+    "compile_seconds": 8.7,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-generate -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.none_gen realworld/drivers/spectra_eigs.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "spectra",
+      "args": [
+       "400",
+       "20000",
+       "1"
+      ],
+      "checksum": "1c787615afc7fd9c",
+      "checksum_r": "7bf3cd65fd199ac4",
+      "seconds": 0.1
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 4621,
+    "max_function_count": 51288640,
+    "file": "spectra.none.profdata",
+    "bytes": 1124256,
+    "sha256": "21c762fa41a30b5b8cef5cb2474bca6efa928b3f0c5a8325cfd7723c34e3e0e6",
+    "raw_files": 1,
+    "raw_bytes": 448048
+   },
+   "builds": {
+    "pgo": {
+     "binary": "spectra.none_pgo",
+     "sha256": "a09a67b4c69f94a7a6d45cf7df7c982e9d6b002782b9fda76ea6d286c87abe6a",
+     "bytes": 345624,
+     "text_sha256": "8308838bef8f87ef2372b3b7e562224211481773e91980d07526ea17089b08c3",
+     "traps": 0,
+     "compile_seconds": 6.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/spectra.none.profdata -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.none_pgo realworld/drivers/spectra_eigs.cpp"
+    },
+    "pgo_a64": {
+     "binary": "spectra.none_pgo_a64",
+     "sha256": "6b29b170edfaddfd0931361b8d7f46532e52511135b739c3b11fadb783280ab6",
+     "bytes": 349720,
+     "text_sha256": "e2232cac7b516f9fe4c14e3b91e4597622cdc1aa9d97d963818199a557f175bf",
+     "traps": 0,
+     "compile_seconds": 6.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/spectra.none.profdata -falign-loops=64 -Ibuild/rw-deps/spectra/spectra-6841bcbacaa0f0a8446210314e682057a084be4e/include -Ibuild/rw-deps/spectra/eigen-3.4.0 -pthread -o build/pgo-work/genbin/spectra.none_pgo_a64 realworld/drivers/spectra_eigs.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "spectra.none",
+    "pgo_a64": "spectra.none_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": [
+    {
+     "location": "include/Spectra/Util/SelectionRule.h:215:9",
+     "vectorized": 0
+    }
+   ]
+  },
+  "meshopt": {
+   "program": "meshopt",
+   "mode": "none",
+   "instrumented": {
+    "binary": "meshopt.none_gen",
+    "sha256": "33aa951173040f9b81557b1b1577f1307d4f064509792a8e38909a9370a8e863",
+    "bytes": 403568,
+    "text_sha256": "ded1b30f37361e082123239ff5d4f550e2f125c055c84cc10bf39d31d7fa9ad0",
+    "traps": 0,
+    "compile_seconds": 8.5,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-generate -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.none_gen realworld/drivers/meshopt_pipeline.cpp build/pgo-work/gen/meshopt/libmeshopt.none_gen.a"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "meshopt",
+      "args": [
+       "300",
+       "1"
+      ],
+      "checksum": "08a1c1bd0d32a502",
+      "checksum_r": "08a1c1bd0d32a502",
+      "seconds": 0.6
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 780,
+    "max_function_count": 28485647,
+    "file": "meshopt.none.profdata",
+    "bytes": 144888,
+    "sha256": "d286a30fe85ad7e109e01f3425f93757cb7e74adac45df4fbe397809778210b3",
+    "raw_files": 1,
+    "raw_bytes": 81992
+   },
+   "builds": {
+    "pgo": {
+     "binary": "meshopt.none_pgo",
+     "sha256": "596717246596292428b7cf9d88d9a82f114106a3d932d97a9fb049f8c7716a25",
+     "bytes": 171992,
+     "text_sha256": "47fae8c1bc6ab1ad3f34dde5de6294b6c62bca9dd27d48c6346013ea05b4f262",
+     "traps": 0,
+     "compile_seconds": 7.4,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/meshopt.none.profdata -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.none_pgo realworld/drivers/meshopt_pipeline.cpp build/pgo-work/pgo/meshopt/libmeshopt.none_pgo.a"
+    },
+    "pgo_a64": {
+     "binary": "meshopt.none_pgo_a64",
+     "sha256": "ede10ce0802f63bb61a57274740882df4437596023a9e032d6cbc7c5d87c5d5a",
+     "bytes": 176088,
+     "text_sha256": "84db500eb4fa5ff316cc1efc09ef0b1a6f9ffa42a6736577782c7d3cb9e43e45",
+     "traps": 0,
+     "compile_seconds": 6.9,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/meshopt.none.profdata -falign-loops=64 -Ibuild/rw-deps/meshopt/meshoptimizer-9e1f07b159d3cb777f1c67ed31fc11fd117986f4/src -pthread -o build/pgo-work/genbin/meshopt.none_pgo_a64 realworld/drivers/meshopt_pipeline.cpp build/pgo-work/pgo/meshopt/libmeshopt.none_pgo_a64.a"
+    }
+   },
+   "binary_names": {
+    "pgo": "meshopt.none",
+    "pgo_a64": "meshopt.none_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 13
+   },
+   "census_lost_locations": []
+  },
+  "fmt": {
+   "program": "fmt",
+   "mode": "none",
+   "instrumented": {
+    "binary": "fmt.none_gen",
+    "sha256": "3b237e7f94484ba83d0b4200a1c95bd71386afe9fb508109236927cd6e320995",
+    "bytes": 498112,
+    "text_sha256": "a9cdda22e410cac7ad05ab0ab371fde405c886bba54f49ca3575a3eca1db09b5",
+    "traps": 0,
+    "compile_seconds": 3.1,
+    "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-generate -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.none_gen realworld/drivers/fmt_format.cpp"
+   },
+   "training": {
+    "rows": [
+     {
+      "row": "fmt",
+      "args": [
+       "20000",
+       "1"
+      ],
+      "checksum": "579637bbd5b764e1",
+      "checksum_r": "579637bbd5b764e1",
+      "seconds": 0.0
+     }
+    ],
+    "note": "the same fixed input that is timed (training input equals test input)"
+   },
+   "profile": {
+    "functions": 1049,
+    "max_function_count": 640011,
+    "file": "fmt.none.profdata",
+    "bytes": 201624,
+    "sha256": "1404f2260d8c2d80ce9993fdfaf212d1cbcd9a5c40e064db83b71ff401c56235",
+    "raw_files": 1,
+    "raw_bytes": 102128
+   },
+   "builds": {
+    "pgo": {
+     "binary": "fmt.none_pgo",
+     "sha256": "2e512d6b94d26d79cc1e38ab28a83b1f699f85740a29050c40dd0539dc01b239",
+     "bytes": 162256,
+     "text_sha256": "f791d84d2b842ba9b7a4558eb0ae30997dede46f36d1f24f2bd4e3f889d091d5",
+     "traps": 0,
+     "compile_seconds": 2.5,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/fmt.none.profdata -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.none_pgo realworld/drivers/fmt_format.cpp"
+    },
+    "pgo_a64": {
+     "binary": "fmt.none_pgo_a64",
+     "sha256": "ec480810f4b5ab33a5d7e8c2a441cecf5ca8db547d6d16f77f63d1f61a95b29d",
+     "bytes": 162256,
+     "text_sha256": "8641bdea5935c50dc917ad35d211d24bca11781860d770d422a6d8810ffa4112",
+     "traps": 0,
+     "compile_seconds": 2.5,
+     "link_command": "clang++-18 -O2 -std=c++20 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -fprofile-instr-use=pgometa/fmt.none.profdata -falign-loops=64 -DFMT_HEADER_ONLY -Ibuild/rw-deps/fmt/fmt-11.0.2/include -pthread -o build/pgo-work/genbin/fmt.none_pgo_a64 realworld/drivers/fmt_format.cpp"
+    }
+   },
+   "binary_names": {
+    "pgo": "fmt.none",
+    "pgo_a64": "fmt.none_a64"
+   },
+   "profile_warnings": {
+    "out_of_date": 0,
+    "missing": 0
+   },
+   "census_lost_locations": []
+  }
+ }
+}
