@@ -73,7 +73,7 @@
             <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
           </div>
           <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
-          <noscript><p class="ns">Needs JavaScript for the animation. The numbers: loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span> times as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned.</p></noscript>
+          <noscript><p class="ns">Needs JavaScript for the animation. The numbers: loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span> times as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</p></noscript>
         </figure>
       </div>
     </section>
@@ -174,7 +174,7 @@
         <ul>
           <li>Your production average: these are single loops, not services.</li>
           <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
-          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">28</span> compilers in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
+          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
           <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the stored samples leaves every verdict on the two best-sampled AMD models unchanged and the third is fragile (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
         </ul>
         <p class="cannot-more"><a href="details.html#limits-full">Every limit, in full &rarr;</a></p>
@@ -185,7 +185,7 @@
   <div class="col body">
     <section id="result">
       <h2><span class="secno">1</span>Result</h2>
-      <p class="gist">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times; as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned.</p>
+      <p class="gist">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times; as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</p>
       <p>Every ratio is the time a loop takes with the checks on divided by its time with them off (1&times; is free, 2&times; twice as long), at two working-set sizes that fit the fastest cache (L1) and the second (L2).</p>
       <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged.</p>
       <p class="tcap" id="cpu-cap"><b>Table 1.</b> Per CPU model, pooled over every job that drew it. &ldquo;Pattern&rdquo; asks whether every judged forward loop stayed at most 2% above 1&times; (aligned, interval included) and every loop that loses SIMD stayed far above it (interval above 1.5&times; in both columns), by rules written before these runs. Placement-sensitive cells are left out of the 2% test and shown in their own column (section 3).</p>
@@ -338,7 +338,7 @@
     </section>
 
     <footer class="foot small">
-      <p>The heavy material (every cell, every run, the full toolchain table, the census per project, the rule history) is on <a href="details.html">the details page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the audit: <a data-href="repoUrl" href="#">the repository</a>. The page reads <code>data/index.json</code> and the files beside it, written by <code>scripts/build_site_data.py</code>.</p>
+      <p>The heavy material (every cell, every run, the full toolchain table, the census per project, the rule history) is on <a href="details.html">the details page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the re-checks: <a data-href="repoUrl" href="#">the repository</a>. The page reads <code>data/index.json</code> and the files beside it, written by <code>scripts/build_site_data.py</code>.</p>
     </footer>
   </div>
 </main>

@@ -183,14 +183,14 @@
       <h2><span class="secno">7b</span>The earlier small programs, every job</h2>
       <p id="prog-sum"><span data-v="progSum"></span></p>
         <p>nlohmann/json parsed a public <code>twitter.json</code> and fmt formatted numbers. FAST mode put <span data-v="jsonTraps"></span> and <span data-v="fmtTraps"></span> check traps into them. For each job the table gives two numbers: the noise floor (how far the unchecked program differs from an identical copy of itself on that machine) and the largest slowdown the measurement allows once that floor is accounted for (the upper end of the 95% interval, or the floor if that is larger).</p>
-        <p class="tcap" id="prog-cap"><b>Table 8.</b> Whole programs, as compiled, every usable job of <span data-v="progRuns"></span>; the earlier run that timed fmt only and the single S2 job are not in it. Each row: the largest slowdown allowed, next to that job&rsquo;s noise floor.</p>
+        <p class="tcap" id="prog-cap"><b>Table 8.</b> Whole programs, as compiled, every usable job of <span data-v="progRuns"></span>; the earlier run that timed fmt only and the single early job are not in it. Each row: the largest slowdown allowed, next to that job&rsquo;s noise floor.</p>
       <div class="tablewrap">
           <table class="tbl" id="prog-table">
             <thead><tr><th scope="col">Run, job</th><th scope="col">CPU model</th><th scope="col" class="num">json: slowdown at most</th><th scope="col" class="num">json: noise floor</th><th scope="col" class="num">fmt: slowdown at most</th><th scope="col" class="num">fmt: noise floor</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
-        <p>The A/A floors run from <span data-v="progAaMin"></span>% to <span data-v="progAaMax"></span>%. A shared runner cannot resolve a difference of <span data-v="googlePct"></span>%, so these columns are an upper bound and not a confirmation of Google&rsquo;s figure.</p>
+        <p>The A/A floors run from <span data-v="progAaMin"></span>% to <span data-v="progAaMax"></span>%. In these single jobs a difference of <span data-v="googlePct"></span>% is not reliably above the noise, so these columns are an upper bound and not a confirmation of Google&rsquo;s figure. Pooled over <span data-v="aaPoolJobs"></span> jobs, the kernel A/A floor on <span data-v="aaPoolCpu"></span> is about <span data-v="aaPool"></span>% (the A/A band in Figure 1 on the main page); that floor belongs to the byte-identical kernel binary, not to these programs.</p>
     </section>
 
     <section id="method-full">
@@ -238,7 +238,7 @@
         <li><strong>Real programs:</strong> the main timing used no profile-guided optimization (the PGO column in section 7c trains on the timed input and did not make the cost vanish in most rows), shared virtual machines, one toolchain, three AMD CPU models (16, 5 and 3 jobs; the result differs by model), and programs chosen for their lost loops, so they are not a sample of anyone&rsquo;s production code.</li>
       </ul>
       <div id="loosened">
-        <p><strong>The forward-loop rule was loosened after results were seen</strong>, once. The day-one test demanded that the upper end of every forward loop&rsquo;s interval stay below <span data-v="d1Limit"></span>&times;; both of its runs missed, so it said no-go as written. The first harness rules then replaced that ceiling with <span data-v="v1RuleText"></span>. The second version kept those thresholds and added the aligned column, the layout A/A and placement-sensitive cells. The third version, written after those runs and an independent audit, changed how jobs are pooled (per CPU model) and how a placement-sensitive cell is identified, which decides which forward cells are judged; it changed no threshold. The original no-go stays on record.</p>
+        <p><strong>The forward-loop rule was loosened after results were seen</strong>, once. The day-one test demanded that the upper end of every forward loop&rsquo;s interval stay below <span data-v="d1Limit"></span>&times;; both of its runs missed, so it said no-go as written. The first harness rules then replaced that ceiling with <span data-v="v1RuleText"></span>. The second version kept those thresholds and added the aligned column, the layout A/A and placement-sensitive cells. The third version, written after those runs and a separate audit, changed how jobs are pooled (per CPU model) and how a placement-sensitive cell is identified, which decides which forward cells are judged; it changed no threshold. The original no-go stays on record.</p>
         <p id="orig-rule-h">Under the original rule (upper interval end below <span data-v="d1Limit"></span>&times;, as compiled), the pooled forward-add and stencil cells would read:</p>
         <ul class="orig-rule" id="orig-rule"></ul>
         <details class="more" id="loosened-details">
@@ -297,7 +297,7 @@
 
 
     <footer class="foot small">
-      <p><a href="index.html">Back to the main page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the audit: <a data-href="repoUrl" href="#">the repository</a>.</p>
+      <p><a href="index.html">Back to the main page</a>. Source: <a data-href="claimUrl" href="#">Google Security Blog</a>. Code, raw data and the re-checks: <a data-href="repoUrl" href="#">the repository</a>.</p>
     </footer>
   </div>
 </main>

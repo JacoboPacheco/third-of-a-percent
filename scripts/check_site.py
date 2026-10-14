@@ -716,6 +716,8 @@ def figure2_plain_checks(browser, base, ck, index, pooled):
             simd: document.querySelectorAll('#fig2 pre.asm-lite .simd').length, chk: document.querySelectorAll('#fig2 pre.asm-lite .chk').length,
             trap: document.querySelectorAll('#fig2 pre.asm-lite .trap').length, ln: document.querySelectorAll('#fig2 pre.asm-lite .ln').length,
             notes: [...document.querySelectorAll('#fig2 pre.asm-lite .note')].map(n => n.textContent),
+            left: [...document.querySelectorAll('#fig2 pre.asm-lite .leftover')].map(n => n.textContent),
+            leftBlock: [...document.querySelectorAll('#fig2 pre.asm-lite')].map(b => b.querySelectorAll('.leftover').length),
             code: [...document.querySelectorAll('#fig2 pre.asm-lite .ln')].map(p => p.textContent).join('\n'),
             subs: [...document.querySelectorAll('#fig2 .f2-lite .remark')].map(n => n.textContent),
             titles: [...document.querySelectorAll('#fig2 .f2-lite h3')].map(n => n.textContent),
@@ -742,6 +744,11 @@ def figure2_plain_checks(browser, base, ck, index, pooled):
     v = plain_view("k02_add_fwd")
     ck.ok(v["blocks"] == 2 and v["simd"] >= 2 and v["chk"] >= 1 and v["trap"] >= 1 and "4 numbers at a time" in v["subs"],
           f"Figure 2, plain view of the forward add: two blocks that keep their SIMD lines, the second with its check and trap ({v['simd']} SIMD lines)")
+    ck.ok(v["left"] == ["then, for the leftover elements:"] and v["leftBlock"] == [0, 1] and "Checks on" in v["titles"][1],
+          f"Figure 2, plain view of the forward add: only the checks-on block carries the muted label that its check lines belong to the leftover elements ({v['left']})")
+    for k in ("k04_rev", "k05_stride2", "k08_matmul", "k01_sum_fwd"):
+        vv = plain_view(k)
+        ck.ok(not vv["left"], f"Figure 2, plain view of {k}: no 'leftover elements' label (lost or identical view)")
     # the button: mouse, keyboard, and the detail it holds
     pg.click('#rows .row[data-k="k04_rev"]')
     pg.wait_for_function(FIG2_READY, timeout=8000)
@@ -1413,6 +1420,7 @@ def main():
                 CE_WORD = {"lost": "lost under the checks", "kept": "kept", "none": "not vectorized in either build"}
                 ce_st = lambda v: "lost" if v["none"] and not v["checked"] else ("kept" if v["checked"] else "none")
                 cl_rows = [m for m in cer["matrix"] if m["family"] == "clang"]
+                CE_VER = len({(m["family"], "trunk" if m["version"] == "trunk" else int(m["version"].split(".")[0])) for m in cer["matrix"]})  # 28 ids, 14 versions
                 n_builds = 2 * len({(c["compiler_id"], c["target"], c["opt"]) for c in cer["cells"]})
                 ck.ok(len(cl_rows) == 54 and len(cer["matrix"]) == 84 and len(cer["cells"]) == 672 and n_builds == 168
                       and ce["counts"] == {"builds": 168, "cells": 672, "compilers": 28, "rows": 84} and len(ce["rows"]) == 84
@@ -1467,14 +1475,18 @@ def main():
                       and f"forward add in {sm['gcc_o3_lost']['k02_add_fwd']} of {sm['gcc_o3_rows']} rows" in cf
                       and sm["gcc_o3_lost"]["k04_rev"] == sm["gcc_o3_rows"] == sm["gcc_o3_lost"]["k08_matmul"]
                       and "Compile-only: this says which loops lose vectorization, not what they cost" in cc and "assumed to match" in cc
-                      and f"on {ce['counts']['compilers']} compilers" in cf,
+                      and f"on {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids)" in cf and CE_VER == 14,
                       "section 6: the sweep's findings, recomputed from the data, and the compile-only and libc++ pairing sentences")
                 ck.ok(dp.locator("#ce-table tbody tr").count() == 84 and dp.locator("#ce-table tbody td.ce-td").count() == 672
                       and dp.locator("#ce-notes li").count() >= 4 and "Early exit loop with store but no supported condition load" in dp.inner_text("#siblings-full")
                       and "No timing" in dp.inner_text("#siblings-full") and "assumed to match" in dp.inner_text("#siblings-full"),
                       "details: Table 4b has all 84 compiler rows (672 cells) and per-version notes")
+                note_ce = dp.inner_text("#ce-full + p")
+                ck.ok(f"{ce['summary']['clang_rows'] + ce['summary']['gcc_rows']} rows ({CE_VER} compiler versions," in note_ce and f"{ce['counts']['compilers']} separate x86-64 and AArch64 compiler ids" in note_ce
+                      and f"from {ce['counts']['builds']} builds" in note_ce and "compilers," not in note_ce.replace("compiler versions,", ""),
+                      f"details, Table 4b note: {CE_VER} compiler versions are told apart from the {ce['counts']['compilers']} Compiler Explorer ids ({note_ce[:120]!r})")
                 cbox = page.inner_text("#cannot")
-                ck.ok(f"Compiled only: the {ce['counts']['compilers']} compilers in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
+                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
                       "abstract and box: the wider toolchain coverage is compile-only; timing rests on clang 18 plus a few GCC and clang 20 jobs")
                 main_versions(abstract, cbox, ck)
                 st = page.inner_text("#siblings") + dp.inner_text("#siblings-full")
@@ -1541,7 +1553,7 @@ def main():
                 fn = dp.inner_text("#fn-novec")
                 with open(os.path.join(DATA, "index.json"), encoding="utf-8") as f_:
                     ce_ = next((c_ for c_ in json.load(f_)["cpus"] if c_["slug"] == default_cpu["slug"]), None)
-                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
+                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"({int(ce_['novec_rev_share_pct'] + 0.5)}%)" in fn and f"The rest, {100 - int(ce_['novec_rev_share_pct'] + 0.5)}%," in fn and "not explained by this measurement" in fn,
                       "footnote 1: losing SIMD is the only factor measured, about a third of the extra time, the rest stated as unexplained")
                 av = dp.inner_text("#census-avx2")
                 ck.ok("loses fewer, not more" not in av and "snappy" in av and "census 2 loses fewer" in av, "section 4: only census 2 loses fewer at AVX2; census 1 over 18 projects, snappy not built")
@@ -1835,6 +1847,7 @@ def main():
                 CE_WORD = {"lost": "lost under the checks", "kept": "kept", "none": "not vectorized in either build"}
                 ce_st = lambda v: "lost" if v["none"] and not v["checked"] else ("kept" if v["checked"] else "none")
                 cl_rows = [m for m in cer["matrix"] if m["family"] == "clang"]
+                CE_VER = len({(m["family"], "trunk" if m["version"] == "trunk" else int(m["version"].split(".")[0])) for m in cer["matrix"]})  # 28 ids, 14 versions
                 n_builds = 2 * len({(c["compiler_id"], c["target"], c["opt"]) for c in cer["cells"]})
                 ck.ok(len(cl_rows) == 54 and len(cer["matrix"]) == 84 and len(cer["cells"]) == 672 and n_builds == 168
                       and ce["counts"] == {"builds": 168, "cells": 672, "compilers": 28, "rows": 84} and len(ce["rows"]) == 84
@@ -1889,14 +1902,18 @@ def main():
                       and f"forward add in {sm['gcc_o3_lost']['k02_add_fwd']} of {sm['gcc_o3_rows']} rows" in cf
                       and sm["gcc_o3_lost"]["k04_rev"] == sm["gcc_o3_rows"] == sm["gcc_o3_lost"]["k08_matmul"]
                       and "Compile-only: this says which loops lose vectorization, not what they cost" in cc and "assumed to match" in cc
-                      and f"on {ce['counts']['compilers']} compilers" in cf,
+                      and f"on {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids)" in cf and CE_VER == 14,
                       "section 6: the sweep's findings, recomputed from the data, and the compile-only and libc++ pairing sentences")
                 ck.ok(dp.locator("#ce-table tbody tr").count() == 84 and dp.locator("#ce-table tbody td.ce-td").count() == 672
                       and dp.locator("#ce-notes li").count() >= 4 and "Early exit loop with store but no supported condition load" in dp.inner_text("#siblings-full")
                       and "No timing" in dp.inner_text("#siblings-full") and "assumed to match" in dp.inner_text("#siblings-full"),
                       "details: Table 4b has all 84 compiler rows (672 cells) and per-version notes")
+                note_ce = dp.inner_text("#ce-full + p")
+                ck.ok(f"{ce['summary']['clang_rows'] + ce['summary']['gcc_rows']} rows ({CE_VER} compiler versions," in note_ce and f"{ce['counts']['compilers']} separate x86-64 and AArch64 compiler ids" in note_ce
+                      and f"from {ce['counts']['builds']} builds" in note_ce and "compilers," not in note_ce.replace("compiler versions,", ""),
+                      f"details, Table 4b note: {CE_VER} compiler versions are told apart from the {ce['counts']['compilers']} Compiler Explorer ids ({note_ce[:120]!r})")
                 cbox = page.inner_text("#cannot")
-                ck.ok(f"Compiled only: the {ce['counts']['compilers']} compilers in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
+                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
                       "abstract and box: the wider toolchain coverage is compile-only; timing rests on clang 18 plus a few GCC and clang 20 jobs")
                 main_versions(abstract, cbox, ck)
                 st = page.inner_text("#siblings") + dp.inner_text("#siblings-full")
@@ -1963,7 +1980,7 @@ def main():
                 fn = dp.inner_text("#fn-novec")
                 with open(os.path.join(DATA, "index.json"), encoding="utf-8") as f_:
                     ce_ = next((c_ for c_ in json.load(f_)["cpus"] if c_["slug"] == default_cpu["slug"]), None)
-                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
+                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"({int(ce_['novec_rev_share_pct'] + 0.5)}%)" in fn and f"The rest, {100 - int(ce_['novec_rev_share_pct'] + 0.5)}%," in fn and "not explained by this measurement" in fn,
                       "footnote 1: losing SIMD is the only factor measured, about a third of the extra time, the rest stated as unexplained")
                 av = dp.inner_text("#census-avx2")
                 ck.ok("loses fewer, not more" not in av and "snappy" in av and "census 2 loses fewer" in av, "section 4: only census 2 loses fewer at AVX2; census 1 over 18 projects, snappy not built")
@@ -2155,6 +2172,11 @@ def main():
                 avx = page.evaluate("avx2Text()")
                 ck.ok("1.11×" in avx and "EPYC 9V45" in avx and "AVX2 exception, 1.11×" in abstract and all(avx in x_ for x_ in (page.inner_text("#headline"), page.inner_text("#sib-short"), dp.inner_text("#sib-finding"), dp.inner_text("#intel-p"))),
                       f"every 'near 1x on the AMD models' carries the AVX2 exception ({avx}), main and details")
+                avx_short = page.inner_text('#result .gist span[data-v="avx2Short"]').strip()
+                with open(os.path.join(REPO, "README.md"), encoding="utf-8") as rf:
+                    readme_txt = rf.read()
+                ck.ok(f"(one AVX2 exception, {avx_short}×)" in page.inner_text("#result .gist") and f"one AVX2 exception, {avx_short}x)" in readme_txt and avx_short in avx,
+                      f"the Result gist and the README forward-loop sentence carry the AVX2 exception ({avx_short}), the same value as the headline")
                 caps = dp.evaluate("[...document.querySelectorAll('.tcap b, figcaption b')].map(b => b.textContent.trim()).filter(t => /^(Table|Figure) /.test(t))")
                 secs = dp.evaluate("[...document.querySelectorAll('h2 .secno')].map(n => n.textContent.trim())")
                 ck.ok(len(caps) == len(set(caps)) and len(secs) == len(set(secs)),

@@ -3,7 +3,7 @@
 **Compile-only. No timing.** This folder asks one question of many compilers: when the standard
 library's bounds checks are turned on, which of the project's 8 loops stop being vectorized? The
 main study answered it with clang 18 at x86-64 baseline (plus clang 20 and GCC 14 in `siblings/`).
-Here the same 8 loop functions go through 28 compilers on Compiler Explorer's public API.
+Here the same 8 loop functions go through 28 Compiler Explorer compiler ids (14 compiler versions, each as an x86-64 and an AArch64 build) on its public API.
 
 ## What was compiled
 

@@ -1,6 +1,6 @@
 # Claims audit reports
 
-Point-in-time reports from independent audit passes over the claims in the README and on the page. Each report describes the text as it stood when the report was written; the findings were fixed in later commits. A verdict count at the top of a report (for example the 11 CONTRADICTED, 24 OVERSTATED and 6 STALE of `CLAIMS.md`) therefore describes that earlier text, not the current page.
+Point-in-time reports from separate audit passes over the claims in the README and on the page. Each report describes the text as it stood when the report was written; the findings were fixed in later commits. A verdict count at the top of a report (for example the 11 CONTRADICTED, 24 OVERSTATED and 6 STALE of `CLAIMS.md`) therefore describes that earlier text, not the current page.
 
 | Report | What it audited |
 |---|---|

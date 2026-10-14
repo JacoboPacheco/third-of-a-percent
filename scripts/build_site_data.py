@@ -1315,7 +1315,7 @@ def baked_values(data_dir):
         "c2Lost": f"{t2['lost']:,}", "c2Vec": f"{t2['none']['vectorized']:,}",
         "fixMin": _fx(min(r["min"] for r in fix)), "fixMax": _fx(max(r["max"] for r in fix)),
         "rwSlowMin": f"{(rw['timing']['slow_min'] - 1) * 100:.1f}", "rwSlowMax": f"{(rw['timing']['slow_max'] - 1) * 100:.1f}",
-        "avx2Short": _fx(max(hits)), "ceCompilers": str(ce["counts"]["compilers"]),
+        "avx2Short": _fx(max(hits)), "ceCompilers": f"{len({(r['family'], 'trunk' if r['version'] == 'trunk' else r['major']) for r in ce['rows']})} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids)",
         "rwWorkloads": words[len(prog)], "rwWorkloadsCap": words[len(prog)].capitalize(),
         "rwProjects": words[len({r["project"] for r in prog})], "rwDetect": words[len(detected)],
         "rwDetectProjects": words[len({r["project"] for r in detected})], "rwOthers": words[len(rw["timing"]["groups"]) - 1], "bigShare": share_words,

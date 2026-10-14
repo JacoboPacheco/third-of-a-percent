@@ -243,6 +243,8 @@ function fillStatic() {
   v.fmtTraps = P.traps_fast.fmt != null ? String(P.traps_fast.fmt) : 'n/a';
   v.progMin = pct(P.at_most_pct.min); v.progMax = pct(P.at_most_pct.max);
   v.progAaMin = pct(P.aa_pct.min); v.progAaMax = pct(P.aa_pct.max);
+  const bestPooled = good.reduce((a, c) => (!a || c.jobs > a.jobs ? c : a), null); // the model with the most jobs: the pooled kernel floor, for contrast with the single early jobs
+  v.aaPoolJobs = bestPooled ? String(bestPooled.jobs) : 'n/a'; v.aaPoolCpu = bestPooled ? bestPooled.cpu_short : 'n/a'; v.aaPool = bestPooled ? pct(bestPooled.aa_half_width_pct, 1) : 'n/a';
   v.progRuns = joinAnd(P.runs.map((r) => `the ${r.label}`));
   // the forward add, faster when aligned
   const k02 = good.map((c) => [c.cpu_short, cellOf(pooledReal(c.cpu_model), 'k02_add_fwd.L1')]).filter((x) => x[1] && x[1].aligned);
@@ -527,8 +529,11 @@ function fillCpuProse() { // section 2's footnote, from the selected CPU model's
   setV('fastRev', rev ? fx(rev.as_compiled.ratio) : 'n/a');
   setV('novecCpu', pc ? cpuShortOf(pc.cpu_model) : 'n/a');
   const ce = S.ix.cpus.find((c) => pc && c.cpu_model === pc.cpu_model);
-  setV('novecShare', ce && ce.novec_rev_share_pct != null ? ce.novec_rev_share_pct.toFixed(0) : 'n/a');
-  setV('novecRest', ce && ce.novec_rest_pct != null ? ce.novec_rest_pct.toFixed(1) : 'n/a');
+  { // both shares at the same precision, the rest taken from the rounded share so the two always add to 100
+    const sh = ce && ce.novec_rev_share_pct != null && ce.novec_rest_pct != null ? Math.round(ce.novec_rev_share_pct) : null;
+    setV('novecShare', sh != null ? String(sh) : 'n/a');
+    setV('novecRest', sh != null ? String(100 - sh) : 'n/a');
+  }
 }
 
 /* ---------- Figure 1 ---------- */
@@ -844,7 +849,7 @@ function asmBlock(an, keep, opts) {
   const pre = el('pre', { class: lite ? 'asm-lite' : 'asm' });
   const c = el('code');
   pre.append(c);
-  let skipped = 0, simdNoted = false, checkNoted = 0, any = false;
+  let skipped = 0, simdNoted = false, checkNoted = 0, any = false, simdShown = false, leftoverNoted = false;
   const checkEnds = new Set(an.checks.map((p) => p[p.length - 1]));
   const checkAddrs = new Set(an.checks.flat());
   const clsOf = (x) => (!x ? null : x.trap ? 'trap' : checkAddrs.has(x.addr) ? 'chk' : x.simd ? 'simd' : '');
@@ -884,6 +889,12 @@ function asmBlock(an, keep, opts) {
     flush();
     any = true;
     const cls = clsOf(x);
+    // kept loops, check outside the SIMD loop: say the check lines belong to the loop over the leftover elements
+    if (lite && opts.leftoverLabel && !leftoverNoted && simdShown && (cls === 'chk' || cls === 'trap')) {
+      leftoverNoted = true;
+      c.append(el('span', { class: 'gap leftover', text: 'then, for the leftover elements:' }));
+    }
+    if (cls === 'simd') simdShown = true;
     const nx = shown[shown.indexOf(x) + 1];
     const toStop = lite && x.target != null && an.traps.has(x.target); // the plain view names the trap STOP instead of showing its address
     const text = lite && x.trap ? `STOP:  ${x.mnem}` : `${x.mnem.padEnd(7)} ${toStop ? 'STOP' : x.ops}`;
@@ -985,8 +996,8 @@ async function renderFig2() {
   const hotSimd = (an) => an.lines.some((x) => x.simd && !x.pad && (!an.hot || (x.addr >= an.hot.start && x.addr <= an.hot.end))); // from the lines the plain view shows, not any SIMD line in the function
   const hotCheck = (an) => !!an.hot && an.checks.some((q) => q[0] >= an.hot.start && q[q.length - 1] <= an.hot.end);
   const pace = (an, w) => (hotSimd(an) ? `${w ? `${w} numbers` : 'Several numbers'} at a time` : hotCheck(an) ? 'One number per pass, with a check each time' : 'One number at a time');
-  const liteCol = (title, an, w, sub, noCode, sample) => el('div', { class: 'f2-col' }, el('h3', null, title), el('p', { class: 'remark' }, sub), noCode ? null : asmBlock(an, null, { width: w, lite: true, sample }));
   const hotHasCheck = anOn.hot && anOn.checks.some((q) => q[0] >= anOn.hot.start && q[q.length - 1] <= anOn.hot.end);
+  const liteCol = (title, an, w, sub, noCode, sample, leftoverLabel) => el('div', { class: 'f2-col' }, el('h3', null, title), el('p', { class: 'remark' }, sub), noCode ? null : asmBlock(an, null, { width: w, lite: true, sample, leftoverLabel }));
   const wAny = widthOff || widthOn;
   const nWord = wAny ? `${wAny} numbers` : 'several numbers';
   const onRemarks = (bOn && bOn.remarks) || [];
@@ -1023,7 +1034,7 @@ async function renderFig2() {
       ? el('div', { class: 'f2-cols f2-lite f2-same' }, liteCol('Checks off and on', anOff, widthOff, `Identical code with and without the check${hotSimd(anOff) ? `; ${pace(anOff, widthOff).toLowerCase()}` : ''}`, false, true))
       : el('div', { class: 'f2-cols f2-lite' },
         liteCol('Checks off', anOff, widthOff, pace(anOff, widthOff)),
-        liteCol('Checks on', anOn, widthOn, pace(anOn, widthOn))));
+        liteCol('Checks on', anOn, widthOn, pace(anOn, widthOn), false, false, r.role === 'kept' && !hotHasCheck)));
   const plainSimd = hotSimd(anOff) || hotSimd(anOn);
   cap.replaceChildren(...[
     plainSimd ? el('span', { class: 'f2-leg' }, el('span', { class: 'sw-simd', 'aria-hidden': 'true' }), ' Blue: several numbers per instruction') : null,
@@ -1288,10 +1299,10 @@ function renderSiblings() {
   setV('sib6973Jobs', `${j69} job${j69 === 1 ? '' : 's'}`);
   const IFc = S.ix.intel_forward && S.ix.intel_forward.jobs.length ? S.ix.intel_forward : null;
   const intelCounts = IFc ? joinAnd(IFc.cpus.map((c) => { const n = IFc.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; })) : '';
-  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs, the S4 smoke run and the pooled runs)` : '');
+  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs, the early trial run and the pooled runs)` : '');
   const IF = S.ix.intel_forward;
   setV('intelText', IF && IF.jobs.length
-    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}, too few for a verdict), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the S4 smoke run and the pooled runs; the toolchain runs add a Xeon 6973P-C at ${v69}× in ${j69} job${j69 === 1 ? '' : 's'} (section 6).`
+    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}, too few for a verdict), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs; the toolchain runs add a Xeon 6973P-C at ${v69}× in ${j69} job${j69 === 1 ? '' : 's'} (section 6).`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1363,6 +1374,9 @@ function ceRanges(ms) { // [16,17,18] -> "16 to 18"
   }
   if (a != null) out.push([a, b]);
   return joinAnd(out.map(([x, y]) => (x === y ? String(x) : `${x} to ${y}`)));
+}
+function ceVersionCount(C) { // distinct compiler versions in the sweep: family and major version, trunk kept apart (x86 and AArch64 ids of one version count once)
+  return new Set(C.rows.map((r) => `${r.family}-${r.version === 'trunk' ? 'trunk' : r.major}`)).size;
 }
 function ceFindings() {
   const C = S.ce, R = C.rows, sm = C.summary, T = Object.keys(C.targets);
@@ -1563,19 +1577,25 @@ function renderVersions() {
   const thinMin = Math.min(...thin), thinMax = Math.max(...thin);
   const tcName = (t) => `clang and libc++ ${t.clang}`;
   setV('verIntro', `The main study is clang ${S.ix.toolchain.clang.match(/\d+\.\d+\.\d+/)[0]} with Ubuntu’s libc++ 18, and section 6 timed other setups on few jobs. This column runs the main study’s harness unchanged on the same eight loops (as compiled and aligned, ${reps} processes a side, alternating order, one pinned CPU, in cache), under ${joinAnd(T.map(tcName))} from apt.llvm.org: ${sm.jobs} jobs in one run, ${sm.cpu_models} CPU models, ${T.length} toolchains. The rules were written before the run (${V.plan}). ${sm.all_probes_trap ? 'On every toolchain the checks trapped an out-of-range index in the probe, and a build without them ran clean.' : 'On some toolchain the probe did not trap; its rows are inconclusive.'} A loop holds when it loses SIMD and its interval’s lower end is at least ${fx(V.lost_lo)} in both columns at both sizes; a CPU model needs ${V.min_jobs} jobs on a toolchain for a verdict form.`);
+  const alSpan = (kernel, size) => { // the same cells, loops aligned: the second column of the ranges quoted as compiled
+    const vs = T.flatMap((t) => t.cpus.flatMap((c) => c.cells.filter((x) => x.kernel === kernel && (!size || x.size === size) && x.aligned != null).map((x) => x.aligned)));
+    return vs.length ? { min: Math.min(...vs), max: Math.max(...vs) } : null;
+  };
+  const alSum = alSpan('k01_sum_fwd'), alM1 = alSpan('k08_matmul', 'L1'), alM2 = alSpan('k08_matmul', 'L2');
+  const asAl = (r) => (r ? ` (${rangeX(r.min, r.max)} aligned)` : '');
   const rev7 = (s) => verSpanOnCpu(V, mainCpu, 'k04_rev', s), st7 = (s) => verSpanOnCpu(V, mainCpu, 'k05_stride2', s);
   const revR = { min: Math.min(...['L1', 'L2'].map((s) => rev7(s).min)), max: Math.max(...['L1', 'L2'].map((s) => rev7(s).max)) };
   const stR = { min: Math.min(...['L1', 'L2'].map((s) => st7(s).min)), max: Math.max(...['L1', 'L2'].map((s) => st7(s).max)) };
   const v21 = T[T.length - 1], c21 = mainCpu && v21.cpus.find((c) => c.cpu_short === mainCpu), r21 = c21 && c21.cells.find((x) => x.cell_id === 'k04_rev.L1');
   const first = T[0], c19 = mainCpu && first.cpus.find((c) => c.cpu_short === mainCpu), r19 = c19 && c19.cells.find((x) => x.cell_id === 'k04_rev.L1');
-  setV('verFinding', `What held. The reverse loop and the stride-2 loop lose SIMD under the checks on ${sm.reverse_holds_all && sm.stride2_holds_all ? 'every toolchain and every CPU model that ran' : 'most rows'}, and the rule counts both as holding on all of them. Their cost, over every row and both sizes: reverse ${rangeX(sm.reverse_all.min, sm.reverse_all.max)}, stride-2 ${rangeX(sm.stride2_all.min, sm.stride2_all.max)}. ${mainCpu ? `On ${mainCpu}, the one model with enough jobs on each toolchain (${mainJobs} jobs): reverse ${rangeX(revR.min, revR.max)}, stride-2 ${rangeX(stR.min, stR.max)}.${r19 && r21 && Math.abs(r21.ratio - r19.ratio) > 0.5 ? ` The reverse loop is cheaper under ${v21.clang} (${fx(r21.ratio)}× at L1 against ${fx(r19.ratio)}× under ${first.clang}); it is still lost.` : ''}` : ''} The forward sum stays at ${rangeX(sm.sum_all.min, sm.sum_all.max)}.`);
+  setV('verFinding', `What held. The reverse loop and the stride-2 loop lose SIMD under the checks on ${sm.reverse_holds_all && sm.stride2_holds_all ? 'every toolchain and every CPU model that ran' : 'most rows'}, and the rule counts both as holding on all of them. Their cost, over every row and both sizes: reverse ${rangeX(sm.reverse_all.min, sm.reverse_all.max)}, stride-2 ${rangeX(sm.stride2_all.min, sm.stride2_all.max)}. ${mainCpu ? `On ${mainCpu}, the one model with enough jobs on each toolchain (${mainJobs} jobs): reverse ${rangeX(revR.min, revR.max)}, stride-2 ${rangeX(stR.min, stR.max)}.${r19 && r21 && Math.abs(r21.ratio - r19.ratio) > 0.5 ? ` The reverse loop is cheaper under ${v21.clang} (${fx(r21.ratio)}× at L1 against ${fx(r19.ratio)}× under ${first.clang}); it is still lost.` : ''}` : ''} The forward sum stays at ${rangeX(sm.sum_all.min, sm.sum_all.max)} as compiled${asAl(alSum)}.`);
   const m1 = sm.matmul_main.L1, m2 = sm.matmul_main.L2;
   const pcM = REAL_POOLED && mainCpu && REAL_POOLED.cpus.find((c) => cpuShortOf(c.cpu_model) === mainCpu);
   const c18 = ['L1', 'L2'].map((s) => cellOf(pcM, `k08_matmul.${s}`)), nv = ['L1', 'L2'].map((s) => pcM && pcM.positive && pcM.positive[`k08_matmul.${s}`]);
   const clang18Say = c18[0] && c18[1] && nv[0] && nv[1]
     ? ` On ${mainCpu} clang 18 costs ${fx(c18[0].as_compiled.ratio)}× at L1 and ${fx(c18[1].as_compiled.ratio)}× at L2 (pooled, ${c18[0].as_compiled.jobs} jobs), against ${fx(nv[0].ratio)}× and ${fx(nv[1].ratio)}× for the same loop built with no vectorization at all (the no-vectorize control), so only part of the clang 18 cost is the lost SIMD.` : '';
   const likeNoSimd = nv[0] && Math.abs(m1.max - nv[0].ratio) <= 0.05 ? ` (as slow as the no-vectorize build, ${fx(nv[0].ratio)}×)` : '';
-  S.verMatmul = `What did not hold. Under clang 18 the checks make matrix multiply lose SIMD (its compiler remark says vectorizing is not beneficial with the checks inside), at ${rangeX(sm.matmul_clang18.min, sm.matmul_clang18.max)} on the same CPU models.${clang18Say} Clang 19 to 21 keep SIMD in both builds, so the rule written for this column counts it as not holding there; it is not free: on ${mainCpu || 'the CPU models with enough jobs'} the checks cost ${rangeX(m1.min, m1.max)} at L1${likeNoSimd} and ${rangeX(m2.min, m2.max)} at L2 on each of those toolchains; over all rows ${rangeX(sm.matmul.L1.min, sm.matmul.L1.max)} and ${rangeX(sm.matmul.L2.min, sm.matmul.L2.max)}. A plausible reason is that the inner loop is short and the checks add work around the vector body (inferred; versions/MATMUL-EXPLAINED.md). Why the vectorizer’s decision changed between clang 18 and 19 is not established: the change also appears on Compiler Explorer builds and with Ubuntu’s own clang 20 and libc++ 20, which narrows it but does not separate a compiler change from a library change.`;
+  S.verMatmul = `What did not hold. Under clang 18 the checks make matrix multiply lose SIMD (its compiler remark says vectorizing is not beneficial with the checks inside), at ${rangeX(sm.matmul_clang18.min, sm.matmul_clang18.max)} on the same CPU models.${clang18Say} Clang 19 to 21 keep SIMD in both builds, so the rule written for this column counts it as not holding there; it is not free: on ${mainCpu || 'the CPU models with enough jobs'} the checks cost ${rangeX(m1.min, m1.max)} at L1${likeNoSimd} and ${rangeX(m2.min, m2.max)} at L2 on each of those toolchains; over all rows, as compiled, ${rangeX(sm.matmul.L1.min, sm.matmul.L1.max)}${asAl(alM1)} at L1 and ${rangeX(sm.matmul.L2.min, sm.matmul.L2.max)}${asAl(alM2)} at L2. A plausible reason is that the inner loop is short and the checks add work around the vector body (inferred; versions/MATMUL-EXPLAINED.md). Why the vectorizer’s decision changed between clang 18 and 19 is not established: the change also appears on Compiler Explorer builds and with Ubuntu’s own clang 20 and libc++ 20, which narrows it but does not separate a compiler change from a library change.`;
   setV('verMatmul', S.verMatmul);
   setV('verForms', `Forms. Every toolchain is ${sm.forms.length === 1 ? sm.forms[0] : joinAnd(sm.forms)} under the written rule. ${mainCpu ? `${mainCpu} has ${mainJobs} jobs on clang ${T.map((t) => t.version).join(', ')} and is the only model with ${V.min_jobs} or more on each toolchain: the forward-loop rule is missed by matrix multiply, which costs more than the limit even aligned. ` : ''}Every other CPU model drew ${thinMin === thinMax ? jobsOf(thinMin) : `${thinMin} to ${thinMax} jobs`} on a toolchain, fewer than ${V.min_jobs}, so its rows are shown and no verdict is given. The page therefore reports rows, not a verdict per toolchain.`);
   setV('verLimits', `Limits: one run (${V.run_id}), so the run-to-run check that needs two runs was not possible; the 18 data are Ubuntu’s libc++ build and these are apt.llvm.org’s (Ubuntu’s own clang 20 gives the same matrix-multiply result as apt.llvm.org’s, so the package source is not what changed it; library and compiler are still not separated); the forward add’s large as-compiled cost under clang 18 on EPYC 7763 is not seen here (${fx(verSpanOnCpu(V, mainCpu, 'k02_add_fwd', 'L1').max)}× under every newer toolchain), the cause was not tested; the same eight loops, SSE2 baseline, no profile-guided optimization, no programs timed. Source: ${V.source}; report ${V.report}.`);
@@ -1665,11 +1685,12 @@ function renderCeSweep() {
   S.ceT = S.ceT || 'x86-64';
   S.ceO = S.ceO || '-O2';
   const f = ceFindings();
-  setV('ceCompilers', String(C.counts.compilers));
+  const ceN = ceVersionCount(C), ceWho = `${ceN} compiler versions (${C.counts.compilers} Compiler Explorer compiler ids)`; // 28 ids = 14 versions, each as an x86 and an AArch64 id
+  setV('ceCompilers', ceWho);
   const gccR = `GCC ${ceRanges(C.summary.majors.filter((m) => C.rows.some((r) => r.family === 'gcc' && r.major === m)))}`;
-  setV('ceFind', `Compiled only, not timed, on ${C.counts.compilers} compilers: ${f.short}`);
+  setV('ceFind', `Compiled only, not timed, on ${ceWho}: ${f.short}`);
   setV('ceCap', `Compile-only: this says which loops lose vectorization, not what they cost. Each clang is paired with the libc++ Compiler Explorer provides (assumed to match). sten: stencil, strd: stride-2, gath: gather, mm: matrix multiply.`);
-  setV('ceNote', `Every row of the compile-only sweep: ${C.counts.rows} rows (${C.counts.compilers} compilers, ${f.clangRange} with libc++ and ${gccR} with assertions, on three targets at -O2 and -O3), ${C.counts.cells} loop cells from ${C.counts.builds} builds. No timing: a cell says whether the loop is vectorized with the checks off and with them on. ${f.text}`);
+  setV('ceNote', `Every row of the compile-only sweep: ${C.counts.rows} rows (${ceN} compiler versions, ${f.clangRange} with libc++ and ${gccR} with assertions, offered as ${C.counts.compilers} separate x86-64 and AArch64 compiler ids on Compiler Explorer, on three targets at -O2 and -O3), ${C.counts.cells} loop cells from ${C.counts.builds} builds. No timing: a cell says whether the loop is vectorized with the checks off and with them on. ${f.text}`);
   setV('ceTableCap', `Per compiler, target and optimization level: each loop lost under the checks, kept, or not vectorized in either build. Clang uses libc++ hardening (FAST; clang 16 and 17 use older macros, see the notes), GCC uses _GLIBCXX_ASSERTIONS. Compile-only; each clang version is paired with the libc++ Compiler Explorer provides (assumed to match).`);
   const tseg = $('ce-tseg'), oseg = $('ce-oseg');
   const radioKeys = (seg) => (e) => {
