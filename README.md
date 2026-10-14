@@ -1,5 +1,7 @@
 # Third of a Percent
 
+[![ci](https://github.com/JacoboPacheco/third-of-a-percent/actions/workflows/ci.yml/badge.svg)](https://github.com/JacoboPacheco/third-of-a-percent/actions/workflows/ci.yml)
+
 A re-test of how much C++ bounds checks cost, loop by loop, with the machine code as proof.
 
 Status: measurements complete (Oct 2026); the page and notes may still be edited. Code written by AI coding agents directed by the author (JacoboPacheco).
