@@ -1,6 +1,6 @@
 # Claims audit
 
-Audited Mon Oct 12 2026 against commit 6692db1 (this folder is the only change made by the audit). Every factual claim on the public surfaces (README.md, the rendered page `site/`, plus the linked READMEs) checked against the repository's own raw data.
+Audited Mon Oct 12 2026 against commit 6692db1. Every factual claim on the public surfaces (README.md, the rendered page `site/`, plus the linked READMEs) checked against the repository's own raw data.
 
 **Verdicts: 124 claims: SUPPORTED 83, OVERSTATED 24, UNSUPPORTED 0, CONTRADICTED 11, STALE 6**
 
@@ -25,7 +25,7 @@ Verdicts used: SUPPORTED, OVERSTATED (the data shows something weaker or narrowe
 
 ## External links and pinned downloads (claims-audit/links.txt)
 
-- **Repository links answer 404.** `github.com/JacoboPacheco/third-of-a-percent`, its Actions run pages and `actions/workflows/measure.yml` all answered 404 to a logged-out client at the time of the audit: the repository had not yet been made available.
+- **Repository links answer 404.** `github.com/JacoboPacheco/third-of-a-percent`, its Actions run pages and `actions/workflows/measure.yml` all answered 404 to a logged-out client at the time of the audit.
 - **The page's other links work.** The Google post and the Google Fonts stylesheet answer 200. The bare `https://fonts.googleapis.com` answers 404, but it is only a `preconnect` origin, not a link.
 - **Every pinned download is still there (59 URLs).** That covers 44 census projects and their extra archives, plus the json and fmt inputs. Each answers 200: the GitHub archives redirect to codeload.github.com, the two Eigen archives are served from gitlab.com, and the release assets come from release-assets.githubusercontent.com. Where the server reports a size and the repo records one (`json.hpp` and the two simdjson single headers), the sizes match. HEAD requests cannot check sha256; the runs' own `sha256sum -c` did that when the files were fetched.
 

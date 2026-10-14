@@ -26,6 +26,7 @@ function chrome() {
     const name = (no ? h.textContent.slice(no.textContent.length) : h.textContent).replace('¶', '').trim();
     const a = document.createElement('a');
     a.href = `#${s.id}`;
+    a.tabIndex = -1; // the Contents menu in the top bar is the keyboard route to a section; the rail is a pointer shortcut
     a.innerHTML = '<i></i><span></span>';
     a.lastChild.textContent = name;
     a.title = name;
@@ -38,7 +39,9 @@ function chrome() {
     const max = document.documentElement.scrollHeight - innerHeight;
     bar.classList.toggle('on', scrollY > innerHeight * 0.6);
     let on = null;
-    for (const s of secs) if (s.getBoundingClientRect().top < innerHeight * 0.4) on = s;
+    // the section under the sticky bar (46 px) plus a small margin; a Contents jump lands a section's top at about 70 px
+    for (const s of secs) if (s.getBoundingClientRect().top <= 100) on = s;
+    if (max > 0 && scrollY >= max - 2) on = secs[secs.length - 1]; // the last, short section can never reach the line
     for (const [s, [a]] of links) a.classList.toggle('on', s === on);
     cur.textContent = on ? links.get(on)[1] : '';
   };

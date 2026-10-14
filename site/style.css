@@ -165,7 +165,7 @@ figcaption b { color: var(--ink); font-weight: 600; }
 .f2-col .remark { font-size: 0.78rem; line-height: 1.4; color: var(--ink-2); margin: 4px 0 6px; font-style: normal; min-height: 2.8em; }
 .asm { margin: 0; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: normal; word-break: normal; overflow-x: auto; }
 .asm .ln { display: block; padding: 0 4px 0 calc(4px + 2em); text-indent: -2em; border-left: 3px solid transparent; } /* a wrapped operand hangs under its instruction */
-.asm .ad { color: #a3a39d; margin-right: 0.8em; user-select: none; }
+.asm .ad { color: #66665f; margin-right: 0.8em; user-select: none; }
 .asm .simd { background: var(--simd-tint); border-left-color: var(--kept); }
 .asm .chk { background: var(--check-hl); border-left-color: #b8960a; }
 .asm .trap { background: var(--check-hl); border-left-color: #b8960a; font-weight: 500; }
@@ -254,7 +254,10 @@ q::before, q::after { content: none; }
   .method dd { margin-bottom: 0.6rem; }
   .mini .mrow { grid-template-columns: 6.2em minmax(0, 1fr) 6.6em; gap: 0 8px; }
   #mini-axis { margin-left: calc(6.2em + 8px); margin-right: calc(6.6em + 8px); }
-  .hint-wrap .tip-text { right: auto; left: -150px; width: min(270px, calc(100vw - 40px)); }
+  /* on a phone the tip spans the page width below the button (a box hung off the button ran past the right edge at 320 px) */
+  .hint-wrap { position: static; }
+  .hint { position: relative; }
+  .hint-wrap .tip-text { top: auto; margin-top: 26px; left: 16px; right: 16px; width: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .row.moving, .row, .hint-wrap .tip-text { transition: none; }
@@ -658,6 +661,7 @@ ol.rel-list li { margin-bottom: 0.7rem; }
 .ce-pt { margin: 0 0 4px; font-size: 0.8em; font-weight: 600; color: var(--ink); }
 .ce-grid { display: grid; grid-template-columns: 3.9em repeat(8, minmax(0, 1fr)); gap: 2px; align-items: stretch; }
 .ce-corner { display: block; }
+.ce-row, .ce-ch { display: contents; }
 .ce-h { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.68em; text-align: left; padding: 2px 0; color: var(--kept); text-decoration: none; justify-self: center; line-height: 1.1; }
 .ce-h:hover { text-decoration: underline; }
 .ce-rl { font-size: 0.7em; color: var(--ink-2); white-space: nowrap; align-self: center; line-height: 1.1; }

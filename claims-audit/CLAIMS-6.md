@@ -4,7 +4,7 @@ Written Tue Oct 13 2026, after the text was committed. The numbers were recomput
 
 Result: 33 claims, 27 SUPPORTED, 3 OVERSTATED (all fixed), 0 CONTRADICTED, 3 STALE (all fixed).
 
-## Recomputed numbers (5 version ratios and the 3 environment figures asked for, plus extras)
+## Recomputed numbers (5 version ratios and the 3 environment figures, plus extras)
 
 | Number as printed | Own recomputation from `versions/results/38471430657/versions-*/results.json` | Verdict |
 |---|---|---|

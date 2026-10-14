@@ -279,8 +279,8 @@ const CAP = {
   k01_sum_fwd: { kept: 'Both builds are vectorized and, with the check on, the compiler removes the check altogether: nothing is left to pay for.' },
   k02_add_fwd: { kept: 'Both builds are vectorized; the check runs only on the leftover elements.', keptBelow: ' Below 1×: the checked loop does fewer numbers per pass and happens to run faster (section 3; why is inferred).' },
   k03_stencil: { kept: 'Both builds are vectorized; the compiler tests the sizes once before the SIMD loop, so the check runs only on the leftover elements.' },
-  k04_rev: { lost: 'On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.' },
-  k05_stride2: { lost: 'On clang 18, the same remark as the reverse loop (it could not determine the loop count): four at a time becomes one at a time.' },
+  k04_rev: { lost: 'Clang 18 could not vectorize it with the check inside.', novec: true },
+  k05_stride2: { lost: 'Clang 18 gives the same remark as the reverse loop.', novec: true },
   k06_gather: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the index list.' },
   k07_hist: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the input.' },
   k08_matmul: { lost: 'On clang 18 the remark says vectorizing is not beneficial with the check inside. Clang 19 to 21 keep SIMD yet cost 1.6× at L1 (EPYC 7763, timed); 22 keeps it, 23.1 and trunk lose it (compile-only).' },
@@ -288,7 +288,7 @@ const CAP = {
 function capFor(k, i) {
   const c = CAP[k] || {};
   const t = c[i.cls] || WHAT[i.cls] || WHAT.none;
-  return t + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '');
+  return t + (i.cls === 'lost' && c.novec ? novecClause(k, pooledOf(currentCpu().cpu_model), true) : '') + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '');
 }
 function gaugeSvg() {
   const pos = (v) => (Math.log(clamp(v, 0.5, 10)) - Math.log(0.5)) / (Math.log(10) - Math.log(0.5));

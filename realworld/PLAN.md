@@ -174,5 +174,5 @@ listed in `realworld/programs.json` with their sha256 and sizes.
   jobs built all six ways again and hit the limit. Fixed, and the builds are now six jobs (LightGBM:
   NONE+FAST, the two profile builds, the aligned pair; Draco: four builds, the aligned pair; the small
   programs) followed by one profile job. Same flags, sources and workloads.
-- Mon Oct 12 2026, 16:23 EDT: run 38303777600 did not start (GitHub refused to start the jobs).
+- Mon Oct 12 2026, 16:23 EDT: run 38303777600 was not started by GitHub.
   Rerun later; three runs of the ten are used, none of them timed anything.

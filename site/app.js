@@ -506,6 +506,18 @@ function updateScrollHints() { // the 'swipe sideways' lines show only while a t
     w.classList.toggle('at-end', w.scrollLeft + w.clientWidth >= w.scrollWidth - 2);
   }
 }
+/* The clause that keeps the lost-SIMD explanation in proportion: the NOVEC build (vectorization switched off by hand,
+   no checks, pooled, L1, as compiled) against the checked build's extra time. Empty when the data has no such control.
+   Mirrored in scripts/build_site_data.py (heroWhat); check_site.py compares the two. */
+function novecClause(k, pc, brief) {
+  const pos = pc && pc.positive && pc.positive[`${k}.L1`];
+  const cell = cellOf(pc, `${k}.L1`);
+  if (!pos || !cell || !cell.as_compiled || !(cell.as_compiled.ratio > 1)) return '';
+  const share = 100 * (pos.ratio - 1) / (cell.as_compiled.ratio - 1);
+  const w = share >= 30 && share <= 37 ? 'about a third' : `about ${Math.round(share)}%`;
+  if (brief) return ` Switching SIMD off by hand costs ${fx(pos.ratio)}× (${w} of the as-compiled extra); the rest is the compare and jump (inferred).`; // the hero's caption has room for one clause
+  return ` Vectorization switched off by hand, with no checks, makes it ${fx(pos.ratio)}× as long at the L1 size: ${w} of the extra time as compiled. The rest is presumably the compare and jump on every element (inferred).`;
+}
 function fillCpuProse() { // section 2's footnote, from the selected CPU model's pooled numbers
   const cpu = currentCpu();
   const pc = pooledReal(cpu.cpu_model) || pooledReal(S.ix.cpus.find((c) => c.slug === S.ix.default_cpu).cpu_model);
@@ -814,11 +826,12 @@ function whyLine(r, anOn, identical, bOn, width) {
   const rs = (bOn && bOn.remarks) || [];
   const many = width ? `${width}-at-a-time` : 'SIMD';
   if (r.role === 'lost') {
+    const nv = novecClause(r.k, pooledOf(currentCpu().cpu_model));
     if (rs.some((x) => x.includes('could not determine number of loop iterations')))
-      return `The compiler could not vectorize this loop once the check was inside it: it no longer knows how many times the loop will run, because the check may stop it at any element. So the ${many} loop on the left becomes the one-at-a-time loop on the right.`;
+      return `The compiler could not vectorize this loop once the check was inside it: it no longer knows how many times the loop will run, because the check may stop it at any element. So the ${many} loop on the left becomes the one-at-a-time loop on the right.${nv}`;
     if (rs.some((x) => x.includes('vectorization is not beneficial')))
-      return `With the checks inside the loop, the compiler judged that SIMD would no longer pay off, so the ${many} loop on the left becomes the one-at-a-time loop on the right, with a compare and a jump for every index it uses.`;
-    return `With the checks on, the compiler did not vectorize this loop, so the ${many} loop on the left becomes the one-at-a-time loop on the right.`;
+      return `With the checks inside the loop, the compiler judged that SIMD would no longer pay off, so the ${many} loop on the left becomes the one-at-a-time loop on the right, with a compare and a jump for every index it uses.${nv}`;
+    return `With the checks on, the compiler did not vectorize this loop, so the ${many} loop on the left becomes the one-at-a-time loop on the right.${nv}`;
   }
   if (r.role === 'kept') return hotHasCheck
     ? 'Both builds are vectorized, and the check runs inside the SIMD loop.'
@@ -1326,13 +1339,24 @@ function cePanel(t) {
   const C = S.ce;
   const rows = C.rows.filter((r) => r.target === t && r.opt === S.ceO).sort((a, b) => ceOrder(a) - ceOrder(b));
   const grid = el('div', { class: 'ce-grid', role: 'grid', 'aria-label': `${C.targets[t]}, ${S.ceO}` });
-  grid.append(el('span', { class: 'ce-corner' }),
-    ...C.kernels.map((k) => el('a', { class: 'ce-h', href: C.links[k], target: '_blank', rel: 'noopener', title: `${SHORT_NAMES[k]}: open this loop in Compiler Explorer (clang 18, checks off and on)`, 'aria-label': `${SHORT_NAMES[k]}: open this loop in Compiler Explorer` }, CE_ABBR[k])));
+  // a real grid: role=row wrappers (display: contents keeps the CSS grid layout) and one tab stop per grid; the arrow
+  // keys move between the cells and the eight header links (roving tabindex), so a keyboard user passes the figure in one Tab
+  const stops = []; // stops[row][col]: the focusable element at that place (row 0 = the header links)
+  const hrow = el('div', { class: 'ce-row', role: 'row' }, el('span', { class: 'ce-corner', role: 'columnheader', 'aria-label': 'Compiler and version' }));
+  stops.push(C.kernels.map((k) => {
+    const a = el('a', { class: 'ce-h', href: C.links[k], target: '_blank', rel: 'noopener', tabindex: '-1', title: `${SHORT_NAMES[k]}: open this loop in Compiler Explorer (clang 18, checks off and on)`, 'aria-label': `${SHORT_NAMES[k]}: open this loop in Compiler Explorer` }, CE_ABBR[k]);
+    hrow.append(el('span', { role: 'columnheader', class: 'ce-ch' }, a));
+    return a;
+  }));
+  grid.append(hrow);
   let prev = null;
   for (const r of rows) {
     const gap = prev && prev !== r.family;
     prev = r.family;
-    grid.append(el('span', { class: `ce-rl${gap ? ' ce-gap' : ''}`, role: 'rowheader' }, ceName(r)));
+    const row = el('div', { class: 'ce-row', role: 'row' }, el('span', { class: `ce-rl${gap ? ' ce-gap' : ''}`, role: 'rowheader' }, ceName(r)));
+    const cellsOfRow = [];
+    stops.push(cellsOfRow);
+    grid.append(row);
     for (const k of C.kernels) {
       const st = ceState(r.vec[k]);
       const say = `${ceFull(r)}, ${C.targets[t]}, ${S.ceO}, ${SHORT_NAMES[k]}: ${CE_WORD[st]}`;
@@ -1341,10 +1365,30 @@ function cePanel(t) {
         cell.classList.add('on');
         $('ce-remark').replaceChildren(el('b', null, `${say}. `), `Checks off: ${r.vec[k].none ? 'vectorized' : 'not vectorized'}; checks on: ${r.vec[k].checked ? 'vectorized' : 'not vectorized'}. Remark with checks on: “${ceRemarkText(r, k) || 'none'}”`);
       };
-      const cell = el('span', { class: `ce-cell ce-${st}${gap ? ' ce-gap' : ''}`, role: 'gridcell', tabindex: '0', 'aria-label': say, title: say, onmouseenter: show, onfocus: show, onclick: show });
-      grid.append(cell);
+      const cell = el('span', { class: `ce-cell ce-${st}${gap ? ' ce-gap' : ''}`, role: 'gridcell', tabindex: '-1', 'aria-label': say, title: say, onmouseenter: show, onfocus: show, onclick: show });
+      row.append(cell);
+      cellsOfRow.push(cell);
     }
   }
+  const at = (e) => { for (let i = 0; i < stops.length; i++) { const j = stops[i].indexOf(e); if (j >= 0) return [i, j]; } return null; };
+  const rove = (e) => { for (const row of stops) for (const x of row) x.tabIndex = x === e ? 0 : -1; };
+  if (stops[1]) rove(stops[1][0]);
+  grid.addEventListener('focusin', (ev) => { if (at(ev.target)) rove(ev.target); });
+  grid.addEventListener('click', (ev) => { const c = ev.target.closest('.ce-cell'); if (c) rove(c); });
+  grid.addEventListener('keydown', (ev) => {
+    const p = at(ev.target);
+    if (!p || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    let [i, j] = p;
+    if (ev.key === 'ArrowRight') j = Math.min(stops[i].length - 1, j + 1);
+    else if (ev.key === 'ArrowLeft') j = Math.max(0, j - 1);
+    else if (ev.key === 'ArrowDown') i = Math.min(stops.length - 1, i + 1);
+    else if (ev.key === 'ArrowUp') i = Math.max(0, i - 1);
+    else if (ev.key === 'Home') j = 0;
+    else if (ev.key === 'End') j = stops[i].length - 1;
+    else return;
+    ev.preventDefault();
+    stops[i][j].focus();
+  });
   const box = el('div', { class: 'ce-panel', 'data-t': t, hidden: false }, el('p', { class: 'ce-pt' }, C.targets[t]), grid);
   if (t !== S.ceT) box.classList.add('ce-off');
   return box;
@@ -1893,7 +1937,7 @@ function buildChrome() {
   const base = (S.ix && S.ix.repo && S.ix.repo.base) || '';
   $('cmd-cite').textContent = `@misc{jacobopacheco2026thirdofapercent,
   author = {JacoboPacheco},
-  title  = {Third of a Percent: bounds checks in C++'s standard library, re-tested loop by loop},
+  title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's 0.30% average},
   year   = {2026},
   note   = {Technical note, measurements complete October 2026. Code written by AI coding agents directed by the author},
   url    = {${base}}

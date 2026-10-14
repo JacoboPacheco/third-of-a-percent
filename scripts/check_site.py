@@ -59,6 +59,7 @@ import argparse
 import functools
 import http.server
 import hashlib
+import html
 import json
 import os
 import re
@@ -459,6 +460,128 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         pg.close()
 
 
+def navigation_checks(browser, base, ck, index, pooled):
+    """Page chrome and keyboard use: the top bar and rail name the section under the sticky bar when sections are
+    collapsed, the compiler grid is one tab stop with arrow keys, the machine-code address column is readable, the
+    page does not scroll sideways at 320 px, reference [1] links back, the rail is not in the Tab order, and the
+    lost-SIMD captions carry the no-vectorize control."""
+    print("== navigation: top bar, compiler grid, contrast, 320 px, citations, no-vectorize clause")
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#rail a').length > 3", timeout=15000)
+    secs = pg.evaluate("[...document.querySelectorAll('.body section[id]')].filter(s => s.querySelector('h2')).map(s => { const h = s.querySelector('h2'), n = h.querySelector('.secno'); return [s.id, (n ? h.textContent.slice(n.textContent.length) : h.textContent).replace('\\u00b6', '').trim()]; })")
+    bad, tried = [], 0
+    for sid, name in secs:
+        room = pg.evaluate("""(id) => { const s = document.getElementById(id); const max = document.documentElement.scrollHeight - innerHeight, want = scrollY + s.getBoundingClientRect().top - 80;
+            if (want > max - 4) return false; document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, want); return true; }""", sid)
+        if not room:
+            continue  # the last, short sections cannot be scrolled up to the bar: the page bottom is checked below
+        pg.wait_for_timeout(150)
+        got = pg.evaluate("[document.getElementById('bar-sec').textContent, (document.querySelector('#rail a.on span') || {}).textContent]")
+        tried += 1
+        if got != [name, name]:
+            bad.append((sid, got))
+    ck.ok(tried >= 9 and not bad, f"1440: with every section collapsed, the top bar and the rail name the section under the bar, not the next one ({tried} sections scrolled to 80 px below the top; wrong: {bad[:3]})")
+    pg.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+    pg.wait_for_timeout(200)
+    got = pg.evaluate("[document.getElementById('bar-sec').textContent, (document.querySelector('#rail a.on span') || {}).textContent]")
+    ck.ok(got == [secs[-1][1], secs[-1][1]], f"1440: at the page bottom the top bar and the rail name the last section ({got})")
+    ck.ok(pg.evaluate("[...document.querySelectorAll('#rail a')].every(a => a.tabIndex === -1)") and pg.evaluate("document.querySelector('.skip').getAttribute('href')") == "#top"
+          and pg.evaluate("!!document.getElementById('top')"), "1440: the rail links are not tab stops (the Contents menu is the keyboard route) and the skip link goes to the main element")
+    ck.ok(pg.evaluate("!!document.getElementById('cite-google')") and pg.evaluate("[...document.querySelectorAll('a.cite.back')].every(a => document.querySelector(a.getAttribute('href')))"),
+          "every back arrow in the references list lands on an in-text citation (reference [1] included)")
+    pg.close()
+    # the compiler grid: roles, one tab stop per grid, arrow keys (a page with every section open)
+    pg = browser.new_page(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#ce-panels .ce-cell').length > 20", timeout=15000)
+    st = pg.evaluate("""() => [...document.querySelectorAll('#ce-panels .ce-grid')].map(g => [
+        g.querySelectorAll('[tabindex="0"]').length,
+        [...g.children].every(c => c.getAttribute('role') === 'row'),
+        [...g.querySelectorAll('[role=gridcell], [role=rowheader], [role=columnheader]')].every(c => c.closest('[role=row]') && c.closest('[role=row]').parentElement === g),
+        g.querySelectorAll('.ce-cell').length])""")
+    ck.ok(len(st) == 3 and all(s[0] == 1 and s[1] and s[2] and s[3] > 20 for s in st), f"the compiler grids (Figure 5) are real grids (role=row wrappers) with one tab stop each ({st})")
+    pg.focus('#ce-panels .ce-cell[tabindex="0"]')
+    first = pg.evaluate("document.activeElement.getAttribute('aria-label')")
+    pg.keyboard.press("ArrowRight")
+    pg.keyboard.press("ArrowDown")
+    second = pg.evaluate("document.activeElement.getAttribute('aria-label')")
+    n0 = pg.evaluate("document.querySelectorAll('#ce-panels [tabindex=\"0\"]').length")
+    pg.keyboard.press("Home")
+    for _ in range(30):
+        pg.keyboard.press("ArrowUp")
+    onhead = pg.evaluate("[document.activeElement.className, document.activeElement.tagName]")
+    pg.keyboard.press("Tab")
+    outside = pg.evaluate("[document.activeElement.className, !!document.activeElement.closest('.ce-grid')]")
+    ck.ok(second and second != first and n0 == 3 and onhead == ["ce-h", "A"] and outside[0] != "ce-h",
+          f"arrow keys move between the cells and up to the header links; the next Tab leaves that grid ({first!r} -> {second!r}, header {onhead}, then {outside})")
+    pg.focus('#ce-panels .ce-cell[tabindex="0"]')
+    shown = pg.inner_text("#ce-remark")
+    ck.ok(": " in shown and "Hover or tap" not in shown, f"focusing a grid cell still shows its remark ({shown[:60]!r})")
+    # contrast of the machine-code address column, on the plain and the SIMD-tinted lines
+    low = pg.evaluate("""() => { const lum = (c) => { const m = c.match(/[\\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]); };
+        const bg = (e) => { for (let n = e; n; n = n.parentElement) { const c = getComputedStyle(n).backgroundColor, m = c.match(/[\\d.]+/g); if (m && (m.length < 4 || +m[3] > .9)) return c; } return 'rgb(255,255,255)'; };
+        const out = []; let n = 0; for (const e of document.querySelectorAll('.asm .ad')) { if (!e.getBoundingClientRect().width) continue; n++;
+          const a = lum(getComputedStyle(e).color), b = lum(bg(e)), cr = (Math.max(a, b) + .05) / (Math.min(a, b) + .05); if (cr < 4.5) out.push(cr.toFixed(2)); } return [n, out]; }""")
+    ck.ok(low[0] > 10 and not low[1], f"the machine-code address column has at least 4.5:1 contrast on plain and SIMD-tinted lines ({low[0]} addresses, low: {low[1][:3]})")
+    pg.close()
+    # a 320 px screen: no sideways scroll, also with the aligned/as-compiled tip open
+    for w in (320, 390):
+        pg = browser.new_page_plain(viewport={"width": w, "height": 800})
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        flat = no_hscroll(pg)
+        pg.evaluate("document.getElementById('col-hint').scrollIntoView({block: 'center'})")
+        pg.click("#col-hint")
+        pg.wait_for_timeout(250)
+        r = pg.evaluate("(() => { const r = document.getElementById('col-tip').getBoundingClientRect(); return [r.left, r.right]; })()")
+        ck.ok(flat and no_hscroll(pg) and r[0] >= 0 and r[1] <= w, f"{w}: no horizontal scroll, and the open 'aligned' tip sits inside the screen ({[round(x) for x in r]})")
+        pg.close()
+    # the lost-SIMD captions put the no-vectorize control beside the extra time
+    dmodel = next(x for x in index["cpus"] if x["slug"] == index["default_cpu"])["cpu_model"]
+    dp = next(c for c in pooled["cpus"] if c["cpu_model"] == dmodel)
+    cells = {c["cell_id"]: c for c in dp["cells"]}
+
+    def clause(k):
+        pos, cell = dp["positive"][f"{k}.L1"], cells[f"{k}.L1"]
+        share = 100 * (pos["ratio"] - 1) / (cell["as_compiled"]["ratio"] - 1)
+        return f"makes it {_fx(pos['ratio'])}× as long at the L1 size: {'about a third' if 30 <= share <= 37 else f'about {round(share)}%'} of the extra time as compiled"
+
+    def brief(k):  # the hero's one-clause form
+        pos, cell = dp["positive"][f"{k}.L1"], cells[f"{k}.L1"]
+        share = 100 * (pos["ratio"] - 1) / (cell["as_compiled"]["ratio"] - 1)
+        return f"Switching SIMD off by hand costs {_fx(pos['ratio'])}× ({'about a third' if 30 <= share <= 37 else f'about {round(share)}%'} of the as-compiled extra); the rest is the compare and jump (inferred)."
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    pg.wait_for_timeout(1500)
+    default_txt = pg.inner_text("#race-sub")
+    baked = re.search(r'data-v="heroWhat" class="rr-what">([^<]*)<', open(os.path.join(REPO, "site", "index.html"), encoding="utf-8").read())
+    ck.ok(brief("k04_rev") in default_txt and baked and html.unescape(baked.group(1)) == pg.inner_text("#race-sub .rr-what") and "re-test" not in pg.inner_text(".hero .byline").lower(),
+          f"the hero's default caption (reverse) states the no-vectorize build's {_fx(dp['positive']['k04_rev.L1']['ratio'])}x and its share of the extra time, the rest labelled inferred; the byline no longer says re-tested")
+    pick_loop(pg, "k05_stride2")
+    ck.ok(brief("k05_stride2") in pg.inner_text("#race-sub"), "the hero's stride-2 caption carries its no-vectorize clause")
+    pick_loop(pg, "k08_matmul")
+    ck.ok("Clang 19 to 21 keep SIMD" in pg.inner_text("#race-sub") and "Switching SIMD off by hand" not in pg.inner_text("#race-sub"), "the hero's matrix-multiply caption keeps its own sentence (clang 19 to 21 keep SIMD), with no extra clause")
+    pick_loop(pg, "k02_add_fwd")
+    ck.ok("switched off by hand" not in pg.inner_text("#race-sub"), "a loop that keeps SIMD gets no no-vectorize clause")
+    pg.close()
+    pg = browser.new_page(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.click('#rows .row[data-k="k04_rev"]')
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    why = pg.inner_text("#fig2 .f2-why")
+    ck.ok(clause("k04_rev") in why and "(inferred)" in why, "Figure 2's sentence for the reverse loop carries the no-vectorize clause")
+    pg.click('#rows .row[data-k="k08_matmul"]')
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    ck.ok(clause("k08_matmul") in pg.inner_text("#fig2 .f2-why"), "Figure 2's sentence for the matrix-multiply loop carries its no-vectorize clause")
+    pg.close()
+
+
 def rail_checks(browser, base, ck):
     """The section rail (fixed, from 1380 px) must not take clicks meant for the hero loop names or Figure 1's row
     labels: at 1380, 1440 and 1920 px every one of them is the element under the pointer at its label, a real click
@@ -701,9 +824,9 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         pick_loop(rp, "k04_rev")
         a1 = hero_sig(rp)
         rp.evaluate("document.getElementById('race-replay').click()")
-        rp.wait_for_timeout(250)
+        rp.wait_for_timeout(600)
         a2 = hero_sig(rp)
-        rp.wait_for_timeout(700)
+        rp.wait_for_timeout(900)
         a3 = hero_sig(rp)
         ck.ok(a1 == a2 == a3 and rp.inner_text("#race-ratio") == want(default, "k04_rev"), f"hero {v}: with reduced motion the final frame shows at once and the ratio is the same")
         ctx.close()
@@ -1916,6 +2039,7 @@ def main():
                 rail_checks(browser, base, ck)
                 story_checks(browser, base, ck, index, pooled)
                 collapsed_checks(browser, base, ck, index, saved, shots)
+                navigation_checks(browser, base, ck, index, pooled)
                 print("== 390 wide")
                 errors = []
                 page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)

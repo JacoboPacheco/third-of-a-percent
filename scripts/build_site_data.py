@@ -78,8 +78,8 @@ CLAIM = {
     "google_pct": 0.30,
     "google_ratio": 1.003,
 }
-# The public repository's address. File links on the page point into it. Workflow-run addresses from the
-# results files point at earlier repository names (404 for outsiders), so they are dropped from
+# The public repository's address. File links on the page point into it. Workflow-run addresses in the
+# results files use a different base than REPO_BASE and are not reachable by readers, so they are dropped from
 # site/data.
 REPO_BASE = "https://github.com/JacoboPacheco/third-of-a-percent"
 REPO_INFO = {
@@ -177,7 +177,7 @@ def load(path):
 
 
 def run_links(obj):
-    """Sets every workflow_run_url to None: the run addresses point at earlier repository names, not at REPO_BASE."""
+    """Sets every workflow_run_url to None: the run addresses in the results files use a different base than REPO_BASE."""
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "workflow_run_url":
@@ -267,7 +267,7 @@ def method_record():
     files = [{"file": p, "written": load(os.path.join(REPO, p)).get("written"),
               "added_commit": git_hash(p, added=True), "last_commit": git_hash(p, added=False),
               "added_at": git_time(p)} for p in CRITERIA_HISTORY]
-    for f in files:  # a squashed clone's git log cannot reproduce the original commits: the recorded value wins
+    for f in files:  # git log in a shallow or re-created clone cannot reproduce the recorded commits: the stored value wins
         for k in ("added_commit", "last_commit", "added_at"):
             rec = stored.get(f["file"], {}).get(k)
             if rec is not None:
@@ -279,7 +279,7 @@ def method_record():
 
 
 def stored_holdout_time():
-    """The time recorded in the committed site/data/holdout.json, if any: a squashed public clone's git log cannot reproduce it."""
+    """The time recorded in the committed site/data/holdout.json, if any: git log in a shallow or re-created clone cannot reproduce it."""
     try:
         return load(os.path.join(OUT, "holdout.json")).get("preregistration_committed_utc")
     except (OSError, ValueError, AttributeError):
@@ -1295,9 +1295,16 @@ def baked_values(data_dir):
     share = co["census2"]["projects"][0]["lost"] / t2["lost"]
     share_words = ("about three quarters" if abs(share - 0.75) <= 0.03 else "about half" if abs(share - 0.5) <= 0.03
                    else f"{int(share * 100 + 0.5)}%")
-    hwhat = {"lost": "On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.",
+    hwhat = {"lost": "Clang 18 could not vectorize it with the check inside.",
              "kept": "The loop keeps SIMD; the check only rides on the leftover tail.",
              }.get(hc["class"], "No SIMD in either build; the check adds work to every element.")
+    # the NOVEC clause of site/app.js novecClause(): the same sentence (brief form), from the same pooled control
+    pos = (pc.get("positive") or {}).get("k04_rev.L1")
+    if pos and hc["as_compiled"]["ratio"] > 1:
+        novec_share = 100 * (pos["ratio"] - 1) / (hc["as_compiled"]["ratio"] - 1)
+        hwhat += (f" Switching SIMD off by hand costs {_fx(pos['ratio'])}× "
+                  f"({'about a third' if 30 <= novec_share <= 37 else f'about {round(novec_share)}%'} of the as-compiled extra); "
+                  "the rest is the compare and jump (inferred).")
     return {
         "heroRatio": _fx(hcol["ratio"]), "heroCpu": dcpu["cpu_short"], "heroJobs": str(hcol["jobs"]), "heroWhat": hwhat,
         "bandWorst": _fx(worst[1]), "bandName": short.get(worst[0], worst[0]),

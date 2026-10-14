@@ -13,7 +13,6 @@ Here the same 8 loop functions go through 28 compilers on Compiler Explorer's pu
   - clang 16.0.0, 17.0.1, 18.1.0, 19.1.0, 20.1.0, 21.1.0, 22.1.0, 23.1.0 and trunk, each with
     `-stdlib=libc++`, for x86-64 and for AArch64 (the "armv8-a clang" builds);
   - GCC 12.5, 13.4, 14.4, 15.3, 16.2 (x86-64) and 12.5.0, 13.4.0, 14.3.0, 15.2.0, 16.1.0 (ARM64), with libstdc++.
-    GCC 16 is one more than asked for.
 - **Targets:** `-march=x86-64` (SSE2 baseline), `-march=x86-64-v3` (AVX2), AArch64 default (armv8-a, NEON).
 - **Optimization:** `-O2` and `-O3`.
 - **Checks off / on**, with the macro that fits each library version:

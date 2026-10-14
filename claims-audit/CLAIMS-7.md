@@ -1,6 +1,6 @@
 # Claims audit 7: the contrast band, the mechanism demo, "How can 0.30% be true?", the hero captions and the section gists
 
-Written Wed Oct 14 2026 against the working tree at commit f85511f. Scope: text a visitor reads on `site/index.html` that is new since `claims-audit/CLAIMS-6.md`: `#band`, `#mech` (explanation strings in `site/story.js`), `#average`, the hero captions (`CAP` and `WHAT` in `site/race.js`) and the section gists. Nothing under `site/` was edited; recommended wording is listed below. Classes: SUPPORTED, OVERSTATED (true, but said more strongly or more widely than the data), UNSUPPORTED (no data in the repository backs it, or the page's own detail text says otherwise), UNVERIFIABLE (cannot be checked from here).
+Written Wed Oct 14 2026 at commit f85511f. Scope: text a visitor reads on `site/index.html` that is new since `claims-audit/CLAIMS-6.md`: `#band`, `#mech` (explanation strings in `site/story.js`), `#average`, the hero captions (`CAP` and `WHAT` in `site/race.js`) and the section gists. Nothing under `site/` was edited; recommended wording is listed below. Classes: SUPPORTED, OVERSTATED (true, but said more strongly or more widely than the data), UNSUPPORTED (no data in the repository backs it, or the page's own detail text says otherwise), UNVERIFIABLE (cannot be checked from here).
 
 Result: 46 claims. 37 SUPPORTED, 7 OVERSTATED, 1 UNSUPPORTED, 1 UNVERIFIABLE.
 

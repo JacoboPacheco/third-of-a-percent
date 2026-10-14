@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Third of a Percent: libc++ bounds checks, loop by loop</title>
-<meta name="description" content="Re-testing Google's 'a third of a percent' cost of libc++ bounds checks, loop shape by loop shape, with the machine code as proof, a census of real code, the rewrites that recover most of the cost for reverse and matrix-multiply loops, and other toolchains.">
+<meta name="description" content="A loop-by-loop companion to Google's 'a third of a percent' (0.30%) figure for libc++ bounds checks: loop shape by loop shape, with the machine code as proof, a census of real code, the rewrites that recover most of the cost for reverse and matrix-multiply loops, and other toolchains.">
 <meta name="author" content="JacoboPacheco">
 <meta name="theme-color" content="#ffffff">
 <meta property="og:type" content="article">
@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="modules.css">
 </head>
 <body data-page="main">
-<a class="skip" href="#result">Skip to the paper</a>
+<a class="skip" href="#top">Skip to the paper</a>
 <div id="sample-band" class="sample-band" hidden>SAMPLE DATA: the figures below show results/fixture.json, a made-up file for testing the page, not a measurement.</div>
 
 <header class="bar" id="bar">
@@ -51,8 +51,8 @@
             </div>
           </div>
           <div class="hc-r">
-            <p class="byline">Bounds checks in C++&rsquo;s standard library, re-tested loop by loop. <span class="more">Pick a loop, switch the check on, and watch what it costs.</span></p>
-            <p class="scope">Google reported <span data-v="googlePct">0.30</span>% on average. Here: <span data-v="clang">clang 18.1.3</span>, <span data-v="libcxx">libc++ 18.1.3</span> in its FAST bounds-check mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
+            <p class="byline">Bounds checks in C++&rsquo;s standard library, measured loop by loop. <span class="more">Pick a loop, switch the check on, and watch what it costs.</span></p>
+            <p class="scope">Google reported <span data-v="googlePct">0.30</span>% on average<span class="more">, about a third of a percent (the title)</span>. Here: <span data-v="clang">clang 18.1.3</span>, <span data-v="libcxx">libc++ 18.1.3</span> in its FAST bounds-check mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
             <p class="simd-gloss"><button type="button" class="w-chip" id="simd-chip" aria-expanded="false" aria-controls="simd-def">What is SIMD?</button><span class="simd-def" id="simd-def" hidden>SIMD = several elements per instruction: the processor adds four numbers at once instead of one. <a href="#mech">Try it below</a>.</span></p>
             <p class="authors"><span class="au">JacoboPacheco</span>. Code written by AI coding agents directed by the author.</p>
           </div>
@@ -68,7 +68,7 @@
           <div class="race-axis" id="race-axis" aria-hidden="true"></div>
           <div class="race-cv"><canvas id="race-cv" height="150" role="img" aria-label="Illustration: a row of array elements processed with the check on or off"></canvas></div>
           <div class="race-read" aria-live="polite">
-            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.</span></span></div>
+            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">Clang 18 could not vectorize it with the check inside. Switching SIMD off by hand costs 3.3× (about a third of the as-compiled extra); the rest is the compare and jump (inferred).</span></span></div>
             <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
           </div>
           <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
@@ -156,7 +156,7 @@
     <p class="jump"><a href="#fig1">Jump to Figure 1 &darr;</a><a class="jd" href="details.html">Full details</a></p>
     <div class="abstract">
       <details class="fold" id="abs-fold"><summary>Abstract</summary>
-      <p> Google reported that hardening libc++ (checking every <code>vector[i]</code> against its size) cost its services <span data-v="googlePct">0.30</span>% on average (<a data-href="claimUrl" href="#">Google Security Blog, Nov 15 2024</a><a class="cite" href="#ref-google" aria-label="Reference 1">[1]</a>). Timed with checks off and on, loops that lose SIMD run several times slower; forward loops that keep it cost little on the AMD models when aligned (up to <span data-v="k02Max">1.6</span>&times; as compiled on two, from code placement).</p>
+      <p> Google reported that hardening libc++ (checking every <code>vector[i]</code> against its size) cost its services <span data-v="googlePct">0.30</span>% on average (<a data-href="claimUrl" href="#">Google Security Blog, Nov 15 2024</a><a class="cite" id="cite-google" href="#ref-google" aria-label="Reference 1">[1]</a>). Timed with checks off and on, loops that lose SIMD run several times slower; forward loops that keep it cost little on the AMD models when aligned (up to <span data-v="k02Max">1.6</span>&times; as compiled on two, from code placement).</p>
       <details class="abs-more"><summary>Scope, census, rewrites, other compilers</summary>
       <p>The scope is <span data-v="clang">clang 18.1.3</span> with <span data-v="libcxx">libc++ 18.1.3</span> in FAST mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
       <ul class="findings">
