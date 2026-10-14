@@ -159,3 +159,5 @@ Phone default height after this round: about 6,400 px (was 9,551; cap 10,500).
 Not fitted: the mechanism demo has no animation of its own (by design); the hero's V1 to V3 variants do not get the SIMD chip on a phone.
 
 - Cap change (Oct 14, after a failing check): the phone all-sections-open cap rises 19,500 to 20,000 px because the new section "How can 0.30% be true?" adds about 250 px; the default collapsed-page cap (10,500) is unchanged.
+
+- CAP CHANGE (Wed Oct 14, after a Linux CI result): the phone all-sections-open cap rises 20,000 to 20,500 px: Linux fallback fonts make the page about 1.4% longer (20,031 px measured on the runner against about 19,750 on Windows). The default collapsed-page cap (10,500) is unchanged.
