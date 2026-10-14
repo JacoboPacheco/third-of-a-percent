@@ -48,5 +48,5 @@ Sources: `layout-sweep/results/38440485436/analysis.json` (rules `layout-sweep/c
 - "The reverse loop does not depend on placement" (Page 3b, README): holds on the two EPYC models only; the Xeon (1 job) is inconclusive, with 3.7 to 6.8x.
 - "Only the forward sum is robust" (README, Page 3b): the forward add and the stencil are MIXED or PLACEMENT_DEPENDENT; the stencil at L2 on 7763 and at L1 on 9V74 is ROBUST, so the statement is about the kernels over all cells, not every cell.
 - "PGO did not remove the cost" (Page 7c, README, related-work rows): one CPU model with a reading; LightGBM default is the exception (not detectable).
-- "The brief said only some rows were built with PGO": `pgo/PLAN.md` and `pgo/report.md` show all eight rows (six programs) were built and timed with PGO; the page says eight rows.
+- "Only some rows were built with PGO" (a statement in the audit input): `pgo/PLAN.md` and `pgo/report.md` show all eight rows (six programs) were built and timed with PGO; the page says eight rows.
 - "Aligned is not the cheap placement for the stencil" is stated through the table values (aligned 1.056 against median 1.054 on 7763 L1), not as a mechanism.

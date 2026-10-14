@@ -229,7 +229,7 @@ def report(an):
             L.append(f"  {r['cell_id']:<18} {r['ratio']:.3f} [{lo:.3f}, {hi:.3f}] {r['class']:<14} -> {tail}")
         L.append(f"cells that move: {', '.join(m['cells_moved']) or 'none'}; jobs with a LARGE finding: "
                  f"{', '.join(str(j) for j in m['large_jobs']) or 'none'}")
-        L.append("page text may change (LARGE finding AND a moved cell): " + ("YES, to be decided by the project owner" if m["page_text_may_change"] else "no"))
+        L.append("page text may change (LARGE finding AND a moved cell): " + ("YES, a decision is needed before the page text changes" if m["page_text_may_change"] else "no"))
     L += ["", "Overall: " + ("a limits line about the environment may be warranted (see models above)."
                               if an["page_text_may_change"] else
                               "nothing in the environment was large enough to move a reported verdict; no page change."),

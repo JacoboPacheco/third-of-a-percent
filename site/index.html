@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#ffffff">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Third of a Percent: libc++ bounds checks, loop by loop">
-<meta property="og:description" content="Google reported a third of a percent for libc++ bounds checks. We timed small loops with the checks off and on, and show the machine code behind each result.">
+<meta property="og:description" content="Google reported a third of a percent for libc++ bounds checks. Small loops were timed with the checks off and on, and the machine code behind each result is shown.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23fff' stroke='%231b1b1b' stroke-width='2'/%3E%3Cpath d='M7 22h4l3-12 4 14 3-9h4' fill='none' stroke='%23c2461e' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,20 +39,20 @@
       <div class="hero-in wide">
         <div class="hero-copy">
           <div class="hc-l">
-            <p class="dateline">Preprint, Oct 2026, v0.x, in progress. <a href="details.html">Full details</a></p>
+            <p class="dateline">Technical note, measurements complete October 2026. <a href="details.html">Full details</a></p>
             <h1 id="hero-h">Third of a Percent</h1>
             <div class="hero-actions">
               <button type="button" class="repro-btn" id="repro-btn" aria-expanded="false" aria-controls="repro-box">Reproduce in one command</button>
               <div class="repro-box" id="repro-box" hidden role="region" aria-label="Reproduce every number">
                 <p>Check every number on a laptop, no compiler needed: the tests, every interval and verdict recomputed from the raw samples, and this page against its data.</p>
                 <div class="cmdline"><pre><code id="repro-cmd">python scripts/check.py</code></pre><button type="button" class="copy" data-copy="repro-cmd">Copy</button></div>
-                <p class="repro-more"><a href="#reproduce">Run the measurement itself on GitHub: section 10 &darr;</a></p>
+                <p class="repro-more"><a href="#reproduce">Run the measurement itself on GitHub &darr;</a></p>
               </div>
             </div>
           </div>
           <div class="hc-r">
             <p class="byline">Bounds checks in C++&rsquo;s standard library, re-tested loop by loop. <span class="more">Pick a loop, switch the check on, and watch what it costs.</span></p>
-            <p class="scope">Google reported <span data-v="googlePct">0.30</span>% on average. Here: <span data-v="clang">clang 18.1.3</span>, <span data-v="libcxx">libc++ 18.1.3</span> in FAST mode, <code>-O2</code>, no profile-guided optimization in the main timing, loop by loop.</p>
+            <p class="scope">Google reported <span data-v="googlePct">0.30</span>% on average. Here: <span data-v="clang">clang 18.1.3</span>, <span data-v="libcxx">libc++ 18.1.3</span> in its FAST bounds-check mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
             <p class="simd-gloss"><button type="button" class="w-chip" id="simd-chip" aria-expanded="false" aria-controls="simd-def">What is SIMD?</button><span class="simd-def" id="simd-def" hidden>SIMD = several elements per instruction: the processor adds four numbers at once instead of one. <a href="#mech">Try it below</a>.</span></p>
             <p class="authors"><span class="au">JacoboPacheco</span>. Code written by AI coding agents directed by the author.</p>
           </div>
@@ -61,14 +61,14 @@
           <div class="race-ctl">
             <div class="seg" id="race-cpu" role="radiogroup" aria-label="CPU model"></div>
             <div class="race-key" aria-hidden="true"><span><i class="k-off"></i>check off</span><span><i class="k-lost"></i>check on, loses SIMD</span><span><i class="k-kept"></i>check on, keeps SIMD</span><span><i class="k-chk"></i>a check</span></div>
-            <button type="button" class="sw" id="race-sw" role="switch" aria-checked="true"><span class="sw-l">Bounds check</span><span class="sw-t" aria-hidden="true"><i></i></span><b id="race-sw-w">on</b><span class="sw-hint" id="sw-hint" hidden aria-hidden="true">flip the check</span></button>
+            <button type="button" class="sw" id="race-sw" role="switch" aria-checked="true" aria-label="Bounds check"><span class="sw-l">Bounds check</span><span class="sw-t" aria-hidden="true"><i></i></span><b id="race-sw-w">on</b><span class="sw-hint" id="sw-hint" hidden aria-hidden="true">flip the check</span></button>
             <button type="button" class="replay" id="race-replay">Replay the race</button>
           </div>
           <div class="race-loops" id="race-loops" role="radiogroup" aria-label="Loop shape"></div>
           <div class="race-axis" id="race-axis" aria-hidden="true"></div>
           <div class="race-cv"><canvas id="race-cv" height="150" role="img" aria-label="Illustration: a row of array elements processed with the check on or off"></canvas></div>
           <div class="race-read" aria-live="polite">
-            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse. </b><span class="rr-meta">as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">The compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.</span></span></div>
+            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.</span></span></div>
             <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
           </div>
           <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
@@ -86,9 +86,9 @@
         <span class="band-vs" aria-hidden="true">vs</span>
         <div class="band-n band-w">
           <output class="band-num" id="band-worst"><span data-v="bandWorst">8.0</span>&times;</output>
-          <span class="band-l" id="band-wl">The slowest of this study&rsquo;s eight loops (<span data-v="bandName">reverse</span>, <span data-v="heroCpu">EPYC 7763</span>): one loop, a comparable check</span>
+          <span class="band-l" id="band-wl">The slowest of the eight loops in the main timing (<span data-v="bandName">reverse</span>, <span data-v="heroCpu">EPYC 7763</span>): one loop, a check of the same kind</span>
         </div>
-        <p class="band-s">A comparable bounds check, very different cost: Google&rsquo;s figure averages whole services, this one is a single loop. This neither confirms nor contradicts Google&rsquo;s average.</p>
+        <p class="band-s">A bounds check of the same kind (libc++&rsquo;s FAST mode here; Google&rsquo;s post does not say which hardening mode it used), very different cost: Google&rsquo;s figure averages whole services, this one is a single loop. This neither confirms nor contradicts Google&rsquo;s average.</p>
       </div>
     </section>
 
@@ -116,7 +116,7 @@
     </section>
 </div>
 
-<div class="words wide" id="words" role="group" aria-label="Words used here"><p class="w-plain">A bounds check makes the program stop if an index is out of range; this page measures what that costs, loop by loop.</p><details class="w-fold"><summary>Words used here</summary><div class="w-row"><button type="button" class="w-chip" aria-expanded="false" data-def="the first two test runs, before the rules were written; they said no-go.">Day-one runs</button><button type="button" class="w-chip" aria-expanded="false" data-def="half the interval width when a program is timed against itself: the noise floor.">A/A half-width</button><button type="button" class="w-chip" aria-expanded="false" data-def="FAST time over NONE time, averaged over every job that drew the same CPU model.">Pooled ratio</button><button type="button" class="w-chip" aria-expanded="false" data-def="the memory address where a loop's code starts; moving it can change speed.">Placement</button><button type="button" class="w-chip" aria-expanded="false" data-def="profile-guided optimization: the compiler sees a sample run first and tunes to it.">PGO</button><button type="button" class="w-chip" aria-expanded="false" data-def="a fresh, pre-planned run, to check results were not fitted to earlier ones.">Holdout</button></div><p class="w-def" id="w-def" aria-live="polite" hidden></p></details><noscript><p class="w-ns"><b>Day-one runs</b>: the first two test runs, before the rules were written; they said no-go. <b>A/A half-width</b>: half the interval width when a program is timed against itself: the noise floor. <b>Pooled ratio</b>: FAST time over NONE time, averaged over every job that drew the same CPU model. <b>Placement</b>: the memory address where a loop's code starts; moving it can change speed. <b>PGO</b>: profile-guided optimization: the compiler sees a sample run first and tunes to it. <b>Holdout</b>: a fresh, pre-planned run, to check results were not fitted to earlier ones.</p></noscript></div>
+<div class="words wide" id="words" role="group" aria-label="Words used here"><p class="w-plain">A bounds check makes the program stop if an index is out of range; this page measures what that costs, loop by loop.</p><details class="w-fold"><summary>Words used here</summary><div class="w-row"><button type="button" class="w-chip" aria-expanded="false" data-def="the first two test runs, judged by the original rule; that rule could not pass on this noisy runner, so the result was no-go as written.">Day-one runs</button><button type="button" class="w-chip" aria-expanded="false" data-def="half the interval width when a program is timed against itself: the noise floor.">A/A half-width</button><button type="button" class="w-chip" aria-expanded="false" data-def="FAST time over NONE time, averaged over every job that drew the same CPU model.">Pooled ratio</button><button type="button" class="w-chip" aria-expanded="false" data-def="the memory address where a loop's code starts; moving it can change speed.">Placement</button><button type="button" class="w-chip" aria-expanded="false" data-def="profile-guided optimization: the compiler sees a sample run first and tunes to it.">PGO</button><button type="button" class="w-chip" aria-expanded="false" data-def="a fresh, pre-planned run, to check results were not fitted to earlier ones.">Holdout</button></div><p class="w-def" id="w-def" aria-live="polite" hidden></p></details><noscript><p class="w-ns"><b>Day-one runs</b>: the first two test runs, judged by the original rule; that rule could not pass on this noisy runner, so the result was no-go as written. <b>A/A half-width</b>: half the interval width when a program is timed against itself: the noise floor. <b>Pooled ratio</b>: FAST time over NONE time, averaged over every job that drew the same CPU model. <b>Placement</b>: the memory address where a loop's code starts; moving it can change speed. <b>PGO</b>: profile-guided optimization: the compiler sees a sample run first and tunes to it. <b>Holdout</b>: a fresh, pre-planned run, to check results were not fitted to earlier ones.</p></noscript></div>
   <div class="figpair wide" id="figures">
     <div class="headline" id="headline">
       <p class="hl-big">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span>&times; to <span data-v="lostMax">8.0</span>&times; as long in cache</p>
@@ -156,23 +156,23 @@
     <p class="jump"><a href="#fig1">Jump to Figure 1 &darr;</a><a class="jd" href="details.html">Full details</a></p>
     <div class="abstract">
       <details class="fold" id="abs-fold"><summary>Abstract</summary>
-      <p> Google reported that hardening libc++ (checking every <code>vector[i]</code> against its size) cost its services <span data-v="googlePct">0.30</span>% on average (<a data-href="claimUrl" href="#">Google Security Blog, Nov 15 2024</a><a class="cite" href="#ref-google" aria-label="Reference 1">[1]</a>). We timed small loops with the checks off and on: loops that lose SIMD under the check take several times as long; forward loops that keep it cost almost nothing on the AMD models.</p>
+      <p> Google reported that hardening libc++ (checking every <code>vector[i]</code> against its size) cost its services <span data-v="googlePct">0.30</span>% on average (<a data-href="claimUrl" href="#">Google Security Blog, Nov 15 2024</a><a class="cite" href="#ref-google" aria-label="Reference 1">[1]</a>). Timed with checks off and on, loops that lose SIMD run several times slower; forward loops that keep it cost little on the AMD models when aligned (up to <span data-v="k02Max">1.6</span>&times; as compiled on two, from code placement).</p>
       <details class="abs-more"><summary>Scope, census, rewrites, other compilers</summary>
       <p>The scope is <span data-v="clang">clang 18.1.3</span> with <span data-v="libcxx">libc++ 18.1.3</span> in FAST mode, <code>-O2</code>, no profile-guided optimization in the main timing.</p>
       <ul class="findings">
         <li><b><span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times;</b> as long in cache for loops that lose SIMD (several array elements per instruction) under the check; forward loops that keep SIMD stay near 1&times; on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</li>
-        <li><b><span data-v="c2Lost">444</span> of <span data-v="c2Vec">4,968</span></b> vectorized loops in numeric projects lose SIMD (<span data-v="c1Lost">1</span> of <span data-v="c1Vec">593</span> in general libraries); counted, not timed.</li>
+        <li><b><span data-v="c2Lost">444</span> of <span data-v="c2Vec">4,968</span></b> vectorized loops in numeric projects lose SIMD (one project, <span data-v="bigName">LightGBM</span>, holds <span data-v="bigShare">about three quarters</span> of them), against <span data-v="c1Lost">1</span> of <span data-v="c1Vec">593</span> in general libraries; in both counts most of the loops are libc++&rsquo;s own, and none of those lost SIMD; counted, not timed.</li>
         <li><b><span data-v="fixMin">0.99</span> to <span data-v="fixMax">1.09</span>&times;</b> for the reverse and matrix-multiply loops after small rewrites, checks still on.</li>
         <li><b>Other compilers</b>, compiled only: clang always loses the reverse and strided loops, never a forward one; GCC at <code>-O3</code> usually loses the forward add too, and pays at <code>-O2</code>. <span data-v="verMain"></span></li>
       </ul>
-      <p>This neither confirms nor contradicts Google&rsquo;s average over whole services. Six real programs timed whole: <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% slower with checks on, five detectably on one AMD model, fewer on two others (section 7).</p>
+      <p>This neither confirms nor contradicts Google&rsquo;s average over whole services. <span data-v="rwWorkloadsCap">Six</span> real-program workloads from <span data-v="rwProjects">four</span> projects (LightGBM three ways, Draco, tiny-dnn, Spectra) timed whole: <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% slower with checks on, <span data-v="rwDetect">five</span> of the <span data-v="rwWorkloads">six</span> detectably on one AMD model (<span data-v="rwDetectProjects">three</span> of the <span data-v="rwProjects">four</span> projects), fewer on <span data-v="rwOthers">two</span> others (see Real programs).</p>
       </details>
       </details>
       <details class="fold" id="limits-fold"><summary>Limits: what this cannot tell you</summary>
       <aside class="cannot" id="cannot" aria-label="What this cannot tell you">
         <ul>
           <li>Your production average: these are single loops, not services.</li>
-          <li>Six real programs timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
+          <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
           <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">28</span> compilers in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
           <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the stored samples leaves every verdict on the two best-sampled AMD models unchanged and the third is fragile (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
         </ul>
@@ -206,7 +206,7 @@
     </section>
 
     <section id="placement">
-      <h2><span class="secno">3</span>A control that caught us</h2>
+      <h2><span class="secno">3</span>A control that changed the reading</h2>
       <p class="gist">A forward loop looked slow on some CPUs because of where its code landed, not because of the check.</p>
       <p>One forward loop, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was: clang emits a shorter SIMD loop (<span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span>) that is slow as placed on these AMD cores; the hardware reason is inferred.</p>
       <p>Rebuilding both binaries with every hot loop aligned to 64 bytes (<code>-falign-loops=64</code>) removes the effect, which is why every figure offers the aligned build and why such a <em>placement-sensitive</em> loop is flagged and not used to judge the forward side.</p>
@@ -248,7 +248,7 @@
       <aside class="sidenote" id="fn-short"><span class="fnno">2</span> The checked build run once on an input one element too short: <em>stops</em> means the check stopped the program before the bad access; <em>runs through</em> means the out-of-range access happened unchecked.</aside>
       <div id="mit-detail" class="mit-detail" aria-live="polite"></div>
 
-      <p id="mit-caveat">Measured under our strictest rule; ranges shown: the rule committed before the first timed run, for calling a rewrite <em>better</em>, could be applied in only <span data-v="mitUsable"></span> of <span data-v="mitJobs"></span> jobs (<a href="details.html#mitigate-full">the rule in full</a>).</p>
+      <p id="mit-caveat">Measured under the strictest rule; ranges shown: the rule committed before the first timed run, for calling a rewrite <em>better</em>, could be applied in only <span data-v="mitUsable"></span> of <span data-v="mitJobs"></span> jobs (<a href="details.html#mitigate-full">the rule in full</a>).</p>
     </section>
 
     <section id="siblings">
@@ -271,7 +271,7 @@
 
     <section id="realworld">
       <h2><span class="secno">7</span>Real programs</h2>
-      <p class="gist">Six real programs timed whole; where the slowdown is detectable it is <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% with checks on, on the model with the most jobs.</p>
+      <p class="gist"><span data-v="rwWorkloadsCap">Six</span> real-program workloads from <span data-v="rwProjects">four</span> projects timed whole; where the slowdown is detectable it is <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% with checks on, on the model with the most jobs.</p>
       <p class="callout" id="rw-status"><strong>Timed.</strong> <span data-v="rwStatus"></span></p>
       <div id="rw-chart" class="rw-chart"></div>
       <details class="wd" id="wd-programs" open><summary>Open the interactive: the real programs, by CPU model</summary><div id="w-programs" class="widget"><p class="wfb">Interactive: the real programs, by CPU model. It needs JavaScript; the measured ratios are in Table 9 below.</p></div></details>

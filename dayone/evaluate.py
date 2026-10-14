@@ -3,7 +3,7 @@
 
 Reads dayone/out/raw.json (or the path given) and dayone/criteria.json, computes every ratio and its
 percentile-bootstrap 95 % interval (10000 resamples, fixed seed), then the three criteria, the two
-informational checks and the SPEC section 1 verdict. Writes dayone/out/dayone.json and prints a summary.
+informational checks and the verdict (rule: `verdict_rule_spec_section_1` in dayone/criteria.json). Writes dayone/out/dayone.json and prints a summary.
 Usage: python dayone/evaluate.py [raw.json] [out.json]
 """
 import json
@@ -140,7 +140,7 @@ def main():
         tf = kern[k]["builds"]["fast"]["traps"]["total"]
         v2_rows.append({"kernel": k, "traps_none": tn, "traps_fast": tf, "fast_has_more": tf > tn})
 
-    # ---- verdict, SPEC section 1
+    # ---- verdict (rule: verdict_rule_spec_section_1 in dayone/criteria.json)
     fl = crit["verdict_rule_spec_section_1"]["forward_limit_pct"]
     rmin = crit["verdict_rule_spec_section_1"]["reverse_min_ratio"]
     on_axis = [k for k in kern if vec[k]["none"] is True]

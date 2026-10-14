@@ -3,10 +3,10 @@
 Written Tue Oct 13 2026 (time in the commit message), BEFORE any run. No timing number from any newer toolchain exists when this is committed.
 
 ## Question
-Every timed number in this project is clang 18 with Ubuntu's libc++-18-dev (`gaps/GAPS-2.md`, gap 13). The finding is "loops that lose SIMD under libc++ FAST cost 2.8 to 8.0x in cache; forward loops stay near 1x". That could be a fact about libc++ 18 and clang 18 only: the standard library's hardening and the compiler's vectorizer both changed after 18. This column times the same eight kernels on newer toolchains and publishes whatever comes out.
+Every timed number in this project is clang 18 with Ubuntu's libc++-18-dev (a known limitation when this column was planned). The finding is "loops that lose SIMD under libc++ FAST cost 2.8 to 8.0x in cache; forward loops stay near 1x". That could be a fact about libc++ 18 and clang 18 only: the standard library's hardening and the compiler's vectorizer both changed after 18. This column times the same eight kernels on newer toolchains and publishes whatever comes out.
 
 ## What changed after 18 (external reading, labelled; none of it is measured here)
-Read Tue Oct 13 2026 with WebFetch; each page was summarised by a small model, not read in full by a person, so a claim here is a pointer to check, not a verified quote.
+Read Tue Oct 13 2026 from automatically generated page summaries, not from the full pages, so a claim here is a pointer to check, not a verified quote.
 - Selecting a mode: `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_{NONE,FAST,EXTENSIVE,DEBUG}`, defined before any header; the page says the numeric values of the macros are unspecified. FAST enables the `valid-element-access` and `valid-input-range` categories, default semantic `quick-enforce` (trap). Loaded: https://libcxx.llvm.org/Hardening.html (no version history on that page).
 - 19: bounded iterators for `string` and `vector` as an ABI option (`_LIBCPP_ABI_BOUNDED_ITERATORS_IN_STRING`, `..._IN_VECTOR`), checked only at FAST or above; `_LIBCPP_ENABLE_ASSERTIONS` deprecated (still enables EXTENSIVE with a warning), `LIBCXX_ENABLE_ASSERTIONS` is an error. Loaded: https://releases.llvm.org/19.1.0/projects/libcxx/docs/ReleaseNotes.html (the page's heading says "19.0.0 (in progress)").
 - 20: `_LIBCPP_ENABLE_ASSERTIONS` and `LIBCXX_ENABLE_ASSERTIONS` removed; hardening added for `forward_list` and `bitset`; new ABI options `_LIBCPP_ABI_BOUNDED_UNIQUE_PTR` and `_LIBCPP_ABI_BOUNDED_ITERATORS_IN_STD_ARRAY`. Loaded: https://releases.llvm.org/20.1.0/projects/libcxx/docs/ReleaseNotes.html
@@ -36,4 +36,4 @@ Whatever comes out, per toolchain, including INCONCLUSIVE and a run where an ins
 Three newer versions, the CPU models the runners draw, the same eight kernels, int32 `operator[]` loops, SSE2 baseline, no PGO; no program timings; runners are shared VMs (A/A floor measured per job, as before). The run-to-run reproduction check that `pool.py` makes needs at least two runs per version; one run gives a pooled number without it, and that is said in the report.
 
 ## Run
-In the public repo: `gh workflow run versions.yml -f versions=19,20,21`, then download the `versions-analysis` artifact (`analysis.json`, `report.txt`, `pooled-<N>.json`). Offline: `python versions/check.py`.
+In the repository: `gh workflow run versions.yml -f versions=19,20,21`, then download the `versions-analysis` artifact (`analysis.json`, `report.txt`, `pooled-<N>.json`). Offline: `python versions/check.py`.

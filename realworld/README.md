@@ -1,6 +1,6 @@
 # Real programs that contain lost loops
 
-**Status (Tue Oct 13 2026): built, profiled and timed.** Build run 38402534350; six measure runs (38405426737, 38405438115, 38405450413, 38410903032, 38410918561, 38410932862), 24 distinct jobs, pooled per CPU model (`results/realworld-pooled/realworld.json`): AMD EPYC 7763 16 jobs, AMD EPYC 9V45 5 jobs, AMD EPYC 9V74 3 jobs; each has the 3 jobs a reading needs. Detectably slower with the checks on (as compiled and aligned columns): on 7763, 5 of the 6 programs with lost loops (1.2% to 7.5%); on 9V74, 4 of 6 (0.7% to 7.1%); on 9V45, 3 of 6 (2.3% to 5.4%). The rest were not detectable above that model's own noise floor (details: `claims-audit/CLAIMS-3-recheck.md`). The plan's expectations are checked against EPYC 7763 and held for 5 of 8 rows (verdict page, details, Table 11).
+**Status (Tue Oct 13 2026): built, profiled and timed.** Build run 38402534350; six measure runs (38405426737, 38405438115, 38405450413, 38410903032, 38410918561, 38410932862), 24 distinct jobs, pooled per CPU model (`results/realworld-pooled/realworld.json`): AMD EPYC 7763 16 jobs, AMD EPYC 9V45 5 jobs, AMD EPYC 9V74 3 jobs; each has the 3 jobs a reading needs. Detectably slower with the checks on (as compiled and aligned columns): on 7763, 5 of the 6 workloads with lost loops (1.2% to 7.5%); on 9V74, 4 of 6 (0.7% to 7.1%); on 9V45, 3 of 6 (2.3% to 5.4%). The rest were not detectable above that model's own noise floor (details: `claims-audit/CLAIMS-3-recheck.md`). The plan's expectations are checked against EPYC 7763 and held for 5 of 8 rows (verdict page, details, Table 11).
 
 Pooling note: an earlier pooling counted each job twice (every job's result sat in the repository in two download copies), which doubled the job counts and narrowed the intervals; `pool_rw.py` now counts each distinct file once. Point ratios did not change.
 
@@ -9,7 +9,7 @@ The plan, the rules for every claim and the expectations were committed before t
 
 ## What is here
 
-Six programs from the census lists, each driven by a small driver in [drivers/](drivers/) that calls
+Six workloads from four projects on the census lists (the first six rows) and two controls, each driven by a small driver in [drivers/](drivers/) that calls
 the project's own code on a fixed-seed input (no download at run time):
 
 | row | project | lost loops it reaches (census 2) |
@@ -66,7 +66,7 @@ What these numbers say, and only that:
 
 - Which checks cost the time. The tables show that the lost loops hold little of the executed instructions in most programs and that FAST still costs 1.2% to 7.5% in five of them on EPYC 7763 (fewer programs are detectable on the other two models); that is consistent with the cost sitting in checks elsewhere, not a measured decomposition.
 - Profile-guided optimization (none was used in this timing; the separate `pgo/` column, trained on the timed input, did not make the cost vanish in most rows on EPYC 7763), a representative sample (the programs were picked because they contain lost loops), agreement across CPU models (the five-of-six result holds on EPYC 7763 only; see the status line).
-- Anything about Google's 0.30 %: a fleet average over services we cannot see.
+- Anything about Google's 0.30 %: a fleet average over services that cannot be inspected from outside.
 - One toolchain (clang 18, libc++ 18, `-O2`, baseline x86-64, no `-DNDEBUG`: the census flags;
   release builds of these projects usually define `NDEBUG`, which removes their own `assert`s,
   Eigen's among them, from both builds).

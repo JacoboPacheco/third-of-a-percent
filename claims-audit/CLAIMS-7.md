@@ -6,7 +6,7 @@ Result: 46 claims. 37 SUPPORTED, 7 OVERSTATED, 1 UNSUPPORTED, 1 UNVERIFIABLE.
 
 ## Sources used
 
-- Google post, read this session: `curl` returned the full page (147,441 bytes); the built-in fetch tool returned only the title and navigation. Quotes below are from the curl copy.
+- Google post, read at audit time: `curl` returned the full page (147,441 bytes); the built-in fetch tool returned only the title and navigation. Quotes below are from the curl copy.
   - "Building on the successful deployment of hardened libc++ in Chrome in 2022, we've now made it default across our server-side production systems."
   - "Hardening libc++ resulted in an average 0.30% performance impact across our services (yes, only a third of a percent). This is due to both the compiler's ability to eliminate redundant checks during optimization, and the efficient design of hardened libc++."
   - "Techniques like profile-guided optimizations further improved performance, but even without those advanced techniques, the overhead of bounds checking remains minimal."

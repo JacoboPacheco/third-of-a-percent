@@ -8,7 +8,7 @@ Exploratory sensitivity analysis. NOT a rule change. The verdicts in `results/s4
 harness/, the criteria files, site/, README or scripts/check.py is edited by this folder. No new runs: only the stored
 raw samples are used.
 
-## The objection (gaps/GAPS-2.md, gap H1)
+## The objection (a limitation noted before this column, H1)
 The harness resamples the repetitions of a side independently. The repetitions are consecutive processes on one shared VM
 in ABBA order, so drift and noisy neighbours make them autocorrelated; the intervals may then be too narrow.
 

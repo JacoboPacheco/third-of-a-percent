@@ -1,6 +1,6 @@
 # Claims audit 6: the newer-toolchain section (6b), the environment section (6c), and the limits they replace
 
-Written Tue Oct 13 2026, after the text was committed. The numbers were recomputed from the raw per-job files with separate numpy code (not `harness/pool.py`, not `versions/analyze.py`, not `environment/analyze.py`): geometric mean over a CPU model's jobs of median(FAST) over median(NONE), the steal and frequency figures from the raw `samples`, and the topology from `thread_siblings_list` and the recorded driver vCPU. Scripts: `claims-audit/audit6_recompute.py` and `claims-audit/audit6_recompute_b.py` (plain numpy, run with the user site enabled; they read the raw files under `versions/results/` and `environment/results/` and the site data). Classes: SUPPORTED, OVERSTATED (true but said more strongly than the data), CONTRADICTED, STALE (was true or is now incomplete).
+Written Tue Oct 13 2026, after the text was committed. The numbers were recomputed from the raw per-job files with separate numpy code (not `harness/pool.py`, not `versions/analyze.py`, not `environment/analyze.py`): geometric mean over a CPU model's jobs of median(FAST) over median(NONE), the steal and frequency figures from the raw `samples`, and the topology from `thread_siblings_list` and the recorded driver vCPU. Scripts: `claims-audit/audit6_recompute.py` and `claims-audit/audit6_recompute_b.py` (plain numpy, run with per-user site-packages enabled; they read the raw files under `versions/results/` and `environment/results/` and the site data). Classes: SUPPORTED, OVERSTATED (true but said more strongly than the data), CONTRADICTED, STALE (was true or is now incomplete).
 
 Result: 33 claims, 27 SUPPORTED, 3 OVERSTATED (all fixed), 0 CONTRADICTED, 3 STALE (all fixed).
 
@@ -63,7 +63,7 @@ Result: 33 claims, 27 SUPPORTED, 3 OVERSTATED (all fixed), 0 CONTRADICTED, 3 STA
 - "Compiled only: clang always loses the reverse and strided loops, never a forward one" (abstract, section 6): the timed runs agree on every toolchain; matrix multiply is described there as version-dependent, which the timed runs match.
 - `site/app.js` real-programs and PGO limits say "one toolchain": still true, since no program was timed on a newer toolchain.
 - The mitigation gist (rewrites recover reverse and matrix multiply): measured on clang 18 only; on 19 to 21 matrix multiply is not lost, so the matrix-multiply rewrite was not re-tested there. Said in the limits item; not changed in the section text.
-- `gaps/GAPS-2.md` still lists steal and frequency as never recorded: a historical gap record; the gap is now closed by `environment/`. Left as written.
+- An earlier list of known gaps (not published) still lists steal and frequency as never recorded: a historical record; the gap is now closed by `environment/`. Left as written.
 
 ## Not checked
 

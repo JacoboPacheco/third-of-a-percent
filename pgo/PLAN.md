@@ -7,13 +7,13 @@ later change is logged at the bottom with its time and whether any PGO timing ex
 ## The question
 
 The expected attack: "Google deploys with profile-guided optimization (PGO); your real-program numbers
-are without it." Google's sequel (ACM Queue 2025, `gaps/GAPS.md`) calls PGO critical because it lets the
+are without it." Google's sequel (ACM Queue 2025; see `gaps/GAPS.md`) calls PGO critical because it lets the
 compiler move checks out of hot paths. The real-program study (`realworld/`) timed FAST against NONE
 with no PGO. This column asks: **with PGO on both sides, does the FAST/NONE cost of the same programs
 change?** Answer in either direction is published.
 
-It does not say anything about Google's 0.30 % (a fleet average over services we cannot see), and it
-is a different thing from Google's PGO: their profiles come from production traffic; ours come from
+It does not say anything about Google's 0.30 % (a fleet average over services that cannot be inspected from outside), and it
+is a different thing from Google's PGO: their profiles come from production traffic; here they come from
 the same fixed input that is timed.
 
 ## What is built
@@ -97,8 +97,8 @@ page says the real-program cost shrinks under PGO on these programs; if it does 
 
 ## Budget
 
-At most one build run and as many measure runs of four jobs as the realworld study used (six) if the
-billing allows; reported per CPU model with the job count.
+At most one build run and as many measure runs of four jobs as the realworld study used (six) if runner
+time allows; reported per CPU model with the job count.
 
 ## Changes after this file was committed
 

@@ -9,7 +9,7 @@ tested on saved real compiler output (see "Tests"); the steps to test it live ar
 2. It compiles each file twice with clang, using your flags as they are: once with libc++'s safety checks off, once with them on.
 3. It reads the compiler's own notes on which loops it turned into fast SIMD code in each build.
 4. It lists the loops that were fast with the checks off and are no longer fast with them on, with the file and line.
-5. For each one it says what shape the loop has, and what fixed that shape in our timed tests.
+5. For each one it says what shape the loop has, and what fixed that shape in the timed tests of this repository.
 
 It times nothing. A loop on the list is a place where turning the checks on *might* cost time;
 whether it does depends on how often that loop runs. Time it before you change it.
@@ -78,7 +78,7 @@ temporary folder (not `/dev/null`) so the check traps and the code size can be c
 
 From `mitigate/README.md` (timed, FAST mode, ratios against the unchecked loop). **Time your own code before and after.**
 
-| shape | what worked in our tests | what did not |
+| shape | what worked in the timed tests | what did not |
 |---|---|---|
 | reverse index (`for (i = n; i-- > 0;) c[i] = ...`) | one size check before the loop (`if (c.size() < n) abort();`), or index a `std::span(c).first(n)` taken once: 1.00x on 2 of 3 CPUs, 1.06x to 1.09x on the third | `#pragma clang loop vectorize(enable)` changes nothing; `std::transform` over `rbegin()/rend()` is fast but **unchecked**: libc++ 18 FAST does not check vector iterators |
 | strided (`a[2*i]`, `a[2*i+1]`) | `std::span(a).first(2*n)` once plus `#pragma clang loop interleave_count(2)`: 0.96x to 1.03x; or raw `data()` pointers behind one size check (safety rests on that one line) | a size check with `operator[]`: clang 18 cannot prove `2*i+1 < size()`, still about 5x |

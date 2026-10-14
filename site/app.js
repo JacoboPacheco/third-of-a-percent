@@ -145,6 +145,11 @@ function axisInto(box, title) {
 function setV(key, val) {
   for (const n of document.querySelectorAll(`[data-v="${key}"]`)) n.textContent = val;
 }
+const NUM_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const numWord = (n) => NUM_WORDS[n] || String(n);
+const capFirst = (t) => t.replace(/^./, (c) => c.toUpperCase());
+// a share as words when it is close to a simple fraction, else as a percentage
+const shareWords = (x) => (Math.abs(x - 0.75) <= 0.03 ? 'about three quarters' : Math.abs(x - 0.5) <= 0.03 ? 'about half' : `${Math.round(x * 100)}%`);
 function writtenWhen(s) { const m = (s || '').match(/^(.*?\d{2}:\d{2}\s+[A-Z]{2,4})/); return m ? m[1] : null; }
 function fillStatic() {
   const ix = S.ix, pg = ix.page, cr = ix.criteria;
@@ -286,7 +291,14 @@ function fillStatic() {
   const prr = (k, f) => { const xs = P.rows.map((r) => r.programs[k]).filter(Boolean).map((q) => q[f]); return xs.length ? [Math.min(...xs), Math.max(...xs)] : null; };
   const jA = prr('json', 'at_most_pct'), fA = prr('fmt', 'at_most_pct'), aa = [P.aa_pct.min, P.aa_pct.max];
   const pr = (r) => (r ? `${pct(r[0])}% to ${pct(r[1])}%` : 'n/a');
-  v.progSum = `In the earlier runs (the pooled runs timed no programs), turning the checks on made nlohmann/json at most ${pr(jA)} slower depending on the job, and fmt at most ${pr(fA)}, once each job’s noise floor (${pr(aa)}) is accounted for. Those bounds are no tighter than the noise, so they say the cost is small, not how small.`;
+  const above = (k) => P.rows.filter((r) => r.programs[k] && r.programs[k].ci95[0] > 1);
+  const nProg = (k) => P.rows.filter((r) => r.programs[k]).length;
+  const aboveJ = above('json'), aboveF = above('fmt');
+  const rowName = (r) => `${r.cpu_short} (${r.run_label})`;
+  const clearJ = aboveJ.filter((r) => (r.programs.json.ci95[0] - 1) * 100 > r.programs.json.aa_pct); // lower interval end above the job's own noise floor
+  const floorSay = clearJ.length === aboveJ.length ? 'In all of them the lower end of the interval is also above the job’s noise floor.' : clearJ.length ? `The lower end of the interval is also above the job’s noise floor in the ${joinAnd(clearJ.map((r) => r.programs.json.ratio.toFixed(3)))} ${clearJ.length > 1 ? 'rows' : 'row'} only.` : 'In none of them is the lower end of the interval above the job’s noise floor.';
+  const progAbove = aboveJ.length ? ` For json, ${aboveJ.length} of ${nProg('json')} job rows have an interval that excludes 1 (it lies wholly above 1): ${joinAnd(aboveJ.map((r) => { const q = r.programs.json; return `${rowName(r)} ${q.ratio.toFixed(3)}, interval ${q.ci95[0].toFixed(3)} to ${q.ci95[1].toFixed(3)}, noise floor ${q.aa_pct.toFixed(2)}%`; }))}. ${floorSay} The other json rows${aboveF.length ? '' : ' and every fmt row'} include 1 or lie below it.` : '';
+  v.progSum = `In the earlier runs (the pooled runs timed no programs), turning the checks on made nlohmann/json at most ${pr(jA)} slower depending on the job, and fmt at most ${pr(fA)}, once each job’s noise floor (${pr(aa)}) is accounted for. Those bounds are no tighter than the noise, so for the rows whose interval includes 1 they say the cost is small, not how small.${progAbove}`;
   // Intel models: the forward add at L1, aligned, in every job (no verdict)
   const IF = ix.intel_forward;
   v.intelRange = IF && IF.jobs.length ? rangeX(IF.aligned.min, IF.aligned.max).replace('×', '') : 'n/a';
@@ -947,7 +959,7 @@ function renderCensus() {
     c1Projects: String(t1.projects), c2Projects: String(t2.projects),
     c1Lost: num(t1.lost), c1Vec: num(t1.none.vectorized), c2Lost: num(t2.lost), c2Vec: num(t2.none.vectorized),
     c2Pct: t2.lost_pct_of_vectorized.toFixed(1), c2LostU: num(t2.lost_unique_locations), c2VecU: num(t2.none.vectorized_unique),
-    bigName: PROJECT_NAMES[big.name] || big.name, bigLost: num(big.lost), bigLostU: num(big.lost_unique),
+    bigName: PROJECT_NAMES[big.name] || big.name, bigLost: num(big.lost), bigLostU: num(big.lost_unique), bigShare: shareWords(big.lost / t2.lost),
     woLost: num(wo.lost), woVec: num(wo.vectorized), woPct: wo.lost_pct.toFixed(1), woLostU: num(wo.lost_unique),
     c2WithLost: String(t2.projects_with_a_lost_loop), c2Evidence: num(t2.lost_with_index_evidence), c2EvidenceU: num(C.census2.lost_unique_with_evidence),
     c2aLost: num(t2a.lost), c2aVec: num(t2a.none.vectorized), c2aLostU: num(t2a.lost_unique_locations),
@@ -1299,6 +1311,7 @@ function ceFindings() {
   const short = `${sm.clang_rev_s2_lost === sm.clang_rows ? `all ${sm.clang_rows} clang rows lose the reverse and stride-2 loops` : `${sm.clang_rev_s2_lost} of ${sm.clang_rows} clang rows lose the reverse and stride-2 loops`}, and ${sm.clang_fwd_lost === 0 ? 'none loses a forward loop' : `${sm.clang_fwd_lost} lose a forward loop`}. Matrix multiply: ${groups.map(say).join(', ').replace(/^lost on clang /, 'lost on clang ')}. ${armOnly.length ? `Lost on AArch64 only: ${joinAnd(armOnly.map((k) => SHORT_NAMES[k]))}.` : 'No loop is lost on AArch64 only.'} GCC loses ${sm.gcc_o2_lost === 0 ? 'nothing' : sm.gcc_o2_lost} at -O2; at -O3 it loses the ${joinAnd(every.map((k) => SHORT_NAMES[k]))} loops in every version and the forward add in ${g3.k02_add_fwd} of ${n3} rows.`;
   return {
     short,
+    matmul: groups.map(say).join('; '),
     clangRange: `clang ${ceRanges(clv)} and trunk`,
     revAll: sm.clang_rev_s2_lost === sm.clang_rows,
     text: `${sm.clang_rev_s2_lost === sm.clang_rows ? `The reverse and stride-2 loops lose vectorization under the checks in all ${sm.clang_rows} clang rows` : `The reverse and stride-2 loops lose vectorization under the checks in ${sm.clang_rev_s2_lost} of ${sm.clang_rows} clang rows`}, and ${sm.clang_fwd_lost === 0 ? 'no clang row loses a forward loop' : `${sm.clang_fwd_lost} clang rows lose a forward loop`}. `
@@ -1437,13 +1450,19 @@ function renderVersions() {
   const first = T[0], c19 = mainCpu && first.cpus.find((c) => c.cpu_short === mainCpu), r19 = c19 && c19.cells.find((x) => x.cell_id === 'k04_rev.L1');
   setV('verFinding', `What held. The reverse loop and the stride-2 loop lose SIMD under the checks on ${sm.reverse_holds_all && sm.stride2_holds_all ? 'every toolchain and every CPU model that ran' : 'most rows'}, and the rule counts both as holding on all of them. Their cost, over every row and both sizes: reverse ${rangeX(sm.reverse_all.min, sm.reverse_all.max)}, stride-2 ${rangeX(sm.stride2_all.min, sm.stride2_all.max)}. ${mainCpu ? `On ${mainCpu}, the one model with enough jobs on each toolchain (${mainJobs} jobs): reverse ${rangeX(revR.min, revR.max)}, stride-2 ${rangeX(stR.min, stR.max)}.${r19 && r21 && Math.abs(r21.ratio - r19.ratio) > 0.5 ? ` The reverse loop is cheaper under ${v21.clang} (${fx(r21.ratio)}× at L1 against ${fx(r19.ratio)}× under ${first.clang}); it is still lost.` : ''}` : ''} The forward sum stays at ${rangeX(sm.sum_all.min, sm.sum_all.max)}.`);
   const m1 = sm.matmul_main.L1, m2 = sm.matmul_main.L2;
-  setV('verMatmul', `What did not hold. Matrix multiply keeps SIMD in both builds on every toolchain (under clang 18 the checks made it lose SIMD, at ${rangeX(sm.matmul_clang18.min, sm.matmul_clang18.max)} on the same CPU models), so the rule written for this column counts it as not holding: it is no longer a lost loop. It is not free: on ${mainCpu || 'the CPU models with enough jobs'} the checks cost ${rangeX(m1.min, m1.max)} at L1 and ${rangeX(m2.min, m2.max)} at L2 on every toolchain; over all rows ${rangeX(sm.matmul.L1.min, sm.matmul.L1.max)} and ${rangeX(sm.matmul.L2.min, sm.matmul.L2.max)}. Why it changed is not tested here: the library, the vectorizer or both.`);
+  const pcM = REAL_POOLED && mainCpu && REAL_POOLED.cpus.find((c) => cpuShortOf(c.cpu_model) === mainCpu);
+  const c18 = ['L1', 'L2'].map((s) => cellOf(pcM, `k08_matmul.${s}`)), nv = ['L1', 'L2'].map((s) => pcM && pcM.positive && pcM.positive[`k08_matmul.${s}`]);
+  const clang18Say = c18[0] && c18[1] && nv[0] && nv[1]
+    ? ` On ${mainCpu} clang 18 costs ${fx(c18[0].as_compiled.ratio)}× at L1 and ${fx(c18[1].as_compiled.ratio)}× at L2 (pooled, ${c18[0].as_compiled.jobs} jobs), against ${fx(nv[0].ratio)}× and ${fx(nv[1].ratio)}× for the same loop built with no vectorization at all (the no-vectorize control), so only part of the clang 18 cost is the lost SIMD.` : '';
+  const likeNoSimd = nv[0] && Math.abs(m1.max - nv[0].ratio) <= 0.05 ? ` (as slow as the no-vectorize build, ${fx(nv[0].ratio)}×)` : '';
+  S.verMatmul = `What did not hold. Under clang 18 the checks make matrix multiply lose SIMD (its compiler remark says vectorizing is not beneficial with the checks inside), at ${rangeX(sm.matmul_clang18.min, sm.matmul_clang18.max)} on the same CPU models.${clang18Say} Clang 19 to 21 keep SIMD in both builds, so the rule written for this column counts it as not holding there; it is not free: on ${mainCpu || 'the CPU models with enough jobs'} the checks cost ${rangeX(m1.min, m1.max)} at L1${likeNoSimd} and ${rangeX(m2.min, m2.max)} at L2 on each of those toolchains; over all rows ${rangeX(sm.matmul.L1.min, sm.matmul.L1.max)} and ${rangeX(sm.matmul.L2.min, sm.matmul.L2.max)}. A plausible reason is that the inner loop is short and the checks add work around the vector body (inferred; versions/MATMUL-EXPLAINED.md). Why the vectorizer’s decision changed between clang 18 and 19 is not established: the change also appears on Compiler Explorer builds and with Ubuntu’s own clang 20 and libc++ 20, which narrows it but does not separate a compiler change from a library change.`;
+  setV('verMatmul', S.verMatmul);
   setV('verForms', `Forms. Every toolchain is ${sm.forms.length === 1 ? sm.forms[0] : joinAnd(sm.forms)} under the written rule. ${mainCpu ? `${mainCpu} has ${mainJobs} jobs on clang ${T.map((t) => t.version).join(', ')} and is the only model with ${V.min_jobs} or more on each toolchain: the forward-loop rule is missed by matrix multiply, which costs more than the limit even aligned. ` : ''}Every other CPU model drew ${thinMin === thinMax ? jobsOf(thinMin) : `${thinMin} to ${thinMax} jobs`} on a toolchain, fewer than ${V.min_jobs}, so its rows are shown and no verdict is given. The page therefore reports rows, not a verdict per toolchain.`);
-  setV('verLimits', `Limits: one run (${V.run_id}), so the run-to-run check that needs two runs was not possible; the 18 data are Ubuntu’s libc++ build and these are apt.llvm.org’s, a possible confound; the forward add’s large as-compiled cost under clang 18 on EPYC 7763 is not seen here (${fx(verSpanOnCpu(V, mainCpu, 'k02_add_fwd', 'L1').max)}× under every newer toolchain), the cause was not tested; the same eight loops, SSE2 baseline, no profile-guided optimization, no programs timed. Source: ${V.source}; report ${V.report}.`);
+  setV('verLimits', `Limits: one run (${V.run_id}), so the run-to-run check that needs two runs was not possible; the 18 data are Ubuntu’s libc++ build and these are apt.llvm.org’s (Ubuntu’s own clang 20 gives the same matrix-multiply result as apt.llvm.org’s, so the package source is not what changed it; library and compiler are still not separated); the forward add’s large as-compiled cost under clang 18 on EPYC 7763 is not seen here (${fx(verSpanOnCpu(V, mainCpu, 'k02_add_fwd', 'L1').max)}× under every newer toolchain), the cause was not tested; the same eight loops, SSE2 baseline, no profile-guided optimization, no programs timed. Source: ${V.source}; report ${V.report}.`);
   const verRange = `${T[0].version} to ${T[T.length - 1].version}`;
-  setV('verMain', `Timed too, clang and libc++ ${verRange}: the reverse and strided loops still lose SIMD; matrix multiply no longer does.`);
+  setV('verMain', `Timed too, clang and libc++ ${verRange}: the reverse and strided loops still lose SIMD; matrix multiply keeps SIMD there, though not for free, and the compile-only sweep loses it again on the newest compilers.`);
   setV('verCannot', `Clang and libc++ ${verRange} were timed on the eight loops only, with enough jobs on ${mainCpu ? `one CPU model (${mainCpu})` : 'no CPU model'}.`);
-  setV('limVersions', `Clang and libc++ ${verRange} were timed on the eight loops only (section 6b): the reverse and stride-2 loops still lose SIMD, matrix multiply no longer does, and ${mainCpu ? `only ${mainCpu} has enough jobs on each toolchain` : 'no CPU model has enough jobs'}.`);
+  setV('limVersions', `Clang and libc++ ${verRange} were timed on the eight loops only (section 6b): the reverse and stride-2 loops still lose SIMD, matrix multiply keeps SIMD there but is not free, and ${mainCpu ? `only ${mainCpu} has enough jobs on each toolchain` : 'no CPU model has enough jobs'}.`);
   const box = $('ver-tables');
   box.replaceChildren();
   T.forEach((t) => {
@@ -1512,6 +1531,14 @@ function renderHoldout() {
     el('td', { class: 'num' }, `${lost(r.original)} → ${lost(r.holdout)}`),
     el('td', null, r.reproduced == null ? 'no verdict either time' : r.reproduced ? 'yes' : 'no'))));
   setV('holdoutCap', `Table H. The first pooled runs against the holdout, per CPU model: verdict, jobs and the cost of the loops that lose SIMD in cache (aligned). Source: ${H.source} and ${H.original_source}; plan: ${H.preregistration}.`);
+}
+/* The timed clang 19 to 21 result for matrix multiply, next to the compile-only sweep's version-by-version finding: both
+   sections must be loaded, so this runs once after every section has rendered. */
+function renderMatmulVersions() {
+  if (!S.ce || !S.ver || !S.verMatmul) return;
+  const f = ceFindings(), tail = ` Compile-only (section 6, not timed), matrix multiply is ${f.matmul}: it depends on the compiler version.`;
+  setV('verMatmul', S.verMatmul + tail);
+  for (const n of document.querySelectorAll('[data-v="limVersions"]')) n.textContent += tail;
 }
 function renderCeSweep() {
   const C = S.ce;
@@ -1589,7 +1616,15 @@ function renderRealworld() {
   const pc = (v) => ((v - 1) * 100).toFixed(1);
   setV('rwSlowMin', pc(T.slow_min));
   setV('rwSlowMax', pc(T.slow_max));
-  setV('rwStatus', `Six programs that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and tabulated on the details page.`);
+  const projectsOf = (rows) => new Set(rows.map((r) => r.project)).size;
+  const detected = prog.filter((r) => slow(main).includes(r.row));
+  setV('rwWorkloads', numWord(prog.length));
+  setV('rwWorkloadsCap', capFirst(numWord(prog.length)));
+  setV('rwProjects', numWord(projectsOf(prog)));
+  setV('rwDetect', numWord(detected.length));
+  setV('rwDetectProjects', numWord(projectsOf(detected)));
+  setV('rwOthers', numWord(T.groups.length - 1));
+  setV('rwStatus', `${capFirst(numWord(prog.length))} program workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and tabulated on the details page.`);
   setV('rwTCap', `FAST ÷ NONE, whole program, AMD ${main.cpu_short}, ${main.jobs} jobs, 95% interval beneath. Aligned: both builds with every hot loop aligned to 64 bytes. A/A floor: the unchecked program against a copy of itself. A reading needs both columns to clear the floor.`);
   $('rw-time-table').querySelector('tbody').replaceChildren(...Object.keys(RW_NAMES).map((n) => rwTimeRow(n, main.rows[n])));
   const lostProgs = prog.map((r) => r.row);
@@ -1609,7 +1644,7 @@ function renderRealworld() {
   const fmax = Math.max(...prog.map((r) => r.funcs_none));
   const small = prog.filter((r) => r.lines_none < 1 && slow(main).includes(r.row));
   const lin = prog.find((r) => r.row === 'lightgbm_linear');
-  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ own lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of what the programs execute (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} that is under 1%, yet FAST costs them ${pc(Math.min(...small.map((r) => main.rows[r.row].fast.ratio)))}% to ${pc(Math.max(...small.map((r) => main.rows[r.row].fast.ratio)))}%: consistent with most of the cost being checks elsewhere, in loops that kept SIMD or in other code. We did not isolate which checks, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
+  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ own lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of what the programs execute (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} that is under 1%, yet FAST costs them ${pc(Math.min(...small.map((r) => main.rows[r.row].fast.ratio)))}% to ${pc(Math.max(...small.map((r) => main.rows[r.row].fast.ratio)))}%: consistent with most of the cost being checks elsewhere, in loops that kept SIMD or in other code. Which checks account for this was not isolated, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
   const ex = T.expect, held = ex.filter((e) => e.held), miss = ex.filter((e) => !e.held);
   const why = (e) => `${RW_NAMES[e.row].replace(' (control)', '')}: expected ${e.low.toFixed(2)} to ${e.high.toFixed(2)}${e.call === 'probably not' || e.call === 'no' ? ' and undetectable' : ''}, got ${rwR3(e.fast)} and ${rwR3(e.aligned)}${e.reading === 'detectably slower' ? ', detectable' : ''}`;
   setV('rwExpect', `Of the ${ex.length} expectations committed before any run, ${held.length} held (range and detectable-or-not call, both columns; Table 11 on the details page). Missed: ${miss.map(why).join('; ')}.`);
@@ -1627,10 +1662,10 @@ function renderRealworld() {
     el('td', null, `${e.low.toFixed(2)} to ${e.high.toFixed(2)}; detectable: ${e.call}`),
     el('td', { class: 'num' }, `${rwR3(e.fast)} / ${rwR3(e.aligned)} (${e.reading})`),
     el('td', null, e.held ? 'held' : `no: ${[!e.inside ? 'ratio outside the range' : null, !e.call_ok ? 'detectable-or-not call differs' : null].filter(Boolean).join('; ')}`))));
-  setV('rwIntro', `Six workloads from four census projects with lost loops, plus two controls without any, each built with the checks off (NONE) and on (FAST) and run once under Cachegrind, which counts the instructions one workload iteration executes (on profile builds with the same source and flags plus line tables: the machine code is byte-identical to the timed binaries except for LightGBM, whose shares are therefore approximate, marked ≈). Two LightGBM rows use options chosen to make lost loops run, and say so.`);
+  setV('rwIntro', `${capFirst(numWord(prog.length))} workloads from ${numWord(projectsOf(prog))} census projects with lost loops, plus ${numWord(R.rows.length - prog.length)} controls without any, each built with the checks off (NONE) and on (FAST) and run once under Cachegrind, which counts the instructions one workload iteration executes (on profile builds with the same source and flags plus line tables: the machine code is byte-identical to the timed binaries except for LightGBM, whose shares are therefore approximate, marked ≈). Two LightGBM rows use options chosen to make lost loops run, and say so.`);
   setV('rwRuns', R.build_run);
   setV('rwOutputs', R.rows.every((r) => r.outputs_match) ? `every program’s output was identical with the checks off and on (exact checksums), and every census lost loop in these programs lost vectorization in these builds too (${joinAnd([...new Map(R.rows.filter((r) => r.lost_listed).map((r) => [r.project, `${r.project} ${r.lost_here_too} of ${r.lost_listed}`])).values()])}).` : 'some outputs differ; see the table.');
-  setV('rwEstIntro', `If the lost loops’ share of the time equalled their share of the instructions (NONE) and they ran r times as long with the checks on, the program would take share × (r − 1) longer (Amdahl’s law: a part’s slowdown adds to the whole in proportion to that part’s share); here r = ${fx(R.est_ratio)}, the largest loop ratio in Figure 1, applied to the lines share (lower bound) and the functions share (upper bound). Table 9 is the test of this guess: for LightGBM (linear) the lines estimate (+${pctS(lin.est_lines_pct)}) is far above the measured ${pc(main.rows.lightgbm_linear.fast.ratio)}%, so these lost loops do not slow by the kernels’ factor here (we did not measure why).`);
+  setV('rwEstIntro', `If the lost loops’ share of the time equalled their share of the instructions (NONE) and they ran r times as long with the checks on, the program would take share × (r − 1) longer (Amdahl’s law: a part’s slowdown adds to the whole in proportion to that part’s share); here r = ${fx(R.est_ratio)}, the largest loop ratio in Figure 1, applied to the lines share (lower bound) and the functions share (upper bound). Table 9 is the test of this guess: for LightGBM (linear) the lines estimate (+${pctS(lin.est_lines_pct)}) is far above the measured ${pc(main.rows.lightgbm_linear.fast.ratio)}%, so these lost loops do not slow by the kernels’ factor here (why was not measured).`);
   setV('rwR', fx(R.est_ratio));
   setV('rwEstCaveat', 'It assumes instruction share approximates time share, which the kernels showed it need not.');
   // Figure 5
@@ -1820,6 +1855,7 @@ async function start() {
       loadSection(S.ix.sections.versions, 'ver', renderVersions, 'versions-full'),
       loadSection(S.ix.sections.environment, 'env', renderEnvironment, 'environment-full'),
     ]);
+    renderMatmulVersions();
     renderRuleList();
     renderProgSum();
     updateScrollHints();
@@ -1859,7 +1895,7 @@ function buildChrome() {
   author = {JacoboPacheco},
   title  = {Third of a Percent: bounds checks in C++'s standard library, re-tested loop by loop},
   year   = {2026},
-  note   = {Preprint, v0.x, in progress. Code written by AI coding agents directed by the author},
+  note   = {Technical note, measurements complete October 2026. Code written by AI coding agents directed by the author},
   url    = {${base}}
 }`;
 }

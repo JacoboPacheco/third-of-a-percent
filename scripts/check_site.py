@@ -10,7 +10,7 @@
    no speech), at 1280 and 390 px wide:
    - both pages: no console errors, every printed number in site/data, the Google-wording check, no
      horizontal scroll at 390, every link and button at least 32 px tall at 390; the main page under
-     13228 px long at 390 with every section opened, under 10500 by default (collapsed); links to the repository only to the public copy, no run links, no 'not public yet' wording;
+     13228 px long at 390 with every section opened, under 10500 by default (collapsed); links to the repository only to the public copy, no run links;
    - section 7 (real programs): the timed result (Table 9) with its limits and the expectations, Figure 6, the estimate table and
      Table 5 (details) equal to realworld.json, the Amdahl estimate collapsed and labelled an estimate
      (share x (r - 1)) with its assumption, LightGBM marked approximate, Table 6 (details) labelled as
@@ -217,8 +217,8 @@ def main_versions(abstract, cbox, ck):
     if not ver["toolchains"]:
         return
     lo, hi = ver["toolchains"][0]["version"], ver["toolchains"][-1]["version"]
-    ck.ok(f"clang and libc++ {lo} to {hi}" in abstract and "still lose SIMD" in abstract and "matrix multiply no longer does" in abstract,
-          "abstract: the newer toolchains were timed too; reverse and stride-2 still lose SIMD, matrix multiply no longer does (from versions.json)")
+    ck.ok(f"clang and libc++ {lo} to {hi}" in abstract and "still lose SIMD" in abstract and "matrix multiply keeps SIMD there" in abstract,
+          "abstract: the newer toolchains were timed too; reverse and stride-2 still lose SIMD, matrix multiply keeps SIMD there (from versions.json)")
     en = ver["summary"]["enough"][0]
     ck.ok(f"Clang and libc++ {lo} to {hi} were timed on the eight loops only" in cbox and f"one CPU model ({en['cpu_short']})" in cbox
           and "one main toolchain" in cbox.lower(),
@@ -244,13 +244,13 @@ def versions_environment(dp, ck):
         mm = sm["matmul_main"]
         ck.ok(f"{_fx(sm['reverse_all']['min'])}\u2013{_fx(sm['reverse_all']['max'])}\u00d7" in vt and f"{_fx(sm['stride2_all']['min'])}\u2013{_fx(sm['stride2_all']['max'])}\u00d7" in vt
               and f"{_fx(mm['L1']['min'])}" in vt and f"{_fx(mm['L2']['min'])}" in vt
-              and "What held" in vt and "What did not hold" in vt and "no longer a lost loop" in vt and "not tested here" in vt,
+              and "What held" in vt and "What did not hold" in vt and "counts it as not holding there" in vt and "not established" in vt,
               "section 6b: what held (reverse, stride-2), what did not (matrix multiply, still costly), the ranges from the data")
         ck.ok(not sm["matmul_holds_any"] and sm["matmul_vectorized_both_all"] and sm["reverse_holds_all"] and sm["stride2_holds_all"],
               "section 6b data: matrix multiply never holds and stays vectorized, reverse and stride-2 always hold (the claims the text makes)")
         ck.ok(f"{sm['enough'][0]['cpu_short']} has {', '.join(str(x['jobs']) for x in sm['enough'][:-1])} and {sm['enough'][-1]['jobs']} jobs" in vt
-              and "reports rows, not a verdict per toolchain" in vt and "one run" in vt and "possible confound" in vt,
-              "section 6b: only EPYC 7763 has enough jobs on each toolchain, forms are inconclusive, one run, a possible confound")
+              and "reports rows, not a verdict per toolchain" in vt and "one run" in vt and "library and compiler are still not separated" in vt,
+              "section 6b: only EPYC 7763 has enough jobs on each toolchain, forms are inconclusive, one run, library and compiler not separated")
     if env["models"]:
         et = dp.inner_text("#environment-full").replace("\u00a0", " ")
         sm = env["summary"]
@@ -396,8 +396,8 @@ def story_checks(browser, base, ck, index, pooled):
         pg.wait_for_function("document.querySelectorAll('#mech-row .mc').length === 8", timeout=15000)
         dcpu = next(c for c in index["cpus"] if c["slug"] == index["default_cpu"])
         txt = pg.inner_text("#band")
-        ck.ok(f"{index['claim']['google_pct']:.2f}%" in txt and f"{fx(worst(dcpu['cpu_model']))}×" in txt and "one loop, a comparable check" in txt and "neither confirms nor contradicts" in txt,
-              f"{w}: the contrast band prints Google's {index['claim']['google_pct']:.2f}% and this study's slowest loop ({fx(worst(dcpu['cpu_model']))}×), 'one loop, a comparable check', and the neutral sentence")
+        ck.ok(f"{index['claim']['google_pct']:.2f}%" in txt and f"{fx(worst(dcpu['cpu_model']))}×" in txt and "one loop, a check of the same kind" in txt and "does not say which hardening mode" in txt and "neither confirms nor contradicts" in txt,
+              f"{w}: the contrast band prints Google's {index['claim']['google_pct']:.2f}% and this study's slowest loop ({fx(worst(dcpu['cpu_model']))}×), 'one loop, a check of the same kind', the mode caveat and the neutral sentence")
         other = next(c for c in index["cpus"] if c["slug"] != index["default_cpu"] and c.get("enough"))
         pg.click(f'#race-cpu [data-cpu="{other["slug"]}"]')
         pg.wait_for_timeout(250)
@@ -459,8 +459,54 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         pg.close()
 
 
+def rail_checks(browser, base, ck):
+    """The section rail (fixed, from 1380 px) must not take clicks meant for the hero loop names or Figure 1's row
+    labels: at 1380, 1440 and 1920 px every one of them is the element under the pointer at its label, a real click
+    on one selects it without jumping to another section, and a rail dot still goes to its section."""
+    print("== rail: clicks reach the loop names")
+    for w, h in ((1380, 900), (1440, 900), (1920, 1080)):
+        pg = browser.new_page_plain(viewport={"width": w, "height": h})
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8 && document.querySelectorAll('#rail a').length > 3", timeout=15000)
+        pg.wait_for_timeout(1500)
+        ck.ok(pg.evaluate("getComputedStyle(document.getElementById('rail')).display") != "none", f"{w}: the section rail is shown")
+        hero_hit = pg.evaluate("""() => [...document.querySelectorAll('#race-loops button[data-k]')].map((b) => { const r = b.getBoundingClientRect();
+            return [b.dataset.k, [0.08, 0.3, 0.5].every((f) => { const e = document.elementFromPoint(r.left + r.width * f, r.top + r.height / 2); return !!e && b.contains(e); })]; })""")
+        ck.ok(len(hero_hit) == 8 and all(x[1] for x in hero_hit), f"{w}: the pointer reaches every hero loop name, not the rail ({[x[0] for x in hero_hit if not x[1]]})")
+        pg.evaluate("document.getElementById('rows').scrollIntoView({block: 'center', behavior: 'instant'})")
+        pg.wait_for_timeout(500)
+        row_hit = pg.evaluate("""() => [...document.querySelectorAll('#rows .row')].map((b) => { const r = b.getBoundingClientRect();
+            return [b.dataset.k, [0.04, 0.12, 0.25].every((f) => { const e = document.elementFromPoint(r.left + r.width * f, r.top + r.height / 2); return !!e && b.contains(e); })]; })""")
+        ck.ok(len(row_hit) == 8 and all(x[1] for x in row_hit), f"{w}: the pointer reaches every Figure 1 row label, not the rail ({[x[0] for x in row_hit if not x[1]]})")
+        pg.evaluate("window.scrollTo({top: 0, behavior: 'instant'})")
+        pg.wait_for_timeout(300)
+        box = pg.evaluate("(() => { const r = document.querySelector('#race-loops button[data-k=\"k03_stencil\"]').getBoundingClientRect(); return [r.left + r.width * 0.12, r.top + r.height / 2]; })()")
+        pg.mouse.click(box[0], box[1])
+        pg.wait_for_timeout(500)
+        got = pg.evaluate("[document.querySelector('#race-loops button[data-k=\"k03_stencil\"]').getAttribute('aria-checked'), location.hash]")
+        ck.ok(got[0] == "true" and not re.match(r"#(siblings|placement|realworld|census|result|reproduce)", got[1]), f"{w}: a click on the Stencil name in the hero selects it and stays on the page (hash {got[1]!r})")
+        if pg.evaluate("!!document.getElementById('asm-panel') && !document.getElementById('asm-panel').hidden"):  # in the default hero a lane opens its machine code
+            pg.keyboard.press("Escape")
+            pg.wait_for_function("document.getElementById('asm-panel').hidden", timeout=4000)
+            pg.wait_for_timeout(300)
+        pg.evaluate("document.getElementById('rows').scrollIntoView({block: 'center', behavior: 'instant'})")
+        pg.wait_for_timeout(500)
+        box = pg.evaluate("(() => { const r = document.querySelector('#rows .row[data-k=\"k05_stride2\"]').getBoundingClientRect(); return [r.left + r.width * 0.08, r.top + r.height / 2]; })()")
+        pg.mouse.click(box[0], box[1])
+        pg.wait_for_timeout(500)
+        got = pg.evaluate("[document.querySelector('#rows .row[data-k=\"k05_stride2\"]').getAttribute('aria-selected'), location.hash]")
+        ck.ok(got[0] == "true" and not re.match(r"#(siblings|placement|realworld|census|result|reproduce)", got[1]), f"{w}: a click on the Stride-2 row label in Figure 1 selects it and stays on the page (hash {got[1]!r})")
+        dot = pg.evaluate("""() => { const a = [...document.querySelectorAll('#rail a')][3], i = a.querySelector('i'), r = i.getBoundingClientRect();
+            return [r.left + r.width / 2, r.top + r.height / 2, a.getAttribute('href')]; }""")
+        pg.mouse.click(dot[0], dot[1])
+        pg.wait_for_timeout(500)
+        ck.ok(pg.evaluate("location.hash") == dot[2], f"{w}: a click on a rail dot still goes to its section ({dot[2]})")
+        pg.close()
+
+
 def design_checks(browser, base, ck, index):
-    """Design review: two type voices, captions at 12 px and 4.5:1, one plain sentence above the word pills, short
+    """Design checks: two type voices, captions at 12 px and 4.5:1, one plain sentence above the word pills, short
     visible Abstract and Figure 1 caption, the section column on the figures' left edge, no hyphenated byline,
     no clipped pills on a phone."""
     print("== design: type, contrast, short text, alignment")
@@ -528,7 +574,7 @@ def hero_variant_checks(browser, base, ck, index, pooled):
             wait_ready(pg)
             pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
             pg.wait_for_timeout(300)
-            pg.keyboard.press("h")  # the variant switcher is a review aid; hide it so it never covers a control
+            pg.keyboard.press("h")  # the hero-variant selector is hidden by default; hide it again so it never covers a control
             ck.ok(pg.get_attribute("#race", "data-hv") == str(v), f"{tag}: the hash picks the variant")
             r = pg.evaluate("(() => { const q = (s) => document.querySelector(s).getBoundingClientRect(); return [q('#race').bottom, q('.hero .scope').bottom, q('.bar-details').bottom, q('.bar-details').top]; })()")
             if v == 4 and w < 641:  # all eight lanes with their ratios, then at most a short scroll to the caption
@@ -655,7 +701,7 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         pick_loop(rp, "k04_rev")
         a1 = hero_sig(rp)
         rp.evaluate("document.getElementById('race-replay').click()")
-        rp.wait_for_timeout(100)
+        rp.wait_for_timeout(250)
         a2 = hero_sig(rp)
         rp.wait_for_timeout(700)
         a3 = hero_sig(rp)
@@ -763,7 +809,7 @@ def interactive_checks(browser, base, ck, index, pooled, allowed, errors, saved,
           and page.evaluate("document.activeElement.id") == "race-name", "slide-over: Escape closes it, Figure 2 goes back to its place, focus returns to the loop name")
     with open(os.path.join(DATA, "mitigate.json"), encoding="utf-8") as f:
         mit = json.load(f)
-    page.evaluate("document.getElementById('mit-toggle-box').scrollIntoView({block: 'center'})")
+    page.evaluate("document.getElementById('mit-toggle-box').scrollIntoView({block: 'center', behavior: 'instant'})")
     page.wait_for_timeout(300)
     sh = next(s for s in mit["shapes"] if s["kernel"] == "m04_rev")
     orig = next(v for v in sh["variants"] if v["variant"] == "orig")["range"]
@@ -783,7 +829,7 @@ def interactive_checks(browser, base, ck, index, pooled, allowed, errors, saved,
         ck.ok(page.evaluate("document.querySelectorAll('#rw-chart .seg button').length") >= 2, "real programs: the chart has a CPU switch")
     ck.ok(widget_in or page.evaluate("!document.getElementById('rw-chart').hidden"), "real programs: the widget or the fallback chart is shown")
     ck.ok(page.evaluate("[...document.querySelectorAll('#race button, #story button')].every(b => b.textContent.trim() || b.getAttribute('aria-label'))"), "hero and story controls have names")
-    ck.ok(page.evaluate("!document.getElementById('prog')"), "no scroll-driven progress bar (design rule: nothing moves with scroll)")
+    ck.ok(page.evaluate("!document.getElementById('prog')"), "no scroll-driven progress bar (nothing moves with scroll)")
     page.close()
     ctx = browser.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
     p2 = ctx.new_page()
@@ -869,11 +915,35 @@ def main():
                 ck.ok(len(ab_nums) <= 15 and len(lis) == 4 and all(t == "B" and i == 0 for _, t, i in lis)
                       and "forward loops that keep SIMD stay near 1" in abstract
                       and "forward loops pay" not in abstract and "-O3" in abstract and "-O2" in abstract,
-                      f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 14 numbers (the real-programs range and the two newer-toolchain versions add four) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
+                      f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 15 numbers (the real-programs range and the two newer-toolchain versions add four, the as-compiled forward add one) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
                 fixr = [v["range"] for sh in mit["shapes"] if sh["kernel"] in ("m04_rev", "m08_matmul")
                         for v in sh["variants"] if v["variant"] == sh["recommended"]]
                 ck.ok(f"{fx(min(r['min'] for r in fixr))} to {fx(max(r['max'] for r in fixr))}" in abstract and "GCC" in abstract,
                       "abstract: the rewrite range of the reverse and matrix-multiply loops and the toolchain caveat")
+                # numbers typed in prose (not filled from data) must equal the data they describe
+                with open(os.path.join(DATA, "realworld.json"), encoding="utf-8") as f_:
+                    rwd = json.load(f_)
+                with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f_:
+                    verd = json.load(f_)
+                rw_main = next(g for g in rwd["timing"]["groups"] if g["cpu_model"] == rwd["timing"]["main_cpu"])
+                rw_ndet = lambda g: sum(1 for r in rwd["rows"] if not r["control"] and g["rows"][r["row"]]["reading"] == "detectably slower")
+                rw_other = [g for g in rwd["timing"]["groups"] if g is not rw_main]
+                ck.ok(all(rw_ndet(g) < rw_ndet(rw_main) for g in rw_other),
+                      "abstract: 'fewer on (the) others': every other CPU model detects fewer slowed programs than the main model")
+                big_ = corpus["census2"]["projects"][0]
+                ck.ok(abs(big_["lost"] / t2["lost"] - 0.75) <= 0.03 and "about three quarters" in abstract,
+                      f"abstract: the biggest project's share of the lost loops ({big_['lost'] / t2['lost']:.3f}) is the one the words 'about three quarters' describe")
+                org_ = [(c_["none"]["vectorized_by_origin"]["libc++"] / c_["none"]["vectorized"], c_["lost_by_origin"]["libc++"]) for c_ in (corpus["census1"]["totals"], corpus["census2"]["totals"])]
+                ck.ok(all(s_ > 0.5 and n_ == 0 for s_, n_ in org_) and "most of the loops are libc++" in abstract,
+                      f"abstract: libc++'s own loops are most of both censuses and none of them lost SIMD ({[round(s_, 3) for s_, _ in org_]})")
+                with open(os.path.join(SITE, "race.js"), encoding="utf-8") as f_:
+                    race_src = f_.read()
+                mm_ = re.search(r"Clang (\d+) to (\d+) keep SIMD yet cost (\d\.\d)× at L1", race_src)
+                mm_vs = [t_["version"] for t_ in verd["toolchains"]]
+                mm_l1 = verd["summary"]["matmul_main"]["L1"]
+                ck.ok(mm_ is not None and (int(mm_.group(1)), int(mm_.group(2))) == (min(mm_vs), max(mm_vs))
+                      and f"{mm_l1['min']:.1f}" == f"{mm_l1['max']:.1f}" == mm_.group(3),
+                      f"hero caption for matrix multiply: the typed clang range and '{mm_.group(3) if mm_ else '?'}×' equal the timed toolchains {mm_vs} and the main-model L1 ratio ({mm_l1['min']:.3f} to {mm_l1['max']:.3f})")
                 seg = page.evaluate("[...document.querySelectorAll('#cpu-seg button')].map(b => b.dataset.cpu)")
                 few = page.inner_text("#cpu-few")
                 ck.ok(seg == [c["slug"] for c in cpus] and all(f["cpu_short"] in few for f in index["page"]["cpus_few"]) and "too few to judge" in few
@@ -973,7 +1043,7 @@ def main():
                 mt = page.inner_text("#mitigate")
                 order = page.evaluate("""() => !!(document.getElementById('mit-unsafe').compareDocumentPosition(document.getElementById('mit-table')) & Node.DOCUMENT_POSITION_FOLLOWING)""")
                 ck.ok(order and "span variant" in page.inner_text("#mit-cap") and "strictest rule; ranges shown" in mt and "earns the word" not in mt,
-                      "section 5: the silently-unsafe warning comes before the table, the span variant is defined in the caption, the rule is stated as 'measured under our strictest rule; ranges shown'")
+                      "section 5: the silently-unsafe warning comes before the table, the span variant is defined in the caption, the rule is stated as 'measured under the strictest rule; ranges shown'")
                 ck.ok("better" in mt and f"{mit['usable_jobs']} of {mit['job_count']} jobs" in mt and "rbegin" in mt and "unsafe" in mt.lower(),
                       "section 5: the pre-committed 'better' rule with the usable-job count, and the silently-unsafe std::transform warning")
                 opened = []
@@ -1142,7 +1212,7 @@ def main():
                 fn = dp.inner_text("#fn-novec")
                 with open(os.path.join(DATA, "index.json"), encoding="utf-8") as f_:
                     ce_ = next((c_ for c_ in json.load(f_)["cpus"] if c_["slug"] == default_cpu["slug"]), None)
-                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
+                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
                       "footnote 1: losing SIMD is the only factor measured, about a third of the extra time, the rest stated as unexplained")
                 av = dp.inner_text("#census-avx2")
                 ck.ok("loses fewer, not more" not in av and "snappy" in av and "census 2 loses fewer" in av, "section 4: only census 2 loses fewer at AVX2; census 1 over 18 projects, snappy not built")
@@ -1218,7 +1288,7 @@ def main():
                       and "not interpreted" in fnd,
                       "section 7: five of six programs with lost loops slower by the pooled range, Spectra and the meshoptimizer control not detectable, the {fmt} control faster and not interpreted")
                 shr = page.inner_text("#rw-share")
-                ck.ok("We did not isolate which checks" in shr and "no mechanism is claimed" in shr and "instructions, not time" in shr
+                ck.ok("Which checks account for this was not isolated" in shr and "no mechanism is claimed" in shr and "instructions, not time" in shr
                       and f"up to {pS(max(d['funcs_none'] for d in prog))}" in shr and "consistent with" in shr,
                       "section 7: the lost loops' small instruction share beside the measured cost, worded as consistent with checks elsewhere, no mechanism claimed")
                 ex = page.inner_text("#rw-expect")
@@ -1257,7 +1327,7 @@ def main():
                 links = page.evaluate("[...document.querySelectorAll('a[href^=\"details.html\"]')].length")
                 back = dp.evaluate("[...document.querySelectorAll('a[href=\"index.html\"], a[href=\"./\"]')].length")
                 ck.ok(links >= 6 and back >= 1, f"the main page links the details page ({links} links) and the details page links back ({back})")
-                # the repository is public: links go to the public copy only, never to the private original or its runs
+                # the repository is public: links go to this repository only, never to another repository or to workflow runs
                 PUB = "github.com/JacoboPacheco/third-of-a-percent"
                 gh = []
                 for dp_, _, fs in os.walk(SITE):
@@ -1265,13 +1335,13 @@ def main():
                         if f_.endswith((".html", ".js", ".css", ".json")):
                             with open(os.path.join(dp_, f_), encoding="utf-8") as fh:
                                 txt_ = fh.read()
-                                if re.search(r"github\.com/JacoboPacheco/third-of-a-percent-old|/actions/runs/|not public yet|repository is private", txt_):
+                                if re.search(r"github\.com/JacoboPacheco/(?!third-of-a-percent(?:[/\"#?\s]|$))|/actions/runs/|not public yet|repository is private", txt_):
                                     gh.append(f_)
                 ghl = [x.evaluate("[...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => h.includes('github.com') && !h.includes('third-of-a-percent') && h.includes('third-of-a-percent'))") for x in (page, dp)]
                 publ = [x.evaluate("[...document.querySelectorAll('a[href]')].filter(a => a.href.includes('github.com/JacoboPacheco/third-of-a-percent')).length") for x in (page, dp)]
                 stale = [x.inner_text("body") for x in (page, dp)]
                 ck.ok(not gh and not any(ghl) and all(n >= 2 for n in publ) and not any(re.search(r"not public yet|repository is private|once it is public", t_) for t_ in stale),
-                      f"links to the repository go to the public copy only ({publ} links; stale or private-repository references: {gh}, {ghl}); no workflow-run links, no 'not public yet' wording")
+                      f"links to the repository go to the public copy only ({publ} links; links to other repositories or to workflow runs: {gh}, {ghl}); no workflow-run links, no 'not public yet' wording")
                 with open(os.path.join(DATA, "siblings.json"), encoding="utf-8") as f:
                     sib = json.load(f)
                 t2 = corpus["census2"]["totals"]
@@ -1289,7 +1359,7 @@ def main():
                 ck.ok(len(ab_nums) <= 15 and len(lis) == 4 and all(t == "B" and i == 0 for _, t, i in lis)
                       and "forward loops that keep SIMD stay near 1" in abstract
                       and "forward loops pay" not in abstract and "-O3" in abstract and "-O2" in abstract,
-                      f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 14 numbers (the real-programs range and the two newer-toolchain versions add four) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
+                      f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 15 numbers (the real-programs range and the two newer-toolchain versions add four, the as-compiled forward add one) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
                 fixr = [v["range"] for sh in mit["shapes"] if sh["kernel"] in ("m04_rev", "m08_matmul")
                         for v in sh["variants"] if v["variant"] == sh["recommended"]]
                 ck.ok(f"{fx(min(r['min'] for r in fixr))} to {fx(max(r['max'] for r in fixr))}" in abstract and "GCC" in abstract,
@@ -1393,7 +1463,7 @@ def main():
                 mt = page.inner_text("#mitigate")
                 order = page.evaluate("""() => !!(document.getElementById('mit-unsafe').compareDocumentPosition(document.getElementById('mit-table')) & Node.DOCUMENT_POSITION_FOLLOWING)""")
                 ck.ok(order and "span variant" in page.inner_text("#mit-cap") and "strictest rule; ranges shown" in mt and "earns the word" not in mt,
-                      "section 5: the silently-unsafe warning comes before the table, the span variant is defined in the caption, the rule is stated as 'measured under our strictest rule; ranges shown'")
+                      "section 5: the silently-unsafe warning comes before the table, the span variant is defined in the caption, the rule is stated as 'measured under the strictest rule; ranges shown'")
                 ck.ok("better" in mt and f"{mit['usable_jobs']} of {mit['job_count']} jobs" in mt and "rbegin" in mt and "unsafe" in mt.lower(),
                       "section 5: the pre-committed 'better' rule with the usable-job count, and the silently-unsafe std::transform warning")
                 opened = []
@@ -1562,7 +1632,7 @@ def main():
                 fn = dp.inner_text("#fn-novec")
                 with open(os.path.join(DATA, "index.json"), encoding="utf-8") as f_:
                     ce_ = next((c_ for c_ in json.load(f_)["cpus"] if c_["slug"] == default_cpu["slug"]), None)
-                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
+                ck.ok("only factor measured" in fn and "largest" not in fn and "about a third" in fn and ce_ is not None and 30 <= ce_["novec_rev_share_pct"] <= 37 and f"{ce_['novec_rest_pct']:.1f}%" in fn and "not explained by this measurement" in fn,
                       "footnote 1: losing SIMD is the only factor measured, about a third of the extra time, the rest stated as unexplained")
                 av = dp.inner_text("#census-avx2")
                 ck.ok("loses fewer, not more" not in av and "snappy" in av and "census 2 loses fewer" in av, "section 4: only census 2 loses fewer at AVX2; census 1 over 18 projects, snappy not built")
@@ -1638,7 +1708,7 @@ def main():
                       and "not interpreted" in fnd,
                       "section 7: five of six programs with lost loops slower by the pooled range, Spectra and the meshoptimizer control not detectable, the {fmt} control faster and not interpreted")
                 shr = page.inner_text("#rw-share")
-                ck.ok("We did not isolate which checks" in shr and "no mechanism is claimed" in shr and "instructions, not time" in shr
+                ck.ok("Which checks account for this was not isolated" in shr and "no mechanism is claimed" in shr and "instructions, not time" in shr
                       and f"up to {pS(max(d['funcs_none'] for d in prog))}" in shr and "consistent with" in shr,
                       "section 7: the lost loops' small instruction share beside the measured cost, worded as consistent with checks elsewhere, no mechanism claimed")
                 ex = page.inner_text("#rw-expect")
@@ -1677,7 +1747,7 @@ def main():
                 links = page.evaluate("[...document.querySelectorAll('a[href^=\"details.html\"]')].length")
                 back = dp.evaluate("[...document.querySelectorAll('a[href=\"index.html\"], a[href=\"./\"]')].length")
                 ck.ok(links >= 6 and back >= 1, f"the main page links the details page ({links} links) and the details page links back ({back})")
-                # the repository is public: links go to the public copy only, never to the private original or its runs
+                # the repository is public: links go to this repository only, never to another repository or to workflow runs
                 PUB = "github.com/JacoboPacheco/third-of-a-percent"
                 gh = []
                 for dp_, _, fs in os.walk(SITE):
@@ -1685,13 +1755,13 @@ def main():
                         if f_.endswith((".html", ".js", ".css", ".json")):
                             with open(os.path.join(dp_, f_), encoding="utf-8") as fh:
                                 txt_ = fh.read()
-                                if re.search(r"github\.com/JacoboPacheco/third-of-a-percent-old|/actions/runs/|not public yet|repository is private", txt_):
+                                if re.search(r"github\.com/JacoboPacheco/(?!third-of-a-percent(?:[/\"#?\s]|$))|/actions/runs/|not public yet|repository is private", txt_):
                                     gh.append(f_)
                 ghl = [x.evaluate("[...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => h.includes('github.com') && !h.includes('third-of-a-percent') && h.includes('third-of-a-percent'))") for x in (page, dp)]
                 publ = [x.evaluate("[...document.querySelectorAll('a[href]')].filter(a => a.href.includes('github.com/JacoboPacheco/third-of-a-percent')).length") for x in (page, dp)]
                 stale = [x.inner_text("body") for x in (page, dp)]
                 ck.ok(not gh and not any(ghl) and all(n >= 2 for n in publ) and not any(re.search(r"not public yet|repository is private|once it is public", t_) for t_ in stale),
-                      f"links to the repository go to the public copy only ({publ} links; stale or private-repository references: {gh}, {ghl}); no workflow-run links, no 'not public yet' wording")
+                      f"links to the repository go to the public copy only ({publ} links; links to other repositories or to workflow runs: {gh}, {ghl}); no workflow-run links, no 'not public yet' wording")
                 with open(os.path.join(DATA, "siblings.json"), encoding="utf-8") as f:
                     sibd = json.load(f)
                 x69 = next(v for k, v in next(r for r in sibd["rows"] if r["variant"] == "clang18-fast")["cells"]["k02_add_fwd"]["per_cpu"].items() if "6973P" in k)
@@ -1738,9 +1808,9 @@ def main():
                 want = {x["id"]: x for x in rel["sources"]}
                 read_ids = {"google", "queue", "carruth", "nader", "nist", "readyset", "mytkowicz", "stabilizer", "rustcperf", "quickbench"}
                 ck.ok(set(want) == read_ids and len(trs) == 5 and [t[1] for t in trs] == [want[k]["url"] for k in rel["main_rows"]]
-                      and "as reported" in rs.lower() and "we found none" in rs and "not the same as none existing" in rs
+                      and "as reported" in rs.lower() and "found no public per-loop" in rs and "not the same as none existing" in rs
                       and 100 <= len(page.inner_text("#rel-summary").split()) <= 190,
-                      f"main page, related work: about 150 words ({len(page.inner_text('#rel-summary').split())}), a five-row table whose links are the sources' public addresses, 'as reported', and 'we found none' for a per-loop libc++ FAST measurement")
+                      f"main page, related work: about 150 words ({len(page.inner_text('#rel-summary').split())}), a five-row table whose links are the sources' public addresses, 'as reported', and 'found no public per-loop' measurement of libc++ FAST mode")
                 rl_items = dp.evaluate("[...document.querySelectorAll('#rel-list li')].map(l => [l.innerText, l.querySelector('a.url').href])")
                 nr = dp.inner_text("#rel-notread")
                 nr_names = ["Shnatsel", "fbounds-safety", "_GLIBCXX_ASSERTIONS discussions", "Code alignment issues"]
@@ -1749,7 +1819,7 @@ def main():
                       and nr.startswith("Also relevant, not read in full") and all(n_ in nr for n_ in nr_names)
                       and not any(n_ in prose_both for n_ in ("Shnatsel", "fbounds-safety", "easyperf", "Bakhvalov")),
                       "details page: all ten sources read, each with its address and 'as reported'; the search-summary-only items appear once, in a line labelled 'also relevant, not read in full', with no claim")
-                # claims re-audit (claims-audit/CLAIMS-2.md)
+                # the AVX2 exception is stated wherever 'near 1x' is
                 avx = page.evaluate("avx2Text()")
                 ck.ok("1.11×" in avx and "EPYC 9V45" in avx and "AVX2 exception, 1.11×" in abstract and all(avx in x_ for x_ in (page.inner_text("#headline"), page.inner_text("#sib-short"), dp.inner_text("#sib-finding"), dp.inner_text("#intel-p"))),
                       f"every 'near 1x on the AMD models' carries the AVX2 exception ({avx}), main and details")
@@ -1843,6 +1913,7 @@ def main():
                 interactive_checks(browser, base, ck, index, pooled, allowed, errors, saved, shots)
                 hero_variant_checks(browser, base, ck, index, pooled)
                 design_checks(browser, base, ck, index)
+                rail_checks(browser, base, ck)
                 story_checks(browser, base, ck, index, pooled)
                 collapsed_checks(browser, base, ck, index, saved, shots)
                 print("== 390 wide")

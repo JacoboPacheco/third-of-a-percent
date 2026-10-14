@@ -14,7 +14,7 @@ whisper.cpp, Spectra, tiny-dnn, Stockfish). Nobody here has timed a **whole real
 contains them**. This study does: does the cost of a lost loop survive dilution by everything else a
 program does?
 
-What it will NOT say: anything about Google's 0.30% (a fleet average over services we cannot see).
+What it will NOT say: anything about Google's 0.30% (a fleet average over services that cannot be inspected from outside).
 A program's FAST/NONE ratio is reported per CPU model with its interval, never as confirming or
 refuting that figure.
 
@@ -174,6 +174,5 @@ listed in `realworld/programs.json` with their sha256 and sizes.
   jobs built all six ways again and hit the limit. Fixed, and the builds are now six jobs (LightGBM:
   NONE+FAST, the two profile builds, the aligned pair; Draco: four builds, the aligned pair; the small
   programs) followed by one profile job. Same flags, sources and workloads.
-- Mon Oct 12 2026, 16:23 EDT: run 38303777600 was not started by GitHub ("recent account payments
-  have failed or your spending limit needs to be increased"). Work stops here until the billing is
-  fixed; three runs of the ten are used, none of them timed anything.
+- Mon Oct 12 2026, 16:23 EDT: run 38303777600 did not start (GitHub refused to start the jobs).
+  Rerun later; three runs of the ten are used, none of them timed anything.

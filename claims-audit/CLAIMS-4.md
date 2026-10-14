@@ -23,8 +23,8 @@ Classes: S supported, O overstated, C contradicted, T stale. Recomputed with sep
 | Training input equals timed input, flatters PGO; instrumented profiles, no sampling, no LTO (PLAN.md line 94 says no ThinLTO, no BOLT) | S | caveat present on page 7c limits, README ("trained on the timed input"), DETAILS, realworld/README, related rows |
 | Related row "samples only two layouts, not many" (build_site_data.py, related.json) | T | section 3b now adds four placements; reworded |
 | lostloops live test: 3 projects, run 38438713384, clang 18.1.3, lists equal to the census; "one run, not a guarantee" | S | recomputed; README, DETAILS, tools/lostloops/README agree. Its other README sentences ("tested on saved real compiler output") still hold |
-| Front matter: title, date line "Oct 2026", author JacoboPacheco, "Code written by AI coding agents directed by the author" | S | consistent with README status line ("AI coding agents, directed by the author, wrote the code") |
-| BibTeX @misc | S | braces balanced, fields comma separated, year 2026; its url is the PUBLIC repo, which was empty at the time (a dead link until published; flagged, not edited) |
+| Front matter: title, date line "Oct 2026", author JacoboPacheco, "Code written by AI coding agents directed by the author" | S | same disclosure as the README status line |
+| BibTeX @misc | S | braces balanced, fields comma separated, year 2026; its url pointed at a repository that was not yet reachable at the time (flagged, not edited) |
 | Ref [1] Google Security Blog, Nov 15 2024 | S (title, date) | loaded: title "Retrofitting spatial safety to hundreds of millions of lines of C++", Nov 15 2024. The article body did not load, so the 0.30% sentence and "PGO further improved" were NOT re-verified here |
 | Ref [2] ACM Queue id 3773097 | not verified | HTTP 403; authors, volume and the "five services" figures unchecked |
 | Ref [3] NADER PDF | not verified | PDF is compressed, text unreadable by the fetcher; only the DOI 10.1145/3485480 (ACM) showed; 76.4% unchecked |
@@ -34,7 +34,6 @@ Classes: S supported, O overstated, C contradicted, T stale. Recomputed with sep
 | README 820 words (limit 820), main page phone height | S | check_site --quick passed |
 
 ## Stale statements elsewhere (not edited, outside the named files)
-- The project status notes listed "no PGO" as a weakness; a PGO column now exists.
 - `.github/workflows/layout-sweep.yml` header comment still says 16 placements and "two layouts only"; the run used 4 (coarse).
 - Everything else grep found ("not timed", "never run") is correct in context (real-program timing labels, counted-not-timed).
 

@@ -1,7 +1,7 @@
-"""Checks a results.json against schema version 1 (docs/SPEC.md section 4), with no third-party library.
+"""Checks a results.json against schema version 1 (the schema defined in this file), with no third-party library.
 
-The check is strict on purpose: every key the SPEC names must be there with the right type, and
-no key the SPEC does not name may appear, so the seam between the harness, the Actions run and the
+The check is strict on purpose: every key the schema names must be there with the right type, and
+no key the schema does not name may appear, so the seam between the harness, the Actions run and the
 page cannot drift silently. Extra details a run collects go to results/details.json, not here.
 
 Stage S3 adds OPTIONAL keys (the version stays 1; every existing key keeps its meaning and type):

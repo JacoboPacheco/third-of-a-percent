@@ -8,7 +8,7 @@ prints one line per loop decision on stderr, for example:
     .../k04_rev.cpp:5:3: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
 
 Only remarks at the marked file and line count; remarks about the driver loops or common.hpp
-are ignored. The result is the SPEC's {"vectorized": bool | None, "width": int | None}:
+are ignored. The result is {"vectorized": bool | None, "width": int | None}:
 True when a "vectorized loop" remark is at that line, False when only other remarks are (such as
 "loop not vectorized: ..." or "the cost-model indicates that vectorization is not beneficial"),
 None when clang said nothing about that line.

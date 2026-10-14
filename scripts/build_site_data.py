@@ -79,7 +79,7 @@ CLAIM = {
     "google_ratio": 1.003,
 }
 # The public repository's address. File links on the page point into it. Workflow-run addresses from the
-# results files belong to the original private repository (404 for strangers), so they are dropped from
+# results files point at earlier repository names (404 for outsiders), so they are dropped from
 # site/data.
 REPO_BASE = "https://github.com/JacoboPacheco/third-of-a-percent"
 REPO_INFO = {
@@ -89,13 +89,13 @@ REPO_INFO = {
 }
 
 
-# Related work: only sources that gaps/GAPS.md (section 0) records as actually read, with its wording.
+# Related work: only sources that the related-work table in gaps/GAPS.md records as actually read, with its wording.
 # Every claim about a source is "as reported"; the search-summary-only items are titles, with no claim.
 RELATED = {
     "gaps_file": "gaps/GAPS.md",
     "summary": (
-        "Google’s post reports an average 0.30% performance impact across its services, with profile-guided "
-        "optimization (PGO) improving it further. Its 2025 sequel in ACM Queue, as reported, calls PGO critical, "
+        "Google’s post reports an average 0.30% performance impact across its services, and says profile-guided "
+        "optimization (PGO) improved performance further. Its 2025 sequel in ACM Queue, as reported, calls PGO critical, "
         "says only five services opted out entirely, and that the fine-grained unsafe-access API was used in just "
         "seven distinct places. The closest per-benchmark study, NADER (OOPSLA 2021, on Rust), "
         "reports 76.4% of benchmarks of top crates with little, no or negative cost from unchecked indexing; NIST "
@@ -105,16 +105,16 @@ RELATED = {
         "a layout A/A."
     ),
     "none_found": (
-        "In this search we found no public per-loop measurement of libc++’s FAST mode (we looked in the LLVM "
+        "This search found no public per-loop measurement of libc++’s FAST mode (sources searched: the LLVM "
         "documentation, the LLVM Discourse, GitHub issues, Phoronix, Chromium’s spanification commits and the "
-        "Microsoft STL hardening documentation); we found none, which is not the same as none existing."
+        "Microsoft STL hardening documentation); finding none is not the same as none existing."
     ),
     "main_rows": ["google", "queue", "nader", "nist", "readyset"],
     "sources": [
-        {"id": "google", "m_short": "An average 0.30% across Google’s services, with PGO builds", "d_short": "A fleet average; no loop shapes or machine code", "name": "Google Security Blog, Nov 15 2024", "short": "Google’s post (2024)",
+        {"id": "google", "m_short": "An average 0.30% across Google’s services; PGO further improved performance", "d_short": "A fleet average; no loop shapes or machine code", "name": "Google Security Blog, Nov 15 2024", "short": "Google’s post (2024)",
          "url": "https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html",
-         "measured": "As reported: an average 0.30% performance impact across Google’s services; fixing one unnecessary check took the overhead from 0.35% to 0.3%; PGO further improved performance; a handful of performance-critical code paths still use explicitly unsafe accesses.",
-         "differs": "A fleet average on production workloads with PGO builds; no per-loop breakdown, machine code or controls a stranger can rerun. This study tests none of its numbers."},
+         "measured": "As reported: an average 0.30% performance impact across Google’s services; fixing one unnecessary check took the overhead from 0.35% to 0.3%; PGO further improved performance, though the overhead remains minimal even without such techniques; a handful of performance-critical code paths still use explicitly unsafe accesses.",
+         "differs": "A fleet average on production workloads; the post does not say whether the 0.30% includes PGO, a toolchain version or a hardening mode; no per-loop breakdown, machine code or controls a stranger can rerun. This study tests none of its numbers."},
         {"id": "queue", "m_short": "PGO critical; five services opted out; the unsafe-access API used in seven places", "d_short": "The same fleet; PGO tested here only with the timed input as training", "name": "Dionne, Rebert, Shavrick, Varlamov, “Practical Security in Production: Hardening the C++ Standard Library at Massive Scale”, ACM Queue 23(5), 2025", "short": "ACM Queue sequel (2025)",
          "url": "https://queue.acm.org/detail.cfm?id=3773097",
          "measured": "As reported: key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
@@ -177,7 +177,7 @@ def load(path):
 
 
 def run_links(obj):
-    """Sets every workflow_run_url to None: the runs live in the original private repository, not in REPO_BASE."""
+    """Sets every workflow_run_url to None: the run addresses point at earlier repository names, not at REPO_BASE."""
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "workflow_run_url":
@@ -1287,7 +1287,15 @@ def baked_values(data_dir):
     worst = max(((c["cell_id"].split(".")[0], (c.get("aligned") or c["as_compiled"])["ratio"])
                  for c in pc["cells"] if c["cell_id"].endswith(".L1") and (c.get("aligned") or c.get("as_compiled"))),
                 key=lambda t: t[1])
-    hwhat = {"lost": "The compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.",
+    # the real-program counts and the share of the biggest project, as the page's script words them (site/app.js numWord, shareWords)
+    words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+    prog = [r for r in rw["rows"] if not r["control"]]
+    main_g = next(g for g in rw["timing"]["groups"] if g["cpu_model"] == rw["timing"]["main_cpu"])
+    detected = [r for r in prog if main_g["rows"][r["row"]]["reading"] == "detectably slower"]
+    share = co["census2"]["projects"][0]["lost"] / t2["lost"]
+    share_words = ("about three quarters" if abs(share - 0.75) <= 0.03 else "about half" if abs(share - 0.5) <= 0.03
+                   else f"{int(share * 100 + 0.5)}%")
+    hwhat = {"lost": "On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.",
              "kept": "The loop keeps SIMD; the check only rides on the leftover tail.",
              }.get(hc["class"], "No SIMD in either build; the check adds work to every element.")
     return {
@@ -1301,6 +1309,9 @@ def baked_values(data_dir):
         "fixMin": _fx(min(r["min"] for r in fix)), "fixMax": _fx(max(r["max"] for r in fix)),
         "rwSlowMin": f"{(rw['timing']['slow_min'] - 1) * 100:.1f}", "rwSlowMax": f"{(rw['timing']['slow_max'] - 1) * 100:.1f}",
         "avx2Short": _fx(max(hits)), "ceCompilers": str(ce["counts"]["compilers"]),
+        "rwWorkloads": words[len(prog)], "rwWorkloadsCap": words[len(prog)].capitalize(),
+        "rwProjects": words[len({r["project"] for r in prog})], "rwDetect": words[len(detected)],
+        "rwDetectProjects": words[len({r["project"] for r in detected})], "rwOthers": words[len(rw["timing"]["groups"]) - 1], "bigShare": share_words,
     }
 
 

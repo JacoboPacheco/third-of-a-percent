@@ -30,7 +30,7 @@ function paintBand() {
   const out = $('band-worst'), lab = $('band-wl');
   if (!best) { out.textContent = 'n/a'; lab.textContent = 'not measured on this CPU model'; return; }
   out.textContent = `${fx(best.ratio)}×`;
-  lab.textContent = `The slowest of this study's eight loops (${SHORT_NAMES[best.k]}, ${currentCpu().cpu_short}): one loop, a comparable check`;
+  lab.textContent = `The slowest of the eight loops in the main timing (${SHORT_NAMES[best.k]}, ${currentCpu().cpu_short}): one loop, a check of the same kind`;
 }
 
 /* ---------- 2. the mechanism demo ---------- */

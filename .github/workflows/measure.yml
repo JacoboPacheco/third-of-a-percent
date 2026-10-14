@@ -1,12 +1,12 @@
 name: measure
 
-# One click builds and times everything on FOUR runners at once (a matrix of 4 jobs), so more than
-# one runner CPU model is drawn: 8 kernels at the L1, L2 and RAM sizes (NONE, FAST, NONE-NOVEC, and
-# NONE and FAST again with -falign-loops=64), the A/A and layout A/A controls, and the two real
-# programs (nlohmann/json parsing twitter.json, fmt). Each job writes its own results.json (schema 1,
+# Stage S3 setup (harness/criteria-v2.json, four runners): one click builds and times everything on
+# four runners at once (a matrix of 4 jobs), so more than one runner CPU model is drawn:
+# 8 kernels at the L1, L2 and RAM sizes (NONE, FAST, NONE-NOVEC, and NONE and FAST again with
+# -falign-loops=64), the A/A and layout A/A controls, and the two real programs (nlohmann/json parsing twitter.json, fmt). Each job writes its own results.json (schema 1,
 # verdict under harness/criteria-v2.json for its CPU model) and uploads it as the artifact
 # "results-<cpu>-j<N>"; the last job reads them all and writes combined.json, the page-level line
-# (harness/combine.py), uploaded as "combined". Why four runners: investigate/FINDINGS.md (the same
+# (harness/combine.py), uploaded as "combined". Why several runners: investigate/FINDINGS.md (the same
 # binary cost 1.6x on two EPYC models and 0.98x on a third).
 #
 # Stage S4-measurement (harness/criteria-v3.json, the default since Oct 12): TEN jobs, the in-cache

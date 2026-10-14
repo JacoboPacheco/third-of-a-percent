@@ -3,7 +3,7 @@
 Written Tue Oct 13 2026 (time in the commit message), BEFORE any run. Numbers live in `criteria.json` (its sha256 is stored in every result); this file says why and how.
 
 ## Question
-`investigate/FINDINGS.md`: k02_add_fwd FAST/NONE was 1.6x on EPYC 7763 and 9V74 as compiled and 0.82 to 0.86 with `-falign-loops=64`, because one 31-byte SIMD loop crossed a 64-byte boundary. That is two layouts. Gap 5 in `gaps/GAPS.md`: sample many layouts and report the ratio as a distribution over placements, instead of excluding "placement-sensitive" cells by a post-hoc rule.
+`investigate/FINDINGS.md`: k02_add_fwd FAST/NONE was 1.6x on EPYC 7763 and 9V74 as compiled and 0.82 to 0.86 with `-falign-loops=64`, because one 31-byte SIMD loop crossed a 64-byte boundary. That is two layouts. The follow-up is to sample many layouts and report the ratio as a distribution over placements, instead of excluding "placement-sensitive" cells by a post-hoc rule.
 
 ## What is built
 - Kernels `k01_sum_fwd`, `k02_add_fwd`, `k03_stencil` (forward loops, expected to stay vectorized: the claim) and `k04_rev` (expected to lose SIMD under FAST: the control). Sizes L1 and L2 (in-cache; sized as in `harness/run.py`).
@@ -32,7 +32,7 @@ Let `aa` be the pooled half-width (percent) of that cell's byte-identical A/A. A
 It shows how much of the FAST/NONE ratio of these loops moves with where the loop sits, on the CPU models the runners draw. It does not show the cause (no hardware counters on these VMs; the front-end explanation stays inferred), does not cover other kernels or arm64, and uses one compiler and one family of layouts (4-byte steps of the function start; the loop's offset inside its function is whatever the compiler emitted). A ROBUST result is a statement about these 16 placements.
 
 ## Run
-`gh workflow run layout-sweep.yml` (in the public repo), download the artifacts, then `python layout-sweep/analyze.py <dir> --out layout-sweep/results/<run>/analysis.json`. Offline check: `python layout-sweep/check.py`.
+`gh workflow run layout-sweep.yml` (in the repository), download the artifacts, then `python layout-sweep/analyze.py <dir> --out layout-sweep/results/<run>/analysis.json`. Offline check: `python layout-sweep/check.py`.
 
 ## Amendment 1 (Tue Oct 13 13:39 EDT 2026; written BEFORE the next run; no timing number from any layout-sweep run exists)
 What happened: run 38439008261 aborted at the mechanism probe, as designed, with no timing. On the runner (clang 18, k02_add_fwd FAST) the hot-loop start stayed 16-byte aligned for padding 0, 4 and 12 bytes (addresses 4640, 4656, 4656), and the variant with `-mllvm -x86-experimental-pref-loop-alignment=0` did not build. So the compiler by default places loops at multiples of 16 bytes: the loop-start residues mod 64 it can produce by itself are 0, 16, 32, 48.

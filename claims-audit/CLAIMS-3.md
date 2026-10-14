@@ -22,7 +22,4 @@ Source recomputed: 24 job files under results/realworld-3840*/ hash to 12 distin
 Counts: SUPPORTED 10 groups (about 60 numbers), OVERSTATED 2, CONTRADICTED 1, STALE 1.
 
 ## Stale statements found elsewhere (outside this audit's files; not edited)
-- The project status notes said real-program timing was blocked until a quota reset: stale, timing is done.
-- gaps/GAPS.md line 68 ("realworld/ puts lost loops at about 0 to 6 %") fine, line 97 job 9 "Time the real programs (Actions)" is stale (done, on the public repo run).
-- The day-one plan and the project gotchas said "real programs not built against libc++ hardening": old, superseded by day-one results.
 No remaining "not timed" about the six real programs in README, site, details, DETAILS.md, realworld/README. No "24 jobs", "20 jobs" or 4-job 9V74 statements remain.

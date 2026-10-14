@@ -194,7 +194,7 @@ Run 3 (38270737004): complete for both targets, determinism PASS for both, all 2
 compiled at baseline and avx2. Two controls failed:
 
 9. **Kernel control at avx2 (pre-registered rule, kept as is)**: k08_matmul is vectorized in
-   both builds at `-march=x86-64-v3`, so only k04_rev and k05_stride2 are lost there. My avx2
+   both builds at `-march=x86-64-v3`, so only k04_rev and k05_stride2 are lost there. The avx2
    expectation was wrong; the rule is not changed after the fact and the avx2 kernel control is
    reported as FAIL with this reason.
 10. **Evidence**: the linked rebuild found no checks, because the external check function had no

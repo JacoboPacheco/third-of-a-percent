@@ -1,9 +1,9 @@
-# Environment: what the shared runner did while we timed, and does it move any ratio?
+# Environment: what the shared runner did while the timing ran, and does it move any ratio?
 
 Written Tue Oct 13 2026 (time in the commit message), BEFORE any run. Exploratory and descriptive. No environment number from this study exists when this is committed.
 
 ## Question
-`gaps/GAPS-2.md` gap H: the harness pins one vCPU with `taskset` and uses ABBA order, but never recorded CPU frequency, steal time, the hyperthread topology, the governor, or the cgroup CPU limit. Every ratio on the page assumes the two builds saw the same machine. This column records the machine and asks, per CPU model, whether anything below could move a reported ratio.
+Open gap: the harness pins one vCPU with `taskset` and uses ABBA order, but never recorded CPU frequency, steal time, the hyperthread topology, the governor, or the cgroup CPU limit. Every ratio on the page assumes the two builds saw the same machine. This column records the machine and asks, per CPU model, whether anything below could move a reported ratio.
 
 ## What is recorded
 Once per job (`environment.json`, `facts`): `lscpu`, `/proc/cpuinfo` model name, flags of the first CPU not stored (size), kernel version, number of online CPUs (`/sys/devices/system/cpu/online`, `os.cpu_count()`), the driver's affinity mask, cgroup `cpu.max` and `cpu.stat` (v2, or v1 `cpu.cfs_quota_us`) if present, cpufreq files if present (`scaling_governor`, `scaling_driver`, `cpuinfo_min/max_freq`, `scaling_cur_freq`, `boost`, `intel_pstate/no_turbo`), `/sys/devices/system/cpu/cpu*/topology/thread_siblings_list` for the pinned vCPU (1) and the vCPU the Python driver runs on (read from `/proc/self/stat` at each sample, 0 expected), hypervisor line of lscpu.
@@ -24,4 +24,4 @@ Nothing changes unless, for some CPU model, a LARGE steal or LARGE drift is foun
 Jiffy-resolution steal; a guest's view of frequency and steal depends on the hypervisor (Azure Hyper-V on GitHub runners may report neither); one reading per process cannot see bursts inside it; 10 jobs draw whatever CPU models the pool gives; the effect of environment is measured on the as-compiled pair only; no causal claim from correlation of steal with ratio. 20 processes per side is the harness's old size (criteria-v3 uses 40); chosen to keep jobs short.
 
 ## Run
-In the public repo: `gh workflow run environment.yml`, then download the `environment-analysis` artifact (`analysis.json`, `report.txt`). Offline: `python environment/check.py`.
+In the repository: `gh workflow run environment.yml`, then download the `environment-analysis` artifact (`analysis.json`, `report.txt`). Offline: `python environment/check.py`.

@@ -1,6 +1,6 @@
 /* Third of a Percent: the hero. One finding (what the bounds check costs each loop shape, per CPU model),
-   four contrasting presentations of it, switchable with #hero=1 to #hero=4 (and a small switcher in the top bar
-   that shows only when the hash has "hero" or the reader presses H).
+   four presentations of it, selectable with #hero=1 to #hero=4 (a small selector in the top bar appears
+   only when the hash has "hero" or the reader presses H).
      4  The whole map in one race (default): all eight loops at once, each a pair of bars (check off, check on)
         whose length is the measured pooled ratio; the lanes that lose SIMD visibly lag, the forward ones tie.
      1  Race track: two lanes (check off / check on) on a light stage, isometric tiles, a finish line.
@@ -279,11 +279,11 @@ const CAP = {
   k01_sum_fwd: { kept: 'Both builds are vectorized and, with the check on, the compiler removes the check altogether: nothing is left to pay for.' },
   k02_add_fwd: { kept: 'Both builds are vectorized; the check runs only on the leftover elements.', keptBelow: ' Below 1×: the checked loop does fewer numbers per pass and happens to run faster (section 3; why is inferred).' },
   k03_stencil: { kept: 'Both builds are vectorized; the compiler tests the sizes once before the SIMD loop, so the check runs only on the leftover elements.' },
-  k04_rev: { lost: 'The compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.' },
-  k05_stride2: { lost: 'The same remark as the reverse loop (it could not determine the loop count): four at a time becomes one at a time.' },
+  k04_rev: { lost: 'On clang 18, the compiler could not vectorize it once the check was inside: it no longer knows how many times the loop runs, so four at a time becomes one at a time.' },
+  k05_stride2: { lost: 'On clang 18, the same remark as the reverse loop (it could not determine the loop count): four at a time becomes one at a time.' },
   k06_gather: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the index list.' },
   k07_hist: { none: 'Not vectorized in either build, so there is no SIMD to lose; the check adds a compare and a jump to every pass over the input.' },
-  k08_matmul: { lost: 'On clang 18, the compiler\'s own remark says vectorizing is not beneficial with the check inside: four at a time becomes one (clang 19 to 21 keep SIMD).' },
+  k08_matmul: { lost: 'On clang 18 the remark says vectorizing is not beneficial with the check inside. Clang 19 to 21 keep SIMD yet cost 1.6× at L1 (EPYC 7763, timed); 22 keeps it, 23.1 and trunk lose it (compile-only).' },
 };
 function capFor(k, i) {
   const c = CAP[k] || {};
@@ -348,12 +348,12 @@ function paintText(k) { // the name, the big ratio and the sentence for loop k: 
   $('race-src').textContent = src ? srcLine(src.text) : '';
   const big = $('race-ratio'), sub = $('race-sub');
   const mk = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text });
-  const head = (meta) => { const h = mk('rr-head', ''); h.append(Object.assign(document.createElement('b'), { className: 'rr-nm', textContent: `${SHORT_NAMES[k].replace(/^./, (c) => c.toUpperCase())}. ` }), mk('rr-meta', meta)); return h; };
-  if (i.ratio == null) { big.textContent = 'n/a'; sub.replaceChildren(head('not measured on this CPU model')); }
-  else if (!R.on) { big.textContent = 'Baseline'; sub.replaceChildren(head('the check is off; switch it on to see what it costs')); }
+  const head = (meta) => { const h = mk('rr-head', ''); h.append(Object.assign(document.createElement('b'), { className: 'rr-nm', textContent: `${SHORT_NAMES[k].replace(/^./, (c) => c.toUpperCase())}: ` }), mk('rr-meta', meta)); return h; };
+  if (i.ratio == null) { big.textContent = 'n/a'; sub.replaceChildren(head('not measured on this CPU model.')); }
+  else if (!R.on) { big.textContent = 'Baseline'; sub.replaceChildren(head('the check is off. Switch it on to see what it costs.')); }
   else {
     big.textContent = `${fx(i.ratio)}×`;
-    sub.replaceChildren(head(`as long as with the check off, ${cpu.cpu_short}, ${i.jobs} jobs. `), mk('rr-what', capFor(k, i)));
+    sub.replaceChildren(head(`${fx(i.ratio)}× as long as with the check off, ${cpu.cpu_short}, ${i.jobs} jobs. `), mk('rr-what', capFor(k, i)));
   }
   if (R.shown !== big.textContent && R.shown != null && !RM() && big.animate) big.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'cubic-bezier(.25,1,.5,1)' }); // a swap, never a count-up
   R.shown = big.textContent;

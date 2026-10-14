@@ -66,7 +66,7 @@ KERNELS = {
     "repo": "kernels/", "commit": "", "downloads": [], "root": "",
     "sources": ["k0*.cpp"], "exclude": [], "includes": ["."], "defines": [],
 }
-# What the kernel control must show (docs/SPEC.md; confirmed by the measured remarks and assembly).
+# What the kernel control must show (confirmed by the measured remarks and assembly).
 KERNEL_EXPECT = {
     "k01_sum_fwd": "both", "k02_add_fwd": "both", "k03_stencil": "both",
     "k04_rev": "lost", "k05_stride2": "lost", "k06_gather": "neither", "k07_hist": "neither",

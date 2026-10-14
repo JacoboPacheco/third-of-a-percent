@@ -300,7 +300,7 @@ q::before, q::after { content: none; }
   .axis.top .axis-track { height: 16px; }
 }
 
-/* ---------- fixes after review ---------- */
+/* ---------- text blocks and folds ---------- */
 .verbatim { font-style: normal; }
 details.more { margin: 0.2rem 0 1.2rem; }
 details.more > summary { cursor: pointer; font-size: 0.9rem; color: var(--ink-2); list-style-position: outside; margin-left: 1.1em; }
@@ -475,7 +475,7 @@ details.more > p, details.more > div { font-size: 0.92rem; }
 .tcap b { color: var(--ink); }
 .mv-ticks .tick:first-child { transform: none; }
 
-/* cold-test fixes: jump link, the too-few note, clickable census rows, swipe hints */
+/* jump link, the too-few note, clickable census rows, swipe hints */
 .jump { display: none; margin: 0.2rem 0 0.4rem; font-size: 0.9rem; }
 @media (max-width: 640px) { .jump { display: block; } }
 .few { display: block; margin-top: 4px; font-size: 0.78rem; font-style: normal; color: var(--ink-3); }
@@ -493,7 +493,7 @@ details.more > p, details.more > div { font-size: 0.92rem; }
 #cpu-table td.num { white-space: nowrap; }
 @media (max-width: 640px) { #cpu-table { min-width: 780px; } #appb-cpu { min-width: 720px; } }
 
-/* second review: bulleted abstract, table notes, sticky loop header, original-rule list */
+/* bulleted abstract, table notes, sticky loop header, original-rule list */
 .abstract p { margin: 0; }
 .abstract ul.findings { margin: 0.25rem 0 0.25rem 0; padding-left: 1.2em; }
 .abstract ul.findings li { margin: 0.05rem 0; }
@@ -865,6 +865,10 @@ button, .seg button, a { transition: background-color .12s cubic-bezier(.25,.46,
   .rail a:hover i, .rail a.on i { border-color: var(--accent); }
   .rail a.on i { background: var(--accent); transform: scale(1.25); }
   .rail a.on { color: var(--ink); }
+  /* only the dot takes the pointer: the label boxes (transparent until hovered) lie over the loop names in the hero and Figure 1 */
+  .rail, .rail a { pointer-events: none; }
+  .rail a i { position: relative; pointer-events: auto; }
+  .rail a i::after { content: ""; position: absolute; inset: -8px; }
 }
 
 /* ---------- hero ---------- */
@@ -1002,7 +1006,7 @@ body.panel-open { overflow: hidden; }
 .sec-open > .gist { display: none; }
 @media (max-width: 640px) { .fcol p a, .fcol li a { display: inline; padding: 8px 0; margin: 0; } }
 
-/* review fixes */
+/* section toggles and word pills */
 .sec-more { border: 0; border-radius: 0; padding: 5px 0; min-height: 32px; margin: 0 0 .2rem; text-decoration: underline; text-decoration-color: var(--rule-2); text-underline-offset: 3px; font-size: .84rem; }
 .sec-more:hover, .sec-more[aria-expanded="true"] { border: 0; text-decoration-color: var(--ink); }
 .words { margin: 8px auto 4px; font-size: .78rem; }

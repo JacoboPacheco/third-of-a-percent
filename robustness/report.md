@@ -19,7 +19,7 @@ lag-1 n_eff correction (d0 is its first form, kept; see the change log in PLAN.m
   under (b) for every CPU model in both datasets (MAP on 7763 and 9V74, MAP on 9V45 in s4, INCONCLUSIVE on 9V45 in s5, as
   stored).
 - Lag-1 correction (d), the lower bound on trust: median width 1.02 to 1.07, maximum 1.13 to 1.44. Its first form (d0)
-  shows maximum widths of 5 to 11 on a few cells; that is a mean-versus-median artefact of my formula (see PLAN.md), not
+  shows maximum widths of 5 to 11 on a few cells; that is a mean-versus-median artefact of the formula (see PLAN.md), not
   autocorrelation, and is listed only so the first number is not hidden.
 - Jobs only (c, c-t): not wider than the harness on the 19-job and 5 to 6-job models (median 0.6 to 1.0); wider on 9V45 in s5
   (3 jobs, t interval median 1.57, max 2.67), which is what 3 jobs deserve.
