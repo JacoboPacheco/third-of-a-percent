@@ -321,6 +321,18 @@ def google_wording(page, ck, label, pooled):
           + ("" if not raw else f": {raw[:6]}"))
 
 
+def open_full(page):
+    """Figure 2 opens on a plain view; its full listing (addresses, the commands, the long sentence, the ratio range,
+    the instruction counts) sits behind one button. A check that reads the detail opens that button first."""
+    page.wait_for_function(FIG2_READY, timeout=8000)
+    d = page.locator("#fig2 details.f2-full")
+    if not d.count():  # the SAMPLE file has no assembly and so no listing
+        return
+    if not d.evaluate("n => n.open"):
+        d.locator("summary").click()
+    page.wait_for_function("document.querySelector('#fig2 details.f2-full').open")
+
+
 def no_hscroll(page):
     return page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
 
@@ -340,11 +352,12 @@ def every_row(page, ck, allowed, label):
             page.wait_for_function(FIG2_READY, timeout=8000)
         except Exception:
             continue
-        body = page.inner_text("#fig2-body")
+        open_full(page)
+        body = page.inner_text("#fig2-body") + page.inner_text("#fig2-cap")
         f2txt = page.inner_text("#fig2")
         if "[object" in f2txt or "undefined" in f2txt or re.search(r"\bnull\b", f2txt):
             bad.append(f"{k}: Figure 2 prints a JavaScript placeholder")
-        elif "did not load" not in body and (page.locator("#fig2-body pre.asm").count() == 2 or "SAMPLE" in body):
+        elif "did not load" not in body and ((page.locator("#fig2 .f2-full pre.asm").count() == 2 and page.locator("#fig2 pre.asm-lite").count() in (1, 2)) or "SAMPLE" in body):
             loaded += 1
         bad += page_numbers(page, allowed, "#fig2")
     ck.ok(ks and loaded == len(ks), f"{label}: all {len(ks)} rows open Figure 2 with its machine code ({loaded} did)")
@@ -574,10 +587,11 @@ def navigation_checks(browser, base, ck, index, pooled):
     wait_ready(pg)
     pg.click('#rows .row[data-k="k04_rev"]')
     pg.wait_for_function(FIG2_READY, timeout=8000)
+    open_full(pg)
     why = pg.inner_text("#fig2 .f2-why")
     ck.ok(clause("k04_rev") in why and "(inferred)" in why, "Figure 2's sentence for the reverse loop carries the no-vectorize clause")
     pg.click('#rows .row[data-k="k08_matmul"]')
-    pg.wait_for_function(FIG2_READY, timeout=8000)
+    open_full(pg)
     ck.ok(clause("k08_matmul") in pg.inner_text("#fig2 .f2-why"), "Figure 2's sentence for the matrix-multiply loop carries its no-vectorize clause")
     pg.close()
 
@@ -626,6 +640,191 @@ def rail_checks(browser, base, ck):
         pg.wait_for_timeout(500)
         ck.ok(pg.evaluate("location.hash") == dot[2], f"{w}: a click on a rail dot still goes to its section ({dot[2]})")
         pg.close()
+
+
+PLAIN_MAX_NUMBERS = 4  # distinct numbers in the drawer's default prose: the ratio, the CPU model (up to two numbers) and the width
+PLAIN_WORDS = 45       # the one plain sentence: readable in about ten seconds
+PLAIN_JS = r"""
+() => {
+  const f = document.getElementById('fig2'), out = [];
+  const w = document.createTreeWalker(f, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())) {
+    const p = n.parentElement;
+    if (!p || p.closest('pre, code, script, style') || (p.closest('details:not([open])') && !p.closest('summary'))) continue;
+    const t = n.textContent.trim();
+    if (t) out.push(t);
+  }
+  return out.join('\n');
+}
+"""
+
+
+def figure2_plain_checks(browser, base, ck, index, pooled):
+    """Figure 2 opens on a plain view: one ratio, one sentence, only the marked lines, no addresses. The whole listing
+    and the exact commands sit behind one button that starts closed and works from the keyboard."""
+    print("== Figure 2: plain view first, the full listing behind one button")
+    cpu = next(pc for pc in pooled["cpus"] if pc["cpu_model"] == next(c for c in index["cpus"] if c["slug"] == index["default_cpu"])["cpu_model"])
+    cell = lambda k: next(x for x in cpu["cells"] if x["cell_id"] == f"{k}.L1")
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    ks = pg.evaluate("[...document.querySelectorAll('#rows .row')].map(b => b.dataset.k)")
+    ck.ok(pg.evaluate("document.querySelectorAll('#fig2 details.f2-full').length") == 1 and not pg.evaluate("document.querySelector('#fig2 details.f2-full').open"),
+          "Figure 2: the full listing is closed when the page loads")
+    ck.ok(pg.inner_text("#fig2 details.f2-full > summary").strip() == "Full listing and commands", "Figure 2: one button, labelled with what it opens")
+    bad = []
+    for k in ks:
+        pg.click(f'#rows .row[data-k="{k}"]')
+        pg.wait_for_function(FIG2_READY, timeout=8000)
+        pg.wait_for_timeout(120)
+        vis = pg.inner_text("#fig2")
+        prose = pg.evaluate(PLAIN_JS)
+        nums = sorted({m.group(1) + (m.group(2) or "") for m in NUM_TOKEN.finditer(prose)})
+        head = pg.inner_text("#fig2 .f2-head")
+        want = _fx(cell(k)["aligned"]["ratio"]) + "×"
+        sent = pg.inner_text("#fig2 .f2-plain")
+        n_ad = pg.evaluate("[...document.querySelectorAll('#fig2 .ad')].filter(e => !(e.closest('details:not([open])') && !e.closest('summary'))).length")
+        n_ln = pg.evaluate("[...document.querySelectorAll('#fig2 pre.asm-lite .ln')].length")
+        marked = pg.evaluate("[...document.querySelectorAll('#fig2 pre.asm-lite .ln')].filter(e => /simd|chk|trap/.test(e.className)).length")
+        if pg.evaluate("document.querySelector('#fig2 details.f2-full').open"):
+            bad.append(f"{k}: the full listing opened by itself")
+        if len(nums) > PLAIN_MAX_NUMBERS:
+            bad.append(f"{k}: {len(nums)} distinct numbers in the plain view {nums}")
+        if want not in head or "–" in head or head.count("×") != 1:
+            bad.append(f"{k}: the headline is not one pooled ratio {want} ({head!r})")
+        if len(sent.split()) > PLAIN_WORDS:
+            bad.append(f"{k}: the plain sentence has {len(sent.split())} words")
+        if n_ad:
+            bad.append(f"{k}: {n_ad} addresses visible")
+        for t in ("not shown", "Cachegrind", "_LIBCPP", "clang", "instructions of the two functions", "run 3", "job j", "Figure 2", "loops aligned", "SIMD"):
+            if t in vis:
+                bad.append(f"{k}: the plain view shows {t!r}")
+        if not n_ln or n_ln > 30 or not marked:
+            bad.append(f"{k}: the plain view has {n_ln} code lines, {marked} marked")
+        if "smallest data size" not in head:
+            bad.append(f"{k}: the headline does not say it is the smallest data size ({head!r})")
+        if "×" not in head or "as long with the check on" not in head:
+            bad.append(f"{k}: the headline does not say what the number is ({head!r})")
+    ck.ok(not bad, f"Figure 2, plain view: for all {len(ks)} loops one ratio, one short sentence, at most {PLAIN_MAX_NUMBERS} distinct numbers, no addresses, no 'not shown' rows, no commands" + ("" if not bad else f": {bad[:4]}"))
+    # the plain view's code: what each kind of loop shows, read from the plain blocks only
+    def plain_view(k):
+        pg.click(f'#rows .row[data-k="{k}"]')
+        pg.wait_for_function(FIG2_READY, timeout=8000)
+        pg.wait_for_timeout(120)
+        return pg.evaluate(r"""() => ({ blocks: document.querySelectorAll('#fig2 pre.asm-lite').length,
+            simd: document.querySelectorAll('#fig2 pre.asm-lite .simd').length, chk: document.querySelectorAll('#fig2 pre.asm-lite .chk').length,
+            trap: document.querySelectorAll('#fig2 pre.asm-lite .trap').length, ln: document.querySelectorAll('#fig2 pre.asm-lite .ln').length,
+            notes: [...document.querySelectorAll('#fig2 pre.asm-lite .note')].map(n => n.textContent),
+            code: [...document.querySelectorAll('#fig2 pre.asm-lite .ln')].map(p => p.textContent).join('\n'),
+            subs: [...document.querySelectorAll('#fig2 .f2-lite .remark')].map(n => n.textContent),
+            titles: [...document.querySelectorAll('#fig2 .f2-lite h3')].map(n => n.textContent),
+            sent: document.querySelector('#fig2 .f2-plain').textContent, cap: document.getElementById('fig2-cap').innerText.split('\n')[0] })""")
+    v = plain_view("k04_rev")
+    ck.ok(v["blocks"] == 2 and v["simd"] >= 1 and v["chk"] >= 2 and v["trap"] >= 1
+          and any(n.startswith("the check") for n in v["notes"]) and any(n.startswith("this trap stops the program") for n in v["notes"]),
+          f"Figure 2, plain view of the reverse loop: its SIMD lines, the check and the trap, labelled in words ({v['simd']} SIMD, {v['chk']} check, {v['trap']} trap lines)")
+    ck.ok("STOP" in v["code"] and not re.search(r"(?<![%$\w])[0-9a-f]{3,}(?![\w])", re.sub(r"0x[0-9a-f]+", "", v["code"]))
+          and any("jae" in n and "STOP" in n for n in v["notes"]) and v["subs"][1].startswith("One number per pass, with a check each time"),
+          "Figure 2, plain view of the reverse loop: the trap is called STOP (no address), jae is explained in plain words, and the checks-on column says what it does per pass")
+    ck.ok("can no longer work on" in v["sent"] and v["sent"].count("4 numbers at a time") == 1 and v["subs"][0] == "4 numbers at a time",
+          "Figure 2, plain view of the reverse loop: '4 numbers at a time' is said once in the sentence and once as the column subtitle")
+    ck.ok("Blue: several numbers per instruction" in v["cap"], f"Figure 2, plain view: the caption is only a short legend ({v['cap']!r})")
+    v = plain_view("k08_matmul")
+    ck.ok("can no longer" not in v["sent"] and "could not" not in v["sent"] and "not worth" in v["sent"],
+          f"Figure 2, plain view of matrix multiply: the sentence says the compiler judged it not worth doing, not that it could not ({v['sent']!r})")
+    v = plain_view("k05_stride2")
+    ck.ok("can no longer work on" in v["sent"], "Figure 2, plain view of the stride-2 loop: the compiler could not count the iterations")
+    v = plain_view("k01_sum_fwd")
+    ck.ok(v["blocks"] == 1 and v["titles"] == ["Checks off and on"] and "Identical code" in v["subs"][0] and 2 <= v["ln"] <= 4 and v["simd"] == v["ln"]
+          and v["chk"] == 0 and v["trap"] == 0 and not re.search(r"pxor|pcmp|punpck", v["code"]),
+          f"Figure 2, plain view of the forward sum: one wide 'identical' block of a few representative SIMD lines, no filler, no check ({v['ln']} lines)")
+    v = plain_view("k02_add_fwd")
+    ck.ok(v["blocks"] == 2 and v["simd"] >= 2 and v["chk"] >= 1 and v["trap"] >= 1 and "4 numbers at a time" in v["subs"],
+          f"Figure 2, plain view of the forward add: two blocks that keep their SIMD lines, the second with its check and trap ({v['simd']} SIMD lines)")
+    # the button: mouse, keyboard, and the detail it holds
+    pg.click('#rows .row[data-k="k04_rev"]')
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    pg.focus("#fig2 details.f2-full > summary")
+    pg.keyboard.press("Enter")
+    ck.ok(pg.evaluate("document.querySelector('#fig2 details.f2-full').open"), "Figure 2: Enter on the focused button opens the full listing")
+    full = pg.inner_text("#fig2 .f2-full-body")
+    ck.ok(pg.evaluate("[...document.querySelectorAll('#fig2 .f2-full .ad')].filter(e => !(e.closest('details:not([open])') && !e.closest('summary'))).length") > 10
+          and "not shown" in full and "_LIBCPP_HARDENING_MODE_FAST" in full and "clang++" in pg.inner_text("#fig2 .f2-cmd")
+          and "instructions, not time" in full and "Cachegrind" in full and "inferred" in full
+          and pg.locator("#fig2 .f2-full .copy").is_visible() and "run " in full and "Grey numbers are addresses" in full
+          and "as long with checks on" in full and "size_t" in full,
+          "Figure 2: the full listing holds what the drawer showed before: addresses, 'not shown' rows, both build commands with a Copy button, run and job, the instruction counts with their Cachegrind note, the long sentence with its inferred label, the ratio range, the source line")
+    pg.click('#rows .row[data-k="k05_stride2"]')
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    pg.wait_for_timeout(150)
+    ck.ok(pg.evaluate("document.querySelector('#fig2 details.f2-full').open"), "Figure 2: once opened, the full listing stays open when another loop is selected")
+    pg.focus("#fig2 details.f2-full > summary")
+    pg.keyboard.press("Space")
+    ck.ok(not pg.evaluate("document.querySelector('#fig2 details.f2-full').open"), "Figure 2: Space on the focused button closes the full listing")
+    ck.ok(pg.evaluate("document.querySelector('#fig2 details.f2-full > summary').getBoundingClientRect().height") >= 32, "Figure 2: the button is at least 32 px tall")
+    sty = "(() => { const c = getComputedStyle(document.querySelector('#fig2 details.f2-full > summary')); return [c.backgroundColor, c.color, c.borderTopColor, c.fontWeight, c.fontSize].join('|'); })()"
+    pg.mouse.move(5, 5)
+    closed_sty = pg.evaluate(sty)
+    pg.click("#fig2 details.f2-full > summary")
+    pg.mouse.move(5, 5)
+    pg.wait_for_timeout(200)
+    ck.ok(pg.evaluate(sty) == closed_sty and closed_sty.split("|")[0] == "rgba(0, 0, 0, 0)", f"Figure 2: the button looks the same open and closed, and quiet (no filled background): {closed_sty}")
+    first = pg.evaluate("document.querySelector('#fig2 .f2-full-body').firstElementChild.className")
+    ck.ok(first == "f2-instr" and pg.evaluate("document.querySelectorAll('#fig2 .f2-full-body .f2-head, #fig2 .f2-full-body h4').length") == 0,
+          f"Figure 2: the full listing starts at the instruction counts and does not repeat the headline ({first})")
+    fc = pg.inner_text("#fig2 .f2-fullcap")
+    ck.ok("Figure 2." in fc and "loops aligned" in fc and "clang" in fc, "Figure 2: the technical caption sits in the full listing")
+    pg.close()
+    # the slide-over opened from the hero: same plain view, the button reachable by Tab
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    pg.click("#race-name")
+    pg.wait_for_function("!document.getElementById('asm-panel').hidden")
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    pg.wait_for_timeout(500)
+    got = []
+    for _ in range(4):
+        pg.keyboard.press("Tab")
+        got.append(pg.evaluate("document.activeElement.tagName"))
+        if got[-1] == "SUMMARY":
+            break
+    ck.ok("SUMMARY" in got, f"slide-over: Tab from Close reaches the full-listing button ({got})")
+    pg.keyboard.press("Enter")
+    ck.ok(pg.evaluate("document.querySelector('#asm-slot details.f2-full').open") and pg.evaluate("[...document.querySelectorAll('#asm-slot .f2-full .ad')].filter(e => !(e.closest('details:not([open])') && !e.closest('summary'))).length") > 0,
+          "slide-over: the button opens the full listing with its addresses")
+    pg.keyboard.press("Escape")
+    pg.close()
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    pg.click("#race-name")
+    pg.wait_for_function("!document.getElementById('asm-panel').hidden")
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    pg.wait_for_timeout(400)
+    ck.ok(not pg.evaluate("document.querySelector('#asm-slot details.f2-full').open") and not pg.evaluate("[...document.querySelectorAll('#asm-slot .ad')].filter(e => !(e.closest('details:not([open])') && !e.closest('summary'))).length"),
+          "slide-over: opened from the hero button, the drawer shows the plain view with the full listing closed")
+    pg.close()
+    # a phone: the same, inside the row accordion
+    pg = browser.new_page_plain(viewport={"width": 390, "height": 844})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.evaluate("document.getElementById('fig1').scrollIntoView()")
+    pg.click('#rows .row[data-k="k04_rev"]')
+    pg.wait_for_function(FIG2_READY, timeout=8000)
+    pg.wait_for_timeout(700)
+    h = pg.evaluate("document.getElementById('fig2').getBoundingClientRect().height")
+    ck.ok(not pg.evaluate("document.querySelector('#fig2 details.f2-full').open") and not pg.evaluate("[...document.querySelectorAll('#fig2 .ad')].filter(e => !(e.closest('details:not([open])') && !e.closest('summary'))).length")
+          and no_hscroll(pg) and pg.evaluate("[...document.querySelectorAll('#fig2 pre')].every(p => p.scrollWidth <= p.clientWidth + 1)")
+          and 32 <= pg.evaluate("document.querySelector('#fig2 details.f2-full > summary').getBoundingClientRect().height") < 44,
+          f"390: the drawer opens on the plain view (no addresses, full listing closed, no sideways scroll, {h:.0f} px tall)")
+    pg.click("#fig2 details.f2-full > summary")
+    pg.wait_for_timeout(200)
+    ck.ok(no_hscroll(pg) and pg.evaluate("[...document.querySelectorAll('#fig2 pre')].every(p => p.scrollWidth <= p.clientWidth + 1)"), "390: with the full listing open there is no sideways scroll")
+    pg.close()
 
 
 def design_checks(browser, base, ck, index):
@@ -1078,6 +1277,7 @@ def main():
                       and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
                       and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'"),
                       f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs")
+                open_full(page)
                 ck.ok("instructions, not time" in page.inner_text("#fig2 .f2-instr"), "Figure 2: the instruction ratio sits in its header, labelled 'instructions, not time'")
                 with open(os.path.join(DATA, "pooled.json"), encoding="utf-8") as f:
                     pooled = json.load(f)
@@ -1286,7 +1486,7 @@ def main():
                 k02t = dp.inner_text("#k02-faster") + dp.inner_text("#fig3 figcaption")
                 ck.ok("per pass" in k02t and "inferred" in k02t,
                       "section 3 and Figure 3 explain why the checked forward add is faster aligned (per-pass unrolling, cause marked inferred)")
-                ck.ok(page.evaluate("""() => [...document.querySelectorAll('#rows .src, #fig2 .f2-src code, #fig2 pre.asm')]
+                ck.ok(page.evaluate("""() => [...document.querySelectorAll('#rows .src, #fig2 .f2-src code, #fig2 pre.asm, #fig2 pre.asm-lite')]
                     .every(n => getComputedStyle(n).overflowWrap === 'normal' && getComputedStyle(n).wordBreak === 'normal')"""),
                       "code lines wrap only at spaces, never mid-token")
                 page.evaluate("scrollTo(0, 0)"); page.wait_for_timeout(150)
@@ -1312,12 +1512,13 @@ def main():
                 sel = page.evaluate("document.querySelector('#rows .row[aria-selected=true]').dataset.k")
                 ck.ok(sel == "k04_rev", f"the reverse loop is selected on load (got {sel})")
                 f2 = page.evaluate("""() => ({ top: document.getElementById('fig2').getBoundingClientRect().top,
-                    notes: [...document.querySelectorAll('#fig2 .note')].map(n => n.textContent),
-                    chk: document.querySelectorAll('#fig2 .chk').length, trap: document.querySelectorAll('#fig2 .trap').length,
-                    simd: document.querySelectorAll('#fig2 .simd').length })""")
+                    notes: [...document.querySelectorAll('#fig2 pre.asm-lite .note')].map(n => n.textContent),
+                    chk: document.querySelectorAll('#fig2 pre.asm-lite .chk').length, trap: document.querySelectorAll('#fig2 pre.asm-lite .trap').length,
+                    simd: document.querySelectorAll('#fig2 pre.asm-lite .simd').length })""")  # the plain view only: the closed full listing does not count
                 ck.ok(f2["top"] < 900 and f2["chk"] >= 2 and f2["trap"] >= 1 and f2["simd"] >= 1
                       and any(n.startswith("the check") for n in f2["notes"]) and any(n.startswith("this trap stops the program") for n in f2["notes"]),
                       "first screen (1280): Figure 2 shows the reverse loop's SIMD lines, the check and the trap, labelled in words")
+                open_full(page)
                 ck.ok("could not determine number of loop iterations" in page.inner_text("#fig2")
                       or "no longer knows how many times" in page.inner_text("#fig2"),
                       "Figure 2: the compiler's remark explained in plain words")
@@ -1498,6 +1699,7 @@ def main():
                       and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
                       and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'"),
                       f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs")
+                open_full(page)
                 ck.ok("instructions, not time" in page.inner_text("#fig2 .f2-instr"), "Figure 2: the instruction ratio sits in its header, labelled 'instructions, not time'")
                 with open(os.path.join(DATA, "pooled.json"), encoding="utf-8") as f:
                     pooled = json.load(f)
@@ -1706,7 +1908,7 @@ def main():
                 k02t = dp.inner_text("#k02-faster") + dp.inner_text("#fig3 figcaption")
                 ck.ok("per pass" in k02t and "inferred" in k02t,
                       "section 3 and Figure 3 explain why the checked forward add is faster aligned (per-pass unrolling, cause marked inferred)")
-                ck.ok(page.evaluate("""() => [...document.querySelectorAll('#rows .src, #fig2 .f2-src code, #fig2 pre.asm')]
+                ck.ok(page.evaluate("""() => [...document.querySelectorAll('#rows .src, #fig2 .f2-src code, #fig2 pre.asm, #fig2 pre.asm-lite')]
                     .every(n => getComputedStyle(n).overflowWrap === 'normal' && getComputedStyle(n).wordBreak === 'normal')"""),
                       "code lines wrap only at spaces, never mid-token")
                 page.evaluate("scrollTo(0, 0)"); page.wait_for_timeout(150)
@@ -1732,12 +1934,13 @@ def main():
                 sel = page.evaluate("document.querySelector('#rows .row[aria-selected=true]').dataset.k")
                 ck.ok(sel == "k04_rev", f"the reverse loop is selected on load (got {sel})")
                 f2 = page.evaluate("""() => ({ top: document.getElementById('fig2').getBoundingClientRect().top,
-                    notes: [...document.querySelectorAll('#fig2 .note')].map(n => n.textContent),
-                    chk: document.querySelectorAll('#fig2 .chk').length, trap: document.querySelectorAll('#fig2 .trap').length,
-                    simd: document.querySelectorAll('#fig2 .simd').length })""")
+                    notes: [...document.querySelectorAll('#fig2 pre.asm-lite .note')].map(n => n.textContent),
+                    chk: document.querySelectorAll('#fig2 pre.asm-lite .chk').length, trap: document.querySelectorAll('#fig2 pre.asm-lite .trap').length,
+                    simd: document.querySelectorAll('#fig2 pre.asm-lite .simd').length })""")  # the plain view only: the closed full listing does not count
                 ck.ok(f2["top"] < 900 and f2["chk"] >= 2 and f2["trap"] >= 1 and f2["simd"] >= 1
                       and any(n.startswith("the check") for n in f2["notes"]) and any(n.startswith("this trap stops the program") for n in f2["notes"]),
                       "first screen (1280): Figure 2 shows the reverse loop's SIMD lines, the check and the trap, labelled in words")
+                open_full(page)
                 ck.ok("could not determine number of loop iterations" in page.inner_text("#fig2")
                       or "no longer knows how many times" in page.inner_text("#fig2"),
                       "Figure 2: the compiler's remark explained in plain words")
@@ -1910,6 +2113,7 @@ def main():
                 defs = ["SIMD (several array elements per instruction)", "A/A control (the same binary timed against a copy of itself)",
                         "geometric mean (", "AVX2, a newer x86-64 instruction set"]
                 mtxt = page.evaluate("document.body.innerText + ' ' + [...document.querySelectorAll('details.abs-more, details.cap-more')].map(d => d.textContent.replace(/\\s+/g, ' ')).join(' ')")
+                open_full(page)
                 ck.ok(all(d_ in mtxt for d_ in defs) and "Cachegrind, a tool" in page.inner_text("#fig2") and "ud2, the instruction" in page.inner_text("#fig2"),
                       "main page: SIMD, A/A, Cachegrind, ud2, AVX2, geometric mean are explained at first use (NOVEC now appears only on the details page, defined there)"
                       + ("" if all(d_ in mtxt for d_ in defs) else f": missing {[d_ for d_ in defs if d_ not in mtxt]}"))
@@ -1989,6 +2193,7 @@ def main():
                       f"ArrowDown moves the selection and focus to the next row ({k2}) and the hash keeps it")
                 page.click('#rows .row[data-k="k02_add_fwd"]')
                 page.wait_for_function(FIG2_READY)
+                open_full(page)
                 f2t = page.inner_text("#fig2")
                 ck.ok("numbers per pass" in f2t and "inferred" in f2t and "faster" in f2t,
                       "Figure 2, forward add aligned: explains in plain words why the checked build is faster (per-pass unrolling, cause inferred)")
@@ -2042,6 +2247,7 @@ def main():
                 hero_variant_checks(browser, base, ck, index, pooled)
                 design_checks(browser, base, ck, index)
                 rail_checks(browser, base, ck)
+                figure2_plain_checks(browser, base, ck, index, pooled)
                 story_checks(browser, base, ck, index, pooled)
                 collapsed_checks(browser, base, ck, index, saved, shots)
                 navigation_checks(browser, base, ck, index, pooled)
@@ -2112,6 +2318,7 @@ def main():
                 top = page.evaluate("document.getElementById('fig2').getBoundingClientRect().top")
                 ck.ok(-2 <= top <= 844 * 0.35, f"390: a tap on a loop scrolls Figure 2 into view (its top at {top:.0f} px)")
                 ck.ok("stride-2" in page.inner_text("#fig2 .f2-head").lower(), "390: Figure 2 shows the tapped loop")
+                open_full(page)
                 nj = page.evaluate("[...document.querySelectorAll('#fig2 .f2-jobs .jt')].length")
                 want_j = sum(len(next(x for x in next(pc for pc in pooled['cpus'] if pc['cpu_model'] == default_cpu['cpu_model'])['cells'] if x['cell_id'] == f'k05_stride2.{sz}')['aligned']['per_job']) for sz in ('L1', 'L2'))
                 ck.ok(not page.locator("#rows .jt").first.is_visible() and page.locator("#fig2 .f2-jobs").is_visible() and nj == want_j,

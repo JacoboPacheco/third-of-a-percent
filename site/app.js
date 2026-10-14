@@ -4,7 +4,7 @@
 
 const S = {
   ix: null, pooled: null, fixture: false, cpu: null, col: 'aligned', sel: null,
-  builds: {}, asm: {}, token: 0, rowEls: new Map(), mit: null, sib: null, cor: null, mitSel: null,
+  builds: {}, asm: {}, token: 0, fullOpen: false, rowEls: new Map(), mit: null, sib: null, cor: null, mitSel: null,
 };
 const KERNEL_NAMES = {
   k01_sum_fwd: 'Forward sum',
@@ -838,34 +838,71 @@ function whyLine(r, anOn, identical, bOn, width) {
     : 'Both builds are vectorized. With the checks on, the compiler tests the sizes once before the SIMD loop and keeps the check out of it; the check only runs on the few elements left over at the end.';
   return 'Neither build is vectorized, so there is no SIMD to lose; the check adds a compare and a jump to every pass of the loop.';
 }
+const LITE_MAX = 8; // the plain view shows at most this many lines of one loop
 function asmBlock(an, keep, opts) {
-  const pre = el('pre', { class: 'asm' });
+  const lite = !!opts.lite; // the plain view: only the marked lines, no addresses, no counts of what is left out
+  const pre = el('pre', { class: lite ? 'asm-lite' : 'asm' });
   const c = el('code');
   pre.append(c);
-  let skipped = 0, simdNoted = false, checkNoted = 0;
+  let skipped = 0, simdNoted = false, checkNoted = 0, any = false;
   const checkEnds = new Set(an.checks.map((p) => p[p.length - 1]));
   const checkAddrs = new Set(an.checks.flat());
-  const flush = () => { if (skipped) { c.append(el('span', { class: 'gap', text: `⋯ ${skipped} instruction${skipped > 1 ? 's' : ''} not shown` })); skipped = 0; } };
-  const shown = an.lines.filter((x) => keep.has(x.addr) && !x.pad);
   const clsOf = (x) => (!x ? null : x.trap ? 'trap' : checkAddrs.has(x.addr) ? 'chk' : x.simd ? 'simd' : '');
+  let truncAt = null; // lite: the last line kept before the cap; a bare "⋯" follows it (no count of what is left out)
+  if (lite) {
+    const inHot = (x) => !an.hot || (x.addr >= an.hot.start && x.addr <= an.hot.end);
+    const keepL = an.lines.filter((x) => !x.pad && clsOf(x) && (clsOf(x) !== 'simd' || inHot(x)));
+    const simdL = keepL.filter((x) => clsOf(x) === 'simd');
+    const drop = new Set(simdL.slice(LITE_MAX).map((x) => x.addr));
+    keep = new Set(keepL.filter((x) => !drop.has(x.addr)).map((x) => x.addr));
+    if (drop.size) truncAt = simdL[LITE_MAX - 1].addr;
+    if (opts.sample) { // identical builds: a few representative lines, not the sign-extension set-up that opens a vector loop
+      const filler = /^(pxor|pcmp|punpck|pshuf|psra|psrl|psll|pmovsx|pmovzx|pand|por|movmsk)/;
+      const seen = new Set(), pick = [];
+      for (const x of simdL) if (!filler.test(x.mnem) && !seen.has(x.mnem)) { seen.add(x.mnem); pick.push(x); }
+      let chosen = pick.slice(0, 3);
+      for (const x of simdL) if (chosen.length < 3 && !filler.test(x.mnem) && !chosen.includes(x)) chosen.push(x); // too few kinds: more of the same, in order
+      if (!chosen.length) chosen = simdL.slice(0, 3);
+      chosen.sort((m, n) => m.addr - n.addr);
+      keep = new Set(chosen.map((x) => x.addr));
+      truncAt = chosen.length ? chosen[chosen.length - 1].addr : null;
+    }
+    if (!keep.size && an.hot) { // nothing is marked (no SIMD, no check): show the start of the hot loop, unmarked
+      const hot = an.lines.filter((x) => !x.pad && x.addr >= an.hot.start && x.addr <= an.hot.end);
+      for (const x of hot.slice(0, LITE_MAX)) keep.add(x.addr);
+      if (hot.length > LITE_MAX) truncAt = hot[LITE_MAX - 1].addr;
+    }
+  }
+  const flush = () => {
+    if (skipped && lite) { if (any) c.append(el('span', { class: 'sep', 'aria-hidden': 'true' })); skipped = 0; }
+    else if (skipped) { c.append(el('span', { class: 'gap', text: `⋯ ${skipped} instruction${skipped > 1 ? 's' : ''} not shown` })); skipped = 0; }
+  };
+  const shown = an.lines.filter((x) => keep.has(x.addr) && !x.pad);
   for (const x of an.lines) {
     if (!keep.has(x.addr)) { if (!x.pad) skipped++; continue; }
     if (x.pad) continue;
     flush();
+    any = true;
     const cls = clsOf(x);
     const nx = shown[shown.indexOf(x) + 1];
-    c.append(el('span', { class: `ln ${cls}` }, el('span', { class: 'ad', text: x.hex }), `${x.mnem.padEnd(7)} ${x.ops}`));
-    if (cls === 'simd' && !simdNoted && clsOf(nx) !== 'simd') {
+    const toStop = lite && x.target != null && an.traps.has(x.target); // the plain view names the trap STOP instead of showing its address
+    const text = lite && x.trap ? `STOP:  ${x.mnem}` : `${x.mnem.padEnd(7)} ${toStop ? 'STOP' : x.ops}`;
+    c.append(el('span', { class: `ln ${cls}` }, lite ? null : el('span', { class: 'ad', text: x.hex }), text));
+    if (x.addr === truncAt) c.append(el('span', { class: 'gap', text: '⋯' }));
+    if (!lite && cls === 'simd' && !simdNoted && clsOf(nx) !== 'simd') {
       simdNoted = true;
       c.append(el('span', { class: 'note', text: opts.width ? `SIMD: one instruction works on ${opts.width} numbers at once` : 'SIMD: one instruction, several numbers' }));
     }
     if (checkEnds.has(x.addr)) {
-      c.append(el('span', { class: 'note', text: checkNoted === 0 ? 'the check: is the index still inside the vector? If not, jump to the trap' : 'another check' }));
+      const pair = an.checks.find((q) => q[q.length - 1] === x.addr);
+      const cmpL = pair && pair.length === 2 ? an.lines.find((q) => q.addr === pair[0]) : null;
+      const plainCheck = `the check: ${cmpL ? `${cmpL.mnem} compares two values, ` : ''}${x.mnem}: if it is out of range, jump to STOP`;
+      c.append(el('span', { class: 'note', text: checkNoted === 0 ? (lite ? plainCheck : 'the check: is the index still inside the vector? If not, jump to the trap') : 'another check' }));
       checkNoted++;
     }
-    if (x.trap) c.append(el('span', { class: 'note', text: 'this trap stops the program (ud2, the instruction a failed check jumps to)' }));
+    if (x.trap) c.append(el('span', { class: 'note', text: lite ? 'this trap stops the program: ud2 is the instruction that halts it' : 'this trap stops the program (ud2, the instruction a failed check jumps to)' }));
   }
-  flush();
+  if (!lite) flush();
   return pre;
 }
 function instrLine(r) { // Figure 2's small second mark: the Cachegrind instruction ratio, beside the time ratio
@@ -895,12 +932,17 @@ async function renderFig2() {
     $('fig1').scrollIntoView({ behavior: smooth(), block: 'start' });
     const b = S.rowEls.get(S.sel); if (b) b.focus({ preventScroll: true });
   };
-  const head = [
+  const hp = r.pts.find((q) => q.sz === 'L1') || r.pts[0]; // the plain view quotes one number: the smallest size's pooled ratio, as the hero does
+  const top = [
     el('div', { class: 'f2-sticky' }, el('span', { class: 'f2-sticky-name' }, KERNEL_NAMES[r.k]),
       el('button', { type: 'button', class: 'back-up', onclick: back }, '↑ Back to the eight loops')),
     shownK !== S.sel ? el('p', { class: 'f2-pv' }, 'Preview. Click the row to pin it.') : null,
-    el('h3', { class: 'f2-head' }, `${KERNEL_NAMES[r.k]} `, el('span', { class: 'f2-ratio' }, r.pts.length ? `${rangeX(r.lo, r.hi)} as long with checks on, ${cpu.cpu_short}` : 'not measured')),
+    el('h3', { class: 'f2-head' }, KERNEL_NAMES[r.k],
+      el('span', { class: 'f2-ratio' }, hp ? [el('b', { class: 'f2-big' }, `${fx(hp.ratio)}×`), ' as long with the check on', el('span', { class: 'f2-cpu' }, ', at the smallest data size, ', el('span', { class: 'nw' }, cpu.cpu_short))] : 'not measured')),
+  ].filter(Boolean);
+  const fullHead = [ // everything the drawer showed before the plain view existed: it now sits behind one button; it starts at the instruction counts, the headline above is not repeated
     instrLine(r),
+    el('p', { class: 'f2-range' }, r.pts.length ? `Both cache sizes: ${rangeX(r.lo, r.hi)} as long with checks on, ${cpu.cpu_short}` : 'not measured'),
     jobsLine(r),
     src ? el('p', { class: 'f2-src' }, code(srcLine(src.text))) : null,
   ].filter(Boolean);
@@ -908,18 +950,19 @@ async function renderFig2() {
   const sfx = aligned ? '_a64' : '';
   const f = cpu.asm;
   if (!f) {
-    body.replaceChildren(...head, el('p', { class: 'f2-why' }, 'The SAMPLE file carries no assembly, so there is no machine code to show.'));
+    body.replaceChildren(...top, el('p', { class: 'f2-why' }, 'The SAMPLE file carries no assembly, so there is no machine code to show.'));
     cap.replaceChildren(el('b', null, 'Figure 2.'), ' The machine code, unavailable for SAMPLE DATA.');
     return;
   }
-  body.replaceChildren(...head, el('p', { class: 'f2-why muted' }, 'Loading the machine code…'));
+  body.replaceChildren(...top, el('p', { class: 'f2-why muted' }, 'Loading the machine code…'));
+  cap.replaceChildren();
   let builds, offTxt, onTxt;
   try {
     builds = S.builds[f.builds] || (S.builds[f.builds] = await getJSON(f.builds));
     [offTxt, onTxt] = await Promise.all([getText(`${f.dir}${r.k}.none${sfx}.s`), getText(`${f.dir}${r.k}.fast${sfx}.s`)]);
   } catch (err) {
     if (my !== S.token) return;
-    body.replaceChildren(...head, el('p', { class: 'f2-why err' }, `The machine code did not load (${err.message}).`));
+    body.replaceChildren(...top, el('p', { class: 'f2-why err' }, `The machine code did not load (${err.message}).`));
     return;
   }
   if (my !== S.token) return;
@@ -939,21 +982,54 @@ async function renderFig2() {
   const faster = aligned && r.role === 'kept' && r.pts.length && r.lo < 0.95 && pOff && pOn && pOff > pOn
     ? el('p', { class: 'f2-why f2-faster' }, `Here the checked build is the faster one (below 1×). The check itself does not speed anything up: without it clang unrolls this SIMD loop to ${pOff} numbers per pass, with it to ${pOn}, and the investigation found the unchecked loop forced down to ${pOn} per pass just as fast. So the shorter loop is simply quicker on this CPU model at this size; why is inferred, since these machines expose no hardware counters (`, el('a', { href: '#k02-faster' }, 'section 3'), ').')
     : null;
-  body.replaceChildren(...head,
-    el('p', { class: 'f2-why' }, whyLine(r, anOn, identical, bOn, widthOff),
-      !aligned && r.role === 'kept' && r.hi > 1.1 ? [' As compiled, this loop looks expensive; switch to aligned loops and most of it goes away: ', el('a', { href: '#placement' }, 'section 3'), ' explains why.'] : null),
-    ...(faster ? [faster] : []),
-    el('div', { class: 'f2-cols' },
-      colBox('Checks off', '_LIBCPP_HARDENING_MODE_NONE', bOff, anOff, widthOff),
-      colBox('Checks on', '_LIBCPP_HARDENING_MODE_FAST', bOn, anOn, widthOn, noCheck ? `${plainRemark(bOn.remarks)} ${noCheck}` : null)),
-    cmdBlock(`${bOff.command}\n${bOn.command}`, `The exact build commands${aligned ? ', loops aligned' : ''} (run ${f.run_id}, job ${f.job}):`));
+  const hotSimd = (an) => an.lines.some((x) => x.simd && !x.pad && (!an.hot || (x.addr >= an.hot.start && x.addr <= an.hot.end))); // from the lines the plain view shows, not any SIMD line in the function
+  const hotCheck = (an) => !!an.hot && an.checks.some((q) => q[0] >= an.hot.start && q[q.length - 1] <= an.hot.end);
+  const pace = (an, w) => (hotSimd(an) ? `${w ? `${w} numbers` : 'Several numbers'} at a time` : hotCheck(an) ? 'One number per pass, with a check each time' : 'One number at a time');
+  const liteCol = (title, an, w, sub, noCode, sample) => el('div', { class: 'f2-col' }, el('h3', null, title), el('p', { class: 'remark' }, sub), noCode ? null : asmBlock(an, null, { width: w, lite: true, sample }));
+  const hotHasCheck = anOn.hot && anOn.checks.some((q) => q[0] >= anOn.hot.start && q[q.length - 1] <= anOn.hot.end);
+  const wAny = widthOff || widthOn;
+  const nWord = wAny ? `${wAny} numbers` : 'several numbers';
+  const onRemarks = (bOn && bOn.remarks) || [];
+  const asCompiledNote = !aligned && r.role === 'kept' && r.hi > 1.1
+    ? [' As compiled, this loop looks expensive; switch to aligned loops and most of it goes away: ', el('a', { href: '#placement' }, 'section 3'), ' explains why.'] : null;
+  // the plain sentence follows the compiler's own remark, as the full listing's sentence does: reverse and stride-2 could not count the iterations; matrix multiply (clang 18) was judged not worth it
+  const lostSentence = onRemarks.some((x) => x.includes('could not determine number of loop iterations'))
+    ? `With the check on, the compiler can no longer work on ${nWord} at a time, so the loop runs one number at a time.`
+    : onRemarks.some((x) => x.includes('vectorization is not beneficial'))
+      ? `With the check on, the compiler judged it not worth working on ${nWord} at a time with the check inside the loop, so the loop runs one number at a time.`
+      : `With the check on, the compiler does not work on ${nWord} at a time, so the loop runs one number at a time.`;
+  const plain = identical ? 'With the check on, the compiler proved the index is always in range and removed the check, so both versions are the same code.'
+    : r.role === 'lost' ? lostSentence
+    : r.role === 'kept' ? `Both versions work on ${wAny ? wAny : 'several'} numbers at a time. ${hotHasCheck ? 'The check runs inside that loop.' : 'With the check on, the compiler tests the sizes once before the loop, not inside it.'}${faster ? ' With the check on it is quicker here, but not because of the check (cause inferred).' : ''}`
+    : 'Neither version works on several numbers at a time, so there is nothing to lose there; the check adds a compare and a jump for every number.';
   const hidden = (an) => { const k = excerpt(an); return an.lines.filter((x) => !x.pad && !k.has(x.addr)).length; };
-  const anySimd = anOff.lines.some((x) => x.simd) || anOn.lines.some((x) => x.simd);
-  cap.replaceChildren(...[el('b', null, 'Figure 2.'),
-    ` The hot loop of the ${KERNEL_NAMES[r.k].toLowerCase()} as clang compiled it${aligned ? ' with loops aligned' : ''}, checks off and on. `,
-    anySimd ? [el('span', { class: 'sw-simd', 'aria-hidden': 'true' }), ' SIMD instructions, which work on several elements at once. '] : null,
-    anOn.traps.size ? [el('span', { class: 'sw-chk', 'aria-hidden': 'true' }), ' The check and the trap it jumps to. '] : null,
-    `Grey numbers are addresses; ${hidden(anOff)} and ${hidden(anOn)} instructions of the two functions are left out. The binaries are the same in every job of ${cpu.cpu_short}; these are from run ${f.run_id}, job ${f.job}.`].flat().filter((x) => x != null));
+  const techCap = [el('b', null, 'Figure 2.'),
+    ` The inner loop as clang compiled it${aligned ? ', loops aligned' : ''}, with the checks off and on. Only the lines that matter are shown. `];
+  const det = el('details', { class: 'f2-full', open: S.fullOpen || null },
+    el('summary', { tabindex: '0' }, 'Full listing and commands'),
+    el('div', { class: 'f2-full-body' }, ...fullHead,
+      el('p', { class: 'f2-why' }, whyLine(r, anOn, identical, bOn, widthOff), asCompiledNote),
+      ...(faster ? [faster] : []),
+      el('div', { class: 'f2-cols' },
+        colBox('Checks off', '_LIBCPP_HARDENING_MODE_NONE', bOff, anOff, widthOff),
+        colBox('Checks on', '_LIBCPP_HARDENING_MODE_FAST', bOn, anOn, widthOn, noCheck ? `${plainRemark(bOn.remarks)} ${noCheck}` : null)),
+      cmdBlock(`${bOff.command}\n${bOn.command}`, `The exact build commands${aligned ? ', loops aligned' : ''} (run ${f.run_id}, job ${f.job}):`),
+      el('p', { class: 'f2-fullcap' }, ...techCap, `Grey numbers are addresses; ${hidden(anOff)} and ${hidden(anOn)} instructions of the two functions are left out. The binaries are the same in every job of ${cpu.cpu_short}; these are from run ${f.run_id}, job ${f.job}.`)));
+  det.addEventListener('toggle', () => { S.fullOpen = det.open; });
+  const sameBlock = identical && !anOn.traps.size; // identical code: one wide block, not a column of code beside an empty one
+  body.replaceChildren(...top,
+    el('p', { class: 'f2-plain' }, plain, asCompiledNote),
+    sameBlock
+      ? el('div', { class: 'f2-cols f2-lite f2-same' }, liteCol('Checks off and on', anOff, widthOff, `Identical code with and without the check${hotSimd(anOff) ? `; ${pace(anOff, widthOff).toLowerCase()}` : ''}`, false, true))
+      : el('div', { class: 'f2-cols f2-lite' },
+        liteCol('Checks off', anOff, widthOff, pace(anOff, widthOff)),
+        liteCol('Checks on', anOn, widthOn, pace(anOn, widthOn))));
+  const plainSimd = hotSimd(anOff) || hotSimd(anOn);
+  cap.replaceChildren(...[
+    plainSimd ? el('span', { class: 'f2-leg' }, el('span', { class: 'sw-simd', 'aria-hidden': 'true' }), ' Blue: several numbers per instruction') : null,
+    anOn.traps.size ? el('span', { class: 'f2-leg' }, el('span', { class: 'sw-chk', 'aria-hidden': 'true' }), ' Yellow: the check and its trap (STOP)') : null,
+    el('span', { class: 'f2-leg' }, 'Key lines only; the rest is in the full listing.'),
+    det].flat().filter((x) => x != null));
 }
 function cmdBlock(text, label) {
   const id = `cmd-${Math.random().toString(36).slice(2, 8)}`;

@@ -75,7 +75,7 @@ The long version behind the [README](../README.md): the full method, every findi
   - `investigate/`: why `k02_add_fwd` cost 1.6x on some CPUs.
 
   - `versions/`: the same 8 kernels under clang and libc++ 19, 20 and 21 (apt.llvm.org), timed like the main study; `environment/`: steal, reported frequency and core sharing on the runners.
-- **The page** (`site/`): the claim, the verdict per CPU model, the map of every cell with its interval, and a drawer per loop with the exact build commands, the instruction ratio, the compiler's verdict in plain words and the marked assembly diff. To look at it locally (`.github/workflows/pages.yml` is a manual workflow that publishes `site/` once GitHub Pages is enabled in the repository settings):
+- **The page** (`site/`): the claim, the verdict per CPU model, the map of every cell with its interval, and a drawer per loop with the exact build commands, the instruction ratio, the compiler's verdict in plain words and the marked assembly diff. Live at https://jacobopacheco.github.io/third-of-a-percent/ (`.github/workflows/pages.yml` publishes `site/` whenever it changes on `main`). To look at it locally:
 
 ```
 python -m http.server 8000 --directory site
@@ -93,7 +93,7 @@ harness/        run.py (build, time, collect), stats.py, remarks.py, asm.py, cac
                 placement.py, verdict.py, combine.py, pool.py, pool_check.py, criteria*.json
 tests/          the tests check.py runs
 scripts/        check.py (the one check), build_site_data.py, check_site.py
-.github/workflows/  14 workflows; measure.yml is the main run, pages.yml (manual) publishes site/ once Pages is enabled
+.github/workflows/  14 workflows; measure.yml is the main run, pages.yml publishes site/ to the live page
 results/        every run kept as downloaded, one folder per run or pooled set
                 (s1 to s4, s4-pooled, s5-holdout, corpus*, mitigate*, siblings*, realworld*, ...),
                 plus fixture.json (SAMPLE data)

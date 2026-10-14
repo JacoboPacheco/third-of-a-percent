@@ -8,7 +8,7 @@ Status: work in progress (Oct 2026). The measurements described here are the one
 
 ![First screen of the page: eight loops as bars, the reverse loop with the check on drawn as 8.0 times as long](docs/hero.png)
 
-*First screen of the page: EPYC 7763, check on, aligned build, L1. The reverse loop takes 8.0x as long as with the check off.* To view the page locally: `python -m http.server 8000 --directory site`, then open http://localhost:8000.
+*First screen of the page: EPYC 7763, check on, aligned build, L1. The reverse loop takes 8.0x as long as with the check off.* **Live page: https://jacobopacheco.github.io/third-of-a-percent/** To view it locally instead: `python -m http.server 8000 --directory site`, then open http://localhost:8000.
 
 ## In three sentences
 
@@ -58,7 +58,7 @@ Recomputes every interval and verdict from the raw timings and checks the page's
 gh workflow run measure.yml
 ```
 
-Reruns the measurement in your fork (enable Actions in the fork first; `gh run watch`, then `gh run download <id>`; the per-job files are the `results-<cpu>-jN` artifacts, the pooled result is `pooled`). A manual deploy workflow (`.github/workflows/pages.yml`) publishes `site/` once GitHub Pages is enabled in the repository settings.
+Reruns the measurement in your fork (enable Actions in the fork first; `gh run watch`, then `gh run download <id>`; the per-job files are the `results-<cpu>-jN` artifacts, the pooled result is `pooled`). The workflow `.github/workflows/pages.yml` publishes `site/` to the live page whenever that folder changes on `main` (and on demand).
 
 ## How much to trust it
 

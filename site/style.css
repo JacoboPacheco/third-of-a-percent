@@ -163,15 +163,15 @@ figcaption b { color: var(--ink); font-weight: 600; }
 .f2-col h3 { font-size: 0.9rem; font-weight: 600; margin: 8px 0 1px; }
 .f2-col .flag { display: block; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-3); overflow-wrap: anywhere; line-height: 1.35; }
 .f2-col .remark { font-size: 0.78rem; line-height: 1.4; color: var(--ink-2); margin: 4px 0 6px; font-style: normal; min-height: 2.8em; }
-.asm { margin: 0; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: normal; word-break: normal; overflow-x: auto; }
-.asm .ln { display: block; padding: 0 4px 0 calc(4px + 2em); text-indent: -2em; border-left: 3px solid transparent; } /* a wrapped operand hangs under its instruction */
-.asm .ad { color: #66665f; margin-right: 0.8em; user-select: none; }
-.asm .simd { background: var(--simd-tint); border-left-color: var(--kept); }
-.asm .chk { background: var(--check-hl); border-left-color: #b8960a; }
-.asm .trap { background: var(--check-hl); border-left-color: #b8960a; font-weight: 500; }
-.asm .gap { color: var(--ink-3); font-family: var(--serif); font-style: normal; font-size: 0.95em; padding: 2px 4px; display: block; }
-.asm .note { display: block; font-family: var(--serif); font-style: normal; font-size: 1.05em; line-height: 1.35; color: var(--ink); padding: 1px 4px 4px 14px; }
-.asm .note::before { content: "\2191\00a0"; color: var(--ink-3); font-style: normal; }
+.asm, .asm-lite { margin: 0; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: normal; word-break: normal; overflow-x: auto; }
+.asm .ln, .asm-lite .ln { display: block; padding: 0 4px 0 calc(4px + 2em); text-indent: -2em; border-left: 3px solid transparent; } /* a wrapped operand hangs under its instruction */
+.asm .ad, .asm-lite .ad { color: #66665f; margin-right: 0.8em; user-select: none; }
+.asm .simd, .asm-lite .simd { background: var(--simd-tint); border-left-color: var(--kept); }
+.asm .chk, .asm-lite .chk { background: var(--check-hl); border-left-color: #b8960a; }
+.asm .trap, .asm-lite .trap { background: var(--check-hl); border-left-color: #b8960a; font-weight: 500; }
+.asm .gap, .asm-lite .gap { color: var(--ink-3); font-family: var(--serif); font-style: normal; font-size: 0.95em; padding: 2px 4px; display: block; }
+.asm .note, .asm-lite .note { display: block; font-family: var(--serif); font-style: normal; font-size: 1.05em; line-height: 1.35; color: var(--ink); padding: 1px 4px 4px 14px; }
+.asm .note::before, .asm-lite .note::before { content: "\2191\00a0"; color: var(--ink-3); font-style: normal; }
 .f2-cmd { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 8px; }
 .f2-cmd .lbl { font-size: 0.8rem; color: var(--ink-2); font-style: normal; }
 .cmdline { position: relative; display: flex; gap: 8px; align-items: flex-start; }
@@ -830,7 +830,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .toc a { display: flex; gap: 0.2em; }
 .toc .tn { flex: 0 0 1.7em; min-width: 0; }
 .mit-detail:empty { display: none; }
-@media print { .mk, .asm .ln, .row::before, .key, .ce-cell, .callout { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+@media print { .mk, .asm .ln, .asm-lite .ln, .row::before, .key, .ce-cell, .callout { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
 /* =====================================================================================
    Interactive layer (hero race, story stage, slide-over, widgets). Tokens are stable:
@@ -1044,3 +1044,26 @@ body.panel-open { overflow: hidden; }
   .tablewrap.overflowing { border: 1px solid var(--rule-2); max-width: 100%; }
   .tablewrap.overflowing:not(.at-end) { box-shadow: inset -14px 0 10px -10px rgba(0,0,0,.18); }
 }
+
+/* Figure 2, plain view first: one number, one sentence, only the marked lines; the whole listing sits behind one button */
+.f2-head .f2-ratio { display: block; margin-top: 2px; }
+.f2-big { font-size: 1.9rem; font-weight: 700; line-height: 1.1; margin-right: 0.25em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.f2-cpu { color: var(--ink-3); }
+.f2-cpu .nw { white-space: nowrap; }
+.f2-leg { display: inline-block; margin-right: 16px; }
+.f2-plain { margin: 6px 0 12px; font-size: 1.02rem; line-height: 1.5; max-width: 62ch; hyphens: none; }
+.f2-lite .f2-col .remark { min-height: 0; font-size: 0.85rem; margin-bottom: 8px; }
+.asm-lite .sep { display: block; height: 12px; }
+.f2-lite .asm-lite { overflow-x: visible; }
+.f2-same { grid-template-columns: 1fr; }
+.f2-same .f2-col { max-width: 34rem; }
+details.f2-full { margin: 14px 0 2px; }
+details.f2-full > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px; border: 1px solid var(--ink-3); border-radius: 999px; background: transparent; color: var(--ink-2); font-size: 0.82rem; font-style: normal; white-space: nowrap; cursor: pointer; list-style: none; } /* a quiet pill: the same weight open and closed */
+details.f2-full > summary::-webkit-details-marker { display: none; }
+details.f2-full > summary::before { content: "\25B8"; font-size: 0.8em; }
+details.f2-full[open] > summary::before { content: "\25BE"; }
+@media (hover: hover) { details.f2-full > summary:hover { border-color: var(--ink-3); color: var(--ink); } }
+.f2-full-body { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); font-style: normal; color: var(--ink); }
+.f2-range { margin: 0 0 6px; font-size: 0.92rem; line-height: 1.4; color: var(--ink-2); }
+.f2-fullcap { margin: 10px 0 0; font-size: 0.78rem; line-height: 1.4; color: var(--ink-2); }
+@media (max-width: 1040px) { #fig2-body { display: contents; } } /* the sticky name-and-back bar spans the plain view and the full listing that follows it */
