@@ -58,7 +58,7 @@ Recomputes every interval and verdict from the raw timings and checks the page's
 gh workflow run measure.yml
 ```
 
-Reruns the measurement in your fork (enable Actions in the fork first; `gh run watch`, then `gh run download <id>`; the per-job files are the `results-<cpu>-jN` artifacts, the pooled result is `pooled`). The workflow `.github/workflows/pages.yml` publishes `site/` to the live page whenever that folder changes on `main` (and on demand).
+Reruns the measurement in your fork (enable Actions in the fork first; `gh run watch`, then `gh run download <id>`; the per-job files are the `results-<cpu>-jN` artifacts, the pooled result is `pooled`).
 
 ## How much to trust it
 
