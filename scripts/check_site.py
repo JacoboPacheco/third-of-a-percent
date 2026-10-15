@@ -379,6 +379,18 @@ def hero_sig(pg):
     return pg.evaluate("(() => { if (document.getElementById('race').dataset.hv === '4') return [...document.querySelectorAll('#race .ln-t > i')].map(i => getComputedStyle(i).clipPath).join('|'); return document.getElementById('race-cv').toDataURL(); })()")
 
 
+def settled_sig(pg, quiet_ms=400, limit_ms=6000):
+    """hero_sig once it has stopped changing for quiet_ms (a slow machine can still be resizing or loading fonts)."""
+    last, still, waited = hero_sig(pg), 0, 0
+    while still < quiet_ms and waited < limit_ms:
+        pg.wait_for_timeout(100)
+        waited += 100
+        cur = hero_sig(pg)
+        still = still + 100 if cur == last else 0
+        last = cur
+    return last
+
+
 def shot(page, saved, shots, name, selector=None, full=False):
     path = os.path.join(shots, name)
     if selector:
@@ -1029,7 +1041,7 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         rp.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
         rp.wait_for_timeout(300)
         pick_loop(rp, "k04_rev")
-        a1 = hero_sig(rp)
+        a1 = settled_sig(rp)
         faded = rp.evaluate("(() => { document.getElementById('race-replay').click(); return document.getAnimations().length; })()")
         ck.ok(v != 4 or faded > 0, f"hero {v}: with reduced motion Replay the race still answers the click with a fade, no movement ({faded} animations right after the click)")
         rp.wait_for_timeout(600)
