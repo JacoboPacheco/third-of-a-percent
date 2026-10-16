@@ -1090,10 +1090,12 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         a1 = settled_sig(rp)
         faded = rp.evaluate("(() => { document.getElementById('race-replay').click(); return document.getAnimations().length; })()")
         ck.ok(v != 4 or faded > 0, f"hero {v}: with reduced motion Replay the race still answers the click with a fade, no movement ({faded} animations right after the click)")
-        rp.wait_for_timeout(600)
-        a2 = hero_sig(rp)
+        # read the frame once the fade has ended and the picture has stopped changing (a slow runner can still be mid-fade
+        # after a fixed delay); the three readings must still be identical
+        rp.wait_for_function("document.getAnimations().length === 0", timeout=8000)
+        a2 = settled_sig(rp)
         rp.wait_for_timeout(900)
-        a3 = hero_sig(rp)
+        a3 = settled_sig(rp)
         ck.ok(a1 == a2 == a3 and rp.inner_text("#race-ratio") == want(default, "k04_rev"), f"hero {v}: with reduced motion the final frame shows at once and the ratio is the same")
         ctx.close()
     # the switcher: invisible to visitors, shown by the hash or the key H
