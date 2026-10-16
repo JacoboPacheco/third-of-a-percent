@@ -1,0 +1,33 @@
+# Pointer loads (`load ptr`) inside the innermost loop, after each function-level pass where the count or the block count changes,
+# for the passes that run before LoopVectorizePass (the innermost loop is the smallest natural loop that contains a store)
+# (the size of a vector is two pointer loads and a subtraction; inside the loop it is recomputed every iteration)
+
+== pipe_c19_fast
+  after pass #5 EntryExitInstrumenterPass          innermost loop: 3 blocks, 2 pointer loads inside
+  after pass #7 SimplifyCFGPass                    innermost loop: 2 blocks, 2 pointer loads inside
+  after pass #8 SROAPass                           innermost loop: 2 blocks, 0 pointer loads inside
+  after pass #24 SROAPass                           innermost loop: 4 blocks, 4 pointer loads inside
+  after pass #57 SimplifyCFGPass                    innermost loop: 3 blocks, 0 pointer loads inside
+
+== pipe_c22_fast
+  after pass #6 EntryExitInstrumenterPass          innermost loop: 3 blocks, 2 pointer loads inside
+  after pass #8 SimplifyCFGPass                    innermost loop: 2 blocks, 2 pointer loads inside
+  after pass #9 SROAPass                           innermost loop: 2 blocks, 0 pointer loads inside
+  after pass #25 SROAPass                           innermost loop: 4 blocks, 4 pointer loads inside
+  after pass #58 SimplifyCFGPass                    innermost loop: 3 blocks, 0 pointer loads inside
+  after pass #81 GVNPass                            innermost loop: 1 blocks, 0 pointer loads inside
+
+== pipe_c231_fast
+  after pass #6 EntryExitInstrumenterPass          innermost loop: 3 blocks, 2 pointer loads inside
+  after pass #8 SimplifyCFGPass                    innermost loop: 2 blocks, 2 pointer loads inside
+  after pass #9 SROAPass                           innermost loop: 2 blocks, 0 pointer loads inside
+  after pass #22 SROAPass                           innermost loop: 4 blocks, 4 pointer loads inside
+  after pass #56 SimplifyCFGPass                    innermost loop: 3 blocks, 2 pointer loads inside
+
+== pipe_ctrunk_fast
+  after pass #6 EntryExitInstrumenterPass          innermost loop: 3 blocks, 2 pointer loads inside
+  after pass #8 SimplifyCFGPass                    innermost loop: 2 blocks, 2 pointer loads inside
+  after pass #9 SROAPass                           innermost loop: 2 blocks, 0 pointer loads inside
+  after pass #22 SROAPass                           innermost loop: 4 blocks, 4 pointer loads inside
+  after pass #56 SimplifyCFGPass                    innermost loop: 3 blocks, 2 pointer loads inside
+

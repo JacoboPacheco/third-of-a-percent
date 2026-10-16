@@ -1,0 +1,2125 @@
+{
+ "compiler_id": "clang181assert",
+ "fetched_at": "2026-10-15T23:59:59+00:00",
+ "name": "dbg_emul_a18_aB",
+ "request": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -march=x86-64 -DCHK_A=1 -DCHK_B=1 -DCHK_C=0 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -mllvm -debug-only=loop-vectorize"
+  },
+  "source": "// The same loop as kern_k08_matmul, without any library header. Vec has the layout of\n// std::vector<int32_t> (three pointers) and an element check of the shape libc++'s hardened\n// operator[] has: trap when the index is not below size(), size() = end - begin, begin loaded on\n// every access. CHK_A, CHK_B and CHK_C (0 or 1, set with -D) turn the check on a[], b[] and c[] on.\n#include <cstddef>\n#include <cstdint>\n\nstruct Vec {\n  int32_t* begin_;\n  int32_t* end_;\n  int32_t* cap_;\n};\n\ntemplate <bool On, class V>\nstatic inline auto& at(V& v, size_t n) {\n  if (On && __builtin_expect(!(n < size_t(v.end_ - v.begin_)), 0)) __builtin_trap();\n  return v.begin_[n];\n}\n\n#ifndef CHK_A\n#define CHK_A 0\n#endif\n#ifndef CHK_B\n#define CHK_B 0\n#endif\n#ifndef CHK_C\n#define CHK_C 0\n#endif\n\n__attribute__((noinline)) void kern_emul_matmul(Vec& c, const Vec& a, const Vec& b, size_t d) {\n  for (size_t i = 0; i < d; ++i)\n    for (size_t k = 0; k < d; ++k) {\n      int32_t aik = at<CHK_A>(a, i * d + k);\n      for (size_t j = 0; j < d; ++j) at<CHK_C>(c, i * d + j) += aik * at<CHK_B>(b, k * d + j);  // LOOP\n    }\n}\n"
+ },
+ "request_sha256": "56109203e2ff7cffa1cdd2ff8261a908d2e1ecf48e87d894a4bed191c7bf298b",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_emul_matmul(Vec&, Vec const&, Vec const&, unsigned long):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        push    rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 30
+    },
+    "text": "        mov     qword ptr [rsp - 56], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 31
+    },
+    "text": "        test    rcx, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        je      .LBB0_6"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r8, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rax, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rax, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 8], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     rdi, [4*rcx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        lea     rax, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     qword ptr [rsp - 16], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     qword ptr [rsp - 88], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     qword ptr [rsp - 72], r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     qword ptr [rsp - 80], r15"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 32], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 48], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rax, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 64], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsp - 56]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r12, qword ptr [rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r13, qword ptr [rax + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     r13, r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     r13, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        lea     rax, [r12 + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        mov     qword ptr [rsp - 24], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        mov     qword ptr [rsp - 40], r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        xor     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        xor     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        xor     r14d, r14d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_3:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmp     r13, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     rbx, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmova   rbx, r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        add     rbx, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     r11, qword ptr [rsp - 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmp     rbx, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmovae  rbx, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     rax, r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        imul    rax, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     r10, r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        sub     r10, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     esi, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmovae  rsi, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmp     rsi, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        cmovae  rsi, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     rax, qword ptr [rsp - 64]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 40,
+     "file": null,
+     "line": 33
+    },
+    "text": "        lea     r10, [r14 + rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 34,
+     "file": null,
+     "line": 16
+    },
+    "text": "        cmp     qword ptr [rsp - 8], r10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 16
+    },
+    "text": "        jbe     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 33
+    },
+    "text": "        lea     rax, [rsi + 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     ebp, dword ptr [r8 + 4*r10]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r11, qword ptr [r15]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmp     rax, 4"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_13",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        ja      .LBB0_13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_9",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB0_9"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_13:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r10, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    r10, r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r8, qword ptr [rsp - 24]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r8, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r8, [r8 + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15, qword ptr [rsp - 64]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r15, [r11 + 4*r15]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmp     r15, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_16",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        jae     .LBB0_16"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        shl     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r10, qword ptr [rsp - 40]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r8, qword ptr [rsp - 32]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r8, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     rsi, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     rsi, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmp     r10, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_16",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        jae     .LBB0_16"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_18",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB0_18"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_16:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        mov     r8d, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        and     r8d, 3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        mov     esi, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmove   r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        sub     rax, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        movd    xmm0, ebp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pshufd  xmm0, xmm0, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        mov     rsi, qword ptr [rsp - 88]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        add     rsi, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        sub     rbx, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        inc     rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pshufd  xmm1, xmm0, 245"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        xor     r10d, r10d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_17:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 71,
+     "file": null,
+     "line": 34
+    },
+    "text": "        movdqu  xmm2, xmmword ptr [r12 + 4*r10]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pshufd  xmm3, xmm2, 245"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pmuludq xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pshufd  xmm2, xmm2, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pmuludq xmm3, xmm1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        pshufd  xmm3, xmm3, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        punpckldq       xmm2, xmm3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 62,
+     "file": null,
+     "line": 34
+    },
+    "text": "        movdqu  xmm3, xmmword ptr [rsi + 4*r10]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 62,
+     "file": null,
+     "line": 34
+    },
+    "text": "        paddd   xmm3, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 62,
+     "file": null,
+     "line": 34
+    },
+    "text": "        movdqu  xmmword ptr [rsi + 4*r10], xmm3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 34
+    },
+    "text": "        add     r10, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmp     rbx, r10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_17",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 34
+    },
+    "text": "        jne     .LBB0_17"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_18:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15, qword ptr [rsp - 80]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r8, qword ptr [rsp - 72]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_9:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        add     r11, qword ptr [rsp - 88]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 34,
+     "file": null,
+     "line": 16
+    },
+    "text": "        lea     rsi, [r9 + rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 34,
+     "file": null,
+     "line": 16
+    },
+    "text": "        cmp     r13, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 34,
+     "file": null,
+     "line": 16
+    },
+    "text": "        jbe     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 34,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     esi, dword ptr [r12 + 4*rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 69,
+     "file": null,
+     "line": 34
+    },
+    "text": "        imul    esi, ebp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 62,
+     "file": null,
+     "line": 34
+    },
+    "text": "        add     dword ptr [r11 + 4*rax], esi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 34
+    },
+    "text": "        inc     rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 34
+    },
+    "text": "        cmp     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 34
+    },
+    "text": "        jne     .LBB0_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 31,
+     "file": null,
+     "line": 32
+    },
+    "text": "        inc     r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        add     r9, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        sub     rdx, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        add     r12, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 32
+    },
+    "text": "        cmp     r14, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_3",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 32
+    },
+    "text": "        jne     .LBB0_3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsp - 48]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 31
+    },
+    "text": "        inc     rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        add     qword ptr [rsp - 88], rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rax, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jne     .LBB0_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_4:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 68,
+     "file": null,
+     "line": 16
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   }
+  ],
+  "asmSize": 24146,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-13.2.0",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-march=x86-64",
+   "-DCHK_A=1",
+   "-DCHK_B=1",
+   "-DCHK_C=0",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "-mllvm",
+   "-debug-only=loop-vectorize",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 91,
+  "filteredCount": 1478,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {
+   ".LBB0_10": 123,
+   ".LBB0_13": 70,
+   ".LBB0_16": 90,
+   ".LBB0_17": 104,
+   ".LBB0_18": 118,
+   ".LBB0_2": 25,
+   ".LBB0_3": 43,
+   ".LBB0_4": 152,
+   ".LBB0_6": 144,
+   ".LBB0_9": 121,
+   "kern_emul_matmul(Vec&, Vec const&, Vec const&, unsigned long)": 1
+  },
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 7,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.2581120003014803,
+  "queueTime": 4,
+  "stderr": [
+   {
+    "text": ""
+   },
+   {
+    "text": "LV: Checking a loop in '_Z16kern_emul_matmulR3VecRKS_S2_m' from example.cpp:34:7"
+   },
+   {
+    "text": "LV: Loop hints: force=? width=0 interleave=0"
+   },
+   {
+    "text": "LV: Found a loop: for.body8"
+   },
+   {
+    "text": "LV: Found an induction variable."
+   },
+   {
+    "text": "LV: We can vectorize this loop (with a runtime bound check)!"
+   },
+   {
+    "text": "LV: Found trip count: 0"
+   },
+   {
+    "text": "LV: The max safe fixed VF is: 67108864."
+   },
+   {
+    "text": "LV: The max safe scalable VF is: vscale x 0."
+   },
+   {
+    "text": "LV: The Smallest and Widest types: 32 / 32 bits."
+   },
+   {
+    "text": "LV: The Widest register safe to use is: 128 bits."
+   },
+   {
+    "text": "LV: The Widest register safe to use is: vscale x 0 bits."
+   },
+   {
+    "text": "LV: The target has no scalable vector registers."
+   },
+   {
+    "text": "LV: Found uniform instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Scalarizing:  %add10 = add nuw i64 %j.047, %mul9, !dbg !183"
+   },
+   {
+    "text": "LV: Scalarizing:  %cmp.not.i42 = icmp ugt i64 %sub.ptr.div.i41, %add10, !dbg !187"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Scalarizing:  %7 = load i32, ptr %arrayidx.i44, align 4, !dbg !191, !tbaa !174"
+   },
+   {
+    "text": "LV: Scalarizing:  %mul12 = mul nsw i32 %7, %4, !dbg !192"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Scalarizing:  %8 = load i32, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Scalarizing:  %add16 = add nsw i32 %8, %mul12, !dbg !205"
+   },
+   {
+    "text": "LV: Scalarizing:  store i32 %add16, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Scalarizing:  %inc = add nuw i64 %j.047, 1, !dbg !206"
+   },
+   {
+    "text": "LV: Scalarizing:  %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Scalarizing:  %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "VPlan 'Initial VPlan for VF={1},UF>=1' {"
+   },
+   {
+    "text": "Live-in vp<%0> = VF * UF"
+   },
+   {
+    "text": "Live-in vp<%1> = vector-trip-count"
+   },
+   {
+    "text": "vp<%2> = original trip-count"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "ph:"
+   },
+   {
+    "text": "  EMIT vp<%2> = EXPAND SCEV (1 + ((-1 + %d) umin ({0,+,(-1 * %d)}<%for.body4> + ({0,+,%d}<%for.body4> umax %sub.ptr.div.i41))))"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "Successor(s): vector loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "<x1> vector loop: {"
+   },
+   {
+    "text": "  vector.body:"
+   },
+   {
+    "text": "    EMIT vp<%3> = CANONICAL-INDUCTION ir<0>, vp<%13>"
+   },
+   {
+    "text": "    vp<%4> = SCALAR-STEPS vp<%3>, ir<1>"
+   },
+   {
+    "text": "    CLONE ir<%add10> = add nuw vp<%4>, ir<%mul9>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i44> = getelementptr inbounds ir<%3>, ir<%add10>"
+   },
+   {
+    "text": "    CLONE ir<%7> = load ir<%arrayidx.i44>"
+   },
+   {
+    "text": "    CLONE ir<%mul12> = mul nsw ir<%7>, ir<%4>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i46> = getelementptr ir<%6>, vp<%4>"
+   },
+   {
+    "text": "    CLONE ir<%8> = load ir<%arrayidx.i46>"
+   },
+   {
+    "text": "    CLONE ir<%add16> = add nsw ir<%8>, ir<%mul12>"
+   },
+   {
+    "text": "    CLONE store ir<%add16>, ir<%arrayidx.i46>"
+   },
+   {
+    "text": "    EMIT vp<%13> = add nuw vp<%3>, vp<%0>, !dbg example.cpp:34:33"
+   },
+   {
+    "text": "    EMIT branch-on-count vp<%13>, vp<%1>, !dbg example.cpp:34:33"
+   },
+   {
+    "text": "  No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "Successor(s): middle.block"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "VPlan 'Initial VPlan for VF={2,4},UF>=1' {"
+   },
+   {
+    "text": "Live-in vp<%0> = VF * UF"
+   },
+   {
+    "text": "Live-in vp<%1> = vector-trip-count"
+   },
+   {
+    "text": "vp<%2> = original trip-count"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "ph:"
+   },
+   {
+    "text": "  EMIT vp<%2> = EXPAND SCEV (1 + ((-1 + %d) umin ({0,+,(-1 * %d)}<%for.body4> + ({0,+,%d}<%for.body4> umax %sub.ptr.div.i41))))"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "Successor(s): vector loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "<x1> vector loop: {"
+   },
+   {
+    "text": "  vector.body:"
+   },
+   {
+    "text": "    EMIT vp<%3> = CANONICAL-INDUCTION ir<0>, vp<%16>"
+   },
+   {
+    "text": "    WIDEN-INDUCTION %j.047 = phi 0, %inc, ir<1>"
+   },
+   {
+    "text": "    vp<%5> = SCALAR-STEPS vp<%3>, ir<1>"
+   },
+   {
+    "text": "    WIDEN ir<%add10> = add nuw ir<%j.047>, ir<%mul9>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i44> = getelementptr inbounds ir<%3>, ir<%add10>"
+   },
+   {
+    "text": "    vp<%8> = vector-pointer ir<%arrayidx.i44>"
+   },
+   {
+    "text": "    WIDEN ir<%7> = load vp<%8>"
+   },
+   {
+    "text": "    WIDEN ir<%mul12> = mul nsw ir<%7>, ir<%4>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i46> = getelementptr ir<%6>, vp<%5>"
+   },
+   {
+    "text": "    vp<%12> = vector-pointer ir<%arrayidx.i46>"
+   },
+   {
+    "text": "    WIDEN ir<%8> = load vp<%12>"
+   },
+   {
+    "text": "    WIDEN ir<%add16> = add nsw ir<%8>, ir<%mul12>"
+   },
+   {
+    "text": "    vp<%15> = vector-pointer ir<%arrayidx.i46>"
+   },
+   {
+    "text": "    WIDEN store vp<%15>, ir<%add16>"
+   },
+   {
+    "text": "    EMIT vp<%16> = add nuw vp<%3>, vp<%0>, !dbg example.cpp:34:33"
+   },
+   {
+    "text": "    EMIT branch-on-count vp<%16>, vp<%1>, !dbg example.cpp:34:33"
+   },
+   {
+    "text": "  No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "Successor(s): middle.block"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %j.047 = phi i64 [ 0, %_ZL2atILb1EK3VecERDaRT0_m.exit ], [ %inc, %_ZL2atILb1EK3VecERDaRT0_m.exit45 ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %add10 = add nuw i64 %j.047, %mul9, !dbg !183"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %cmp.not.i42 = icmp ugt i64 %sub.ptr.div.i41, %add10, !dbg !187"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   br i1 %cmp.not.i42, label %_ZL2atILb1EK3VecERDaRT0_m.exit45, label %if.then.i43, !dbg !188, !prof !170"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %7 = load i32, ptr %arrayidx.i44, align 4, !dbg !191, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %mul12 = mul nsw i32 %7, %4, !dbg !192"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %8 = load i32, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %add16 = add nsw i32 %8, %mul12, !dbg !205"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   store i32 %add16, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %inc = add nuw i64 %j.047, 1, !dbg !206"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   br i1 %exitcond.not, label %for.cond.cleanup7, label %for.body8, !dbg !178, !llvm.loop !208"
+   },
+   {
+    "text": "LV: Scalar loop costs: 9."
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %j.047 = phi i64 [ 0, %_ZL2atILb1EK3VecERDaRT0_m.exit ], [ %inc, %_ZL2atILb1EK3VecERDaRT0_m.exit45 ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %add10 = add nuw i64 %j.047, %mul9, !dbg !183"
+   },
+   {
+    "text": "LV: Found an estimated cost of 7 for VF 2 For instruction:   %cmp.not.i42 = icmp ugt i64 %sub.ptr.div.i41, %add10, !dbg !187"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   br i1 %cmp.not.i42, label %_ZL2atILb1EK3VecERDaRT0_m.exit45, label %if.then.i43, !dbg !188, !prof !170"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %7 = load i32, ptr %arrayidx.i44, align 4, !dbg !191, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 6 for VF 2 For instruction:   %mul12 = mul nsw i32 %7, %4, !dbg !192"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %8 = load i32, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %add16 = add nsw i32 %8, %mul12, !dbg !205"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   store i32 %add16, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %inc = add nuw i64 %j.047, 1, !dbg !206"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   br i1 %exitcond.not, label %for.cond.cleanup7, label %for.body8, !dbg !178, !llvm.loop !208"
+   },
+   {
+    "text": "LV: Vector loop of width 2 costs: 10."
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %j.047 = phi i64 [ 0, %_ZL2atILb1EK3VecERDaRT0_m.exit ], [ %inc, %_ZL2atILb1EK3VecERDaRT0_m.exit45 ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 2 for VF 4 For instruction:   %add10 = add nuw i64 %j.047, %mul9, !dbg !183"
+   },
+   {
+    "text": "LV: Found an estimated cost of 14 for VF 4 For instruction:   %cmp.not.i42 = icmp ugt i64 %sub.ptr.div.i41, %add10, !dbg !187"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   br i1 %cmp.not.i42, label %_ZL2atILb1EK3VecERDaRT0_m.exit45, label %if.then.i43, !dbg !188, !prof !170"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %arrayidx.i44 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !190"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %7 = load i32, ptr %arrayidx.i44, align 4, !dbg !191, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 6 for VF 4 For instruction:   %mul12 = mul nsw i32 %7, %4, !dbg !192"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %arrayidx.i46 = getelementptr i32, ptr %6, i64 %j.047, !dbg !204"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %8 = load i32, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %add16 = add nsw i32 %8, %mul12, !dbg !205"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   store i32 %add16, ptr %arrayidx.i46, align 4, !dbg !205, !tbaa !174"
+   },
+   {
+    "text": "LV: Found an estimated cost of 2 for VF 4 For instruction:   %inc = add nuw i64 %j.047, 1, !dbg !206"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !207"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   br i1 %exitcond.not, label %for.cond.cleanup7, label %for.body8, !dbg !178, !llvm.loop !208"
+   },
+   {
+    "text": "LV: Vector loop of width 4 costs: 7."
+   },
+   {
+    "text": "LV: Selecting VF: 4."
+   },
+   {
+    "text": "LV(REG): Calculating max register usage:"
+   },
+   {
+    "text": "LV(REG): At #0 Interval # 0"
+   },
+   {
+    "text": "LV(REG): At #1 Interval # 1"
+   },
+   {
+    "text": "LV(REG): At #2 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #4 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #5 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #6 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #7 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #8 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #9 Interval # 4"
+   },
+   {
+    "text": "LV(REG): At #11 Interval # 1"
+   },
+   {
+    "text": "LV(REG): At #12 Interval # 1"
+   },
+   {
+    "text": "LV(REG): VF = 4"
+   },
+   {
+    "text": "LV(REG): Found max usage: 2 item"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::VectorRC, 4 registers"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::ScalarRC, 1 registers"
+   },
+   {
+    "text": "LV(REG): Found invariant usage: 2 item"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::VectorRC, 5 registers"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::ScalarRC, 2 registers"
+   },
+   {
+    "text": "LV: The target has 16 registers of Generic::VectorRC register class"
+   },
+   {
+    "text": "LV: The target has 16 registers of Generic::ScalarRC register class"
+   },
+   {
+    "text": "LV: Loop cost is 29"
+   },
+   {
+    "text": "LV: IC is 2"
+   },
+   {
+    "text": "LV: VF is 4"
+   },
+   {
+    "text": "LV: Not Interleaving."
+   },
+   {
+    "text": "Calculating cost of runtime checks:"
+   },
+   {
+    "text": "  0  for   %scevgep = getelementptr i8, ptr %17, i64 %7, !dbg !178"
+   },
+   {
+    "text": "  0  for   %scevgep53 = getelementptr i8, ptr %scevgep, i64 %13, !dbg !178"
+   },
+   {
+    "text": "  1  for   %bound0 = icmp ult ptr %18, %scevgep56, !dbg !178"
+   },
+   {
+    "text": "  1  for   %bound1 = icmp ult ptr %scevgep54, %scevgep53, !dbg !178"
+   },
+   {
+    "text": "  1  for   %found.conflict = and i1 %bound0, %bound1, !dbg !178"
+   },
+   {
+    "text": "We expect runtime memory checks to be hoisted out of the outer loop. Cost reduced from 3 to 1"
+   },
+   {
+    "text": "Total cost of runtime checks: 1"
+   },
+   {
+    "text": "LV: Minimum required TC for runtime checks to be profitable:4"
+   },
+   {
+    "text": "LV: Interleaving is not beneficial."
+   },
+   {
+    "text": "LV: Found a vectorizable loop (4) in example.cpp:34:7"
+   },
+   {
+    "tag": {
+     "column": 7,
+     "file": "example.cpp",
+     "line": 34,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:34:7: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   34 |       for (size_t j = 0; j < d; ++j) at<CHK_C>(c, i * d + j) += aik * at<CHK_B>(b, k * d + j);  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m      ^"
+   },
+   {
+    "text": "\u001b[0mLEV: Unable to vectorize epilogue because the loop is not a supported candidate."
+   },
+   {
+    "text": "Executing best plan with VF=4, UF=1"
+   },
+   {
+    "text": "LV: Interleaving disabled by the pass manager"
+   },
+   {
+    "text": "LV: Vectorizing: innermost loop."
+   },
+   {
+    "tag": {
+     "column": 7,
+     "file": "example.cpp",
+     "line": 34,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:34:7: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]\u001b[0m"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_file": "src/emul_matmul.cpp",
+ "url": "https://godbolt.org/api/compiler/clang181assert/compile"
+}

@@ -1,0 +1,172 @@
+# Made by excerpts.py from: raw/C-c18-kernels-fast-pipeline, raw/C-c18-variants-fast-pipeline
+# kernels
+# Counts come from the IR text the pipeline viewer prints after each pass. A function pass prints the whole
+# function, a loop pass prints only the loop, so the counts also move when the pass kind changes.
+
+kern_k04_rev
+    InlinerPass (20): trap calls 0->2, `br i1 true` 0->0
+    ConstraintEliminationPass (35): trap calls 2->2, `br i1 true` 0->1
+    LoopSimplifyCFGPass (39): trap calls 2->1, `br i1 true` 1->0
+kern_k01_sum_fwd
+    InlinerPass (20): trap calls 0->1, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 1->1, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 1->0, `br i1 true` 1->0
+kern_k02_add_fwd
+    InlinerPass (20): trap calls 0->3, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 3->3, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 3->2, `br i1 true` 1->0
+    LICMPass (105): trap calls 2->0, `br i1 true` 0->0
+    LICMPass (106): trap calls 0->2, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (128): trap calls 2->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->2, `br i1 true` 0->0
+kern_k03_stencil
+    InlinerPass (20): trap calls 0->4, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 4->4, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 4->3, `br i1 true` 1->0
+    IndVarSimplifyPass (49): trap calls 3->3, `br i1 true` 0->2
+    SCCPPass (56): trap calls 3->1, `br i1 true` 2->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    LICMPass (106): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (128): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->1, `br i1 true` 0->0
+kern_k05_stride2
+    InlinerPass (20): trap calls 0->3, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 3->3, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 3->2, `br i1 true` 1->0
+# variants
+# Counts come from the IR text the pipeline viewer prints after each pass. A function pass prints the whole
+# function, a loop pass prints only the loop, so the counts also move when the pass kind changes.
+
+v_rev_span
+    InlinerPass (20): trap calls 0->3, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 3->3, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 3->2, `br i1 true` 1->0
+    ConstraintEliminationPass (35): trap calls 2->2, `br i1 true` 0->1
+    LoopInstSimplifyPass (38): trap calls 2->1, `br i1 true` 1->1
+    LoopSimplifyCFGPass (39): trap calls 1->0, `br i1 true` 1->0
+    SimplifyCFGPass (44): trap calls 0->1, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 1->0, `br i1 true` 0->0
+    SROAPass (52): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (67): trap calls 1->0, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 0->1, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 1->0, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (108): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (127): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (133): trap calls 0->1, `br i1 true` 0->0
+v_s2_manual
+v_fwd_manual
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    LICMPass (106): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (128): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->1, `br i1 true` 0->0
+v_rev_manual
+v_s2_pre_mul
+    InlinerPass (20): trap calls 1->4, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 4->4, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 4->3, `br i1 true` 1->0
+    LoopInstSimplifyPass (38): trap calls 3->2, `br i1 true` 0->0
+    SimplifyCFGPass (44): trap calls 2->3, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 3->2, `br i1 true` 0->0
+    SROAPass (52): trap calls 2->3, `br i1 true` 0->0
+    LICMPass (67): trap calls 3->2, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 2->3, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 3->2, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 2->3, `br i1 true` 0->0
+    LICMPass (105): trap calls 3->2, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (106): trap calls 2->3, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (125): trap calls 3->2, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (127): trap calls 2->3, `br i1 true` 0->0
+v_s2_j
+    InlinerPass (20): trap calls 0->2, `br i1 true` 0->0
+v_rev_j
+    InlinerPass (20): trap calls 0->2, `br i1 true` 0->0
+v_s2_one
+    InlinerPass (20): trap calls 0->2, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 2->2, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 2->1, `br i1 true` 1->0
+v_s2_pre
+    InlinerPass (20): trap calls 1->4, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 4->4, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 4->3, `br i1 true` 1->0
+    LoopInstSimplifyPass (38): trap calls 3->2, `br i1 true` 0->0
+    SimplifyCFGPass (44): trap calls 2->3, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 3->2, `br i1 true` 0->0
+    SROAPass (52): trap calls 2->3, `br i1 true` 0->0
+    LICMPass (67): trap calls 3->2, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 2->3, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 3->2, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 2->3, `br i1 true` 0->0
+    LICMPass (105): trap calls 3->2, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (106): trap calls 2->3, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (125): trap calls 3->2, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (127): trap calls 2->3, `br i1 true` 0->0
+v_s2_raw
+    LoopInstSimplifyPass (38): trap calls 1->0, `br i1 true` 0->0
+    SimplifyCFGPass (44): trap calls 0->1, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 1->0, `br i1 true` 0->0
+    SROAPass (52): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (67): trap calls 1->0, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 0->1, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 1->0, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (107): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (126): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->1, `br i1 true` 0->0
+v_rev_fwd
+    InlinerPass (20): trap calls 0->2, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 2->2, `br i1 true` 0->1
+    JumpThreadingPass (26): trap calls 2->1, `br i1 true` 1->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    LICMPass (106): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (128): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->1, `br i1 true` 0->0
+v_rev_pre
+    InlinerPass (20): trap calls 1->3, `br i1 true` 0->0
+    ConstraintEliminationPass (35): trap calls 3->3, `br i1 true` 0->2
+    LoopInstSimplifyPass (38): trap calls 3->2, `br i1 true` 2->2
+    LoopSimplifyCFGPass (39): trap calls 2->0, `br i1 true` 2->0
+    SimplifyCFGPass (44): trap calls 0->1, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 1->0, `br i1 true` 0->0
+    SROAPass (52): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (67): trap calls 1->0, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 0->1, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 1->0, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (108): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (127): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (133): trap calls 0->1, `br i1 true` 0->0
+v_rev_raw
+    LoopInstSimplifyPass (38): trap calls 1->0, `br i1 true` 0->0
+    SimplifyCFGPass (44): trap calls 0->1, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 1->0, `br i1 true` 0->0
+    SROAPass (52): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (67): trap calls 1->0, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 0->1, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 1->0, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 0->1, `br i1 true` 0->0
+    LICMPass (105): trap calls 1->0, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (108): trap calls 0->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (127): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (133): trap calls 0->1, `br i1 true` 0->0
+v_s2_span
+    InlinerPass (20): trap calls 1->5, `br i1 true` 0->0
+    EarlyCSEPass (24): trap calls 5->5, `br i1 true` 0->2
+    JumpThreadingPass (26): trap calls 5->3, `br i1 true` 2->0
+    LoopInstSimplifyPass (38): trap calls 3->1, `br i1 true` 0->0
+    SimplifyCFGPass (44): trap calls 1->3, `br i1 true` 0->0
+    LoopIdiomRecognizePass (48): trap calls 3->1, `br i1 true` 0->0
+    SROAPass (52): trap calls 1->3, `br i1 true` 0->0
+    LICMPass (67): trap calls 3->1, `br i1 true` 0->0
+    CoroElidePass (68): trap calls 1->3, `br i1 true` 0->0
+    LoopRotatePass (86): trap calls 3->1, `br i1 true` 0->0
+    LoopDistributePass (88): trap calls 1->3, `br i1 true` 0->0
+    LICMPass (105): trap calls 3->0, `br i1 true` 0->0
+    LICMPass (106): trap calls 0->1, `br i1 true` 0->0
+    AlignmentFromAssumptionsPass (107): trap calls 1->3, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (126): trap calls 3->1, `br i1 true` 0->0
+    Canonicalize Freeze Instructions in Loops (canon-freeze) (128): trap calls 1->0, `br i1 true` 0->0
+    Merge contiguous icmps into a memcmp (mergeicmps) (130): trap calls 0->3, `br i1 true` 0->0

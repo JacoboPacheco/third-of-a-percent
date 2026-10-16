@@ -155,7 +155,8 @@ function fillStatic() {
   const ix = S.ix, pg = ix.page, cr = ix.criteria;
   // Repository files: a link into the public repository (REPO_BASE in the builder); plain monospace text if it is empty.
   const base = ix.repo.base || '';
-  const repoPath = { criteriaUrl: cr.file, planUrl: 'corpus/PLAN2.md', pooledUrl: ix.pooled.source, findingsUrl: 'investigate/FINDINGS.md', robustnessUrl: 'robustness/report.md', repoUrl: '' };
+  const repoPath = { criteriaUrl: cr.file, planUrl: 'corpus/PLAN2.md', pooledUrl: ix.pooled.source, findingsUrl: 'investigate/FINDINGS.md', robustnessUrl: 'robustness/report.md', repoUrl: '',
+    vecUrl: 'investigate/vectorizer/reverse-stride2/README.md', matmulVecUrl: 'investigate/vectorizer/matmul/README.md' };
   for (const n of [...document.querySelectorAll('[data-href]')]) {
     const k = n.dataset.href;
     if (k === 'claimUrl') { n.href = ix.claim.url; continue; }
@@ -200,27 +201,45 @@ function fillStatic() {
     libcxx: `libc++ ${ver(tc.libcxx_package)}`,
     criteriaFile: cr.file,
   };
-  const repro = good.find((c) => c.reproduction && c.reproduction.checked > 0);
-  v.reproCpu = repro ? repro.cpu_short : 'n/a';
-  v.reproOut = repro ? String(repro.reproduction.outside) : 'n/a';
-  v.reproChecked = repro ? String(repro.reproduction.checked) : 'n/a';
-  v.reproGap = repro && repro.reproduction.max_gap_pct != null ? repro.reproduction.max_gap_pct.toFixed(1) : 'n/a';
+  // run-to-run movement of the pooled ratios: every model that had at least two runs with enough jobs to compare
+  const reproM = good.filter((c) => c.reproduction && c.reproduction.checked > 0);
+  const gapOf = (c) => (c.reproduction.max_gap_pct != null ? c.reproduction.max_gap_pct.toFixed(1) : 'n/a');
+  v.reproText = reproM.length
+    ? `on ${reproM[0].cpu_short}, ${reproM[0].reproduction.outside} of ${reproM[0].reproduction.checked} comparisons put one run’s pooled ratio outside another run’s interval, by at most ${gapOf(reproM[0])}%${reproM.slice(1).map((c) => `; on ${c.cpu_short}, ${c.reproduction.outside} of ${c.reproduction.checked}, by at most ${gapOf(c)}%`).join('')}.`
+    : 'no model had enough jobs in two runs to compare them.';
+  v.reproMethod = reproM.length
+    ? `On ${joinAnd(reproM.map((c) => c.cpu_short))}, the ${reproM.length === 1 ? 'only model' : 'models'} with enough jobs in more than one run (a run needs ${cr.minimum_jobs} jobs of the model), a run’s pooled ratio fell outside another run’s pooled interval in ${joinAnd(reproM.map((c) => `${c.reproduction.outside} of ${c.reproduction.checked}`))} comparisons${reproM.length === 1 ? '' : ', respectively'}.`
+    : 'No model had enough jobs in more than one run to compare runs.';
   const psAll = good.flatMap((c) => c.placement_sensitive.map((q) => [q, c]));
   v.psSummary = psAll.length
     ? `On the CPU models with enough jobs, ${joinAnd([...new Set(psAll.map((x) => cellName(x[0].cell_id)))])} are placement-sensitive (${psAll.length} cases over the ${good.length} models). As compiled they run ${rangeX(Math.min(...psAll.map((x) => x[0].ratio)), Math.max(...psAll.map((x) => x[0].ratio)))}; aligned, ${rangeX(Math.min(...psAll.map((x) => x[0].aligned_ratio)), Math.max(...psAll.map((x) => x[0].aligned_ratio)))}. They are left out of the 2% test.`
     : 'No forward cell is placement-sensitive on the CPU models with enough jobs.';
-  // stability across runs, per CPU model
+  // stability across runs, per CPU model: a run gets a verdict of its own only with enough jobs of the model
+  const minJ = cr.minimum_jobs;
   const stable = good.filter((c) => c.stability === 'stable');
   const na = good.filter((c) => c.stability !== 'stable');
+  const naMap = na.filter((c) => c.form !== 'inconclusive'), naInc = na.filter((c) => c.form === 'inconclusive');
+  const perRun = (c) => c.per_run.map((r) => r.jobs);
   const parts = [];
-  if (stable.length) parts.push(`${joinAnd(stable.map((c) => c.cpu_short))}, with enough jobs in each of its ${stable[0].per_run.length} runs, gives the same pattern in every run alone and pooled`);
-  if (na.length) {
-    const js = na.flatMap((c) => c.per_run.map((r) => r.jobs));
-    parts.push(`${joinAnd(na.map((c) => c.cpu_short))} give the same pattern pooled, but with ${Math.min(...js)} to ${Math.max(...js)} jobs per run their runs cannot be judged one by one`);
+  if (stable.length) parts.push(`${joinAnd(stable.map((c) => `${c.cpu_short} (${runsJudged(c)} of its ${c.per_run.length} runs had ${minJ} or more of its jobs)`))} give${stable.length === 1 ? 's' : ''} the same pattern in every run that can be judged alone, and pooled`);
+  for (const c of naMap) {
+    const j = runsJudged(c), alone = c.per_run.filter((r) => r.form).map((r) => (r.form === 'map' ? 'a map' : r.form));
+    parts.push(`${c.cpu_short} has ${c.jobs} jobs in ${c.per_run.length} runs of ${Math.min(...perRun(c))} to ${Math.max(...perRun(c))} jobs, and ${j === 0 ? `no run reached ${minJ} of them` : `only ${j === 1 ? 'one run' : `${j} runs`} reached ${minJ}${alone.length === 1 ? `, which alone was ${alone[0]}` : ''}`}, so its runs cannot be compared; pooled it is ${formWords(c.form)}`);
   }
+  if (naInc.length) parts.push(`${joinAnd(naInc.map((c) => c.cpu_short))} (${jobsEach(naInc)}, at most ${Math.max(...naInc.flatMap(perRun))} in any run) ${naInc.length === 1 ? 'is' : 'are'} inconclusive pooled and cannot be judged run by run`);
   for (const f of pg.cpus_few) parts.push(`${f.cpu_short} drew ${f.jobs} job${f.jobs > 1 ? 's' : ''}, too few to judge`);
-  v.stableText = `${joinAnd(parts)}.`;
-  v.fewText = pg.cpus_few.length ? `the one other model drawn, ${joinAnd(pg.cpus_few.map((f) => f.cpu_short))}, came up in ${joinAnd(pg.cpus_few.map((f) => String(f.jobs)))} job${pg.cpus_few.every((f) => f.jobs === 1) ? '' : 's'}, too few to judge.` : 'every model drawn had enough jobs.';
+  v.stableText = `${parts.join('. ')}.`;
+  // Intel and other models without a verdict, and thin coverage (details, Limits)
+  const inc = good.filter((c) => c.form === 'inconclusive');
+  const fewBits = [];
+  if (pg.cpus_few.length) fewBits.push(`${pg.cpus_few.length === 1 ? 'the one other model' : 'the other models'} drawn, ${joinAnd(pg.cpus_few.map((f) => f.cpu_short))}, came up in ${joinAnd(pg.cpus_few.map((f) => String(f.jobs)))} job${pg.cpus_few.every((f) => f.jobs === 1) ? '' : 's'}, too few to judge`);
+  if (inc.length) fewBits.push(`${joinAnd(inc.map((c) => c.cpu_short))} (${jobsEach(inc)}) ${inc.length === 1 ? 'is inconclusive and carries' : 'are inconclusive and carry'} no headline number`);
+  v.fewText = fewBits.length ? `${fewBits.join('; ')}.` : 'every model drawn had enough jobs.';
+  const thin = good.filter((c) => c.form === 'inconclusive' || c.stability !== 'stable');
+  const thinInc = inc.length ? `${joinAnd(inc.map((c) => c.cpu_short))} ${inc.length === 1 ? 'has' : 'have'} ${[...new Set(inc.map((c) => c.jobs))].join(' or ')} jobs, in runs of at most ${Math.max(...inc.flatMap(perRun))}` : '';
+  const thinMap = naMap.map((c) => `${c.cpu_short}’s ${c.jobs} jobs came in runs of ${Math.min(...perRun(c))} to ${Math.max(...perRun(c))}, so ${runsJudged(c) ? `only ${runsJudged(c)} of its ${c.per_run.length} runs` : 'none of its runs'} can be judged alone`);
+  v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. The job-level resampling understates the spread between machines when jobs are few, and these verdicts cannot be checked run against run.`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
+  v.pooledPath = ix.pooled.source;
   // the day-one record and the criteria history
   const d1 = ix.method.dayone[0], d2 = ix.method.dayone[1];
   if (d1 && d1.missed.length) {
@@ -306,6 +325,7 @@ function fillStatic() {
   v.intelRange = IF && IF.jobs.length ? rangeX(IF.aligned.min, IF.aligned.max).replace('×', '') : 'n/a';
 
   for (const [k, val] of Object.entries(v)) setV(k, val);
+  for (const id of ['fwd-low']) { const p = document.getElementById(id); if (p) p.hidden = !p.textContent.trim(); } // no note, no empty paragraph
   // the commits, as code
   const rc = $('rule-commits');
   const item = (label, f, extra) => (f && f.added_commit ? [label, ' ', code(f.added_commit), ...(extra || [])] : [label]);
@@ -354,11 +374,36 @@ async function fillK02Pass() { // section 3 and Figure 3: per-pass counts of the
   setV('k02PerPassOn', on == null ? 'n/a' : String(on));
 }
 
+/* ---------- verdict words: what the written rules said about a CPU model, in plain language ---------- */
+const runsJudged = (c) => c.per_run.filter((r) => r.form).length; // runs with enough jobs of this model to get a verdict of their own
+const jobsEach = (cs) => { const js = [...new Set(cs.map((c) => c.jobs))]; return js.length === 1 && cs.length > 1 ? `${js[0]} jobs each` : joinAnd(cs.map((c) => `${c.jobs} job${c.jobs === 1 ? '' : 's'}`)); };
+const formWords = (f) => (f === 'map' ? 'a map' : f === 'holds_everywhere' ? 'a small cost everywhere' : 'inconclusive');
+function missedForward(c) { // the judged forward cells that break the written rule (aligned: point ratio and interval end both within the limit)
+  const pc = pooledOf(c.cpu_model);
+  if (!pc || !pc.verdict) return [];
+  const lim = 1 + (pc.verdict.forward_limit_pct != null ? pc.verdict.forward_limit_pct : 2) / 100;
+  const ps = new Set(c.placement_sensitive.map((q) => q.cell_id));
+  return pc.cells.filter((x) => x.class === 'kept' && IN_CACHE.includes(x.size_class) && !ps.has(x.cell_id) && x.aligned && (x.aligned.ratio > lim || x.aligned.ci95[1] > lim));
+}
+function limitWords(c) { const pc = pooledOf(c.cpu_model); return `${+(((pc && pc.verdict && pc.verdict.forward_limit_pct) || 2).toFixed(1))}%`; }
+function missWords(c) { // '2% rule missed by …', in plain words, or '' when no judged forward cell breaks it
+  const m = missedForward(c);
+  return m.length ? joinAnd(m.map((x) => `${cellName(x.cell_id)} (${fx(x.aligned.ratio)}× aligned, interval ${fx(x.aligned.ci95[0])} to ${fx(x.aligned.ci95[1])}×)`)) : '';
+}
+function missShort(c) {
+  const m = missedForward(c);
+  return m.length ? joinAnd(m.map((x) => { const [k, sz] = x.cell_id.split('.'); return `${SHORT_NAMES[k] || k} ${sz} up to ${fx(x.aligned.ci95[1])}×`; })) : '';
+}
+
 /* ---------- section 1 and 3 tables ---------- */
 function patternWords(c) {
   if (!c.enough) return `too few jobs (${c.jobs}; ${S.ix.criteria.minimum_jobs} needed)`;
   const held = c.form === 'map' ? 'held' : c.form === 'holds_everywhere' ? 'small cost everywhere' : 'inconclusive';
-  return c.stability === 'stable' ? `${held}, the same in every run` : `${held} pooled; too few jobs per run to compare runs`;
+  const j = runsJudged(c), n = c.per_run.length;
+  if (c.form === 'inconclusive') { const ms = missShort(c); return `${held}${ms ? `: ${ms}, over the ${limitWords(c)} limit` : ''}`; } // the reason, not the run count: no run of such a model was judged alone
+  if (c.stability === 'stable') return `${held}, the same in every run judged alone (${j} of ${n})`;
+  const alone = [...new Set(c.per_run.filter((r) => r.form && r.form !== c.form).map((r) => formWords(r.form)))];
+  return `${held}; its runs cannot be compared (${j} of ${n} judged${alone.length ? `; ${j === 1 ? 'that one' : 'those'} alone ${j === 1 ? 'was' : 'were'} ${joinAnd(alone)}` : ''})`;
 }
 function renderCpuTable() {
   const tb = $('cpu-table').querySelector('tbody');
@@ -451,7 +496,7 @@ function renderAppB() {
       ? `Fewer than ${minJ} jobs pooled, so no verdict is drawn.`
       : c.form === 'map'
         ? `Every judged forward loop sits at most ${lim}% above 1× (aligned, interval included), and every loop that loses SIMD has its whole interval above ${lo}× in both columns.${c.placement_sensitive.length ? ` ${c.placement_sensitive.length} placement-sensitive cell${c.placement_sensitive.length > 1 ? 's' : ''} listed, not judged.` : ''}`
-        : 'At least one condition of the pattern failed; see the pooled file.';
+        : `${c.form === 'inconclusive' ? `Neither the pattern nor a small cost everywhere: ${missWords(c) ? `the ${limitWords(c)} rule is missed by ${missWords(c)}. ` : 'a condition failed (see the pooled file). '}` : 'At least one condition of the pattern failed; see the pooled file. '}The pattern needs every judged forward loop at most ${lim}% above 1× (aligned, interval included) and every loop that loses SIMD with its whole interval above ${lo}× in both columns${c.lost_ci_lo_min != null ? ` (here the smallest interval start is ${fx(c.lost_ci_lo_min)}×)` : ''}.${c.placement_sensitive.length ? ` ${c.placement_sensitive.length} placement-sensitive cell${c.placement_sensitive.length > 1 ? 's' : ''} listed, not judged.` : ''}`;
     tc.append(el('tr', { class: c.enough ? null : 'muted-row' },
       el('th', { scope: 'row' }, c.cpu_short), el('td', { class: 'num' }, String(c.jobs)), el('td', null, form),
       el('td', { class: 'num' }, c.n ? `${fx(c.n.median)}× (${rangeX(c.n.min, c.n.max)})` : '–'),
@@ -820,8 +865,8 @@ function plainRemark(remarks) {
     const w = Number(vec[1]), n = Number(vec[2]);
     return `Vectorized: ${w} numbers per instruction${n > 1 ? `, ${w * n} per pass of the loop` : ''}.`;
   }
-  if (rs.some((r) => r.includes('could not determine number of loop iterations'))) return 'Not vectorized: the compiler no longer knows how many times the loop runs, because the check may stop it early.';
-  if (rs.some((r) => r.includes('vectorization is not beneficial'))) return 'Not vectorized: the compiler judged that SIMD would not pay off for this loop.';
+  if (rs.some((r) => r.includes('could not determine number of loop iterations'))) return 'Not vectorized: clang could not work out how many times the loop runs.';
+  if (rs.some((r) => r.includes('vectorization is not beneficial'))) return 'Not vectorized: the compiler’s cost estimate said the SIMD loop would be no better than the one-at-a-time loop.';
   if (rs.length) return 'Not vectorized.';
   return 'The compiler made no remark about this loop.';
 }
@@ -832,10 +877,18 @@ function whyLine(r, anOn, identical, bOn, width) {
   const many = width ? `${width}-at-a-time` : 'SIMD';
   if (r.role === 'lost') {
     const nv = novecClause(r.k, pooledOf(currentCpu().cpu_model));
-    if (rs.some((x) => x.includes('could not determine number of loop iterations')))
-      return `The compiler could not vectorize this loop once the check was inside it: it no longer knows how many times the loop will run, because the check may stop it at any element. So the ${many} loop on the left becomes the one-at-a-time loop on the right.${nv}`;
+    const more = el('a', { href: 'details.html#passlevel' }, 'pass-level evidence');
+    if (rs.some((x) => x.includes('could not determine number of loop iterations'))) {
+      // what clang's own dumps show, loop by loop (compile-only, clang 18): each label says observed or inferred
+      const detail = r.k === 'k04_rev'
+        ? ' Here the check no longer depends on the loop counter, yet its branch stays inside the loop (observed). Adding a loop-unswitching pass just before the vectorizer makes the same release’s optimizer vectorize the saved loop (observed); clang runs no such pass at that point.'
+        : r.k === 'k05_stride2'
+          ? ' Here the two checks test twice the counter, and twice the counter plus one, against the vector’s size (observed). In hand-written code, a bound with a known upper limit gives both a count and a vectorized loop (observed); why the size has no such limit is inferred.'
+          : '';
+      return [`With the check inside, this loop has a second way out, and clang’s analysis found no iteration count for it (observed), so it did not vectorize the loop: the ${many} loop on the left becomes the one-at-a-time loop on the right.${detail} In every loop tried, clang vectorized exactly when every exit had a count (observed); that the count is what it needs is inferred. See the `, more, `.${nv}`];
+    }
     if (rs.some((x) => x.includes('vectorization is not beneficial')))
-      return `With the checks inside the loop, the compiler judged that SIMD would no longer pay off, so the ${many} loop on the left becomes the one-at-a-time loop on the right, with a compare and a jump for every index it uses.${nv}`;
+      return [`Clang 18’s cost estimate for the ${many} loop, with the two bounds-check compares inside it, came out no better than the one-at-a-time loop, so it kept the one-at-a-time loop on the right, with a compare and a jump for every index it uses (observed in the compiler’s log, compile-only). Clang 19 to 21 price those compares at almost nothing and vectorize the loop (observed); that a change in clang 19 is the reason is inferred. See the `, more, `.${nv}`];
     return `With the checks on, the compiler did not vectorize this loop, so the ${many} loop on the left becomes the one-at-a-time loop on the right.${nv}`;
   }
   if (r.role === 'kept') return hotHasCheck
@@ -1297,12 +1350,24 @@ function renderSiblings() {
   setV('sib6973', v69);
   const j69 = x69 ? x69[1].jobs : 0;
   setV('sib6973Jobs', `${j69} job${j69 === 1 ? '' : 's'}`);
+  { const c69 = S.ix.cpus.find((c) => c.enough && c.cpu_model.includes('6973P')), k69 = c69 && cellOf(pooledOf(c69.cpu_model), 'k02_add_fwd.L1');
+    setV('sib6973Pooled', k69 && k69.aligned ? `the pooled timing of section 1 has ${c69.jobs} jobs of it, ${fx(k69.aligned.ratio)}× aligned` : 'no pooled timing of it'); }
   const IFc = S.ix.intel_forward && S.ix.intel_forward.jobs.length ? S.ix.intel_forward : null;
   const intelCounts = IFc ? joinAnd(IFc.cpus.map((c) => { const n = IFc.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; })) : '';
-  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs, the early trial run and the pooled runs)` : '');
+  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs included)` : '');
   const IF = S.ix.intel_forward;
+  // the Intel models with enough pooled jobs have a row in Table 1; what the written rules said about each, and why
+  const incl = S.ix.cpus.filter((c) => c.enough && c.form === 'inconclusive');
+  const xLo = incl.length ? Math.min(...incl.map((c) => c.lost_aligned.min)) : null, xHi = incl.length ? Math.max(...incl.map((c) => c.lost_aligned.max)) : null;
+  const noPooled = IF ? IF.cpus.filter((m) => !S.ix.cpus.some((c) => c.enough && c.cpu_short === m)) : [];
+  const intelModel = (c) => {
+    const add = cellOf(pooledOf(c.cpu_model), 'k02_add_fwd.L1'), ps = c.placement_sensitive.some((q) => q.cell_id === 'k02_add_fwd.L1');
+    const miss = missWords(c), missAdd = missedForward(c).some((x) => x.cell_id === 'k02_add_fwd.L1');
+    const mx = Math.max(...c.per_run.map((r) => r.jobs));
+    return `On the ${c.cpu_short} (${c.jobs} jobs in ${c.runs} runs, at most ${mx} in one run) ${miss ? `the ${limitWords(c)} rule is missed by ${miss}${missAdd ? ', which is not flagged placement-sensitive' : ''}` : 'no judged forward loop misses the rule, yet the verdict is inconclusive (see the pooled file)'}${!missAdd && add && add.aligned ? `; the forward add at the L1 size costs ${fx(add.aligned.ratio)}× aligned${ps ? ' but is flagged placement-sensitive, so the rule leaves it out' : ''}` : ''}`;
+  };
   setV('intelText', IF && IF.jobs.length
-    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}, too few for a verdict), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs; the toolchain runs add a Xeon 6973P-C at ${v69}× in ${j69} job${j69 === 1 ? '' : 's'} (section 6).`
+    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1 and came out inconclusive under the written rules, so no headline number is printed. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : 'both'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${joinAnd(noPooled)} came up in no pooled job.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1316,8 +1381,9 @@ function renderSiblings() {
   const progOther = [...new Set(S.ix.programs.rows.map((r) => norm(r.cpu_short)))].filter((m) => !enoughNames.includes(m) && !sibOther.includes(m));
   const pooledJobs = (m) => { const c = S.ix.cpus.find((x) => norm(x.cpu_short) === m); return c ? c.jobs : 0; };
   const all = [...sibOther, ...progOther];
+  const where = [sibOther.length ? `Section 6 (Table 4, Appendix C) also uses ${joinAnd(sibOther)}` : '', progOther.length ? `Table 8 uses ${joinAnd(progOther)}` : ''].filter(Boolean);
   setV('otherDraws', all.length
-    ? `Section 6 (Table 4, Appendix C) also uses ${joinAnd(sibOther)}${progOther.length ? `, and Table 8 uses ${joinAnd(progOther)}` : ''}. They have no row in Table 1 because each came up in fewer than the ${S.ix.criteria.minimum_jobs} pooled jobs a verdict needs (${all.map((m) => `${m}: ${pooledJobs(m) || 'none'}`).join('; ')}).`
+    ? `${where.join(', and ')}. ${all.length === 1 ? 'It has' : 'They have'} no row in Table 1 because ${all.length === 1 ? 'it' : 'each'} came up in fewer than the ${S.ix.criteria.minimum_jobs} pooled jobs a verdict needs (${all.map((m) => `${m}: ${pooledJobs(m) || 'none'}`).join('; ')}).`
     : '');
   // the five-row summary (main page): the three clang 18 libc++ modes share a row
   const GROUPS = [['Forward loops', ['k01_sum_fwd', 'k02_add_fwd', 'k03_stencil']], ['Reverse and stride-2', ['k04_rev', 'k05_stride2']],
@@ -1664,8 +1730,10 @@ function renderHoldout() {
   const formName = (f) => (f === 'map' ? 'Map' : f === 'inconclusive' ? 'Inconclusive' : f);
   const cell = (d) => (d ? `${formName(d.form)} (${d.jobs} job${d.jobs === 1 ? '' : 's'}${d.runs !== 3 ? `, ${d.runs} run${d.runs === 1 ? '' : 's'}` : ''})` : 'not drawn');
   const lost = (d) => (d && d.lost && d.enough ? `${rangeX(d.lost.min, d.lost.max)}, median ${fx(d.lost.median)}×` : 'none given');
+  // Table 1 pools every run so far, the holdout compares only the first pooled runs with the fresh ones: say where a model stands now
+  const now = (r) => { const c = S.ix.cpus.find((x) => x.cpu_short === r.cpu_short); return c ? `Table 1, which pools every run so far, now has ${c.jobs} jobs of it${c.enough ? ` and reads ${formWords(c.form)}` : ''}` : ''; };
   setV('holdoutShort', `A fresh holdout run: same pattern on ${joinAnd(same.map((r) => r.cpu_short))}${diff.length ? `, not on ${joinAnd(diff.map((r) => r.cpu_short))}` : ''}`);
-  setV('holdoutText', `The rules and the code that pools jobs were fixed first, and the plan for this run was committed at ${when}, before its first run started. Then ${H.runs.length} fresh runs (${H.jobs} jobs) were measured and pooled with the same code. Same pattern on ${joinAnd(same.map((r) => r.cpu_short))}, with nearly the same numbers. ${diff.map((r) => `${r.cpu_short} did not reproduce as a pattern: ${cell(r.holdout).toLowerCase()} against ${cell(r.original).toLowerCase()} the first time; it had only ${r.holdout.jobs} jobs, and was already marked fragile`).join('; ')}${diff.length ? '. ' : ''}${H.rows.filter((r) => r.reproduced == null).map((r) => `${r.cpu_short} drew too few jobs both times (${r.original ? r.original.jobs : 0} and ${r.holdout ? r.holdout.jobs : 0}), so nothing is said about it`).join('; ')}. Nothing here tests another toolchain.`);
+  setV('holdoutText', `The rules and the code that pools jobs were fixed first, and the plan for this run was committed at ${when}, before its first run started. Then ${H.runs.length} fresh runs (${H.jobs} jobs) were measured and pooled with the same code. Same pattern on ${joinAnd(same.map((r) => r.cpu_short))}, with nearly the same numbers. ${diff.map((r) => `${r.cpu_short} did not reproduce as a pattern: ${cell(r.holdout).toLowerCase()} against ${cell(r.original).toLowerCase()} the first time; it had only ${r.holdout.jobs} jobs, and was already marked fragile (${now(r)})`).join('; ')}${diff.length ? '. ' : ''}${H.rows.filter((r) => r.reproduced == null).map((r) => `${r.cpu_short} drew too few jobs both times (${r.original ? r.original.jobs : 0} and ${r.holdout ? r.holdout.jobs : 0}), so nothing is said about it (${now(r)})`).join('; ')}. Nothing here tests another toolchain.`);
   $('holdout-table').querySelector('tbody').replaceChildren(...H.rows.map((r) => el('tr', null,
     el('th', { scope: 'row' }, r.cpu_short), el('td', null, cell(r.original)), el('td', null, cell(r.holdout)),
     el('td', { class: 'num' }, `${lost(r.original)} → ${lost(r.holdout)}`),
@@ -1894,8 +1962,9 @@ function renderControls() {
   const seg = $('cpu-seg');
   seg.replaceChildren();
   for (const c of cpuList()) {
-    seg.append(el('button', { type: 'button', role: 'radio', 'data-cpu': c.slug, 'aria-checked': c.slug === S.cpu ? 'true' : 'false', tabindex: c.slug === S.cpu ? '0' : '-1', title: `${c.cpu_model}: ${c.jobs} job${c.jobs > 1 ? 's' : ''} pooled`, onclick: () => selectCpu(c.slug) }, c.cpu_short));
+    seg.append(el('button', { type: 'button', role: 'radio', 'data-cpu': c.slug, 'aria-checked': c.slug === S.cpu ? 'true' : 'false', tabindex: c.slug === S.cpu ? '0' : '-1', title: `${c.cpu_model}: ${c.jobs} job${c.jobs > 1 ? 's' : ''} pooled${c.form === 'inconclusive' ? '; no verdict (inconclusive)' : ''}`, onclick: () => selectCpu(c.slug) }, c.cpu_short));
   }
+  renderVerdictNote();
   const pc = pooledOf(currentCpu().cpu_model);
   const hasAligned = !!(pc && pc.cells.some((c) => c.aligned));
   for (const b of $('col-seg').querySelectorAll('button')) {
@@ -1903,6 +1972,14 @@ function renderControls() {
     b.tabIndex = b.dataset.col === S.col ? 0 : -1;
     b.disabled = b.dataset.col === 'aligned' && !hasAligned;
   }
+}
+function renderVerdictNote() { // Figure 1 draws the measured bars for every model with enough jobs; a model the written rules left inconclusive says so beside the switcher
+  const n = document.getElementById('cpu-verdict');
+  if (!n) return;
+  const c = currentCpu();
+  if (S.fixture || c.form !== 'inconclusive') { n.textContent = ''; return; }
+  const ms = missWords(c);
+  n.textContent = `No verdict for ${c.cpu_short}: inconclusive under the written rules${ms ? `, because the ${limitWords(c)} rule is missed by ${ms}` : ''}. The bars are measured values; Table 1 has the reason.`;
 }
 function radioKeys(seg, attr, fn) {
   seg.addEventListener('keydown', (e) => {

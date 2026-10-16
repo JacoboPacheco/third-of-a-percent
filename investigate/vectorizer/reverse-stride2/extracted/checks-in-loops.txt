@@ -1,0 +1,522 @@
+# Made by excerpts.py from: raw/B-c18-kernels-fast-ir, raw/E-c18-kernels-fast-scev, raw/A-c18-kernels-fast, raw/B-c18-variants-fast-ir, raw/E-c18-variants-fast-scev, raw/A-c18-variants-fast, raw/B-c18-variants2-fast-ir, raw/E-c18-variants2-fast-scev, raw/A-c18-variants2-fast, raw/B-c18-variants3-fast-ir, raw/E-c18-variants3-fast-scev, raw/A-c18-variants3-fast
+## kernels (sources/kernels.cpp), clang 18.1.0, hardening FAST, IR just before the loop vectorizer
+
+kern_k01_sum_fwd   (clang: vectorized 2x2)
+    no trap branch among the loop's exits
+
+kern_k02_add_fwd   (clang: vectorized 4x1)
+    exit bb30: br i1 %32, label %bb33, label %bb34
+    exit count: %17
+        %32 = icmp eq i64 %31, %19
+        %31 = phi i64 [ 0, %bb8 ], [ %44, %bb37 ]
+        %44 = add nuw i64 %31, 1
+        %19 = ashr exact i64 %18, 2
+        %18 = sub i64 %16, %17
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %2, i64 0, i32 1
+        %17 = ptrtoint ptr %15 to i64
+        %15 = load ptr, ptr %2, align 8
+    exit bb34: br i1 %35, label %bb36, label %bb37
+    exit count: %24
+        %35 = icmp eq i64 %31, %26
+        %31 = phi i64 [ 0, %bb8 ], [ %44, %bb37 ]
+        %44 = add nuw i64 %31, 1
+        %26 = ashr exact i64 %25, 2
+        %25 = sub i64 %23, %24
+        %23 = ptrtoint ptr %21 to i64
+        %21 = load ptr, ptr %20, align 8
+        %20 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %24 = ptrtoint ptr %22 to i64
+        %22 = load ptr, ptr %0, align 8
+
+kern_k03_stencil   (clang: vectorized 4x2)
+    exit bb24: br i1 %27, label %bb28, label %bb29
+    exit count: (-1 + (1 umax %16))
+        %27 = icmp eq i64 %25, %20
+        %25 = phi i64 [ 2, %bb11 ], [ %39, %bb29 ]
+        %39 = add nuw i64 %25, 1
+        %20 = add i64 %19, 1
+        %19 = call i64 @llvm.umax.i64(i64 %18, i64 1)
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %0, align 8
+
+kern_k04_rev   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb23: br i1 %20, label %bb26, label %bb25
+    exit count: COULDNOTCOMPUTE
+        %20 = icmp ult i64 %19, %18
+        %19 = add nsw i64 %11, -1
+        %11 = ashr exact i64 %10, 2
+        %10 = sub i64 %9, %8
+        %9 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %3, align 8
+        %3 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %8 = ptrtoint ptr %5 to i64
+        %5 = load ptr, ptr %1, align 8
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %0, align 8
+
+kern_k05_stride2   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %25, label %bb27, label %bb26
+    exit count: COULDNOTCOMPUTE
+        %25 = icmp ugt i64 %18, %24
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %1, align 8
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ 0, %bb7 ], [ %38, %bb31 ]
+        %38 = add nuw i64 %23, 1
+    exit bb27: br i1 %29, label %bb31, label %bb30
+    exit count: COULDNOTCOMPUTE
+        %29 = icmp ugt i64 %18, %28
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %1, align 8
+        %28 = or disjoint i64 %24, 1
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ 0, %bb7 ], [ %38, %bb31 ]
+        %38 = add nuw i64 %23, 1
+
+## variants (sources/variants.cpp), clang 18.1.0, hardening FAST, IR just before the loop vectorizer
+
+v_rev_pre   (clang: vectorized 4x2)
+    no trap branch among the loop's exits
+
+v_rev_span   (clang: vectorized 4x2)
+    no trap branch among the loop's exits
+
+v_rev_raw   (clang: vectorized 4x2)
+    no trap branch among the loop's exits
+
+v_rev_fwd   (clang: vectorized 4x2)
+    exit bb22: br i1 %24, label %bb25, label %bb26
+    exit count: %16
+        %24 = icmp eq i64 %23, %18
+        %23 = phi i64 [ 0, %bb7 ], [ %31, %bb26 ]
+        %31 = add nuw i64 %23, 1
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %0, align 8
+
+v_rev_manual   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb23: br i1 %20, label %bb26, label %bb25
+    exit count: COULDNOTCOMPUTE
+        %20 = icmp ult i64 %19, %18
+        %19 = add nsw i64 %12, -1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %6 to i64
+        %6 = load ptr, ptr %5, align 8
+        %5 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %3 to i64
+        %3 = load ptr, ptr %0, align 8
+
+v_fwd_manual   (clang: vectorized 4x2)
+    exit bb22: br i1 %24, label %bb25, label %bb26
+    exit count: %9
+        %24 = icmp eq i64 %23, %10
+        %23 = phi i64 [ %31, %bb26 ], [ 0, %bb14 ]
+        %31 = add nuw i64 %23, 1
+        %10 = ashr exact i64 %9, 2
+        %9 = sub i64 %7, %8
+        %7 = ptrtoint ptr %6 to i64
+        %6 = load ptr, ptr %5, align 8
+        %5 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %8 = ptrtoint ptr %3 to i64
+        %3 = load ptr, ptr %0, align 8
+
+v_rev_j   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %26, label %bb28, label %bb27
+    exit count: COULDNOTCOMPUTE
+        %26 = icmp ugt i64 %9, %25
+        %9 = ashr exact i64 %8, 2
+        %8 = sub i64 %6, %7
+        %6 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %3, align 8
+        %3 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %7 = ptrtoint ptr %5 to i64
+        %5 = load ptr, ptr %1, align 8
+        %25 = add i64 %9, %24
+        %24 = xor i64 %23, -1
+        %23 = phi i64 [ 0, %bb11 ], [ %36, %bb31 ]
+        %36 = add nuw i64 %23, 1
+    exit bb28: br i1 %29, label %bb31, label %bb30
+    exit count: COULDNOTCOMPUTE
+        %29 = icmp ugt i64 %18, %25
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %0, align 8
+        %25 = add i64 %9, %24
+        %9 = ashr exact i64 %8, 2
+        %8 = sub i64 %6, %7
+        %6 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %3, align 8
+        %3 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %7 = ptrtoint ptr %5 to i64
+        %5 = load ptr, ptr %1, align 8
+        %24 = xor i64 %23, -1
+        %23 = phi i64 [ 0, %bb11 ], [ %36, %bb31 ]
+        %36 = add nuw i64 %23, 1
+
+v_s2_pre   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb26: br i1 %29, label %bb31, label %bb30
+    exit count: COULDNOTCOMPUTE
+        %29 = icmp ugt i64 %16, %28
+        %16 = ashr exact i64 %15, 2
+        %15 = sub i64 %13, %14
+        %13 = ptrtoint ptr %11 to i64
+        %11 = load ptr, ptr %10, align 8
+        %10 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %14 = ptrtoint ptr %12 to i64
+        %12 = load ptr, ptr %1, align 8
+        %28 = shl nuw i64 %27, 1
+        %27 = phi i64 [ %42, %bb35 ], [ 0, %bb21 ]
+        %42 = add nuw i64 %27, 1
+    exit bb31: br i1 %33, label %bb35, label %bb34
+    exit count: COULDNOTCOMPUTE
+        %33 = icmp ugt i64 %16, %32
+        %16 = ashr exact i64 %15, 2
+        %15 = sub i64 %13, %14
+        %13 = ptrtoint ptr %11 to i64
+        %11 = load ptr, ptr %10, align 8
+        %10 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %14 = ptrtoint ptr %12 to i64
+        %12 = load ptr, ptr %1, align 8
+        %32 = or disjoint i64 %28, 1
+        %28 = shl nuw i64 %27, 1
+        %27 = phi i64 [ %42, %bb35 ], [ 0, %bb21 ]
+        %42 = add nuw i64 %27, 1
+
+v_s2_pre_mul   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb28: br i1 %31, label %bb33, label %bb32
+    exit count: COULDNOTCOMPUTE
+        %31 = icmp ugt i64 %19, %30
+        %19 = ashr exact i64 %18, 2
+        %18 = sub i64 %16, %17
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %17 = ptrtoint ptr %15 to i64
+        %15 = load ptr, ptr %1, align 8
+        %30 = shl nuw i64 %29, 1
+        %29 = phi i64 [ %44, %bb37 ], [ 0, %bb23 ]
+        %44 = add nuw i64 %29, 1
+    exit bb33: br i1 %35, label %bb37, label %bb36
+    exit count: COULDNOTCOMPUTE
+        %35 = icmp ugt i64 %19, %34
+        %19 = ashr exact i64 %18, 2
+        %18 = sub i64 %16, %17
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %17 = ptrtoint ptr %15 to i64
+        %15 = load ptr, ptr %1, align 8
+        %34 = or disjoint i64 %30, 1
+        %30 = shl nuw i64 %29, 1
+        %29 = phi i64 [ %44, %bb37 ], [ 0, %bb23 ]
+        %44 = add nuw i64 %29, 1
+
+v_s2_span   (clang: vectorized 4x1)
+    exit bb29: br i1 %33, label %bb35, label %bb34
+    exit count: ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)
+        %33 = icmp ugt i64 %20, %32
+        %20 = lshr exact i64 %8, 1
+        %8 = sub i64 %6, %7
+        %6 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %3, align 8
+        %3 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %7 = ptrtoint ptr %5 to i64
+        %5 = load ptr, ptr %0, align 8
+        %32 = or disjoint i64 %31, 1
+        %31 = shl nuw i64 %30, 1
+        %30 = phi i64 [ %42, %bb35 ], [ 0, %bb24 ]
+        %42 = add nuw i64 %30, 1
+
+v_s2_raw   (clang: vectorized 4x2)
+    no trap branch among the loop's exits
+
+v_s2_manual   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %26, label %bb28, label %bb27
+    exit count: COULDNOTCOMPUTE
+        %26 = icmp ult i64 %25, %10
+        %25 = or disjoint i64 %24, 1
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ %35, %bb28 ], [ 0, %bb14 ]
+        %35 = add nuw i64 %23, 1
+        %10 = ashr exact i64 %9, 2
+        %9 = sub i64 %7, %8
+        %7 = ptrtoint ptr %6 to i64
+        %6 = load ptr, ptr %5, align 8
+        %5 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %8 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v_s2_one   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %25, label %bb27, label %bb26
+    exit count: COULDNOTCOMPUTE
+        %25 = icmp ugt i64 %18, %24
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %1, align 8
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ 0, %bb7 ], [ %31, %bb27 ]
+        %31 = add nuw i64 %23, 1
+
+v_s2_j   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb21: br i1 %23, label %bb25, label %bb24
+    exit count: COULDNOTCOMPUTE
+        %23 = icmp ugt i64 %18, %22
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %1, align 8
+        %22 = phi i64 [ 0, %bb11 ], [ %37, %bb29 ]
+        %37 = add i64 %22, 2
+    exit bb25: br i1 %27, label %bb29, label %bb28
+    exit count: COULDNOTCOMPUTE
+        %27 = icmp ugt i64 %18, %26
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %13 to i64
+        %13 = load ptr, ptr %12, align 8
+        %12 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %1, align 8
+        %26 = or disjoint i64 %22, 1
+        %22 = phi i64 [ 0, %bb11 ], [ %37, %bb29 ]
+        %37 = add i64 %22, 2
+
+## variants2 (sources/variants2.cpp), clang 18.1.0, hardening FAST, IR just before the loop vectorizer
+
+v2_s2_guard   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb25: br i1 %29, label %bb31, label %bb30
+    exit count: COULDNOTCOMPUTE
+        %29 = icmp ult i64 %28, %16
+        %28 = or disjoint i64 %27, 1
+        %27 = shl nuw i64 %26, 1
+        %26 = phi i64 [ %38, %bb31 ], [ 0, %bb20 ]
+        %38 = add nuw i64 %26, 1
+        %16 = ashr exact i64 %15, 2
+        %15 = sub i64 %13, %14
+        %13 = ptrtoint ptr %12 to i64
+        %12 = load ptr, ptr %11, align 8
+        %11 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %14 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v2_s2_guard_masked   (clang: vectorized 4x1)
+    exit bb27: br i1 %29, label %bb30, label %bb31
+    exit count: (zext i62 (trunc i64 (%15 /u 2) to i62) to i64)
+        %29 = icmp eq i64 %28, %22
+        %28 = phi i64 [ %40, %bb31 ], [ 0, %bb20 ]
+        %40 = add nuw nsw i64 %28, 1
+        %22 = and i64 %21, 4611686018427387903
+        %21 = lshr i64 %16, 1
+        %16 = ashr exact i64 %15, 2
+        %15 = sub i64 %13, %14
+        %13 = ptrtoint ptr %12 to i64
+        %12 = load ptr, ptr %11, align 8
+        %11 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %14 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v2_s2_masked   (clang: vectorized 4x1)
+    exit bb24: br i1 %26, label %bb27, label %bb28
+    exit count: (zext i62 (trunc i64 (%12 /u 2) to i62) to i64)
+        %26 = icmp eq i64 %25, %20
+        %25 = phi i64 [ %37, %bb28 ], [ 0, %bb8 ]
+        %37 = add nuw nsw i64 %25, 1
+        %20 = and i64 %19, 4611686018427387903
+        %19 = lshr i64 %14, 1
+        %14 = ashr exact i64 %13, 2
+        %13 = sub i64 %11, %12
+        %11 = ptrtoint ptr %10 to i64
+        %10 = load ptr, ptr %9, align 8
+        %9 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %12 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v2_rev_masked   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb24: br i1 %21, label %bb27, label %bb26
+    exit count: COULDNOTCOMPUTE
+        %21 = icmp ult i64 %20, %19
+        %20 = add nsw i64 %12, -1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %6 to i64
+        %6 = load ptr, ptr %5, align 8
+        %5 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+        %19 = and i64 %18, 9223372036854775807
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %0, i64 0, i32 1
+        %16 = ptrtoint ptr %3 to i64
+        %3 = load ptr, ptr %0, align 8
+
+## variants3 (sources/variants3.cpp), clang 18.1.0, hardening FAST, IR just before the loop vectorizer
+
+v3_one_plain   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %26, label %bb28, label %bb27
+    exit count: COULDNOTCOMPUTE
+        %26 = icmp ult i64 %25, %12
+        %25 = or disjoint i64 %24, 1
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ %35, %bb28 ], [ 0, %bb14 ]
+        %35 = add nuw i64 %23, 1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %8 to i64
+        %8 = load ptr, ptr %7, align 8
+        %7 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v3_one_half   (clang: vectorized 4x1)
+    exit bb23: br i1 %25, label %bb26, label %bb27
+    exit count: (%16 /u 2)
+        %25 = icmp eq i64 %24, %19
+        %24 = phi i64 [ 0, %bb8 ], [ %36, %bb27 ]
+        %36 = add nuw i64 %24, 1
+        %19 = lshr i64 %18, 1
+        %18 = ashr exact i64 %17, 2
+        %17 = sub i64 %15, %16
+        %15 = ptrtoint ptr %14 to i64
+        %14 = load ptr, ptr %13, align 8
+        %13 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %16 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v3_one_min   (clang: vectorized 4x1)
+    exit bb24: br i1 %26, label %bb27, label %bb28
+    exit count: ((1099511627776 umin %12) /u 2)
+        %26 = icmp eq i64 %25, %20
+        %25 = phi i64 [ %37, %bb28 ], [ 0, %bb8 ]
+        %37 = add nuw nsw i64 %25, 1
+        %20 = lshr i64 %15, 1
+        %15 = tail call i64 @llvm.umin.i64(i64 %14, i64 1099511627776)
+        %14 = ashr exact i64 %13, 2
+        %13 = sub i64 %11, %12
+        %11 = ptrtoint ptr %10 to i64
+        %10 = load ptr, ptr %9, align 8
+        %9 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %12 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v3_one_assume   (clang: vectorized 4x1)
+    exit bb24: br i1 %26, label %bb27, label %bb28
+    exit count: (%11 /u 2)
+        %26 = icmp eq i64 %25, %20
+        %25 = phi i64 [ %37, %bb28 ], [ 0, %bb15 ]
+        %37 = add nuw nsw i64 %25, 1
+        %20 = lshr i64 %12, 1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %8 to i64
+        %8 = load ptr, ptr %7, align 8
+        %7 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v3_two_plain   (clang: not vectorized: could not determine number of loop iterations)
+    exit bb22: br i1 %25, label %bb27, label %bb26
+    exit count: COULDNOTCOMPUTE
+        %25 = icmp ult i64 %24, %12
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ %38, %bb31 ], [ 0, %bb14 ]
+        %38 = add nuw i64 %23, 1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %8 to i64
+        %8 = load ptr, ptr %7, align 8
+        %7 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+    exit bb27: br i1 %29, label %bb31, label %bb30
+    exit count: COULDNOTCOMPUTE
+        %29 = icmp ult i64 %28, %12
+        %28 = or disjoint i64 %24, 1
+        %24 = shl i64 %23, 1
+        %23 = phi i64 [ %38, %bb31 ], [ 0, %bb14 ]
+        %38 = add nuw i64 %23, 1
+        %12 = ashr exact i64 %11, 2
+        %11 = sub i64 %9, %10
+        %9 = ptrtoint ptr %8 to i64
+        %8 = load ptr, ptr %7, align 8
+        %7 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %10 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+
+v3_two_masked   (clang: vectorized 4x1)
+    exit bb26: br i1 %29, label %bb30, label %bb31
+    exit count: ((1 + (zext i63 (trunc i64 %12 to i63) to i64))<nuw> /u 2)
+        %29 = icmp eq i64 %27, %21
+        %27 = phi i64 [ %42, %bb34 ], [ 0, %bb8 ]
+        %42 = add nuw nsw i64 %27, 1
+        %21 = lshr i64 %20, 1
+        %20 = add nuw i64 %15, 1
+        %15 = and i64 %14, 9223372036854775807
+        %14 = ashr exact i64 %13, 2
+        %13 = sub i64 %11, %12
+        %11 = ptrtoint ptr %10 to i64
+        %10 = load ptr, ptr %9, align 8
+        %9 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %12 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8
+    exit bb31: br i1 %32, label %bb33, label %bb34
+    exit count: ((zext i63 (trunc i64 %12 to i63) to i64) /u 2)
+        %32 = icmp eq i64 %27, %22
+        %27 = phi i64 [ %42, %bb34 ], [ 0, %bb8 ]
+        %42 = add nuw nsw i64 %27, 1
+        %22 = lshr i64 %15, 1
+        %15 = and i64 %14, 9223372036854775807
+        %14 = ashr exact i64 %13, 2
+        %13 = sub i64 %11, %12
+        %11 = ptrtoint ptr %10 to i64
+        %10 = load ptr, ptr %9, align 8
+        %9 = getelementptr inbounds %"class.std::__1::vector", ptr %1, i64 0, i32 1
+        %12 = ptrtoint ptr %4 to i64
+        %4 = load ptr, ptr %1, align 8

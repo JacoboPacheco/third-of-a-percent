@@ -24,7 +24,8 @@ sys.path.insert(0, os.path.join(REPO, "harness"))
 import pool  # noqa: E402
 import stats  # noqa: E402
 
-DATASETS = {"s4": "results/s4-pooled/pooled.json", "s5": "results/s5-holdout/pooled.json"}
+DATASETS = {"s4": "results/s4-pooled/pooled.json", "s5": "results/s5-holdout/pooled.json",
+            "s6": "results/s6-pooled/pooled.json"}
 METHODS = ["a", "b", "b2", "b5", "c", "ct", "d", "d0"]
 MIN_JOBS = 3
 B = pool.RESAMPLES
@@ -360,6 +361,8 @@ NAMES = {"a": "(a) harness", "b": "(b) block, 1 ABBA", "b2": "(b2) block, 2 ABBA
 
 
 def short(cpu):
+    if "(R)" in cpu:                       # "INTEL(R) XEON(R) PLATINUM 8573C" -> "Intel Xeon Platinum 8573C"
+        cpu = cpu.replace("(R)", "").title()
     return cpu.replace(" Processor", "").replace(" 64-Core", "").replace(" 96-Core", "").replace(" 80-Core", "")
 
 

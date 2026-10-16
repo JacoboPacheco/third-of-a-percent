@@ -3,18 +3,20 @@
 Written Tue Oct 13 2026 about 15:06 EDT (the first commit message said 15:20 in an earlier draft of this line, which was wrong), before any number of this analysis existed.
 
 ## Status of this analysis
-Exploratory sensitivity analysis. NOT a rule change. The verdicts in `results/s4-pooled/pooled.json` and
-`results/s5-holdout/pooled.json` (harness/criteria-v3.json, harness/pool.py) stay the reading of record. Nothing in
-harness/, the criteria files, site/, README or scripts/check.py is edited by this folder. No new runs: only the stored
-raw samples are used.
+Exploratory sensitivity analysis. NOT a rule change. The verdicts in `results/s4-pooled/pooled.json`,
+`results/s5-holdout/pooled.json` and `results/s6-pooled/pooled.json` (harness/criteria-v3.json, harness/pool.py) stay the
+reading of record. Nothing in harness/, the criteria files, site/, README or scripts/check.py is edited by this folder. No
+new runs: only the stored raw samples are used.
 
 ## The objection (a limitation noted before this column, H1)
 The harness resamples the repetitions of a side independently. The repetitions are consecutive processes on one shared VM
 in ABBA order, so drift and noisy neighbours make them autocorrelated; the intervals may then be too narrow.
 
 ## Data
-Every job `results.json` named in the `inputs` of results/s4-pooled/pooled.json (30 jobs) and
-results/s5-holdout/pooled.json (30 jobs). The two datasets are analysed separately, as the harness pools them.
+Every job `results.json` named in the `inputs` of results/s4-pooled/pooled.json (30 jobs),
+results/s5-holdout/pooled.json (30 jobs) and results/s6-pooled/pooled.json (75 jobs: the 30 jobs of s4 plus 45 jobs of ten
+later runs; s5 is not part of it). The datasets are analysed separately, as the harness pools them. s6 was added on
+Thu Oct 15 2026 (see the change log).
 CPU models with at least 3 jobs in a dataset are analysed. Cells: every in-cache (L1, L2) cell, both columns (as compiled,
 aligned), plus the controls the verdict reads (byte-identical A/A, layout A/A, NOVEC/NONE) and the placement statistic D.
 
@@ -68,3 +70,10 @@ change that status.
   as method (d0) and reported; the final (d) multiplies the within-job share of sd_a^2 by W_cor / W_iid (the pure
   autocorrelation inflation, in which the mean-versus-median mismatch cancels): var_d = sd_a^2 x ((1 - s) + s x W_cor / W_iid),
   s = min(1, W_iid / sd_a^2). No other change; the pre-announced page-text rules above are unchanged and were not edited.
+
+## Change log (Thu Oct 15 2026)
+- The dataset s6 (results/s6-pooled/pooled.json, 75 jobs, five CPU models) was added to `analyze.py` after its harness
+  verdicts were stored; a preliminary run of the same code on s6 preceded the stored run. So, unlike s4 and s5, this plan was
+  not written before every number of s6 existed. No method, threshold, comparison or pre-announced page-text rule
+  above was changed; the rules under "What would change the page text" apply to s6 as written. The only other code change is
+  the display name of the two Xeon models in the report tables (`short()`); s4 and s5 output is unchanged.

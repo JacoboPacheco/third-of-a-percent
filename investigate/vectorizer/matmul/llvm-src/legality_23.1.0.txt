@@ -1,0 +1,42 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpts, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-23.1.0/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp (tag llvmorg-23.1.0)
+
+// lines 1913 to 1936
+  }
+
+  if (isa<SCEVCouldNotCompute>(PSE.getBackedgeTakenCount())) {
+    if (TheLoop->getExitingBlock()) {
+      reportVectorizationFailure("Cannot vectorize uncountable loop",
+                                 "UnsupportedUncountableLoop", ORE, TheLoop);
+      if (DoExtraAnalysis)
+        Result = false;
+      else
+        return false;
+    } else {
+      if (!isVectorizableEarlyExitLoop()) {
+        assert(UncountableExitType == UncountableExitTrait::None &&
+               "Must be false without vectorizable early-exit loop");
+        if (DoExtraAnalysis)
+          Result = false;
+        else
+          return false;
+      }
+    }
+  }
+
+  // Go over each instruction and look at memory deps.
+  if (!canVectorizeMemory()) {
+
+// lines 1783 to 1793
+  Instruction *L = nullptr;
+  Value *Ptr = nullptr;
+  Value *R = nullptr;
+  // The exit-condition load can appear on either side of the icmp.
+  if (!match(Br->getCondition(),
+             m_OneUse(m_c_ICmp(m_OneUse(m_Instruction(L, m_Load(m_Value(Ptr)))),
+                               m_Value(R))))) {
+    reportVectorizationFailure(
+        "Early exit loop with store but no supported condition load",
+        "NoConditionLoadForEarlyExitLoop", ORE, TheLoop);
+    return false;
+

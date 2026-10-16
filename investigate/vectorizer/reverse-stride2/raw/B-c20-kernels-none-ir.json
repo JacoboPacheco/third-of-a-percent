@@ -1,0 +1,2999 @@
+{
+ "compiler_id": "clang2010",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:00:24+00:00",
+ "http_status": 200,
+ "name": "B-c20-kernels-none-ir",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -std=c++20 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -g0 -mllvm -print-before=loop-vectorize"
+  },
+  "source": "// Five of the project's loop functions, copied verbatim from kernels/kNN_*.cpp (written by make_sources.py).\n// k01 forward sum, k02 forward add, k03 stencil (forward), k04 reverse, k05 stride-2.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) int64_t kern_k01_sum_fwd(const std::vector<int32_t>& a) {\n  int64_t s = 0;\n  for (size_t i = 0; i < a.size(); ++i) s += a[i];  // LOOP\n  return s;\n}\n\n__attribute__((noinline)) void kern_k02_add_fwd(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                                const std::vector<int32_t>& b) {\n  for (size_t i = 0; i < a.size(); ++i) c[i] = a[i] + b[i];  // LOOP\n}\n\n__attribute__((noinline)) void kern_k03_stencil(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 1; i + 1 < a.size(); ++i) c[i] = a[i - 1] + a[i] + a[i + 1];  // LOOP\n}\n\n__attribute__((noinline)) void kern_k04_rev(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = a.size(); i-- > 0;) c[i] = a[i] * 2;  // LOOP\n}\n\n__attribute__((noinline)) void kern_k05_stride2(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 0; i < c.size(); ++i) c[i] = a[2 * i] + a[2 * i + 1];  // LOOP\n}\n"
+ },
+ "request_sha256": "c77aacf1e9e5dc3efbf61231992ab650d45867c62b2a59ec8b72ea6edc20e705",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k01_sum_fwd(std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rcx, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdi, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     rdi, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_1",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB0_1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sar     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        adc     rdx, 0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 4"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jae     .LBB0_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     esi, esi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB0_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_1:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_5:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     rsi, -4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pxor    xmm0, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pxor    xmm1, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_6:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movq    xmm2, qword ptr [rcx + 4*rax]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movq    xmm3, qword ptr [rcx + 4*rax + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pxor    xmm4, xmm4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pcmpgtd xmm4, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        punpckldq       xmm2, xmm4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddq   xmm0, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pxor    xmm2, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pcmpgtd xmm2, xmm3"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        punpckldq       xmm3, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddq   xmm1, xmm3"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     rax, 4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rsi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB0_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddq   xmm1, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        pshufd  xmm0, xmm1, 238"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddq   xmm0, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movq    rax, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB0_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_8:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movsxd  rdi, dword ptr [rcx + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     rax, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        inc     rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdx, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB0_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_2:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k02_add_fwd(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rax, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rcx, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_13",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB1_13"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, qword ptr [rdx]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdi, rcx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        adc     rdi, 0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, 12"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jb      .LBB1_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     r8, rax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r8, 32"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    r8b"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     r9, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r9, 32"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    r9b"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        or      r9b, r8b"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB1_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_2:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_8:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r10, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     r10, 3"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB1_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_10:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r11d, dword ptr [rdx + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r11d, dword ptr [rax + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rsi + 4*r9], r11d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        inc     r9"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        dec     r10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB1_10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_11:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     r8, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r8, -4"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_13",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        ja      .LBB1_13"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_12:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rsi + 4*r9], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 4*r9 + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*r9 + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rsi + 4*r9 + 4], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 4*r9 + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*r9 + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rsi + 4*r9 + 8], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 4*r9 + 12]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*r9 + 12]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rsi + 4*r9 + 12], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r9, 4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB1_12"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_13",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB1_13"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_5:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     r8, -8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_6:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm0, xmmword ptr [rax + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm1, xmmword ptr [rax + 4*r9 + 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm2, xmmword ptr [rdx + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm0, xmmword ptr [rdx + 4*r9 + 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm0, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rsi + 4*r9], xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rsi + 4*r9 + 16], xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r8, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB1_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB1_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_13:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k03_stencil(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rax, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r10, r9"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     r10, rax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rcx, r10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, 3"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jb      .LBB2_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r8, [rcx - 2]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     esi, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r8, 8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jb      .LBB2_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r11, [rdx + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r10, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r10, -4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r11, r9"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    r9b"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rax, r10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    r10b"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        test    r9b, r10b"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB2_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     r9, -8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rsi, [r9 + 2]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rdi, [r9 + 1]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     r10d, r10d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_4:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm0, xmmword ptr [rax + 4*r10]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm1, xmmword ptr [rax + 4*r10 + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm1, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm0, xmmword ptr [rax + 4*r10 + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm0, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm1, xmmword ptr [rax + 4*r10 + 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm2, xmmword ptr [rax + 4*r10 + 20]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm2, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm1, xmmword ptr [rax + 4*r10 + 24]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm1, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rdx + 4*r10 + 4], xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rdx + 4*r10 + 20], xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r10, 8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r9, r10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB2_4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r8, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB2_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_6:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8d, ecx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     r8d, esi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r9, [rsi + 1]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        test    r8b, 1"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB2_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB2_10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB2_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_8:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8d, dword ptr [rax + 4*rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r8d, dword ptr [rax + 4*rdi - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r8d, dword ptr [rax + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rdx + 4*rdi], r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, r9"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB2_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_10:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        neg     rcx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        inc     r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_11:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rax + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*rsi - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rax + 4*r8 - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rdx + 4*rsi], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     esi, dword ptr [rax + 4*r8 - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     esi, dword ptr [rax + 4*r8 - 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     esi, dword ptr [rax + 4*r8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rdx + 4*r8 - 4], esi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rdi, [rcx + r8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r8, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 1"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB2_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_12:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k04_rev(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rax, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     rsi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB3_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rcx, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rsi, 8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    dl"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdi, rax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     rdi, rcx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 32"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    dil"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        or      dil, dl"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_3",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB3_3"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB3_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_3:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     rdi, -8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edx, esi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     edx, 7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r8, [rax + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r8, -16"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r9, [rcx + 4*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r9, -16"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r10, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        neg     r10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     r11d, r11d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_4:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm0, xmmword ptr [r8 + 4*r11 - 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmm1, xmmword ptr [r8 + 4*r11]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm1, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm0, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [r9 + 4*r11], xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [r9 + 4*r11 - 16], xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r11, -8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     r10, r11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB3_4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rsi, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB3_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_6:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rdi, [rdx - 1]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     r8, 3"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB3_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_8:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rsi, [rdx - 1]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9d, dword ptr [rax + 4*rdx - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rcx + 4*rdx - 4], r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        dec     r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB3_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 3"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jb      .LBB3_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_10:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edx, dword ptr [rax + 4*rsi - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rcx + 4*rsi - 4], edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edx, dword ptr [rax + 4*rsi - 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rcx + 4*rsi - 8], edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edx, dword ptr [rax + 4*rsi - 12]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rcx + 4*rsi - 12], edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edx, dword ptr [rax + 4*rsi - 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rcx + 4*rsi - 16], edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rdx, [rsi - 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        test    rdx, rdx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB3_10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_11:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_7:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, 3"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jae     .LBB3_10"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB3_11"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k05_stride2(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB4_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rdi, rcx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        adc     rdi, 0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, 8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jb      .LBB4_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     rsi, [rax + 4*rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        lea     r8, [rdx + 8*rdi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rax, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    r8b"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdx, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        setb    sil"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        test    r8b, sil"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB4_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_2:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     esi, esi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_8:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        or      r8, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        test    dil, 1"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB4_10"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     r9d, dword ptr [rdx + 8*rsi + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r9d, dword ptr [rdx + 8*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rax + 4*rsi], r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, r8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_10:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rdi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        je      .LBB4_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_11:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 8*rsi + 4]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rdx + 8*rsi]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rax + 4*rsi], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     edi, dword ptr [rdx + 8*rsi + 12]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     edi, dword ptr [rdx + 8*rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     dword ptr [rax + 4*rsi + 4], edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB4_11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_12",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jmp     .LBB4_12"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_5:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        mov     rsi, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        and     rsi, -8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_6:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movups  xmm0, xmmword ptr [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movups  xmm1, xmmword ptr [rdx + 8*r8 + 16]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movups  xmm2, xmmword ptr [rdx + 8*r8 + 32]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movups  xmm3, xmmword ptr [rdx + 8*r8 + 48]"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movaps  xmm4, xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        shufps  xmm4, xmm1, 136"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        shufps  xmm0, xmm1, 221"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm0, xmm4"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movaps  xmm1, xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        shufps  xmm1, xmm3, 136"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        shufps  xmm2, xmm3, 221"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        paddd   xmm2, xmm1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rax + 4*r8], xmm0"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        movdqu  xmmword ptr [rax + 4*r8 + 16], xmm2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        add     r8, 8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rsi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB4_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        cmp     rcx, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_8",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": null,
+    "text": "        jne     .LBB4_8"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_12:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   }
+  ],
+  "asmSize": 9306,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-14.2.0",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-std=c++20",
+   "-march=x86-64",
+   "-stdlib=libc++",
+   "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "-g0",
+   "-mllvm",
+   "-print-before=loop-vectorize",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 1225,
+  "filteredCount": 54,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {
+   ".LBB0_1": 15,
+   ".LBB0_2": 50,
+   ".LBB0_5": 18,
+   ".LBB0_6": 24,
+   ".LBB0_8": 44,
+   ".LBB1_10": 84,
+   ".LBB1_11": 91,
+   ".LBB1_12": 95,
+   ".LBB1_13": 130,
+   ".LBB1_2": 76,
+   ".LBB1_5": 112,
+   ".LBB1_6": 116,
+   ".LBB1_8": 78,
+   ".LBB2_10": 199,
+   ".LBB2_11": 202,
+   ".LBB2_12": 217,
+   ".LBB2_4": 162,
+   ".LBB2_6": 180,
+   ".LBB2_8": 191,
+   ".LBB3_10": 276,
+   ".LBB3_11": 293,
+   ".LBB3_3": 237,
+   ".LBB3_4": 249,
+   ".LBB3_6": 261,
+   ".LBB3_7": 295,
+   ".LBB3_8": 266,
+   ".LBB4_10": 332,
+   ".LBB4_11": 335,
+   ".LBB4_12": 370,
+   ".LBB4_2": 321,
+   ".LBB4_5": 346,
+   ".LBB4_6": 350,
+   ".LBB4_8": 323,
+   "kern_k01_sum_fwd(std::__1::vector<int, std::__1::allocator<int>> const&)": 1,
+   "kern_k02_add_fwd(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&)": 53,
+   "kern_k03_stencil(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 133,
+   "kern_k04_rev(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 220,
+   "kern_k05_stride2(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 301
+  },
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 6,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.29567000083625317,
+  "stderr": [
+   {
+    "text": "; *** IR Dump Before LoopVectorizePass on _Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE ***"
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local noundef i64 @_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0) local_unnamed_addr #0 !dbg !8 {"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds nuw i8, ptr %0, i64 8"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %5 = icmp eq ptr %3, %4, !dbg !19"
+   },
+   {
+    "text": "  br i1 %5, label %14, label %6, !dbg !20"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "6:                                                ; preds = %1"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %9 = sub i64 %7, %8"
+   },
+   {
+    "text": "  %10 = ashr exact i64 %9, 2"
+   },
+   {
+    "text": "  %11 = call i64 @llvm.umax.i64(i64 %10, i64 1), !dbg !20"
+   },
+   {
+    "text": "  br label %16, !dbg !20"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "12:                                               ; preds = %16"
+   },
+   {
+    "text": "  %13 = phi i64 [ %22, %16 ], !dbg !21"
+   },
+   {
+    "text": "  br label %14, !dbg !22"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "14:                                               ; preds = %12, %1"
+   },
+   {
+    "text": "  %15 = phi i64 [ 0, %1 ], [ %13, %12 ], !dbg !23"
+   },
+   {
+    "text": "  ret i64 %15, !dbg !22"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "16:                                               ; preds = %6, %16"
+   },
+   {
+    "text": "  %17 = phi i64 [ %23, %16 ], [ 0, %6 ]"
+   },
+   {
+    "text": "  %18 = phi i64 [ %22, %16 ], [ 0, %6 ]"
+   },
+   {
+    "text": "  %19 = getelementptr inbounds nuw i32, ptr %4, i64 %17, !dbg !24"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4, !dbg !28, !tbaa !29"
+   },
+   {
+    "text": "  %21 = sext i32 %20 to i64, !dbg !28"
+   },
+   {
+    "text": "  %22 = add nsw i64 %18, %21, !dbg !21"
+   },
+   {
+    "text": "  %23 = add nuw i64 %17, 1, !dbg !31"
+   },
+   {
+    "text": "  %24 = icmp eq i64 %23, %11, !dbg !19"
+   },
+   {
+    "text": "  br i1 %24, label %12, label %16, !dbg !20, !llvm.loop !32"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 9,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:9:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "    9 |   \u001b[0;34mfor\u001b[0m (size_t i = \u001b[0;32m0\u001b[0m; i < a.size(); ++i) s += a[i];  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "text": "\u001b[0m; *** IR Dump Before LoopVectorizePass on _Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_ ***"
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind memory(readwrite, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %2) local_unnamed_addr #1 !dbg !38 {"
+   },
+   {
+    "text": "  %4 = getelementptr inbounds nuw i8, ptr %1, i64 8"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %4, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %6 = load ptr, ptr %1, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %7 = icmp eq ptr %5, %6, !dbg !39"
+   },
+   {
+    "text": "  br i1 %7, label %17, label %8, !dbg !40"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "8:                                                ; preds = %3"
+   },
+   {
+    "text": "  %9 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %10 = ptrtoint ptr %6 to i64"
+   },
+   {
+    "text": "  %11 = sub i64 %9, %10"
+   },
+   {
+    "text": "  %12 = ashr exact i64 %11, 2"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %2, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %14 = load ptr, ptr %0, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %15 = call i64 @llvm.umax.i64(i64 %12, i64 1), !dbg !40"
+   },
+   {
+    "text": "  br label %18, !dbg !40"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "16:                                               ; preds = %18"
+   },
+   {
+    "text": "  br label %17, !dbg !41"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "17:                                               ; preds = %16, %3"
+   },
+   {
+    "text": "  ret void, !dbg !41"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "18:                                               ; preds = %8, %18"
+   },
+   {
+    "text": "  %19 = phi i64 [ 0, %8 ], [ %26, %18 ]"
+   },
+   {
+    "text": "  %20 = getelementptr inbounds nuw i32, ptr %6, i64 %19, !dbg !42"
+   },
+   {
+    "text": "  %21 = load i32, ptr %20, align 4, !dbg !44, !tbaa !27"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds nuw i32, ptr %13, i64 %19, !dbg !45"
+   },
+   {
+    "text": "  %23 = load i32, ptr %22, align 4, !dbg !47, !tbaa !27"
+   },
+   {
+    "text": "  %24 = add nsw i32 %23, %21, !dbg !48"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds nuw i32, ptr %14, i64 %19, !dbg !49"
+   },
+   {
+    "text": "  store i32 %24, ptr %25, align 4, !dbg !52, !tbaa !27"
+   },
+   {
+    "text": "  %26 = add nuw i64 %19, 1, !dbg !53"
+   },
+   {
+    "text": "  %27 = icmp eq i64 %26, %15, !dbg !39"
+   },
+   {
+    "text": "  br i1 %27, label %16, label %18, !dbg !40, !llvm.loop !54"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 15,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:15:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   15 |   \u001b[0;34mfor\u001b[0m (size_t i = \u001b[0;32m0\u001b[0m; i < a.size(); ++i) c[i] = a[i] + b[i];  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "text": "\u001b[0m; *** IR Dump Before LoopVectorizePass on _Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***"
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind memory(readwrite, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 !dbg !59 {"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds nuw i8, ptr %1, i64 8"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %1, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  %10 = getelementptr i8, ptr %5, i64 -4, !dbg !60"
+   },
+   {
+    "text": "  %11 = icmp ugt i64 %9, 2, !dbg !61"
+   },
+   {
+    "text": "  br i1 %11, label %12, label %15, !dbg !62"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "12:                                               ; preds = %2"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %0, align 8, !tbaa !18"
+   },
+   {
+    "text": "  br label %16, !dbg !62"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "14:                                               ; preds = %16"
+   },
+   {
+    "text": "  br label %15, !dbg !63"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "15:                                               ; preds = %14, %2"
+   },
+   {
+    "text": "  ret void, !dbg !63"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "16:                                               ; preds = %12, %16"
+   },
+   {
+    "text": "  %17 = phi i64 [ 2, %12 ], [ %28, %16 ]"
+   },
+   {
+    "text": "  %18 = phi i64 [ 1, %12 ], [ %17, %16 ]"
+   },
+   {
+    "text": "  %19 = getelementptr i32, ptr %10, i64 %18, !dbg !64"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4, !dbg !66, !tbaa !27"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds nuw i32, ptr %5, i64 %18, !dbg !67"
+   },
+   {
+    "text": "  %22 = load i32, ptr %21, align 4, !dbg !69, !tbaa !27"
+   },
+   {
+    "text": "  %23 = add nsw i32 %22, %20, !dbg !70"
+   },
+   {
+    "text": "  %24 = getelementptr inbounds nuw i32, ptr %5, i64 %17, !dbg !71"
+   },
+   {
+    "text": "  %25 = load i32, ptr %24, align 4, !dbg !73, !tbaa !27"
+   },
+   {
+    "text": "  %26 = add nsw i32 %23, %25, !dbg !74"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds nuw i32, ptr %13, i64 %18, !dbg !75"
+   },
+   {
+    "text": "  store i32 %26, ptr %27, align 4, !dbg !77, !tbaa !27"
+   },
+   {
+    "text": "  %28 = add nuw i64 %17, 1, !dbg !78"
+   },
+   {
+    "text": "  %29 = icmp eq i64 %28, %9, !dbg !61"
+   },
+   {
+    "text": "  br i1 %29, label %14, label %16, !dbg !62, !llvm.loop !79"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 19,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:19:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   19 |   \u001b[0;34mfor\u001b[0m (size_t i = \u001b[0;32m1\u001b[0m; i + \u001b[0;32m1\u001b[0m < a.size(); ++i) c[i] = a[i - \u001b[0;32m1\u001b[0m] + a[i] + a[i + \u001b[0;32m1\u001b[0m];  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "text": "\u001b[0m; *** IR Dump Before LoopVectorizePass on _Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***"
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind memory(readwrite, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 !dbg !87 {"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds nuw i8, ptr %1, i64 8, !dbg !88"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8, !dbg !88, !tbaa !12"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %1, align 8, !dbg !91, !tbaa !18"
+   },
+   {
+    "text": "  %6 = icmp eq ptr %4, %5, !dbg !92"
+   },
+   {
+    "text": "  br i1 %6, label %14, label %7, !dbg !93"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "7:                                                ; preds = %2"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %5 to i64, !dbg !94"
+   },
+   {
+    "text": "  %9 = ptrtoint ptr %4 to i64, !dbg !94"
+   },
+   {
+    "text": "  %10 = sub i64 %9, %8, !dbg !94"
+   },
+   {
+    "text": "  %11 = ashr exact i64 %10, 2, !dbg !94"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %0, align 8, !tbaa !18"
+   },
+   {
+    "text": "  br label %15, !dbg !93"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "13:                                               ; preds = %15"
+   },
+   {
+    "text": "  br label %14, !dbg !95"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "14:                                               ; preds = %13, %2"
+   },
+   {
+    "text": "  ret void, !dbg !95"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "15:                                               ; preds = %7, %15"
+   },
+   {
+    "text": "  %16 = phi i64 [ %11, %7 ], [ %17, %15 ]"
+   },
+   {
+    "text": "  %17 = add i64 %16, -1, !dbg !96"
+   },
+   {
+    "text": "  %18 = getelementptr inbounds nuw i32, ptr %5, i64 %17, !dbg !97"
+   },
+   {
+    "text": "  %19 = load i32, ptr %18, align 4, !dbg !99, !tbaa !27"
+   },
+   {
+    "text": "  %20 = shl nsw i32 %19, 1, !dbg !100"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds nuw i32, ptr %12, i64 %17, !dbg !101"
+   },
+   {
+    "text": "  store i32 %20, ptr %21, align 4, !dbg !103, !tbaa !27"
+   },
+   {
+    "text": "  %22 = icmp eq i64 %17, 0, !dbg !92"
+   },
+   {
+    "text": "  br i1 %22, label %13, label %15, !dbg !93, !llvm.loop !104"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 23,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:23:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   23 |   \u001b[0;34mfor\u001b[0m (size_t i = a.size(); i-- > \u001b[0;32m0\u001b[0m;) c[i] = a[i] * \u001b[0;32m2\u001b[0m;  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "text": "\u001b[0m; *** IR Dump Before LoopVectorizePass on _Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***"
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind memory(readwrite, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 !dbg !108 {"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds nuw i8, ptr %0, i64 8"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %0, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %6 = icmp eq ptr %4, %5, !dbg !109"
+   },
+   {
+    "text": "  br i1 %6, label %15, label %7, !dbg !110"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "7:                                                ; preds = %2"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %9 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %10 = sub i64 %8, %9"
+   },
+   {
+    "text": "  %11 = ashr exact i64 %10, 2"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %1, align 8, !tbaa !18"
+   },
+   {
+    "text": "  %13 = call i64 @llvm.umax.i64(i64 %11, i64 1), !dbg !110"
+   },
+   {
+    "text": "  br label %16, !dbg !110"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "14:                                               ; preds = %16"
+   },
+   {
+    "text": "  br label %15, !dbg !111"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "15:                                               ; preds = %14, %2"
+   },
+   {
+    "text": "  ret void, !dbg !111"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "16:                                               ; preds = %7, %16"
+   },
+   {
+    "text": "  %17 = phi i64 [ 0, %7 ], [ %26, %16 ]"
+   },
+   {
+    "text": "  %18 = shl i64 %17, 1, !dbg !112"
+   },
+   {
+    "text": "  %19 = getelementptr inbounds nuw i32, ptr %12, i64 %18, !dbg !113"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4, !dbg !115, !tbaa !27"
+   },
+   {
+    "text": "  %21 = or disjoint i64 %18, 1, !dbg !116"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds nuw i32, ptr %12, i64 %21, !dbg !117"
+   },
+   {
+    "text": "  %23 = load i32, ptr %22, align 4, !dbg !119, !tbaa !27"
+   },
+   {
+    "text": "  %24 = add nsw i32 %23, %20, !dbg !120"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds nuw i32, ptr %5, i64 %17, !dbg !121"
+   },
+   {
+    "text": "  store i32 %24, ptr %25, align 4, !dbg !123, !tbaa !27"
+   },
+   {
+    "text": "  %26 = add nuw i64 %17, 1, !dbg !124"
+   },
+   {
+    "text": "  %27 = icmp eq i64 %26, %13, !dbg !109"
+   },
+   {
+    "text": "  br i1 %27, label %14, label %16, !dbg !110, !llvm.loop !125"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 27,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:27:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   27 |   \u001b[0;34mfor\u001b[0m (size_t i = \u001b[0;32m0\u001b[0m; i < c.size(); ++i) c[i] = a[\u001b[0;32m2\u001b[0m * i] + a[\u001b[0;32m2\u001b[0m * i + \u001b[0;32m1\u001b[0m];  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "text": "\u001b[0m"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/kernels.cpp",
+ "url": "https://godbolt.org/api/compiler/clang2010/compile",
+ "user_arguments": "-O2 -std=c++20 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -g0 -mllvm -print-before=loop-vectorize"
+}

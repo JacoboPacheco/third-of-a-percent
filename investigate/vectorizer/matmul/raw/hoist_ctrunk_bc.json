@@ -1,0 +1,1927 @@
+{
+ "compiler_id": "clang_trunk",
+ "fetched_at": "2026-10-16T00:02:40+00:00",
+ "name": "hoist_ctrunk_bc",
+ "request": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -march=x86-64 -DCHK_B=1 -DCHK_C=1 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize"
+  },
+  "source": "// Same loop as src/emul_matmul.cpp, with the data pointer and the size of b and c read into locals\n// before the inner loop, so no pointer load sits inside it. CHK_B / CHK_C turn the two checks on.\n#include <cstddef>\n#include <cstdint>\n\nstruct Vec {\n  int32_t* begin_;\n  int32_t* end_;\n  int32_t* cap_;\n};\n\n#ifndef CHK_B\n#define CHK_B 0\n#endif\n#ifndef CHK_C\n#define CHK_C 0\n#endif\n\n__attribute__((noinline)) void kern_emul_hoist(Vec& c, const Vec& a, const Vec& b, size_t d) {\n  for (size_t i = 0; i < d; ++i)\n    for (size_t k = 0; k < d; ++k) {\n      size_t an = size_t(a.end_ - a.begin_);\n      if (!(i * d + k < an)) __builtin_trap();\n      int32_t aik = a.begin_[i * d + k];\n      int32_t* cp = c.begin_;\n      size_t cn = size_t(c.end_ - c.begin_);\n      const int32_t* bp = b.begin_;\n      size_t bn = size_t(b.end_ - b.begin_);\n      for (size_t j = 0; j < d; ++j) {  // LOOP\n        size_t ci = i * d + j, bi = k * d + j;\n        if (CHK_C && __builtin_expect(!(ci < cn), 0)) __builtin_trap();\n        if (CHK_B && __builtin_expect(!(bi < bn), 0)) __builtin_trap();\n        cp[ci] += aik * bp[bi];\n      }\n    }\n}\n"
+ },
+ "request_sha256": "44c5c8c533db928beab3b30accf0b23e5c329468d6e917d95e38c04e1db291f9",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_emul_hoist(Vec&, Vec const&, Vec const&, unsigned long):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        push    rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        mov     qword ptr [rsp - 8], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 19
+    },
+    "text": "        mov     qword ptr [rsp - 16], rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 20
+    },
+    "text": "        test    rcx, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        je      .LBB0_6"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 32], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rdx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 24], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        lea     r15, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        lea     rdx, [4*rcx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     r10, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        and     r10, -8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     eax, 16"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     qword ptr [rsp - 96], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     eax, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     qword ptr [rsp - 88], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     qword ptr [rsp - 64], 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        mov     qword ptr [rsp - 72], 0"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        jmp     .LBB0_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsp - 48]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 20
+    },
+    "text": "        inc     rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        sub     qword ptr [rsp - 72], rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        add     qword ptr [rsp - 64], rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        add     qword ptr [rsp - 96], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        add     qword ptr [rsp - 88], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 20
+    },
+    "text": "        cmp     rax, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 20
+    },
+    "text": "        je      .LBB0_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 40], rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 48], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rax, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp - 56], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     r14d, r14d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r11d, 16"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     r13d, r13d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     ebx, ebx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_3",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB0_3"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_22:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 31,
+     "file": null,
+     "line": 21
+    },
+    "text": "        inc     rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        add     rbx, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        sub     r13, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        lea     rdx, [4*rcx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        add     r11, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        add     r14, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 21
+    },
+    "text": "        cmp     rax, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 21
+    },
+    "text": "        lea     r15, [rcx - 1]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 21
+    },
+    "text": "        je      .LBB0_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_3:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsp - 56]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 23
+    },
+    "text": "        add     rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 23
+    },
+    "text": "        cmp     rdx, qword ptr [rsp - 24]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 23
+    },
+    "text": "        jae     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rsi, qword ptr [rsp - 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 25
+    },
+    "text": "        mov     r12, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 26
+    },
+    "text": "        mov     r8, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 26
+    },
+    "text": "        sub     r8, r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 26
+    },
+    "text": "        sar     r8, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdi, qword ptr [rsp - 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 27
+    },
+    "text": "        mov     rsi, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 28
+    },
+    "text": "        mov     rdi, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 28
+    },
+    "text": "        sub     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 28
+    },
+    "text": "        sar     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r9, qword ptr [rsp - 64]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     r8, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmovbe  r8, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     r8, qword ptr [rsp - 72]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rdi, rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmovbe  rdi, rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rdi, r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rdi, r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        mov     r9, r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmovb   r9, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     r8, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jbe     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rdi, r15"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 32
+    },
+    "text": "        jbe     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdi, qword ptr [rsp - 32]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r8d, dword ptr [rdi + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rdx, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     r15, [rsi + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        mov     rdx, qword ptr [rsp - 56]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     rbp, [r12 + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rcx, 8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jae     .LBB0_11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edx, edx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_17",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jmp     .LBB0_17"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_11:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r9, [4*rcx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rdx, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rdx, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rdx, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        mov     qword ptr [rsp - 80], rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rbp, rdx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_14",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jae     .LBB0_14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     rdx, [r12 + r9]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     rdx, qword ptr [rsp - 40]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     r15, rdx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_14",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jae     .LBB0_14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rbp, qword ptr [rsp - 80]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_17",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jmp     .LBB0_17"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_14:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        movd    xmm0, r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        pshufd  xmm0, xmm0, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsp - 96]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rdx, r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     rdi, [rsi + r11]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        pshufd  xmm1, xmm0, 245"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        xor     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_15:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmm2, xmmword ptr [rdi + 4*r9 - 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmm3, xmmword ptr [rdi + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm4, xmm2, 245"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pmuludq xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm2, xmm2, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pmuludq xmm4, xmm1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm4, xmm4, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        punpckldq       xmm2, xmm4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm4, xmm3, 245"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pmuludq xmm3, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm3, xmm3, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pmuludq xmm4, xmm1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        pshufd  xmm4, xmm4, 232"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        punpckldq       xmm3, xmm4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmm4, xmmword ptr [rdx + 4*r9 - 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        paddd   xmm4, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmm2, xmmword ptr [rdx + 4*r9]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        paddd   xmm2, xmm3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmmword ptr [rdx + 4*r9 - 16], xmm4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmmword ptr [rdx + 4*r9], xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     r10, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_15",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jne     .LBB0_15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        cmp     rcx, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rbp, qword ptr [rsp - 80]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_22",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        je      .LBB0_22"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_17:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     rdi, [rdx + 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        test    cl, 1"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_19",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        je      .LBB0_19"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r9d, dword ptr [r15 + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        imul    r9d, r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        add     dword ptr [rbp + 4*rdx], r9d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     rdx, rdi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_19:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rcx, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_22",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        je      .LBB0_22"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        mov     rdi, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        sub     rdi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     r12, qword ptr [rsp - 88]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     r9, [r12 + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        lea     rdx, [r14 + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edx, edx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_21:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15d, dword ptr [rsi + 4*rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        imul    r15d, r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        add     dword ptr [r9 + 4*rdx - 4], r15d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15d, dword ptr [rsi + 4*rdx + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        imul    r15d, r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 16,
+     "file": null,
+     "line": 33
+    },
+    "text": "        add     dword ptr [r9 + 4*rdx], r15d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 29
+    },
+    "text": "        add     rdx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 29
+    },
+    "text": "        cmp     rdi, rdx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_21",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jne     .LBB0_21"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_22",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 29
+    },
+    "text": "        jmp     .LBB0_22"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        pop     rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 36
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_4:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   }
+  ],
+  "asmSize": 25690,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-snapshot",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-march=x86-64",
+   "-DCHK_B=1",
+   "-DCHK_C=1",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 90,
+  "filteredCount": 1465,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {
+   ".LBB0_11": 101,
+   ".LBB0_14": 117,
+   ".LBB0_15": 125,
+   ".LBB0_17": 153,
+   ".LBB0_19": 161,
+   ".LBB0_2": 39,
+   ".LBB0_21": 171,
+   ".LBB0_22": 51,
+   ".LBB0_3": 61,
+   ".LBB0_4": 190,
+   ".LBB0_5": 30,
+   ".LBB0_6": 182,
+   "kern_emul_hoist(Vec&, Vec const&, Vec const&, unsigned long)": 1
+  },
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 8,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.05647899955511093,
+  "queueTime": 5,
+  "stderr": [
+   {
+    "tag": {
+     "column": 7,
+     "file": "example.cpp",
+     "line": 29,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:29:7: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   29 |       \u001b[0;34mfor\u001b[0m (size_t j = \u001b[0;32m0\u001b[0m; j < d; ++j) {  \u001b[0;33m// LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m      ^"
+   },
+   {
+    "text": "\u001b[0m"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_file": "src/emul_hoist.cpp",
+ "url": "https://godbolt.org/api/compiler/clang_trunk/compile"
+}

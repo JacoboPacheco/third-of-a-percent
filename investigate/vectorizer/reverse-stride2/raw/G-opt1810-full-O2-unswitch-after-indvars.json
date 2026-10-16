@@ -1,0 +1,1678 @@
+{
+ "compiler_id": "opt1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:42:35+00:00",
+ "http_status": 200,
+ "name": "G-opt1810-full-O2-unswitch-after-indvars",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": false,
+    "debugCalls": false,
+    "demangle": false,
+    "directives": false,
+    "execute": false,
+    "intel": false,
+    "labels": false,
+    "libraryCode": false,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-passes=annotation2metadata,forceattrs,inferattrs,coro-early,function<eager-inv>(lower-expect,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;no-switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,sroa<modify-cfg>,early-cse<>),openmp-opt,ipsccp,called-value-propagation,globalopt,function<eager-inv>(mem2reg,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),always-inline,require<globals-aa>,function(invalidate<aa>),require<profile-summary>,cgscc(devirt<4>(inline,function-attrs<skip-non-recursive-function-attrs>,openmp-opt-cgscc,function<eager-inv;no-rerun>(sroa<modify-cfg>,early-cse<memssa>,speculative-execution<only-if-divergent-target>,jump-threading,correlated-propagation,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,aggressive-instcombine,libcalls-shrinkwrap,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,reassociate,constraint-elimination,loop-mssa(loop-instsimplify,loop-simplifycfg,licm<no-allowspeculation>,loop-rotate<header-duplication;no-prepare-for-lto>,licm<allowspeculation>,simple-loop-unswitch<no-nontrivial;trivial>),simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop(loop-idiom,indvars,loop-deletion,loop-unroll-full),loop-mssa(simple-loop-unswitch<no-nontrivial;trivial>),sroa<modify-cfg>,vector-combine,mldst-motion<no-split-footer-bb>,gvn<>,sccp,bdce,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,jump-threading,correlated-propagation,adce,memcpyopt,dse,move-auto-init,loop-mssa(licm<allowspeculation>),coro-elide,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>),function-attrs,function(require<should-not-run-function-passes>),coro-split)),deadargelim,coro-cleanup,globalopt,globaldce,elim-avail-extern,rpo-function-attrs,recompute-globalsaa,function<eager-inv>(float2int,lower-constant-intrinsics,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-unroll<O2>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),globaldce,constmerge,cg-profile,rel-lookup-table-converter,function(annotation-remarks),verify -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+  },
+  "source": "; ModuleID = '/app/example.cpp'\nsource_filename = \"/app/example.cpp\"\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\n%\"class.std::__1::vector\" = type { ptr, ptr, %\"class.std::__1::__compressed_pair\" }\n%\"class.std::__1::__compressed_pair\" = type { %\"struct.std::__1::__compressed_pair_elem\" }\n%\"struct.std::__1::__compressed_pair_elem\" = type { ptr }\n\n$_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev = comdat any\n\n$_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em = comdat any\n\n$_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em = comdat any\n\n@.str = private unnamed_addr constant [170 x i8] c\"/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector:1400: assertion __n < size() failed: vector[] index out of bounds\\0A\\00\", align 1\n@.str.1 = private unnamed_addr constant [170 x i8] c\"/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector:1393: assertion __n < size() failed: vector[] index out of bounds\\0A\\00\", align 1\n\n; Function Attrs: mustprogress noinline nounwind uwtable\ndefine dso_local noundef i64 @_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE(ptr noundef nonnull align 8 dereferenceable(24) %0) #0 {\n  %2 = alloca ptr, align 8\n  %3 = alloca i64, align 8\n  %4 = alloca i64, align 8\n  store ptr %0, ptr %2, align 8, !tbaa !5\n  call void @llvm.lifetime.start.p0(i64 8, ptr %3) #6\n  store i64 0, ptr %3, align 8, !tbaa !9\n  call void @llvm.lifetime.start.p0(i64 8, ptr %4) #6\n  store i64 0, ptr %4, align 8, !tbaa !9\n  br label %5\n\n5:                                                ; preds = %19, %1\n  %6 = load i64, ptr %4, align 8, !tbaa !9\n  %7 = load ptr, ptr %2, align 8, !tbaa !5\n  %8 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %7) #6\n  %9 = icmp ult i64 %6, %8\n  br i1 %9, label %11, label %10\n\n10:                                               ; preds = %5\n  call void @llvm.lifetime.end.p0(i64 8, ptr %4) #6\n  br label %22\n\n11:                                               ; preds = %5\n  %12 = load ptr, ptr %2, align 8, !tbaa !5\n  %13 = load i64, ptr %4, align 8, !tbaa !9\n  %14 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %12, i64 noundef %13) #6\n  %15 = load i32, ptr %14, align 4, !tbaa !11\n  %16 = sext i32 %15 to i64\n  %17 = load i64, ptr %3, align 8, !tbaa !9\n  %18 = add nsw i64 %17, %16\n  store i64 %18, ptr %3, align 8, !tbaa !9\n  br label %19\n\n19:                                               ; preds = %11\n  %20 = load i64, ptr %4, align 8, !tbaa !9\n  %21 = add i64 %20, 1\n  store i64 %21, ptr %4, align 8, !tbaa !9\n  br label %5, !llvm.loop !13\n\n22:                                               ; preds = %10\n  %23 = load i64, ptr %3, align 8, !tbaa !9\n  call void @llvm.lifetime.end.p0(i64 8, ptr %3) #6\n  ret i64 %23\n}\n\n; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)\ndeclare void @llvm.lifetime.start.p0(i64 immarg, ptr nocapture) #1\n\n; Function Attrs: mustprogress nounwind uwtable\ndefine linkonce_odr hidden noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %0) #2 comdat align 2 {\n  %2 = alloca ptr, align 8\n  store ptr %0, ptr %2, align 8, !tbaa !5\n  %3 = load ptr, ptr %2, align 8\n  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %3, i32 0, i32 1\n  %5 = load ptr, ptr %4, align 8, !tbaa !15\n  %6 = getelementptr inbounds %\"class.std::__1::vector\", ptr %3, i32 0, i32 0\n  %7 = load ptr, ptr %6, align 8, !tbaa !19\n  %8 = ptrtoint ptr %5 to i64\n  %9 = ptrtoint ptr %7 to i64\n  %10 = sub i64 %8, %9\n  %11 = sdiv exact i64 %10, 4\n  ret i64 %11\n}\n\n; Function Attrs: inlinehint mustprogress nounwind uwtable\ndefine linkonce_odr hidden noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %0, i64 noundef %1) #3 comdat align 2 {\n  %3 = alloca ptr, align 8\n  %4 = alloca i64, align 8\n  store ptr %0, ptr %3, align 8, !tbaa !5\n  store i64 %1, ptr %4, align 8, !tbaa !9\n  %5 = load ptr, ptr %3, align 8\n  %6 = load i64, ptr %4, align 8, !tbaa !9\n  %7 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %5) #6\n  %8 = icmp ult i64 %6, %7\n  %9 = zext i1 %8 to i64\n  %10 = call i64 @llvm.expect.i64(i64 %9, i64 1)\n  %11 = icmp ne i64 %10, 0\n  br i1 %11, label %12, label %13\n\n12:                                               ; preds = %2\n  br label %14\n\n13:                                               ; preds = %2\n  call void @llvm.trap()\n  br label %14\n\n14:                                               ; preds = %13, %12\n  %15 = getelementptr inbounds %\"class.std::__1::vector\", ptr %5, i32 0, i32 0\n  %16 = load ptr, ptr %15, align 8, !tbaa !19\n  %17 = load i64, ptr %4, align 8, !tbaa !9\n  %18 = getelementptr inbounds i32, ptr %16, i64 %17\n  ret ptr %18\n}\n\n; Function Attrs: nocallback nofree nosync nounwind willreturn memory(argmem: readwrite)\ndeclare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #1\n\n; Function Attrs: mustprogress noinline nounwind uwtable\ndefine dso_local void @_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_(ptr noundef nonnull align 8 dereferenceable(24) %0, ptr noundef nonnull align 8 dereferenceable(24) %1, ptr noundef nonnull align 8 dereferenceable(24) %2) #0 {\n  %4 = alloca ptr, align 8\n  %5 = alloca ptr, align 8\n  %6 = alloca ptr, align 8\n  %7 = alloca i64, align 8\n  store ptr %0, ptr %4, align 8, !tbaa !5\n  store ptr %1, ptr %5, align 8, !tbaa !5\n  store ptr %2, ptr %6, align 8, !tbaa !5\n  call void @llvm.lifetime.start.p0(i64 8, ptr %7) #6\n  store i64 0, ptr %7, align 8, !tbaa !9\n  br label %8\n\n8:                                                ; preds = %27, %3\n  %9 = load i64, ptr %7, align 8, !tbaa !9\n  %10 = load ptr, ptr %5, align 8, !tbaa !5\n  %11 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %10) #6\n  %12 = icmp ult i64 %9, %11\n  br i1 %12, label %14, label %13\n\n13:                                               ; preds = %8\n  call void @llvm.lifetime.end.p0(i64 8, ptr %7) #6\n  br label %30\n\n14:                                               ; preds = %8\n  %15 = load ptr, ptr %5, align 8, !tbaa !5\n  %16 = load i64, ptr %7, align 8, !tbaa !9\n  %17 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %15, i64 noundef %16) #6\n  %18 = load i32, ptr %17, align 4, !tbaa !11\n  %19 = load ptr, ptr %6, align 8, !tbaa !5\n  %20 = load i64, ptr %7, align 8, !tbaa !9\n  %21 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %19, i64 noundef %20) #6\n  %22 = load i32, ptr %21, align 4, !tbaa !11\n  %23 = add nsw i32 %18, %22\n  %24 = load ptr, ptr %4, align 8, !tbaa !5\n  %25 = load i64, ptr %7, align 8, !tbaa !9\n  %26 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %24, i64 noundef %25) #6\n  store i32 %23, ptr %26, align 4, !tbaa !11\n  br label %27\n\n27:                                               ; preds = %14\n  %28 = load i64, ptr %7, align 8, !tbaa !9\n  %29 = add i64 %28, 1\n  store i64 %29, ptr %7, align 8, !tbaa !9\n  br label %8, !llvm.loop !20\n\n30:                                               ; preds = %13\n  ret void\n}\n\n; Function Attrs: inlinehint mustprogress nounwind uwtable\ndefine linkonce_odr hidden noundef nonnull align 4 dereferenceable(4) ptr @_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %0, i64 noundef %1) #3 comdat align 2 {\n  %3 = alloca ptr, align 8\n  %4 = alloca i64, align 8\n  store ptr %0, ptr %3, align 8, !tbaa !5\n  store i64 %1, ptr %4, align 8, !tbaa !9\n  %5 = load ptr, ptr %3, align 8\n  %6 = load i64, ptr %4, align 8, !tbaa !9\n  %7 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %5) #6\n  %8 = icmp ult i64 %6, %7\n  %9 = zext i1 %8 to i64\n  %10 = call i64 @llvm.expect.i64(i64 %9, i64 1)\n  %11 = icmp ne i64 %10, 0\n  br i1 %11, label %12, label %13\n\n12:                                               ; preds = %2\n  br label %14\n\n13:                                               ; preds = %2\n  call void @llvm.trap()\n  br label %14\n\n14:                                               ; preds = %13, %12\n  %15 = getelementptr inbounds %\"class.std::__1::vector\", ptr %5, i32 0, i32 0\n  %16 = load ptr, ptr %15, align 8, !tbaa !19\n  %17 = load i64, ptr %4, align 8, !tbaa !9\n  %18 = getelementptr inbounds i32, ptr %16, i64 %17\n  ret ptr %18\n}\n\n; Function Attrs: mustprogress noinline nounwind uwtable\ndefine dso_local void @_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr noundef nonnull align 8 dereferenceable(24) %0, ptr noundef nonnull align 8 dereferenceable(24) %1) #0 {\n  %3 = alloca ptr, align 8\n  %4 = alloca ptr, align 8\n  %5 = alloca i64, align 8\n  store ptr %0, ptr %3, align 8, !tbaa !5\n  store ptr %1, ptr %4, align 8, !tbaa !5\n  call void @llvm.lifetime.start.p0(i64 8, ptr %5) #6\n  store i64 1, ptr %5, align 8, !tbaa !9\n  br label %6\n\n6:                                                ; preds = %33, %2\n  %7 = load i64, ptr %5, align 8, !tbaa !9\n  %8 = add i64 %7, 1\n  %9 = load ptr, ptr %4, align 8, !tbaa !5\n  %10 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %9) #6\n  %11 = icmp ult i64 %8, %10\n  br i1 %11, label %13, label %12\n\n12:                                               ; preds = %6\n  call void @llvm.lifetime.end.p0(i64 8, ptr %5) #6\n  br label %36\n\n13:                                               ; preds = %6\n  %14 = load ptr, ptr %4, align 8, !tbaa !5\n  %15 = load i64, ptr %5, align 8, !tbaa !9\n  %16 = sub i64 %15, 1\n  %17 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %14, i64 noundef %16) #6\n  %18 = load i32, ptr %17, align 4, !tbaa !11\n  %19 = load ptr, ptr %4, align 8, !tbaa !5\n  %20 = load i64, ptr %5, align 8, !tbaa !9\n  %21 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %19, i64 noundef %20) #6\n  %22 = load i32, ptr %21, align 4, !tbaa !11\n  %23 = add nsw i32 %18, %22\n  %24 = load ptr, ptr %4, align 8, !tbaa !5\n  %25 = load i64, ptr %5, align 8, !tbaa !9\n  %26 = add i64 %25, 1\n  %27 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %24, i64 noundef %26) #6\n  %28 = load i32, ptr %27, align 4, !tbaa !11\n  %29 = add nsw i32 %23, %28\n  %30 = load ptr, ptr %3, align 8, !tbaa !5\n  %31 = load i64, ptr %5, align 8, !tbaa !9\n  %32 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %30, i64 noundef %31) #6\n  store i32 %29, ptr %32, align 4, !tbaa !11\n  br label %33\n\n33:                                               ; preds = %13\n  %34 = load i64, ptr %5, align 8, !tbaa !9\n  %35 = add i64 %34, 1\n  store i64 %35, ptr %5, align 8, !tbaa !9\n  br label %6, !llvm.loop !21\n\n36:                                               ; preds = %12\n  ret void\n}\n\n; Function Attrs: mustprogress noinline nounwind uwtable\ndefine dso_local void @_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr noundef nonnull align 8 dereferenceable(24) %0, ptr noundef nonnull align 8 dereferenceable(24) %1) #0 {\n  %3 = alloca ptr, align 8\n  %4 = alloca ptr, align 8\n  %5 = alloca i64, align 8\n  store ptr %0, ptr %3, align 8, !tbaa !5\n  store ptr %1, ptr %4, align 8, !tbaa !5\n  call void @llvm.lifetime.start.p0(i64 8, ptr %5) #6\n  %6 = load ptr, ptr %4, align 8, !tbaa !5\n  %7 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %6) #6\n  store i64 %7, ptr %5, align 8, !tbaa !9\n  br label %8\n\n8:                                                ; preds = %13, %2\n  %9 = load i64, ptr %5, align 8, !tbaa !9\n  %10 = add i64 %9, -1\n  store i64 %10, ptr %5, align 8, !tbaa !9\n  %11 = icmp ugt i64 %9, 0\n  br i1 %11, label %13, label %12\n\n12:                                               ; preds = %8\n  call void @llvm.lifetime.end.p0(i64 8, ptr %5) #6\n  br label %22\n\n13:                                               ; preds = %8\n  %14 = load ptr, ptr %4, align 8, !tbaa !5\n  %15 = load i64, ptr %5, align 8, !tbaa !9\n  %16 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %14, i64 noundef %15) #6\n  %17 = load i32, ptr %16, align 4, !tbaa !11\n  %18 = mul nsw i32 %17, 2\n  %19 = load ptr, ptr %3, align 8, !tbaa !5\n  %20 = load i64, ptr %5, align 8, !tbaa !9\n  %21 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %19, i64 noundef %20) #6\n  store i32 %18, ptr %21, align 4, !tbaa !11\n  br label %8, !llvm.loop !22\n\n22:                                               ; preds = %12\n  ret void\n}\n\n; Function Attrs: mustprogress noinline nounwind uwtable\ndefine dso_local void @_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr noundef nonnull align 8 dereferenceable(24) %0, ptr noundef nonnull align 8 dereferenceable(24) %1) #0 {\n  %3 = alloca ptr, align 8\n  %4 = alloca ptr, align 8\n  %5 = alloca i64, align 8\n  store ptr %0, ptr %3, align 8, !tbaa !5\n  store ptr %1, ptr %4, align 8, !tbaa !5\n  call void @llvm.lifetime.start.p0(i64 8, ptr %5) #6\n  store i64 0, ptr %5, align 8, !tbaa !9\n  br label %6\n\n6:                                                ; preds = %28, %2\n  %7 = load i64, ptr %5, align 8, !tbaa !9\n  %8 = load ptr, ptr %3, align 8, !tbaa !5\n  %9 = call noundef i64 @_ZNKSt3__16vectorIiNS_9allocatorIiEEE4sizeB8fe180100Ev(ptr noundef nonnull align 8 dereferenceable(24) %8) #6\n  %10 = icmp ult i64 %7, %9\n  br i1 %10, label %12, label %11\n\n11:                                               ; preds = %6\n  call void @llvm.lifetime.end.p0(i64 8, ptr %5) #6\n  br label %31\n\n12:                                               ; preds = %6\n  %13 = load ptr, ptr %4, align 8, !tbaa !5\n  %14 = load i64, ptr %5, align 8, !tbaa !9\n  %15 = mul i64 2, %14\n  %16 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %13, i64 noundef %15) #6\n  %17 = load i32, ptr %16, align 4, !tbaa !11\n  %18 = load ptr, ptr %4, align 8, !tbaa !5\n  %19 = load i64, ptr %5, align 8, !tbaa !9\n  %20 = mul i64 2, %19\n  %21 = add i64 %20, 1\n  %22 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %18, i64 noundef %21) #6\n  %23 = load i32, ptr %22, align 4, !tbaa !11\n  %24 = add nsw i32 %17, %23\n  %25 = load ptr, ptr %3, align 8, !tbaa !5\n  %26 = load i64, ptr %5, align 8, !tbaa !9\n  %27 = call noundef nonnull align 4 dereferenceable(4) ptr @_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em(ptr noundef nonnull align 8 dereferenceable(24) %25, i64 noundef %26) #6\n  store i32 %24, ptr %27, align 4, !tbaa !11\n  br label %28\n\n28:                                               ; preds = %12\n  %29 = load i64, ptr %5, align 8, !tbaa !9\n  %30 = add i64 %29, 1\n  store i64 %30, ptr %5, align 8, !tbaa !9\n  br label %6, !llvm.loop !23\n\n31:                                               ; preds = %11\n  ret void\n}\n\n; Function Attrs: nocallback nofree nosync nounwind willreturn memory(none)\ndeclare i64 @llvm.expect.i64(i64, i64) #4\n\n; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)\ndeclare void @llvm.trap() #5\n\nattributes #0 = { mustprogress noinline nounwind uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }\nattributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }\nattributes #2 = { mustprogress nounwind uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }\nattributes #3 = { inlinehint mustprogress nounwind uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }\nattributes #4 = { nocallback nofree nosync nounwind willreturn memory(none) }\nattributes #5 = { cold noreturn nounwind memory(inaccessiblemem: write) }\nattributes #6 = { nounwind }\n\n!llvm.linker.options = !{}\n!llvm.module.flags = !{!0, !1, !2, !3}\n!llvm.ident = !{!4}\n\n!0 = !{i32 1, !\"wchar_size\", i32 4}\n!1 = !{i32 8, !\"PIC Level\", i32 2}\n!2 = !{i32 7, !\"PIE Level\", i32 2}\n!3 = !{i32 7, !\"uwtable\", i32 2}\n!4 = !{!\"clang version 18.1.0rc (https://github.com/llvm/llvm-project.git 461274b81d8641eab64d494accddc81d7db8a09e)\"}\n!5 = !{!6, !6, i64 0}\n!6 = !{!\"any pointer\", !7, i64 0}\n!7 = !{!\"omnipotent char\", !8, i64 0}\n!8 = !{!\"Simple C++ TBAA\"}\n!9 = !{!10, !10, i64 0}\n!10 = !{!\"long\", !7, i64 0}\n!11 = !{!12, !12, i64 0}\n!12 = !{!\"int\", !7, i64 0}\n!13 = distinct !{!13, !14}\n!14 = !{!\"llvm.loop.mustprogress\"}\n!15 = !{!16, !6, i64 8}\n!16 = !{!\"_ZTSNSt3__16vectorIiNS_9allocatorIiEEEE\", !6, i64 0, !6, i64 8, !17, i64 16}\n!17 = !{!\"_ZTSNSt3__117__compressed_pairIPiNS_9allocatorIiEEEE\", !18, i64 0}\n!18 = !{!\"_ZTSNSt3__122__compressed_pair_elemIPiLi0ELb0EEE\", !6, i64 0}\n!19 = !{!16, !6, i64 0}\n!20 = distinct !{!20, !14}\n!21 = distinct !{!21, !14}\n!22 = distinct !{!22, !14}\n!23 = distinct !{!23, !14}\n"
+ },
+ "request_sha256": "d14f92c54898f7d718cbe78148db64dfa9006912d222cdd9db59becae145d180",
+ "response": {
+  "asm": [
+   {
+    "text": "; ModuleID = '/app/example.ll'"
+   },
+   {
+    "text": "source_filename = \"/app/example.cpp\""
+   },
+   {
+    "text": "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\""
+   },
+   {
+    "text": "target triple = \"x86_64-unknown-linux-gnu\""
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "%\"class.std::__1::vector\" = type { ptr, ptr, %\"class.std::__1::__compressed_pair\" }"
+   },
+   {
+    "text": "%\"class.std::__1::__compressed_pair\" = type { %\"struct.std::__1::__compressed_pair_elem\" }"
+   },
+   {
+    "text": "%\"struct.std::__1::__compressed_pair_elem\" = type { ptr }"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable"
+   },
+   {
+    "text": "define dso_local noundef i64 @_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0) local_unnamed_addr #0 {"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %.not = icmp eq ptr %3, %4"
+   },
+   {
+    "text": "  br i1 %.not, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader: ; preds = %1"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  %umax = tail call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %8, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:                                        ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader"
+   },
+   {
+    "text": "  %n.vec = and i64 %umax, -4"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:                                      ; preds = %vector.body, %vector.ph"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.phi = phi <2 x i64> [ zeroinitializer, %vector.ph ], [ %13, %vector.body ]"
+   },
+   {
+    "text": "  %vec.phi9 = phi <2 x i64> [ zeroinitializer, %vector.ph ], [ %14, %vector.body ]"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %4, i64 %index"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i64 2"
+   },
+   {
+    "text": "  %wide.load = load <2 x i32>, ptr %9, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %wide.load10 = load <2 x i32>, ptr %10, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %11 = sext <2 x i32> %wide.load to <2 x i64>"
+   },
+   {
+    "text": "  %12 = sext <2 x i32> %wide.load10 to <2 x i64>"
+   },
+   {
+    "text": "  %13 = add <2 x i64> %vec.phi, %11"
+   },
+   {
+    "text": "  %14 = add <2 x i64> %vec.phi9, %12"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %15 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %15, label %middle.block, label %vector.body, !llvm.loop !15"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:                                     ; preds = %vector.body"
+   },
+   {
+    "text": "  %bin.rdx = add <2 x i64> %14, %13"
+   },
+   {
+    "text": "  %16 = tail call i64 @llvm.vector.reduce.add.v2i64(<2 x i64> %bin.rdx)"
+   },
+   {
+    "text": "  %cmp.n = icmp eq i64 %umax, %n.vec"
+   },
+   {
+    "text": "  br i1 %cmp.n, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, %middle.block"
+   },
+   {
+    "text": "  %.08.ph = phi i64 [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader ], [ %n.vec, %middle.block ]"
+   },
+   {
+    "text": "  %.067.ph = phi i64 [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader ], [ %16, %middle.block ]"
+   },
+   {
+    "text": "  br label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "._crit_edge:                                      ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, %middle.block, %1"
+   },
+   {
+    "text": "  %.06.lcssa = phi i64 [ 0, %1 ], [ %16, %middle.block ], [ %20, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ]"
+   },
+   {
+    "text": "  ret i64 %.06.lcssa"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %.08 = phi i64 [ %21, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.08.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11 ]"
+   },
+   {
+    "text": "  %.067 = phi i64 [ %20, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.067.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11 ]"
+   },
+   {
+    "text": "  %17 = getelementptr inbounds i32, ptr %4, i64 %.08"
+   },
+   {
+    "text": "  %18 = load i32, ptr %17, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %19 = sext i32 %18 to i64"
+   },
+   {
+    "text": "  %20 = add nsw i64 %.067, %19"
+   },
+   {
+    "text": "  %21 = add nuw i64 %.08, 1"
+   },
+   {
+    "text": "  %exitcond.not = icmp eq i64 %21, %umax"
+   },
+   {
+    "text": "  br i1 %exitcond.not, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, !llvm.loop !19"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %2) local_unnamed_addr #1 {"
+   },
+   {
+    "text": "  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %4, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %6 = load ptr, ptr %1, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %.not = icmp eq ptr %5, %6"
+   },
+   {
+    "text": "  br i1 %.not, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph: ; preds = %3"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %6 to i64"
+   },
+   {
+    "text": "  %9 = sub i64 %7, %8"
+   },
+   {
+    "text": "  %.fr15 = freeze i64 %9"
+   },
+   {
+    "text": "  %10 = ashr i64 %.fr15, 2"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %2, i64 0, i32 1"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %2, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = ptrtoint ptr %13 to i64"
+   },
+   {
+    "text": "  %16 = sub i64 %14, %15"
+   },
+   {
+    "text": "  %17 = ashr exact i64 %16, 2"
+   },
+   {
+    "text": "  %18 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %19 = load ptr, ptr %18, align 8"
+   },
+   {
+    "text": "  %20 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %21 = ptrtoint ptr %19 to i64"
+   },
+   {
+    "text": "  %22 = ptrtoint ptr %20 to i64"
+   },
+   {
+    "text": "  %23 = sub i64 %21, %22"
+   },
+   {
+    "text": "  %.fr = freeze i64 %23"
+   },
+   {
+    "text": "  %24 = ashr i64 %.fr, 2"
+   },
+   {
+    "text": "  %umax = tail call i64 @llvm.umax.i64(i64 %10, i64 1)"
+   },
+   {
+    "text": "  %25 = add i64 %umax, -1"
+   },
+   {
+    "text": "  %umin = tail call i64 @llvm.umin.i64(i64 %25, i64 %24)"
+   },
+   {
+    "text": "  %umin13 = tail call i64 @llvm.umin.i64(i64 %umin, i64 %17)"
+   },
+   {
+    "text": "  %26 = add nuw i64 %umin13, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %umin13, 8"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, label %vector.memcheck"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader: ; preds = %vector.body, %vector.memcheck, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": "  %.09.ph = phi i64 [ 0, %vector.memcheck ], [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph ], [ %n.vec, %vector.body ]"
+   },
+   {
+    "text": "  br label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.memcheck:                                  ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": "  %27 = sub i64 %22, %8"
+   },
+   {
+    "text": "  %diff.check = icmp ult i64 %27, 16"
+   },
+   {
+    "text": "  %28 = sub i64 %22, %15"
+   },
+   {
+    "text": "  %diff.check12 = icmp ult i64 %28, 16"
+   },
+   {
+    "text": "  %conflict.rdx = or i1 %diff.check, %diff.check12"
+   },
+   {
+    "text": "  br i1 %conflict.rdx, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:                                        ; preds = %vector.memcheck"
+   },
+   {
+    "text": "  %n.mod.vf = and i64 %26, 3"
+   },
+   {
+    "text": "  %29 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %30 = select i1 %29, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %26, %30"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:                                      ; preds = %vector.body, %vector.ph"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %31 = getelementptr inbounds i32, ptr %6, i64 %index"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %31, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %32 = getelementptr inbounds i32, ptr %13, i64 %index"
+   },
+   {
+    "text": "  %wide.load14 = load <4 x i32>, ptr %32, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %33 = add nsw <4 x i32> %wide.load14, %wide.load"
+   },
+   {
+    "text": "  %34 = getelementptr inbounds i32, ptr %20, i64 %index"
+   },
+   {
+    "text": "  store <4 x i32> %33, ptr %34, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %35 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %35, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, label %vector.body, !llvm.loop !20"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "._crit_edge:                                      ; preds = %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, %3"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %.09 = phi i64 [ %44, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.09.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader ]"
+   },
+   {
+    "text": "  %exitcond.not = icmp eq i64 %.09, %17"
+   },
+   {
+    "text": "  br i1 %exitcond.not, label %36, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit8, !prof !21"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "36:                                               ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit8: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %exitcond10.not = icmp eq i64 %.09, %24"
+   },
+   {
+    "text": "  br i1 %exitcond10.not, label %37, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, !prof !21"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "37:                                               ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit8"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit8"
+   },
+   {
+    "text": "  %38 = getelementptr inbounds i32, ptr %6, i64 %.09"
+   },
+   {
+    "text": "  %39 = load i32, ptr %38, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %40 = getelementptr inbounds i32, ptr %13, i64 %.09"
+   },
+   {
+    "text": "  %41 = load i32, ptr %40, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %42 = add nsw i32 %41, %39"
+   },
+   {
+    "text": "  %43 = getelementptr inbounds i32, ptr %20, i64 %.09"
+   },
+   {
+    "text": "  store i32 %42, ptr %43, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %44 = add nuw i64 %.09, 1"
+   },
+   {
+    "text": "  %exitcond11.not = icmp eq i64 %44, %umax"
+   },
+   {
+    "text": "  br i1 %exitcond11.not, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, !llvm.loop !22"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %1, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  %10 = icmp ugt i64 %9, 2"
+   },
+   {
+    "text": "  br i1 %10, label %.lr.ph, label %._crit_edge"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": ".lr.ph:                                           ; preds = %2"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = ptrtoint ptr %13 to i64"
+   },
+   {
+    "text": "  %16 = sub i64 %14, %15"
+   },
+   {
+    "text": "  %17 = ashr exact i64 %16, 2"
+   },
+   {
+    "text": "  %umax = tail call i64 @llvm.umax.i64(i64 %17, i64 1)"
+   },
+   {
+    "text": "  %18 = add i64 %umax, 1"
+   },
+   {
+    "text": "  %invariant.gep = getelementptr i32, ptr %5, i64 -1"
+   },
+   {
+    "text": "  %19 = add i64 %umax, -1"
+   },
+   {
+    "text": "  %20 = add nsw i64 %9, -3"
+   },
+   {
+    "text": "  %umin17 = tail call i64 @llvm.umin.i64(i64 %19, i64 %20)"
+   },
+   {
+    "text": "  %21 = add nuw i64 %umin17, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %umin17, 12"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader, label %vector.memcheck"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader: ; preds = %vector.body, %vector.memcheck, %.lr.ph"
+   },
+   {
+    "text": "  %.ph = phi i64 [ 2, %vector.memcheck ], [ 2, %.lr.ph ], [ %ind.end, %vector.body ]"
+   },
+   {
+    "text": "  %.013.ph = phi i64 [ 1, %vector.memcheck ], [ 1, %.lr.ph ], [ %ind.end18, %vector.body ]"
+   },
+   {
+    "text": "  br label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.memcheck:                                  ; preds = %.lr.ph"
+   },
+   {
+    "text": "  %scevgep = getelementptr i8, ptr %13, i64 4"
+   },
+   {
+    "text": "  %22 = add i64 %umax, -1"
+   },
+   {
+    "text": "  %23 = add nsw i64 %9, -3"
+   },
+   {
+    "text": "  %umin = tail call i64 @llvm.umin.i64(i64 %22, i64 %23)"
+   },
+   {
+    "text": "  %24 = shl i64 %umin, 2"
+   },
+   {
+    "text": "  %25 = getelementptr i8, ptr %13, i64 %24"
+   },
+   {
+    "text": "  %scevgep15 = getelementptr i8, ptr %25, i64 8"
+   },
+   {
+    "text": "  %26 = getelementptr i8, ptr %5, i64 %24"
+   },
+   {
+    "text": "  %scevgep16 = getelementptr i8, ptr %26, i64 12"
+   },
+   {
+    "text": "  %bound0 = icmp ult ptr %scevgep, %scevgep16"
+   },
+   {
+    "text": "  %bound1 = icmp ult ptr %5, %scevgep15"
+   },
+   {
+    "text": "  %found.conflict = and i1 %bound0, %bound1"
+   },
+   {
+    "text": "  br i1 %found.conflict, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:                                        ; preds = %vector.memcheck"
+   },
+   {
+    "text": "  %n.mod.vf = and i64 %21, 7"
+   },
+   {
+    "text": "  %27 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %28 = select i1 %27, i64 8, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %21, %28"
+   },
+   {
+    "text": "  %ind.end = add i64 %n.vec, 2"
+   },
+   {
+    "text": "  %ind.end18 = add i64 %n.vec, 1"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:                                      ; preds = %vector.body, %vector.ph"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %offset.idx = or disjoint i64 %index, 1"
+   },
+   {
+    "text": "  %offset.idx20 = or disjoint i64 %index, 2"
+   },
+   {
+    "text": "  %29 = getelementptr i32, ptr %invariant.gep, i64 %offset.idx"
+   },
+   {
+    "text": "  %30 = getelementptr i32, ptr %29, i64 4"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %29, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %wide.load21 = load <4 x i32>, ptr %30, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %31 = getelementptr inbounds i32, ptr %5, i64 %offset.idx"
+   },
+   {
+    "text": "  %32 = getelementptr inbounds i32, ptr %31, i64 4"
+   },
+   {
+    "text": "  %wide.load22 = load <4 x i32>, ptr %31, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %wide.load23 = load <4 x i32>, ptr %32, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %33 = add nsw <4 x i32> %wide.load22, %wide.load"
+   },
+   {
+    "text": "  %34 = add nsw <4 x i32> %wide.load23, %wide.load21"
+   },
+   {
+    "text": "  %35 = getelementptr inbounds i32, ptr %5, i64 %offset.idx20"
+   },
+   {
+    "text": "  %36 = getelementptr inbounds i32, ptr %35, i64 4"
+   },
+   {
+    "text": "  %wide.load24 = load <4 x i32>, ptr %35, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %wide.load25 = load <4 x i32>, ptr %36, align 4, !tbaa !13, !alias.scope !23"
+   },
+   {
+    "text": "  %37 = add nsw <4 x i32> %33, %wide.load24"
+   },
+   {
+    "text": "  %38 = add nsw <4 x i32> %34, %wide.load25"
+   },
+   {
+    "text": "  %39 = getelementptr inbounds i32, ptr %13, i64 %offset.idx"
+   },
+   {
+    "text": "  %40 = getelementptr inbounds i32, ptr %39, i64 4"
+   },
+   {
+    "text": "  store <4 x i32> %37, ptr %39, align 4, !tbaa !13, !alias.scope !26, !noalias !23"
+   },
+   {
+    "text": "  store <4 x i32> %38, ptr %40, align 4, !tbaa !13, !alias.scope !26, !noalias !23"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 8"
+   },
+   {
+    "text": "  %41 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %41, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader, label %vector.body, !llvm.loop !28"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "._crit_edge:                                      ; preds = %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, %2"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %42 = phi i64 [ %52, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader ]"
+   },
+   {
+    "text": "  %.013 = phi i64 [ %42, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.013.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12.preheader ]"
+   },
+   {
+    "text": "  %exitcond.not = icmp eq i64 %42, %18"
+   },
+   {
+    "text": "  br i1 %exitcond.not, label %43, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, !prof !21"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "43:                                               ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12"
+   },
+   {
+    "text": "  %gep = getelementptr i32, ptr %invariant.gep, i64 %.013"
+   },
+   {
+    "text": "  %44 = load i32, ptr %gep, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %45 = getelementptr inbounds i32, ptr %5, i64 %.013"
+   },
+   {
+    "text": "  %46 = load i32, ptr %45, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %47 = add nsw i32 %46, %44"
+   },
+   {
+    "text": "  %48 = getelementptr inbounds i32, ptr %5, i64 %42"
+   },
+   {
+    "text": "  %49 = load i32, ptr %48, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %50 = add nsw i32 %47, %49"
+   },
+   {
+    "text": "  %51 = getelementptr inbounds i32, ptr %13, i64 %.013"
+   },
+   {
+    "text": "  store i32 %50, ptr %51, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %52 = add nuw i64 %42, 1"
+   },
+   {
+    "text": "  %exitcond14.not = icmp eq i64 %52, %9"
+   },
+   {
+    "text": "  br i1 %exitcond14.not, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit12, !llvm.loop !29"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {"
+   },
+   {
+    "text": ".split:"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %.not5 = icmp eq ptr %3, %4"
+   },
+   {
+    "text": "  br i1 %.not5, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph: ; preds = %.split"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %7 = sub i64 %6, %5"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %9, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %0, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  %14 = sub i64 %12, %13"
+   },
+   {
+    "text": "  %15 = ashr exact i64 %14, 2"
+   },
+   {
+    "text": "  %16 = add nsw i64 %8, -1"
+   },
+   {
+    "text": "  %.first_iter = icmp ult i64 %16, %15"
+   },
+   {
+    "text": "  br i1 %.first_iter, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, label %56, !prof !30"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %8, 8"
+   },
+   {
+    "text": "  %17 = sub i64 %5, %13"
+   },
+   {
+    "text": "  %diff.check = icmp ult i64 %17, 32"
+   },
+   {
+    "text": "  %or.cond = or i1 %min.iters.check, %diff.check"
+   },
+   {
+    "text": "  br i1 %or.cond, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:                                        ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader"
+   },
+   {
+    "text": "  %n.vec = and i64 %8, -8"
+   },
+   {
+    "text": "  %ind.end = and i64 %8, 7"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:                                      ; preds = %vector.body, %vector.ph"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %18 = xor i64 %index, -1"
+   },
+   {
+    "text": "  %19 = add i64 %8, %18"
+   },
+   {
+    "text": "  %20 = getelementptr inbounds i32, ptr %4, i64 %19"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds i32, ptr %20, i64 -3"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %20, i64 -7"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %21, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %wide.load7 = load <4 x i32>, ptr %22, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %23 = shl nsw <4 x i32> %wide.load, <i32 1, i32 1, i32 1, i32 1>"
+   },
+   {
+    "text": "  %24 = shl nsw <4 x i32> %wide.load7, <i32 1, i32 1, i32 1, i32 1>"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %11, i64 %19"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %25, i64 -3"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %25, i64 -7"
+   },
+   {
+    "text": "  store <4 x i32> %23, ptr %26, align 4, !tbaa !13"
+   },
+   {
+    "text": "  store <4 x i32> %24, ptr %27, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 8"
+   },
+   {
+    "text": "  %28 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %28, label %middle.block, label %vector.body, !llvm.loop !31"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:                                     ; preds = %vector.body"
+   },
+   {
+    "text": "  %cmp.n = icmp eq i64 %8, %n.vec"
+   },
+   {
+    "text": "  br i1 %cmp.n, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader, %middle.block"
+   },
+   {
+    "text": "  %.06.ph = phi i64 [ %8, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader ], [ %ind.end, %middle.block ]"
+   },
+   {
+    "text": "  %29 = add nsw i64 %.06.ph, -1"
+   },
+   {
+    "text": "  %xtraiter = and i64 %.06.ph, 3"
+   },
+   {
+    "text": "  %lcmp.mod.not = icmp eq i64 %xtraiter, 0"
+   },
+   {
+    "text": "  br i1 %lcmp.mod.not, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol"
+   },
+   {
+    "text": "  %.06.prol = phi i64 [ %30, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol ], [ %.06.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11 ]"
+   },
+   {
+    "text": "  %prol.iter = phi i64 [ %prol.iter.next, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol ], [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11 ]"
+   },
+   {
+    "text": "  %30 = add i64 %.06.prol, -1"
+   },
+   {
+    "text": "  %31 = getelementptr inbounds i32, ptr %4, i64 %30"
+   },
+   {
+    "text": "  %32 = load i32, ptr %31, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %33 = shl nsw i32 %32, 1"
+   },
+   {
+    "text": "  %34 = getelementptr inbounds i32, ptr %11, i64 %30"
+   },
+   {
+    "text": "  store i32 %33, ptr %34, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %prol.iter.next = add i64 %prol.iter, 1"
+   },
+   {
+    "text": "  %prol.iter.cmp.not = icmp eq i64 %prol.iter.next, %xtraiter"
+   },
+   {
+    "text": "  br i1 %prol.iter.cmp.not, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol, !llvm.loop !32"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11"
+   },
+   {
+    "text": "  %.06.unr = phi i64 [ %.06.ph, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.preheader11 ], [ %30, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol ]"
+   },
+   {
+    "text": "  %35 = icmp ult i64 %29, 3"
+   },
+   {
+    "text": "  br i1 %35, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "._crit_edge:                                      ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, %middle.block, %.split"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %.06 = phi i64 [ %51, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ], [ %.06.unr, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.prol.loopexit ]"
+   },
+   {
+    "text": "  %36 = add i64 %.06, -1"
+   },
+   {
+    "text": "  %37 = getelementptr inbounds i32, ptr %4, i64 %36"
+   },
+   {
+    "text": "  %38 = load i32, ptr %37, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %39 = shl nsw i32 %38, 1"
+   },
+   {
+    "text": "  %40 = getelementptr inbounds i32, ptr %11, i64 %36"
+   },
+   {
+    "text": "  store i32 %39, ptr %40, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %41 = add i64 %.06, -2"
+   },
+   {
+    "text": "  %42 = getelementptr inbounds i32, ptr %4, i64 %41"
+   },
+   {
+    "text": "  %43 = load i32, ptr %42, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %44 = shl nsw i32 %43, 1"
+   },
+   {
+    "text": "  %45 = getelementptr inbounds i32, ptr %11, i64 %41"
+   },
+   {
+    "text": "  store i32 %44, ptr %45, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %46 = add i64 %.06, -3"
+   },
+   {
+    "text": "  %47 = getelementptr inbounds i32, ptr %4, i64 %46"
+   },
+   {
+    "text": "  %48 = load i32, ptr %47, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %49 = shl nsw i32 %48, 1"
+   },
+   {
+    "text": "  %50 = getelementptr inbounds i32, ptr %11, i64 %46"
+   },
+   {
+    "text": "  store i32 %49, ptr %50, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %51 = add i64 %.06, -4"
+   },
+   {
+    "text": "  %52 = getelementptr inbounds i32, ptr %4, i64 %51"
+   },
+   {
+    "text": "  %53 = load i32, ptr %52, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %54 = shl nsw i32 %53, 1"
+   },
+   {
+    "text": "  %55 = getelementptr inbounds i32, ptr %11, i64 %51"
+   },
+   {
+    "text": "  store i32 %54, ptr %55, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %.not.3 = icmp eq i64 %51, 0"
+   },
+   {
+    "text": "  br i1 %.not.3, label %._crit_edge, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, !llvm.loop !34"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "56:                                               ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit.lr.ph"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable"
+   },
+   {
+    "text": "define dso_local void @_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %0, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %.not = icmp eq ptr %4, %5"
+   },
+   {
+    "text": "  br i1 %.not, label %._crit_edge, label %.lr.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": ".lr.ph:                                           ; preds = %2"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8, !tbaa !5"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %1, align 8, !tbaa !12"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  %umax = tail call i64 @llvm.umax.i64(i64 %9, i64 1)"
+   },
+   {
+    "text": "  br label %17"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "._crit_edge:                                      ; preds = %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, %2"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "17:                                               ; preds = %.lr.ph, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %.09 = phi i64 [ 0, %.lr.ph ], [ %30, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit ]"
+   },
+   {
+    "text": "  %18 = shl i64 %.09, 1"
+   },
+   {
+    "text": "  %19 = icmp ugt i64 %16, %18"
+   },
+   {
+    "text": "  br i1 %19, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, label %20, !prof !30"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "20:                                               ; preds = %17"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %17"
+   },
+   {
+    "text": "  %21 = or disjoint i64 %18, 1"
+   },
+   {
+    "text": "  %22 = icmp ugt i64 %16, %21"
+   },
+   {
+    "text": "  br i1 %22, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit, label %23, !prof !30"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "23:                                               ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "_ZNSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit: ; preds = %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit"
+   },
+   {
+    "text": "  %24 = getelementptr inbounds i32, ptr %12, i64 %18"
+   },
+   {
+    "text": "  %25 = load i32, ptr %24, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %12, i64 %21"
+   },
+   {
+    "text": "  %27 = load i32, ptr %26, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %28 = add nsw i32 %27, %25"
+   },
+   {
+    "text": "  %29 = getelementptr inbounds i32, ptr %5, i64 %.09"
+   },
+   {
+    "text": "  store i32 %28, ptr %29, align 4, !tbaa !13"
+   },
+   {
+    "text": "  %30 = add nuw i64 %.09, 1"
+   },
+   {
+    "text": "  %exitcond.not = icmp eq i64 %30, %umax"
+   },
+   {
+    "text": "  br i1 %exitcond.not, label %._crit_edge, label %17, !llvm.loop !35"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: cold noreturn nounwind memory(inaccessiblemem: write)"
+   },
+   {
+    "text": "declare void @llvm.trap() #2"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)"
+   },
+   {
+    "text": "declare i64 @llvm.umax.i64(i64, i64) #3"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)"
+   },
+   {
+    "text": "declare i64 @llvm.vector.reduce.add.v2i64(<2 x i64>) #3"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn memory(none)"
+   },
+   {
+    "text": "declare i64 @llvm.umin.i64(i64, i64) #3"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "attributes #0 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }"
+   },
+   {
+    "text": "attributes #1 = { mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }"
+   },
+   {
+    "text": "attributes #2 = { cold noreturn nounwind memory(inaccessiblemem: write) }"
+   },
+   {
+    "text": "attributes #3 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "!llvm.linker.options = !{}"
+   },
+   {
+    "text": "!llvm.module.flags = !{!0, !1, !2, !3}"
+   },
+   {
+    "text": "!llvm.ident = !{!4}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "!0 = !{i32 1, !\"wchar_size\", i32 4}"
+   },
+   {
+    "text": "!1 = !{i32 8, !\"PIC Level\", i32 2}"
+   },
+   {
+    "text": "!2 = !{i32 7, !\"PIE Level\", i32 2}"
+   },
+   {
+    "text": "!3 = !{i32 7, !\"uwtable\", i32 2}"
+   },
+   {
+    "text": "!4 = !{!\"clang version 18.1.0rc (https://github.com/llvm/llvm-project.git 461274b81d8641eab64d494accddc81d7db8a09e)\"}"
+   },
+   {
+    "text": "!5 = !{!6, !7, i64 8}"
+   },
+   {
+    "text": "!6 = !{!\"_ZTSNSt3__16vectorIiNS_9allocatorIiEEEE\", !7, i64 0, !7, i64 8, !10, i64 16}"
+   },
+   {
+    "text": "!7 = !{!\"any pointer\", !8, i64 0}"
+   },
+   {
+    "text": "!8 = !{!\"omnipotent char\", !9, i64 0}"
+   },
+   {
+    "text": "!9 = !{!\"Simple C++ TBAA\"}"
+   },
+   {
+    "text": "!10 = !{!\"_ZTSNSt3__117__compressed_pairIPiNS_9allocatorIiEEEE\", !11, i64 0}"
+   },
+   {
+    "text": "!11 = !{!\"_ZTSNSt3__122__compressed_pair_elemIPiLi0ELb0EEE\", !7, i64 0}"
+   },
+   {
+    "text": "!12 = !{!6, !7, i64 0}"
+   },
+   {
+    "text": "!13 = !{!14, !14, i64 0}"
+   },
+   {
+    "text": "!14 = !{!\"int\", !8, i64 0}"
+   },
+   {
+    "text": "!15 = distinct !{!15, !16, !17, !18}"
+   },
+   {
+    "text": "!16 = !{!\"llvm.loop.mustprogress\"}"
+   },
+   {
+    "text": "!17 = !{!\"llvm.loop.isvectorized\", i32 1}"
+   },
+   {
+    "text": "!18 = !{!\"llvm.loop.unroll.runtime.disable\"}"
+   },
+   {
+    "text": "!19 = distinct !{!19, !16, !18, !17}"
+   },
+   {
+    "text": "!20 = distinct !{!20, !16, !17, !18}"
+   },
+   {
+    "text": "!21 = !{!\"branch_weights\", i32 1, i32 2000}"
+   },
+   {
+    "text": "!22 = distinct !{!22, !16, !17}"
+   },
+   {
+    "text": "!23 = !{!24}"
+   },
+   {
+    "text": "!24 = distinct !{!24, !25}"
+   },
+   {
+    "text": "!25 = distinct !{!25, !\"LVerDomain\"}"
+   },
+   {
+    "text": "!26 = !{!27}"
+   },
+   {
+    "text": "!27 = distinct !{!27, !25}"
+   },
+   {
+    "text": "!28 = distinct !{!28, !16, !17, !18}"
+   },
+   {
+    "text": "!29 = distinct !{!29, !16, !17}"
+   },
+   {
+    "text": "!30 = !{!\"branch_weights\", i32 2000, i32 1}"
+   },
+   {
+    "text": "!31 = distinct !{!31, !16, !17, !18}"
+   },
+   {
+    "text": "!32 = distinct !{!32, !33}"
+   },
+   {
+    "text": "!33 = !{!\"llvm.loop.unroll.disable\"}"
+   },
+   {
+    "text": "!34 = distinct !{!34, !16, !17}"
+   },
+   {
+    "text": "!35 = distinct !{!35, !16}"
+   }
+  ],
+  "asmSize": 29119,
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "-passes=annotation2metadata,forceattrs,inferattrs,coro-early,function<eager-inv>(lower-expect,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;no-switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,sroa<modify-cfg>,early-cse<>),openmp-opt,ipsccp,called-value-propagation,globalopt,function<eager-inv>(mem2reg,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),always-inline,require<globals-aa>,function(invalidate<aa>),require<profile-summary>,cgscc(devirt<4>(inline,function-attrs<skip-non-recursive-function-attrs>,openmp-opt-cgscc,function<eager-inv;no-rerun>(sroa<modify-cfg>,early-cse<memssa>,speculative-execution<only-if-divergent-target>,jump-threading,correlated-propagation,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,aggressive-instcombine,libcalls-shrinkwrap,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,reassociate,constraint-elimination,loop-mssa(loop-instsimplify,loop-simplifycfg,licm<no-allowspeculation>,loop-rotate<header-duplication;no-prepare-for-lto>,licm<allowspeculation>,simple-loop-unswitch<no-nontrivial;trivial>),simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop(loop-idiom,indvars,loop-deletion,loop-unroll-full),loop-mssa(simple-loop-unswitch<no-nontrivial;trivial>),sroa<modify-cfg>,vector-combine,mldst-motion<no-split-footer-bb>,gvn<>,sccp,bdce,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,jump-threading,correlated-propagation,adce,memcpyopt,dse,move-auto-init,loop-mssa(licm<allowspeculation>),coro-elide,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>),function-attrs,function(require<should-not-run-function-passes>),coro-split)),deadargelim,coro-cleanup,globalopt,globaldce,elim-avail-extern,rpo-function-attrs,recompute-globalsaa,function<eager-inv>(float2int,lower-constant-intrinsics,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-unroll<O2>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),globaldce,constmerge,cg-profile,rel-lookup-table-converter,function(annotation-remarks),verify",
+   "-pass-remarks=loop-vectorize",
+   "-pass-remarks-missed=loop-vectorize",
+   "-pass-remarks-analysis=loop-vectorize",
+   "-S",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 52,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.03893999941647053,
+  "stderr": [
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 2, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/ir/c18-kernels-fast-frontend.ll",
+ "url": "https://godbolt.org/api/compiler/opt1810/compile",
+ "user_arguments": "-passes=annotation2metadata,forceattrs,inferattrs,coro-early,function<eager-inv>(lower-expect,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;no-switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,sroa<modify-cfg>,early-cse<>),openmp-opt,ipsccp,called-value-propagation,globalopt,function<eager-inv>(mem2reg,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),always-inline,require<globals-aa>,function(invalidate<aa>),require<profile-summary>,cgscc(devirt<4>(inline,function-attrs<skip-non-recursive-function-attrs>,openmp-opt-cgscc,function<eager-inv;no-rerun>(sroa<modify-cfg>,early-cse<memssa>,speculative-execution<only-if-divergent-target>,jump-threading,correlated-propagation,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,aggressive-instcombine,libcalls-shrinkwrap,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,reassociate,constraint-elimination,loop-mssa(loop-instsimplify,loop-simplifycfg,licm<no-allowspeculation>,loop-rotate<header-duplication;no-prepare-for-lto>,licm<allowspeculation>,simple-loop-unswitch<no-nontrivial;trivial>),simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop(loop-idiom,indvars,loop-deletion,loop-unroll-full),loop-mssa(simple-loop-unswitch<no-nontrivial;trivial>),sroa<modify-cfg>,vector-combine,mldst-motion<no-split-footer-bb>,gvn<>,sccp,bdce,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,jump-threading,correlated-propagation,adce,memcpyopt,dse,move-auto-init,loop-mssa(licm<allowspeculation>),coro-elide,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>),function-attrs,function(require<should-not-run-function-passes>),coro-split)),deadargelim,coro-cleanup,globalopt,globaldce,elim-avail-extern,rpo-function-attrs,recompute-globalsaa,function<eager-inv>(float2int,lower-constant-intrinsics,loop(loop-rotate<header-duplication;no-prepare-for-lto>,loop-deletion),loop-distribute,inject-tli-mappings,loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>,infer-alignment,loop-load-elim,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,simplifycfg<bonus-inst-threshold=1;forward-switch-cond;switch-range-to-icmp;switch-to-lookup;no-keep-loops;hoist-common-insts;sink-common-insts;speculate-blocks;simplify-cond-branch>,slp-vectorizer,vector-combine,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-unroll<O2>,transform-warning,sroa<preserve-cfg>,infer-alignment,instcombine<max-iterations=1;no-use-loop-info;no-verify-fixpoint>,loop-mssa(licm<allowspeculation>),alignment-from-assumptions,loop-sink,instsimplify,div-rem-pairs,tailcallelim,simplifycfg<bonus-inst-threshold=1;no-forward-switch-cond;switch-range-to-icmp;no-switch-to-lookup;keep-loops;no-hoist-common-insts;no-sink-common-insts;speculate-blocks;simplify-cond-branch>),globaldce,constmerge,cg-profile,rel-lookup-table-converter,function(annotation-remarks),verify -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+}

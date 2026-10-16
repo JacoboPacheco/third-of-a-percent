@@ -1,0 +1,193 @@
+# Made by excerpts.py from: raw/A-c18-kernels-none, raw/A-c18-kernels-fast, raw/A-c19-kernels-none, raw/A-c19-kernels-fast, raw/A-c20-kernels-none, raw/A-c20-kernels-fast, raw/A-c21-kernels-none, raw/A-c21-kernels-fast, raw/A-ctrunk-kernels-none, raw/A-ctrunk-kernels-fast, raw/A-c18-variants-none, raw/A-c18-variants-fast, raw/A-c19-variants-fast, raw/A-c20-variants-fast, raw/A-c21-variants-fast, raw/A-ctrunk-variants-fast, raw/A-c18-variants2-fast, raw/A-c20-variants2-fast, raw/A-ctrunk-variants2-fast, raw/A-c18-variants3-fast
+## kernels (sources/kernels.cpp), libc++ hardening FAST unless the column says NONE
+
+kern_k01_sum_fwd
+    18.1.0 NONE  vectorized 2x2
+    18.1.0       vectorized 2x2
+    19.1.0 NONE  vectorized 2x2
+    19.1.0       vectorized 2x2
+    20.1.0 NONE  vectorized 2x2
+    20.1.0       vectorized 2x2
+    21.1.0 NONE  vectorized 2x2
+    21.1.0       vectorized 2x2
+    trunk NONE   vectorized 2x2
+    trunk        vectorized 2x2
+kern_k02_add_fwd
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x1
+    19.1.0 NONE  vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0 NONE  vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0 NONE  vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk NONE   vectorized 4x2
+    trunk        vectorized 4x2
+kern_k03_stencil
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0 NONE  vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0 NONE  vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0 NONE  vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk NONE   vectorized 4x2
+    trunk        vectorized 4x2
+kern_k04_rev
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0 NONE  vectorized 4x2
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0 NONE  vectorized 4x2
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    21.1.0 NONE  vectorized 4x2
+    21.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk NONE   vectorized 4x2
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+kern_k05_stride2
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0 NONE  vectorized 4x2
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0 NONE  vectorized 4x2
+    20.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    21.1.0 NONE  vectorized 4x2
+    21.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    trunk NONE   vectorized 4x2
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+
+## variants (sources/variants.cpp), libc++ hardening FAST unless the column says NONE
+
+v_rev_pre
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_rev_span
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_rev_raw
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_rev_fwd
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_rev_manual
+    18.1.0 NONE  not vectorized: could not determine number of loop iterations
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    21.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk        not vectorized: Early exit loop with store but no supported condition load
+v_fwd_manual
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_rev_j
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    21.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+v_s2_pre
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    21.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+v_s2_pre_mul
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    21.1.0       not vectorized: Cannot vectorize early exit loop with more than one early exit
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+v_s2_span
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x1
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_s2_raw
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       vectorized 4x2
+    19.1.0       vectorized 4x2
+    20.1.0       vectorized 4x2
+    21.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v_s2_manual
+    18.1.0 NONE  not vectorized: could not determine number of loop iterations
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    21.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk        not vectorized: Early exit loop with store but no supported condition load
+v_s2_one
+    18.1.0 NONE  not vectorized: the cost-model indicates that vectorization is not beneficial
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    21.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk        not vectorized: Cannot vectorize early exit loop with complex writes to memory
+v_s2_j
+    18.1.0 NONE  vectorized 4x2
+    18.1.0       not vectorized: could not determine number of loop iterations
+    19.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: could not determine number of loop iterations
+    21.1.0       not vectorized: could not determine number of loop iterations
+    trunk        not vectorized: could not determine number of loop iterations
+
+## variants2 (sources/variants2.cpp), libc++ hardening FAST unless the column says NONE
+
+v2_s2_guard
+    18.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk        not vectorized: Early exit loop with store but no supported condition load
+v2_s2_guard_masked
+    18.1.0       vectorized 4x1
+    20.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v2_s2_masked
+    18.1.0       vectorized 4x1
+    20.1.0       vectorized 4x2
+    trunk        vectorized 4x2
+v2_rev_masked
+    18.1.0       not vectorized: could not determine number of loop iterations
+    20.1.0       not vectorized: Cannot vectorize early exit loop with writes to memory
+    trunk        not vectorized: Early exit loop with store but no supported condition load
+
+## variants3 (sources/variants3.cpp), libc++ hardening FAST unless the column says NONE
+
+v3_one_plain
+    18.1.0       not vectorized: could not determine number of loop iterations
+v3_one_half
+    18.1.0       vectorized 4x1
+v3_one_min
+    18.1.0       vectorized 4x1
+v3_one_assume
+    18.1.0       vectorized 4x1
+v3_two_plain
+    18.1.0       not vectorized: could not determine number of loop iterations
+v3_two_masked
+    18.1.0       vectorized 4x1

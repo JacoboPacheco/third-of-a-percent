@@ -1,0 +1,31 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpts, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-19.1.0/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp (tag llvmorg-19.1.0)
+
+// lines 1507 to 1530
+  }
+
+  if (isa<SCEVCouldNotCompute>(PSE.getBackedgeTakenCount())) {
+    reportVectorizationFailure("could not determine number of loop iterations",
+                               "could not determine number of loop iterations",
+                               "CantComputeNumberOfIterations", ORE, TheLoop);
+    if (DoExtraAnalysis)
+      Result = false;
+    else
+      return false;
+  }
+
+  LLVM_DEBUG(dbgs() << "LV: We can vectorize this loop"
+                    << (LAI->getRuntimePointerChecking()->Need
+                            ? " (with a runtime bound check)"
+                            : "")
+                    << "!\n");
+
+  unsigned SCEVThreshold = VectorizeSCEVCheckThreshold;
+  if (Hints->getForce() == LoopVectorizeHints::FK_Enabled)
+    SCEVThreshold = PragmaVectorizeSCEVCheckThreshold;
+
+  if (PSE.getPredicate().getComplexity() > SCEVThreshold) {
+    reportVectorizationFailure("Too many SCEV checks needed",
+
+// the message 'Early exit loop with store but no supported condition load' does not occur in this file
+

@@ -1,0 +1,3389 @@
+{
+ "compiler_id": "clang1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:41:57+00:00",
+ "http_status": 200,
+ "name": "A-c18-variants3-fast",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -std=c++20 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize"
+  },
+  "source": "// Stride-2 loops with the check written by hand on raw pointers (no libc++ hardening macro involved).\n// They vary the number of in-loop checks, the range of the bound `an` (the size of `a`) and the way the\n// check is written:\n//   one check `2*i+1 >= an` (as variants2.cpp), or two checks (`2*i` and `2*i+1`, as kern_k05_stride2);\n//   the bound as it is (full range), masked, limited with std::min, or limited with __builtin_assume;\n//   the check written on the counter itself (`i >= an / 2`).\n// Every function has one \"// LOOP\" line.\n#include <algorithm>\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n// one check, bound as it is\n__attribute__((noinline)) void v3_one_plain(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = a.size();\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (2 * i + 1 >= an) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n\n// one check written on the counter, bound as it is\n__attribute__((noinline)) void v3_one_half(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = a.size();\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (i >= an / 2) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n\n// one check, bound limited to 2^40 with std::min\n__attribute__((noinline)) void v3_one_min(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = std::min<size_t>(a.size(), size_t(1) << 40);\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (2 * i + 1 >= an) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n\n// one check, bound as it is, with an assumption that it is below 2^40\n__attribute__((noinline)) void v3_one_assume(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = a.size();\n  __builtin_assume(an < (size_t(1) << 40));\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (2 * i + 1 >= an) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n\n// two checks (2*i and 2*i+1), bound as it is\n__attribute__((noinline)) void v3_two_plain(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = a.size();\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (2 * i >= an) __builtin_trap();\n    if (2 * i + 1 >= an) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n\n// two checks, bound masked with SIZE_MAX >> 1\n__attribute__((noinline)) void v3_two_masked(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  int32_t* cp = c.data();\n  const int32_t* ap = a.data();\n  const size_t n = c.size();\n  const size_t an = a.size() & (SIZE_MAX >> 1);\n  for (size_t i = 0; i < n; ++i) {  // LOOP\n    if (2 * i >= an) __builtin_trap();\n    if (2 * i + 1 >= an) __builtin_trap();\n    cp[i] = ap[2 * i] + ap[2 * i + 1];\n  }\n}\n"
+ },
+ "request_sha256": "5624e1ca97600900441b953c0bdc672e441c3232ff3fe66998acf6f77ab4e488",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_one_plain(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 19
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 19
+    },
+    "text": "        je      .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 19
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 19
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     edi, 1"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 20
+    },
+    "text": "        cmp     rdi, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 20
+    },
+    "text": "        jae     .LBB0_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 21
+    },
+    "text": "        mov     r8d, dword ptr [rdx + 4*rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 21
+    },
+    "text": "        add     r8d, dword ptr [rdx + 4*rdi - 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 21
+    },
+    "text": "        mov     dword ptr [rax + 2*rdi - 2], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 19
+    },
+    "text": "        add     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 19
+    },
+    "text": "        dec     rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 19
+    },
+    "text": "        jne     .LBB0_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_4:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 23
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 20
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_one_half(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 31
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_9",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        je      .LBB1_9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sub     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 0
+    },
+    "text": "        shr     rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        lea     r8, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmovb   rdi, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rdi, 11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jbe     .LBB1_2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmovae  r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        lea     r9, [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rax, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jae     .LBB1_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r8, [rax + 4*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rdx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jae     .LBB1_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edi, edi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB1_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     r8d, edi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        and     r8d, 3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        mov     r9d, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmovne  r9, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        sub     rdi, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movups  xmm0, xmmword ptr [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movups  xmm1, xmmword ptr [rdx + 8*r8 + 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movaps  xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 33
+    },
+    "text": "        shufps  xmm2, xmm1, 136"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 33
+    },
+    "text": "        shufps  xmm0, xmm1, 221"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        paddd   xmm0, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 33
+    },
+    "text": "        movdqu  xmmword ptr [rax + 4*r8], xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 31
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rdi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jne     .LBB1_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_7:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 32
+    },
+    "text": "        cmp     rsi, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 32
+    },
+    "text": "        je      .LBB1_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     r8d, dword ptr [rdx + 8*rdi + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 33
+    },
+    "text": "        add     r8d, dword ptr [rdx + 8*rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 33
+    },
+    "text": "        mov     dword ptr [rax + 4*rdi], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 31
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 31
+    },
+    "text": "        cmp     rcx, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB1_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 31
+    },
+    "text": "        jne     .LBB1_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_9:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 35
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB1_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 22,
+     "file": null,
+     "line": 32
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_one_min(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 43
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_9",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        je      .LBB2_9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sub     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        movabs  rdi, 1099511627776"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 42
+    },
+    "text": "        cmp     rsi, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 42
+    },
+    "text": "        cmovae  rsi, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        shr     rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        lea     r8, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        mov     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmovb   rdi, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rdi, 11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        jbe     .LBB2_2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmovae  r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        lea     r9, [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rax, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        jae     .LBB2_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r8, [rax + 4*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rdx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        jae     .LBB2_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edi, edi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB2_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        mov     r8d, edi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        and     r8d, 3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        mov     r9d, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmovne  r9, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        sub     rdi, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 45
+    },
+    "text": "        movups  xmm0, xmmword ptr [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 45
+    },
+    "text": "        movups  xmm1, xmmword ptr [rdx + 8*r8 + 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 45
+    },
+    "text": "        movaps  xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 45
+    },
+    "text": "        shufps  xmm2, xmm1, 136"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 45
+    },
+    "text": "        shufps  xmm0, xmm1, 221"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 45
+    },
+    "text": "        paddd   xmm0, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 45
+    },
+    "text": "        movdqu  xmmword ptr [rax + 4*r8], xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 43
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rdi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 43
+    },
+    "text": "        jne     .LBB2_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_7:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 44
+    },
+    "text": "        cmp     rsi, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 44
+    },
+    "text": "        je      .LBB2_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 45
+    },
+    "text": "        mov     r8d, dword ptr [rdx + 8*rdi + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 45
+    },
+    "text": "        add     r8d, dword ptr [rdx + 8*rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 45
+    },
+    "text": "        mov     dword ptr [rax + 4*rdi], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 43
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 43
+    },
+    "text": "        cmp     rcx, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB2_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 43
+    },
+    "text": "        jne     .LBB2_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_9:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 47
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB2_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 44
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_one_assume(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 56
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_9",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        je      .LBB3_9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        shr     rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        lea     r8, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        mov     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmovb   rdi, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rdi, 11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        jbe     .LBB3_2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmovae  r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        lea     r9, [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rax, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        jae     .LBB3_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r8, [rax + 4*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rdx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        jae     .LBB3_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edi, edi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB3_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        mov     r8d, edi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        and     r8d, 3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        mov     r9d, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmovne  r9, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        sub     rdi, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 58
+    },
+    "text": "        movups  xmm0, xmmword ptr [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 58
+    },
+    "text": "        movups  xmm1, xmmword ptr [rdx + 8*r8 + 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 58
+    },
+    "text": "        movaps  xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 58
+    },
+    "text": "        shufps  xmm2, xmm1, 136"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 58
+    },
+    "text": "        shufps  xmm0, xmm1, 221"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 58
+    },
+    "text": "        paddd   xmm0, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 58
+    },
+    "text": "        movdqu  xmmword ptr [rax + 4*r8], xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 56
+    },
+    "text": "        add     r8, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rdi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 56
+    },
+    "text": "        jne     .LBB3_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_7:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 57
+    },
+    "text": "        cmp     rsi, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 57
+    },
+    "text": "        je      .LBB3_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 58
+    },
+    "text": "        mov     r8d, dword ptr [rdx + 8*rdi + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 58
+    },
+    "text": "        add     r8d, dword ptr [rdx + 8*rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 58
+    },
+    "text": "        mov     dword ptr [rax + 4*rdi], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 56
+    },
+    "text": "        inc     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 56
+    },
+    "text": "        cmp     rcx, rdi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB3_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 56
+    },
+    "text": "        jne     .LBB3_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_9:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 60
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB3_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 57
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_two_plain(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 68
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 68
+    },
+    "text": "        je      .LBB4_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rsi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 68
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 68
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     edi, edi"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 15,
+     "file": null,
+     "line": 69
+    },
+    "text": "        cmp     rdi, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 69
+    },
+    "text": "        jae     .LBB4_6"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 70
+    },
+    "text": "        lea     r8, [rdi + 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 70
+    },
+    "text": "        cmp     r8, rsi"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 70
+    },
+    "text": "        jae     .LBB4_6"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 71
+    },
+    "text": "        mov     r8d, dword ptr [rdx + 4*rdi + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 71
+    },
+    "text": "        add     r8d, dword ptr [rdx + 4*rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 71
+    },
+    "text": "        mov     dword ptr [rax + 2*rdi], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 68
+    },
+    "text": "        add     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 68
+    },
+    "text": "        dec     rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB4_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 68
+    },
+    "text": "        jne     .LBB4_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 73
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB4_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "v3_two_masked(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 36,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 630
+    },
+    "text": "        mov     rax, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rcx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 81
+    },
+    "text": "        sub     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        je      .LBB5_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 41,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        mov     rdi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sub     rdi, rdx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rdi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 0
+    },
+    "text": "        movabs  rsi, 9223372036854775807"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 30,
+     "file": null,
+     "line": 80
+    },
+    "text": "        and     rsi, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 48,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_18.1.0/bin/../include/c++/v1/vector",
+     "line": 595
+    },
+    "text": "        sar     rcx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        lea     rdi, [rsi + 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        shr     rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        shr     rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rcx, 1"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        adc     rcx, 0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        lea     r9, [rcx - 1]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        mov     r8, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmovb   r8, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     r9, r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmovb   r8, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     r8, 11"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        jbe     .LBB5_2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rdi, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        mov     r10, rsi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmovb   r10, rdi"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     r9, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmovb   r10, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        lea     r9, [rdx + 8*r10]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        add     r9, 8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rax, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        jae     .LBB5_5"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        lea     r9, [rax + 4*r10]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        add     r9, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rdx, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_5",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        jae     .LBB5_5"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     r8d, r8d"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        jmp     .LBB5_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_5:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        inc     r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        mov     r9d, r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        and     r9d, 3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        mov     r10d, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmovne  r10, r9"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        sub     r8, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        xor     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 84
+    },
+    "text": "        movups  xmm0, xmmword ptr [rdx + 8*r9]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 84
+    },
+    "text": "        movups  xmm1, xmmword ptr [rdx + 8*r9 + 16]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 84
+    },
+    "text": "        movaps  xmm2, xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 84
+    },
+    "text": "        shufps  xmm2, xmm1, 136"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 13,
+     "file": null,
+     "line": 84
+    },
+    "text": "        shufps  xmm0, xmm1, 221"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 84
+    },
+    "text": "        paddd   xmm0, xmm2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 84
+    },
+    "text": "        movdqu  xmmword ptr [rax + 4*r9], xmm0"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 81
+    },
+    "text": "        add     r9, 4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     r8, r9"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 81
+    },
+    "text": "        jne     .LBB5_6"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_7:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 15,
+     "file": null,
+     "line": 82
+    },
+    "text": "        cmp     rdi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 82
+    },
+    "text": "        je      .LBB5_11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 19,
+     "file": null,
+     "line": 83
+    },
+    "text": "        cmp     rsi, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 9,
+     "file": null,
+     "line": 83
+    },
+    "text": "        je      .LBB5_11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 25,
+     "file": null,
+     "line": 84
+    },
+    "text": "        mov     r9d, dword ptr [rdx + 8*r8 + 4]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 23,
+     "file": null,
+     "line": 84
+    },
+    "text": "        add     r9d, dword ptr [rdx + 8*r8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 11,
+     "file": null,
+     "line": 84
+    },
+    "text": "        mov     dword ptr [rax + 4*r8], r9d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 81
+    },
+    "text": "        inc     r8"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 81
+    },
+    "text": "        cmp     rcx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB5_7",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 81
+    },
+    "text": "        jne     .LBB5_7"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 86
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB5_11:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "        ud2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   }
+  ],
+  "asmSize": 186048,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-13.2.0",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-std=c++20",
+   "-march=x86-64",
+   "-stdlib=libc++",
+   "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 1976,
+  "filteredCount": 13725,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {
+   ".LBB0_2": 14,
+   ".LBB0_4": 23,
+   ".LBB0_5": 25,
+   ".LBB1_10": 90,
+   ".LBB1_2": 57,
+   ".LBB1_5": 60,
+   ".LBB1_6": 68,
+   ".LBB1_7": 79,
+   ".LBB1_9": 88,
+   ".LBB2_10": 158,
+   ".LBB2_2": 125,
+   ".LBB2_5": 128,
+   ".LBB2_6": 136,
+   ".LBB2_7": 147,
+   ".LBB2_9": 156,
+   ".LBB3_10": 223,
+   ".LBB3_2": 190,
+   ".LBB3_5": 193,
+   ".LBB3_6": 201,
+   ".LBB3_7": 212,
+   ".LBB3_9": 221,
+   ".LBB4_2": 239,
+   ".LBB4_5": 251,
+   ".LBB4_6": 253,
+   ".LBB5_10": 327,
+   ".LBB5_11": 329,
+   ".LBB5_2": 294,
+   ".LBB5_5": 297,
+   ".LBB5_6": 305,
+   ".LBB5_7": 316,
+   "v3_one_assume(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 161,
+   "v3_one_half(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 28,
+   "v3_one_min(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 93,
+   "v3_one_plain(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 1,
+   "v3_two_masked(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 256,
+   "v3_two_plain(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&)": 226
+  },
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 64,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.07994099892675877,
+  "stderr": [
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 19,
+     "severity": 3,
+     "text": "remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:19:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mloop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   19 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 19,
+     "severity": 3,
+     "text": "remark: loop not vectorized [-Rpass-missed=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:19:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mloop not vectorized [-Rpass-missed=loop-vectorize]\u001b[0m"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 31,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:31:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   31 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 31,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:31:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 43,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:43:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   43 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 43,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:43:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 56,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:56:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   56 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 56,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:56:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]\u001b[0m"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 68,
+     "severity": 3,
+     "text": "remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:68:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mloop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   68 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 68,
+     "severity": 3,
+     "text": "remark: loop not vectorized [-Rpass-missed=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:68:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mloop not vectorized [-Rpass-missed=loop-vectorize]\u001b[0m"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 81,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:81:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-analysis=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "   81 |   for (size_t i = 0; i < n; ++i) {  // LOOP\u001b[0m"
+   },
+   {
+    "text": "      | \u001b[0;1;32m  ^"
+   },
+   {
+    "tag": {
+     "column": 3,
+     "file": "example.cpp",
+     "line": 81,
+     "severity": 3,
+     "text": "remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:81:3: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mvectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]\u001b[0m"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/variants3.cpp",
+ "url": "https://godbolt.org/api/compiler/clang1810/compile",
+ "user_arguments": "-O2 -std=c++20 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize"
+}

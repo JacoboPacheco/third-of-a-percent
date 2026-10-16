@@ -1,0 +1,31 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpts, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-20.1.0/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp (tag llvmorg-20.1.0)
+
+// lines 1818 to 1841
+  }
+
+  if (isa<SCEVCouldNotCompute>(PSE.getBackedgeTakenCount())) {
+    if (TheLoop->getExitingBlock()) {
+      reportVectorizationFailure("Cannot vectorize uncountable loop",
+                                 "UnsupportedUncountableLoop", ORE, TheLoop);
+      if (DoExtraAnalysis)
+        Result = false;
+      else
+        return false;
+    } else {
+      if (!isVectorizableEarlyExitLoop()) {
+        UncountableEdge = std::nullopt;
+        if (DoExtraAnalysis)
+          Result = false;
+        else
+          return false;
+      }
+    }
+  }
+
+  // Go over each instruction and look at memory deps.
+  if (!canVectorizeMemory()) {
+    LLVM_DEBUG(dbgs() << "LV: Can't vectorize due to memory conflicts\n");
+
+// the message 'Early exit loop with store but no supported condition load' does not occur in this file
+

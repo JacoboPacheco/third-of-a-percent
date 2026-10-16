@@ -1,0 +1,101 @@
+# Made by excerpts.py from: raw/B-ctrunk-kernels-fast-ir
+; *** IR Dump Before LoopVectorizePass on _Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***
+define dso_local void @_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nofree noundef nonnull readonly align 8 captures(none) dereferenceable(24) %0, ptr nofree noundef nonnull readonly align 8 captures(none) dereferenceable(24) %1) local_unnamed_addr #1 personality ptr @__gxx_personality_v0 {
+  %3 = getelementptr inbounds nuw i8, ptr %1, i64 8
+  %4 = load ptr, ptr %3, align 8
+  %5 = load ptr, ptr %1, align 8
+  %6 = icmp eq ptr %4, %5
+  br i1 %6, label %22, label %7
+7:                                                ; preds = %2
+  %8 = ptrtoaddr ptr %5 to i64
+  %9 = ptrtoaddr ptr %4 to i64
+  %10 = sub i64 %9, %8
+  %11 = ashr exact i64 %10, 2
+  call void @llvm.assume(i1 true) [ "separate_storage"(ptr %1, ptr %5) ]
+  %12 = getelementptr inbounds nuw i8, ptr %0, i64 8
+  %13 = load ptr, ptr %12, align 8
+  %14 = load ptr, ptr %0, align 8
+  %15 = ptrtoaddr ptr %13 to i64
+  %16 = ptrtoaddr ptr %14 to i64
+  %17 = sub i64 %15, %16
+  %18 = ashr exact i64 %17, 2
+  %19 = add nsw i64 %11, -1
+  %20 = icmp ult i64 %19, %18
+  br label %23
+21:                                               ; preds = %26
+  br label %22
+22:                                               ; preds = %21, %2
+  ret void
+23:                                               ; preds = %7, %26
+  %24 = phi i64 [ %11, %7 ], [ %27, %26 ]
+  br i1 %20, label %26, label %25
+25:                                               ; preds = %23
+  tail call void @llvm.trap() #5
+  unreachable
+26:                                               ; preds = %23
+  %27 = add i64 %24, -1
+  %28 = getelementptr inbounds nuw [4 x i8], ptr %5, i64 %27
+  %29 = load i32, ptr %28, align 4
+  %30 = shl nsw i32 %29, 1
+  call void @llvm.assume(i1 true) [ "separate_storage"(ptr %0, ptr %14) ]
+  %31 = getelementptr inbounds nuw [4 x i8], ptr %14, i64 %27
+  store i32 %30, ptr %31, align 4
+  %32 = icmp eq i64 %27, 0
+  br i1 %32, label %21, label %23
+}
+
+; *** IR Dump Before LoopVectorizePass on _Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***
+define dso_local void @_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nofree noundef nonnull readonly align 8 captures(none) dereferenceable(24) %0, ptr nofree noundef nonnull readonly align 8 captures(none) dereferenceable(24) %1) local_unnamed_addr #1 personality ptr @__gxx_personality_v0 {
+  %3 = getelementptr inbounds nuw i8, ptr %0, i64 8
+  %4 = load ptr, ptr %3, align 8
+  %5 = load ptr, ptr %0, align 8
+  %6 = icmp eq ptr %4, %5
+  br i1 %6, label %21, label %7
+7:                                                ; preds = %2
+  %8 = ptrtoaddr ptr %4 to i64
+  %9 = ptrtoaddr ptr %5 to i64
+  %10 = sub i64 %8, %9
+  %11 = ashr exact i64 %10, 2
+  %12 = getelementptr inbounds nuw i8, ptr %1, i64 8
+  %13 = load ptr, ptr %12, align 8
+  %14 = load ptr, ptr %1, align 8
+  %15 = ptrtoaddr ptr %13 to i64
+  %16 = ptrtoaddr ptr %14 to i64
+  %17 = sub i64 %15, %16
+  %18 = ashr exact i64 %17, 2
+  %19 = call i64 @llvm.umax.i64(i64 %11, i64 1)
+  br label %22
+20:                                               ; preds = %31
+  br label %21
+21:                                               ; preds = %20, %2
+  ret void
+22:                                               ; preds = %7, %31
+  %23 = phi i64 [ 0, %7 ], [ %38, %31 ]
+  %24 = shl i64 %23, 1
+  %25 = icmp ult i64 %24, %18
+  br i1 %25, label %27, label %26
+26:                                               ; preds = %22
+  tail call void @llvm.trap() #5
+  unreachable
+27:                                               ; preds = %22
+  call void @llvm.assume(i1 true) [ "separate_storage"(ptr %1, ptr %14) ]
+  %28 = or disjoint i64 %24, 1
+  %29 = icmp ult i64 %28, %18
+  br i1 %29, label %31, label %30
+30:                                               ; preds = %27
+  tail call void @llvm.trap() #5
+  unreachable
+31:                                               ; preds = %27
+  %32 = getelementptr inbounds nuw [4 x i8], ptr %14, i64 %24
+  %33 = load i32, ptr %32, align 4
+  call void @llvm.assume(i1 true) [ "separate_storage"(ptr %1, ptr %14) ]
+  %34 = getelementptr inbounds nuw [4 x i8], ptr %14, i64 %28
+  %35 = load i32, ptr %34, align 4
+  %36 = add nsw i32 %35, %33
+  call void @llvm.assume(i1 true) [ "separate_storage"(ptr %0, ptr %5) ]
+  %37 = getelementptr inbounds nuw [4 x i8], ptr %5, i64 %23
+  store i32 %36, ptr %37, align 4
+  %38 = add nuw i64 %23, 1
+  %39 = icmp eq i64 %38, %19
+  br i1 %39, label %20, label %22
+}

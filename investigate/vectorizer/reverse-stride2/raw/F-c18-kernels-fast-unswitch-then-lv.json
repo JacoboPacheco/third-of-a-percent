@@ -1,0 +1,1592 @@
+{
+ "compiler_id": "opt1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:09:16+00:00",
+ "http_status": 200,
+ "name": "F-c18-kernels-fast-unswitch-then-lv",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-passes=loop-mssa(simple-loop-unswitch),loop-vectorize -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+  },
+  "source": "; Standalone module made from the IR dumps in raw/B-c18-kernels-fast-ir.json (see extract.py).\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\n%\"class.std::__1::vector\" = type { ptr, ptr, ptr }\n\ndeclare void @llvm.trap() #9999\ndeclare i64 @llvm.umax.i64(i64, i64)\n\n; *** IR Dump Before LoopVectorizePass on _Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE ***\n; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable\ndefine dso_local noundef i64 @_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0) local_unnamed_addr #0 {\nentry:\n  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %3 = load ptr, ptr %2, align 8\n  %4 = load ptr, ptr %0, align 8\n  %5 = icmp eq ptr %3, %4\n  br i1 %5, label %bb14, label %bb6\n\nbb6:                                                ; preds = %entry\n  %7 = ptrtoint ptr %3 to i64\n  %8 = ptrtoint ptr %4 to i64\n  %9 = sub i64 %7, %8\n  %10 = ashr exact i64 %9, 2\n  %11 = call i64 @llvm.umax.i64(i64 %10, i64 1)\n  br label %bb16\n\nbb12:                                               ; preds = %bb16\n  %13 = phi i64 [ %22, %bb16 ]\n  br label %bb14\n\nbb14:                                               ; preds = %bb12, %entry\n  %15 = phi i64 [ 0, %entry ], [ %13, %bb12 ]\n  ret i64 %15\n\nbb16:                                               ; preds = %bb6, %bb16\n  %17 = phi i64 [ %23, %bb16 ], [ 0, %bb6 ]\n  %18 = phi i64 [ %22, %bb16 ], [ 0, %bb6 ]\n  %19 = getelementptr inbounds i32, ptr %4, i64 %17\n  %20 = load i32, ptr %19, align 4\n  %21 = sext i32 %20 to i64\n  %22 = add nsw i64 %18, %21\n  %23 = add nuw i64 %17, 1\n  %24 = icmp eq i64 %23, %11\n  br i1 %24, label %bb12, label %bb16\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %2) local_unnamed_addr #1 {\nentry:\n  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %5 = load ptr, ptr %4, align 8\n  %6 = load ptr, ptr %1, align 8\n  %7 = icmp eq ptr %5, %6\n  br i1 %7, label %bb29, label %bb8\n\nbb8:                                                ; preds = %entry\n  %9 = ptrtoint ptr %5 to i64\n  %10 = ptrtoint ptr %6 to i64\n  %11 = sub i64 %9, %10\n  %12 = ashr exact i64 %11, 2\n  %13 = getelementptr inbounds %\"class.std::__1::vector\", ptr %2, i64 0, i32 1\n  %14 = load ptr, ptr %13, align 8\n  %15 = load ptr, ptr %2, align 8\n  %16 = ptrtoint ptr %14 to i64\n  %17 = ptrtoint ptr %15 to i64\n  %18 = sub i64 %16, %17\n  %19 = ashr exact i64 %18, 2\n  %20 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %21 = load ptr, ptr %20, align 8\n  %22 = load ptr, ptr %0, align 8\n  %23 = ptrtoint ptr %21 to i64\n  %24 = ptrtoint ptr %22 to i64\n  %25 = sub i64 %23, %24\n  %26 = ashr exact i64 %25, 2\n  %27 = call i64 @llvm.umax.i64(i64 %12, i64 1)\n  br label %bb30\n\nbb28:                                               ; preds = %bb37\n  br label %bb29\n\nbb29:                                               ; preds = %bb28, %entry\n  ret void\n\nbb30:                                               ; preds = %bb8, %bb37\n  %31 = phi i64 [ 0, %bb8 ], [ %44, %bb37 ]\n  %32 = icmp eq i64 %31, %19\n  br i1 %32, label %bb33, label %bb34\n\nbb33:                                               ; preds = %bb30\n  tail call void @llvm.trap()\n  unreachable\n\nbb34:                                               ; preds = %bb30\n  %35 = icmp eq i64 %31, %26\n  br i1 %35, label %bb36, label %bb37\n\nbb36:                                               ; preds = %bb34\n  tail call void @llvm.trap()\n  unreachable\n\nbb37:                                               ; preds = %bb34\n  %38 = getelementptr inbounds i32, ptr %6, i64 %31\n  %39 = load i32, ptr %38, align 4\n  %40 = getelementptr inbounds i32, ptr %15, i64 %31\n  %41 = load i32, ptr %40, align 4\n  %42 = add nsw i32 %41, %39\n  %43 = getelementptr inbounds i32, ptr %22, i64 %31\n  store i32 %42, ptr %43, align 4\n  %44 = add nuw i64 %31, 1\n  %45 = icmp eq i64 %44, %27\n  br i1 %45, label %bb28, label %bb30\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = icmp ugt i64 %9, 2\n  br i1 %10, label %bb11, label %bb23\n\nbb11:                                               ; preds = %entry\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %0, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %18, i64 1)\n  %20 = add i64 %19, 1\n  %21 = getelementptr i32, ptr %5, i64 -1\n  br label %bb24\n\nbb22:                                               ; preds = %bb29\n  br label %bb23\n\nbb23:                                               ; preds = %bb22, %entry\n  ret void\n\nbb24:                                               ; preds = %bb11, %bb29\n  %25 = phi i64 [ 2, %bb11 ], [ %39, %bb29 ]\n  %26 = phi i64 [ 1, %bb11 ], [ %25, %bb29 ]\n  %27 = icmp eq i64 %25, %20\n  br i1 %27, label %bb28, label %bb29\n\nbb28:                                               ; preds = %bb24\n  tail call void @llvm.trap()\n  unreachable\n\nbb29:                                               ; preds = %bb24\n  %30 = getelementptr i32, ptr %21, i64 %26\n  %31 = load i32, ptr %30, align 4\n  %32 = getelementptr inbounds i32, ptr %5, i64 %26\n  %33 = load i32, ptr %32, align 4\n  %34 = add nsw i32 %33, %31\n  %35 = getelementptr inbounds i32, ptr %5, i64 %25\n  %36 = load i32, ptr %35, align 4\n  %37 = add nsw i32 %34, %36\n  %38 = getelementptr inbounds i32, ptr %14, i64 %26\n  store i32 %37, ptr %38, align 4\n  %39 = add nuw i64 %25, 1\n  %40 = icmp eq i64 %39, %9\n  br i1 %40, label %bb22, label %bb24\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = icmp eq ptr %4, %5\n  br i1 %6, label %bb22, label %bb7\n\nbb7:                                                ; preds = %entry\n  %8 = ptrtoint ptr %5 to i64\n  %9 = ptrtoint ptr %4 to i64\n  %10 = sub i64 %9, %8\n  %11 = ashr exact i64 %10, 2\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %0, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = add nsw i64 %11, -1\n  %20 = icmp ult i64 %19, %18\n  br label %bb23\n\nbb21:                                               ; preds = %bb26\n  br label %bb22\n\nbb22:                                               ; preds = %bb21, %entry\n  ret void\n\nbb23:                                               ; preds = %bb7, %bb26\n  %24 = phi i64 [ %11, %bb7 ], [ %27, %bb26 ]\n  br i1 %20, label %bb26, label %bb25\n\nbb25:                                               ; preds = %bb23\n  tail call void @llvm.trap()\n  unreachable\n\nbb26:                                               ; preds = %bb23\n  %27 = add i64 %24, -1\n  %28 = getelementptr inbounds i32, ptr %5, i64 %27\n  %29 = load i32, ptr %28, align 4\n  %30 = shl nsw i32 %29, 1\n  %31 = getelementptr inbounds i32, ptr %14, i64 %27\n  store i32 %30, ptr %31, align 4\n  %32 = icmp eq i64 %27, 0\n  br i1 %32, label %bb21, label %bb23\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #1 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = icmp eq ptr %4, %5\n  br i1 %6, label %bb21, label %bb7\n\nbb7:                                                ; preds = %entry\n  %8 = ptrtoint ptr %4 to i64\n  %9 = ptrtoint ptr %5 to i64\n  %10 = sub i64 %8, %9\n  %11 = ashr exact i64 %10, 2\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %1, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %11, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb31\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb7, %bb31\n  %23 = phi i64 [ 0, %bb7 ], [ %38, %bb31 ]\n  %24 = shl i64 %23, 1\n  %25 = icmp ugt i64 %18, %24\n  br i1 %25, label %bb27, label %bb26\n\nbb26:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb27:                                               ; preds = %bb22\n  %28 = or disjoint i64 %24, 1\n  %29 = icmp ugt i64 %18, %28\n  br i1 %29, label %bb31, label %bb30\n\nbb30:                                               ; preds = %bb27\n  tail call void @llvm.trap()\n  unreachable\n\nbb31:                                               ; preds = %bb27\n  %32 = getelementptr inbounds i32, ptr %14, i64 %24\n  %33 = load i32, ptr %32, align 4\n  %34 = getelementptr inbounds i32, ptr %14, i64 %28\n  %35 = load i32, ptr %34, align 4\n  %36 = add nsw i32 %35, %33\n  %37 = getelementptr inbounds i32, ptr %5, i64 %23\n  store i32 %36, ptr %37, align 4\n  %38 = add nuw i64 %23, 1\n  %39 = icmp eq i64 %38, %19\n  br i1 %39, label %bb20, label %bb22\n}\n\nattributes #0 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable }\nattributes #1 = { mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable }\nattributes #9999 = { cold noreturn nounwind memory(inaccessiblemem: write) }\n"
+ },
+ "request_sha256": "c5eba8f104e8f3f2703d6ccf92b287662a4f0e2643e5574f74057a56ad7ffbca",
+ "response": {
+  "asm": [
+   {
+    "text": "%\"class.std::__1::vector\" = type { ptr, ptr, ptr }"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare void @llvm.trap() #0"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umax.i64(i64, i64) #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define dso_local noundef i64 @kern_k01_sum_fwd(std::__1::vector<int, std::__1::allocator<int> > const&)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0) local_unnamed_addr #2 {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %1 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %2 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %4 = icmp eq ptr %2, %3"
+   },
+   {
+    "text": "  br i1 %4, label %bb14, label %bb6"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb6:"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %2 to i64"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  %9 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %9, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %9, 4"
+   },
+   {
+    "text": "  %n.vec = sub i64 %9, %n.mod.vf"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.phi = phi <2 x i64> [ zeroinitializer, %vector.ph ], [ %18, %vector.body ]"
+   },
+   {
+    "text": "  %vec.phi1 = phi <2 x i64> [ zeroinitializer, %vector.ph ], [ %19, %vector.body ]"
+   },
+   {
+    "text": "  %10 = add i64 %index, 0"
+   },
+   {
+    "text": "  %11 = add i64 %index, 2"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %3, i64 %10"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %3, i64 %11"
+   },
+   {
+    "text": "  %14 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  %15 = getelementptr inbounds i32, ptr %12, i32 2"
+   },
+   {
+    "text": "  %wide.load = load <2 x i32>, ptr %14, align 4"
+   },
+   {
+    "text": "  %wide.load2 = load <2 x i32>, ptr %15, align 4"
+   },
+   {
+    "text": "  %16 = sext <2 x i32> %wide.load to <2 x i64>"
+   },
+   {
+    "text": "  %17 = sext <2 x i32> %wide.load2 to <2 x i64>"
+   },
+   {
+    "text": "  %18 = add <2 x i64> %vec.phi, %16"
+   },
+   {
+    "text": "  %19 = add <2 x i64> %vec.phi1, %17"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %20 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %20, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  %bin.rdx = add <2 x i64> %19, %18"
+   },
+   {
+    "text": "  %21 = call i64 @llvm.vector.reduce.add.v2i64(<2 x i64> %bin.rdx)"
+   },
+   {
+    "text": "  %cmp.n = icmp eq i64 %9, %n.vec"
+   },
+   {
+    "text": "  br i1 %cmp.n, label %bb12, label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %bb6 ]"
+   },
+   {
+    "text": "  %bc.merge.rdx = phi i64 [ 0, %bb6 ], [ %21, %middle.block ]"
+   },
+   {
+    "text": "  br label %bb16"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb12:"
+   },
+   {
+    "text": "  %22 = phi i64 [ %29, %bb16 ], [ %21, %middle.block ]"
+   },
+   {
+    "text": "  br label %bb14"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb14:"
+   },
+   {
+    "text": "  %23 = phi i64 [ 0, %entry ], [ %22, %bb12 ]"
+   },
+   {
+    "text": "  ret i64 %23"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb16:"
+   },
+   {
+    "text": "  %24 = phi i64 [ %30, %bb16 ], [ %bc.resume.val, %scalar.ph ]"
+   },
+   {
+    "text": "  %25 = phi i64 [ %29, %bb16 ], [ %bc.merge.rdx, %scalar.ph ]"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %3, i64 %24"
+   },
+   {
+    "text": "  %27 = load i32, ptr %26, align 4"
+   },
+   {
+    "text": "  %28 = sext i32 %27 to i64"
+   },
+   {
+    "text": "  %29 = add nsw i64 %25, %28"
+   },
+   {
+    "text": "  %30 = add nuw i64 %24, 1"
+   },
+   {
+    "text": "  %31 = icmp eq i64 %30, %9"
+   },
+   {
+    "text": "  br i1 %31, label %bb12, label %bb16"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define dso_local void @kern_k02_add_fwd(std::__1::vector<int, std::__1::allocator<int> >&, std::__1::vector<int, std::__1::allocator<int> > const&, std::__1::vector<int, std::__1::allocator<int> > const&)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %2) local_unnamed_addr #3 {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %6 = icmp eq ptr %4, %5"
+   },
+   {
+    "text": "  br i1 %6, label %bb29, label %bb8"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb8:"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  %9 = sub i64 %7, %8"
+   },
+   {
+    "text": "  %10 = ashr exact i64 %9, 2"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %2, i64 0, i32 1"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = ptrtoint ptr %13 to i64"
+   },
+   {
+    "text": "  %16 = sub i64 %14, %15"
+   },
+   {
+    "text": "  %17 = ashr exact i64 %16, 2"
+   },
+   {
+    "text": "  %18 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %19 = load ptr, ptr %18, align 8"
+   },
+   {
+    "text": "  %20 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %21 = ptrtoint ptr %19 to i64"
+   },
+   {
+    "text": "  %22 = ptrtoint ptr %20 to i64"
+   },
+   {
+    "text": "  %23 = sub i64 %21, %22"
+   },
+   {
+    "text": "  %24 = ashr exact i64 %23, 2"
+   },
+   {
+    "text": "  %25 = call i64 @llvm.umax.i64(i64 %10, i64 1)"
+   },
+   {
+    "text": "  %26 = add i64 %25, -1"
+   },
+   {
+    "text": "  %27 = freeze i64 %26"
+   },
+   {
+    "text": "  %28 = freeze i64 %24"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %27, i64 %28)"
+   },
+   {
+    "text": "  %umin2 = call i64 @llvm.umin.i64(i64 %umin, i64 %17)"
+   },
+   {
+    "text": "  %29 = add nuw i64 %umin2, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %29, 8"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.memcheck"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.memcheck:"
+   },
+   {
+    "text": "  %30 = sub i64 %22, %8"
+   },
+   {
+    "text": "  %diff.check = icmp ult i64 %30, 16"
+   },
+   {
+    "text": "  %31 = sub i64 %22, %15"
+   },
+   {
+    "text": "  %diff.check1 = icmp ult i64 %31, 16"
+   },
+   {
+    "text": "  %conflict.rdx = or i1 %diff.check, %diff.check1"
+   },
+   {
+    "text": "  br i1 %conflict.rdx, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %29, 4"
+   },
+   {
+    "text": "  %32 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %33 = select i1 %32, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %29, %33"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %34 = add i64 %index, 0"
+   },
+   {
+    "text": "  %35 = getelementptr inbounds i32, ptr %5, i64 %34"
+   },
+   {
+    "text": "  %36 = getelementptr inbounds i32, ptr %35, i32 0"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %36, align 4"
+   },
+   {
+    "text": "  %37 = getelementptr inbounds i32, ptr %13, i64 %34"
+   },
+   {
+    "text": "  %38 = getelementptr inbounds i32, ptr %37, i32 0"
+   },
+   {
+    "text": "  %wide.load3 = load <4 x i32>, ptr %38, align 4"
+   },
+   {
+    "text": "  %39 = add nsw <4 x i32> %wide.load3, %wide.load"
+   },
+   {
+    "text": "  %40 = getelementptr inbounds i32, ptr %20, i64 %34"
+   },
+   {
+    "text": "  %41 = getelementptr inbounds i32, ptr %40, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %39, ptr %41, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %42 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %42, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %bb8 ], [ 0, %vector.memcheck ]"
+   },
+   {
+    "text": "  br label %bb30"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb28:"
+   },
+   {
+    "text": "  br label %bb29"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb29:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb30:"
+   },
+   {
+    "text": "  %43 = phi i64 [ %bc.resume.val, %scalar.ph ], [ %52, %bb37 ]"
+   },
+   {
+    "text": "  %44 = icmp eq i64 %43, %17"
+   },
+   {
+    "text": "  br i1 %44, label %bb33, label %bb34"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb33:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb34:"
+   },
+   {
+    "text": "  %45 = icmp eq i64 %43, %24"
+   },
+   {
+    "text": "  br i1 %45, label %bb36, label %bb37"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb36:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb37:"
+   },
+   {
+    "text": "  %46 = getelementptr inbounds i32, ptr %5, i64 %43"
+   },
+   {
+    "text": "  %47 = load i32, ptr %46, align 4"
+   },
+   {
+    "text": "  %48 = getelementptr inbounds i32, ptr %13, i64 %43"
+   },
+   {
+    "text": "  %49 = load i32, ptr %48, align 4"
+   },
+   {
+    "text": "  %50 = add nsw i32 %49, %47"
+   },
+   {
+    "text": "  %51 = getelementptr inbounds i32, ptr %20, i64 %43"
+   },
+   {
+    "text": "  store i32 %50, ptr %51, align 4"
+   },
+   {
+    "text": "  %52 = add nuw i64 %43, 1"
+   },
+   {
+    "text": "  %53 = icmp eq i64 %52, %25"
+   },
+   {
+    "text": "  br i1 %53, label %bb28, label %bb30"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define dso_local void @kern_k03_stencil(std::__1::vector<int, std::__1::allocator<int> >&, std::__1::vector<int, std::__1::allocator<int> > const&)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #3 {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  %9 = icmp ugt i64 %8, 2"
+   },
+   {
+    "text": "  br i1 %9, label %bb11, label %bb23"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb11:"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %16, i64 1)"
+   },
+   {
+    "text": "  %18 = add i64 %17, 1"
+   },
+   {
+    "text": "  %19 = getelementptr i32, ptr %4, i64 -1"
+   },
+   {
+    "text": "  %20 = add i64 %17, -1"
+   },
+   {
+    "text": "  %21 = add nsw i64 %8, -3"
+   },
+   {
+    "text": "  %umin3 = call i64 @llvm.umin.i64(i64 %20, i64 %21)"
+   },
+   {
+    "text": "  %22 = add nuw i64 %umin3, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %22, 12"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.memcheck"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.memcheck:"
+   },
+   {
+    "text": "  %scevgep = getelementptr i8, ptr %12, i64 4"
+   },
+   {
+    "text": "  %23 = add i64 %17, -1"
+   },
+   {
+    "text": "  %24 = add nsw i64 %8, -3"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %23, i64 %24)"
+   },
+   {
+    "text": "  %25 = shl i64 %umin, 2"
+   },
+   {
+    "text": "  %26 = add i64 %25, 8"
+   },
+   {
+    "text": "  %scevgep1 = getelementptr i8, ptr %12, i64 %26"
+   },
+   {
+    "text": "  %27 = add i64 %25, 12"
+   },
+   {
+    "text": "  %scevgep2 = getelementptr i8, ptr %4, i64 %27"
+   },
+   {
+    "text": "  %bound0 = icmp ult ptr %scevgep, %scevgep2"
+   },
+   {
+    "text": "  %bound1 = icmp ult ptr %4, %scevgep1"
+   },
+   {
+    "text": "  %found.conflict = and i1 %bound0, %bound1"
+   },
+   {
+    "text": "  br i1 %found.conflict, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %22, 8"
+   },
+   {
+    "text": "  %28 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %29 = select i1 %28, i64 8, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %22, %29"
+   },
+   {
+    "text": "  %ind.end = add i64 2, %n.vec"
+   },
+   {
+    "text": "  %ind.end4 = add i64 1, %n.vec"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %offset.idx = add i64 1, %index"
+   },
+   {
+    "text": "  %30 = add i64 %offset.idx, 0"
+   },
+   {
+    "text": "  %31 = add i64 %offset.idx, 4"
+   },
+   {
+    "text": "  %offset.idx6 = add i64 2, %index"
+   },
+   {
+    "text": "  %32 = add i64 %offset.idx6, 0"
+   },
+   {
+    "text": "  %33 = add i64 %offset.idx6, 4"
+   },
+   {
+    "text": "  %34 = getelementptr i32, ptr %19, i64 %30"
+   },
+   {
+    "text": "  %35 = getelementptr i32, ptr %19, i64 %31"
+   },
+   {
+    "text": "  %36 = getelementptr i32, ptr %34, i32 0"
+   },
+   {
+    "text": "  %37 = getelementptr i32, ptr %34, i32 4"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %36, align 4"
+   },
+   {
+    "text": "  %wide.load7 = load <4 x i32>, ptr %37, align 4"
+   },
+   {
+    "text": "  %38 = getelementptr inbounds i32, ptr %4, i64 %30"
+   },
+   {
+    "text": "  %39 = getelementptr inbounds i32, ptr %4, i64 %31"
+   },
+   {
+    "text": "  %40 = getelementptr inbounds i32, ptr %38, i32 0"
+   },
+   {
+    "text": "  %41 = getelementptr inbounds i32, ptr %38, i32 4"
+   },
+   {
+    "text": "  %wide.load8 = load <4 x i32>, ptr %40, align 4"
+   },
+   {
+    "text": "  %wide.load9 = load <4 x i32>, ptr %41, align 4"
+   },
+   {
+    "text": "  %42 = add nsw <4 x i32> %wide.load8, %wide.load"
+   },
+   {
+    "text": "  %43 = add nsw <4 x i32> %wide.load9, %wide.load7"
+   },
+   {
+    "text": "  %44 = getelementptr inbounds i32, ptr %4, i64 %32"
+   },
+   {
+    "text": "  %45 = getelementptr inbounds i32, ptr %4, i64 %33"
+   },
+   {
+    "text": "  %46 = getelementptr inbounds i32, ptr %44, i32 0"
+   },
+   {
+    "text": "  %47 = getelementptr inbounds i32, ptr %44, i32 4"
+   },
+   {
+    "text": "  %wide.load10 = load <4 x i32>, ptr %46, align 4"
+   },
+   {
+    "text": "  %wide.load11 = load <4 x i32>, ptr %47, align 4"
+   },
+   {
+    "text": "  %48 = add nsw <4 x i32> %42, %wide.load10"
+   },
+   {
+    "text": "  %49 = add nsw <4 x i32> %43, %wide.load11"
+   },
+   {
+    "text": "  %50 = getelementptr inbounds i32, ptr %12, i64 %30"
+   },
+   {
+    "text": "  %51 = getelementptr inbounds i32, ptr %12, i64 %31"
+   },
+   {
+    "text": "  %52 = getelementptr inbounds i32, ptr %50, i32 0"
+   },
+   {
+    "text": "  %53 = getelementptr inbounds i32, ptr %50, i32 4"
+   },
+   {
+    "text": "  store <4 x i32> %48, ptr %52, align 4"
+   },
+   {
+    "text": "  store <4 x i32> %49, ptr %53, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 8"
+   },
+   {
+    "text": "  %54 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %54, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %ind.end, %middle.block ], [ 2, %bb11 ], [ 2, %vector.memcheck ]"
+   },
+   {
+    "text": "  %bc.resume.val5 = phi i64 [ %ind.end4, %middle.block ], [ 1, %bb11 ], [ 1, %vector.memcheck ]"
+   },
+   {
+    "text": "  br label %bb24"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb22:"
+   },
+   {
+    "text": "  br label %bb23"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb23:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb24:"
+   },
+   {
+    "text": "  %55 = phi i64 [ %bc.resume.val, %scalar.ph ], [ %67, %bb29 ]"
+   },
+   {
+    "text": "  %56 = phi i64 [ %bc.resume.val5, %scalar.ph ], [ %55, %bb29 ]"
+   },
+   {
+    "text": "  %57 = icmp eq i64 %55, %18"
+   },
+   {
+    "text": "  br i1 %57, label %bb28, label %bb29"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb28:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb29:"
+   },
+   {
+    "text": "  %58 = getelementptr i32, ptr %19, i64 %56"
+   },
+   {
+    "text": "  %59 = load i32, ptr %58, align 4"
+   },
+   {
+    "text": "  %60 = getelementptr inbounds i32, ptr %4, i64 %56"
+   },
+   {
+    "text": "  %61 = load i32, ptr %60, align 4"
+   },
+   {
+    "text": "  %62 = add nsw i32 %61, %59"
+   },
+   {
+    "text": "  %63 = getelementptr inbounds i32, ptr %4, i64 %55"
+   },
+   {
+    "text": "  %64 = load i32, ptr %63, align 4"
+   },
+   {
+    "text": "  %65 = add nsw i32 %62, %64"
+   },
+   {
+    "text": "  %66 = getelementptr inbounds i32, ptr %12, i64 %56"
+   },
+   {
+    "text": "  store i32 %65, ptr %66, align 4"
+   },
+   {
+    "text": "  %67 = add nuw i64 %55, 1"
+   },
+   {
+    "text": "  %68 = icmp eq i64 %67, %8"
+   },
+   {
+    "text": "  br i1 %68, label %bb22, label %bb24"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define dso_local void @kern_k04_rev(std::__1::vector<int, std::__1::allocator<int> >&, std::__1::vector<int, std::__1::allocator<int> > const&)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #3 {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %5 = icmp eq ptr %3, %4"
+   },
+   {
+    "text": "  br i1 %5, label %bb22, label %bb7"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb7:"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %8 = sub i64 %7, %6"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  %17 = add nsw i64 %9, -1"
+   },
+   {
+    "text": "  %18 = icmp ult i64 %17, %16"
+   },
+   {
+    "text": "  br i1 %18, label %bb7.split, label %bb25"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb7.split:"
+   },
+   {
+    "text": "  %min.iters.check = icmp ult i64 %9, 8"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.memcheck"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.memcheck:"
+   },
+   {
+    "text": "  %19 = sub i64 %6, %14"
+   },
+   {
+    "text": "  %diff.check = icmp ult i64 %19, 32"
+   },
+   {
+    "text": "  br i1 %diff.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %9, 8"
+   },
+   {
+    "text": "  %n.vec = sub i64 %9, %n.mod.vf"
+   },
+   {
+    "text": "  %ind.end = sub i64 %9, %n.vec"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %offset.idx = sub i64 %9, %index"
+   },
+   {
+    "text": "  %20 = add i64 %offset.idx, 0"
+   },
+   {
+    "text": "  %21 = add i64 %offset.idx, -4"
+   },
+   {
+    "text": "  %22 = add i64 %20, -1"
+   },
+   {
+    "text": "  %23 = add i64 %21, -1"
+   },
+   {
+    "text": "  %24 = getelementptr inbounds i32, ptr %4, i64 %22"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %4, i64 %23"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %24, i32 0"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %26, i32 -3"
+   },
+   {
+    "text": "  %28 = getelementptr inbounds i32, ptr %24, i32 -4"
+   },
+   {
+    "text": "  %29 = getelementptr inbounds i32, ptr %28, i32 -3"
+   },
+   {
+    "text": "  %wide.load = load <4 x i32>, ptr %27, align 4"
+   },
+   {
+    "text": "  %reverse = shufflevector <4 x i32> %wide.load, <4 x i32> poison, <4 x i32> <i32 3, i32 2, i32 1, i32 0>"
+   },
+   {
+    "text": "  %wide.load1 = load <4 x i32>, ptr %29, align 4"
+   },
+   {
+    "text": "  %reverse2 = shufflevector <4 x i32> %wide.load1, <4 x i32> poison, <4 x i32> <i32 3, i32 2, i32 1, i32 0>"
+   },
+   {
+    "text": "  %30 = shl nsw <4 x i32> %reverse, <i32 1, i32 1, i32 1, i32 1>"
+   },
+   {
+    "text": "  %31 = shl nsw <4 x i32> %reverse2, <i32 1, i32 1, i32 1, i32 1>"
+   },
+   {
+    "text": "  %32 = getelementptr inbounds i32, ptr %12, i64 %22"
+   },
+   {
+    "text": "  %33 = getelementptr inbounds i32, ptr %12, i64 %23"
+   },
+   {
+    "text": "  %34 = getelementptr inbounds i32, ptr %32, i32 0"
+   },
+   {
+    "text": "  %35 = getelementptr inbounds i32, ptr %34, i32 -3"
+   },
+   {
+    "text": "  %36 = getelementptr inbounds i32, ptr %32, i32 -4"
+   },
+   {
+    "text": "  %37 = getelementptr inbounds i32, ptr %36, i32 -3"
+   },
+   {
+    "text": "  %reverse3 = shufflevector <4 x i32> %30, <4 x i32> poison, <4 x i32> <i32 3, i32 2, i32 1, i32 0>"
+   },
+   {
+    "text": "  store <4 x i32> %reverse3, ptr %35, align 4"
+   },
+   {
+    "text": "  %reverse4 = shufflevector <4 x i32> %31, <4 x i32> poison, <4 x i32> <i32 3, i32 2, i32 1, i32 0>"
+   },
+   {
+    "text": "  store <4 x i32> %reverse4, ptr %37, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 8"
+   },
+   {
+    "text": "  %38 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %38, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  %cmp.n = icmp eq i64 %9, %n.vec"
+   },
+   {
+    "text": "  br i1 %cmp.n, label %bb21, label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %ind.end, %middle.block ], [ %9, %bb7.split ], [ %9, %vector.memcheck ]"
+   },
+   {
+    "text": "  br label %bb23"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb21:"
+   },
+   {
+    "text": "  br label %bb22"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb22:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb23:"
+   },
+   {
+    "text": "  %39 = phi i64 [ %bc.resume.val, %scalar.ph ], [ %40, %bb26 ]"
+   },
+   {
+    "text": "  br label %bb26"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb25:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb26:"
+   },
+   {
+    "text": "  %40 = add i64 %39, -1"
+   },
+   {
+    "text": "  %41 = getelementptr inbounds i32, ptr %4, i64 %40"
+   },
+   {
+    "text": "  %42 = load i32, ptr %41, align 4"
+   },
+   {
+    "text": "  %43 = shl nsw i32 %42, 1"
+   },
+   {
+    "text": "  %44 = getelementptr inbounds i32, ptr %12, i64 %40"
+   },
+   {
+    "text": "  store i32 %43, ptr %44, align 4"
+   },
+   {
+    "text": "  %45 = icmp eq i64 %40, 0"
+   },
+   {
+    "text": "  br i1 %45, label %bb21, label %bb23"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define dso_local void @kern_k05_stride2(std::__1::vector<int, std::__1::allocator<int> >&, std::__1::vector<int, std::__1::allocator<int> > const&)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #3 {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %5 = icmp eq ptr %3, %4"
+   },
+   {
+    "text": "  br i1 %5, label %bb21, label %bb7"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb7:"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %9, i64 1)"
+   },
+   {
+    "text": "  br label %bb22"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb20:"
+   },
+   {
+    "text": "  br label %bb21"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb21:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb22:"
+   },
+   {
+    "text": "  %18 = phi i64 [ 0, %bb7 ], [ %29, %bb31 ]"
+   },
+   {
+    "text": "  %19 = shl i64 %18, 1"
+   },
+   {
+    "text": "  %20 = icmp ugt i64 %16, %19"
+   },
+   {
+    "text": "  br i1 %20, label %bb27, label %bb26"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb26:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb27:"
+   },
+   {
+    "text": "  %21 = or disjoint i64 %19, 1"
+   },
+   {
+    "text": "  %22 = icmp ugt i64 %16, %21"
+   },
+   {
+    "text": "  br i1 %22, label %bb31, label %bb30"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb30:"
+   },
+   {
+    "text": "  tail call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "bb31:"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %12, i64 %19"
+   },
+   {
+    "text": "  %24 = load i32, ptr %23, align 4"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %12, i64 %21"
+   },
+   {
+    "text": "  %26 = load i32, ptr %25, align 4"
+   },
+   {
+    "text": "  %27 = add nsw i32 %26, %24"
+   },
+   {
+    "text": "  %28 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  store i32 %27, ptr %28, align 4"
+   },
+   {
+    "text": "  %29 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  %30 = icmp eq i64 %29, %17"
+   },
+   {
+    "text": "  br i1 %30, label %bb20, label %bb22"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.vector.reduce.add.v2i64(<2 x i64>) #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umin.i64(i64, i64) #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "attributes #0 = { cold noreturn nounwind memory(inaccessiblemem: write) }"
+   },
+   {
+    "text": "attributes #1 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }"
+   },
+   {
+    "text": "attributes #2 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, inaccessiblemem: none) uwtable }"
+   },
+   {
+    "text": "attributes #3 = { mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable }"
+   },
+   {
+    "text": ""
+   }
+  ],
+  "asmSize": 22136,
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "-passes=loop-mssa(simple-loop-unswitch),loop-vectorize",
+   "-pass-remarks=loop-vectorize",
+   "-pass-remarks-missed=loop-vectorize",
+   "-pass-remarks-analysis=loop-vectorize",
+   "-S",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 51,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.03860200010240078,
+  "queueTime": 6,
+  "stderr": [
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 2, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/ir/c18-kernels-fast.ll",
+ "url": "https://godbolt.org/api/compiler/opt1810/compile",
+ "user_arguments": "-passes=loop-mssa(simple-loop-unswitch),loop-vectorize -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+}

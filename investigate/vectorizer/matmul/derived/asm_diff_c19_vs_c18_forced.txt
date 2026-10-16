@@ -1,0 +1,55 @@
+# Assembly of kern_k08_matmul, FAST: clang 19.1.0 (decided by itself) against clang 18.1.0 forced to width 4, interleave 2
+# 209 lines against 212 lines; 12 lines removed, 15 added
+--- clang19-chose-itself
++++ clang18-forced
+@@ -22,3 +22,4 @@
+         xor     r14d, r14d
+-        mov     qword ptr [rsp - 96], 0
++        xor     eax, eax
++        mov     qword ptr [rsp - 96], rax
+         xor     eax, eax
+@@ -42,3 +43,4 @@
+         mov     qword ptr [rsp - 48], rbx
+-        mov     qword ptr [rsp - 88], 0
++        xor     eax, eax
++        mov     qword ptr [rsp - 88], rax
+         xor     ebp, ebp
+@@ -109,2 +111,3 @@
+         jae     .LBB0_17
++        mov     rdi, r13
+         add     r9, qword ptr [rsp - 48]
+@@ -119,7 +122,7 @@
+         mov     r11, qword ptr [rsp + 8]
+-        mov     r9d, r11d
+-        and     r9d, 7
+-        mov     edi, 8
+-        cmove   r9, rdi
+-        sub     r11, r9
++        mov     edi, r11d
++        and     edi, 7
++        mov     r9d, 8
++        cmove   rdi, r9
++        sub     r11, rdi
+         movd    xmm0, r8d
+@@ -128,4 +131,2 @@
+         cmovb   r15, rdx
+-        mov     rdx, qword ptr [rsp - 104]
+-        lea     rdi, [rax + rdx]
+         mov     rdx, qword ptr [rsp - 112]
+@@ -133,4 +134,6 @@
+         cmovae  r15, rdx
+-        sub     r15, r9
++        sub     r15, rdi
+         inc     r15
++        mov     rdx, qword ptr [rsp - 104]
++        lea     rdi, [rax + rdx]
+         pshufd  xmm1, xmm0, 245
+@@ -182,6 +185,6 @@
+         inc     r9
++        add     rbp, rcx
++        sub     qword ptr [rsp - 88], rcx
+         mov     rsi, qword ptr [rsp - 80]
+         add     r10, rsi
+-        add     rbp, rcx
+-        sub     qword ptr [rsp - 88], rcx
+         add     rbx, rsi

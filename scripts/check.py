@@ -20,6 +20,8 @@
    two-level bootstrap, the per-CPU verdicts) is validated, recomputed from the results.json files it
    names and compared, then a sample of its numbers is recomputed independently by
    harness/pool_check.py (plain Python, its own bootstrap, no import of pool.py or stats.py).
+   results/s6-pooled/pooled.json (the file the page reads) must list every job of every s4-run-* and
+   s6-run-* folder once, including all of results/s4-pooled's (the original pool the holdout is compared with).
    The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps and skip cleanly when their results are absent.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
    the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots).
@@ -226,6 +228,37 @@ def check_holdout_result():
     return not problems
 
 
+def check_pool_complete():
+    """results/s6-pooled/pooled.json (the file the page reads) pools every job of every s4-run-* and s6-run-* folder
+    exactly once and nothing else, and contains every input of results/s4-pooled/pooled.json (the original pool)."""
+    base = os.path.join(REPO, "results")
+    path = os.path.join(base, "s6-pooled", "pooled.json")
+    if not os.path.exists(path):
+        return True
+
+    def listed(rel):
+        with open(os.path.join(base, rel, "pooled.json"), encoding="utf-8") as f:
+            return [os.path.normpath(os.path.join(base, rel, i["path"])) for i in json.load(f)["inputs"]]
+    pooled = listed("s6-pooled")
+    on_disk = [os.path.normpath(p) for pat in ("s4-run-*", "s6-run-*")
+               for p in glob.glob(os.path.join(base, pat, "results-*", "results.json"))]
+    problems = []
+    if len(set(pooled)) != len(pooled):
+        problems.append("a job is listed twice")
+    for p in sorted(set(on_disk) - set(pooled)):
+        problems.append(f"{os.path.relpath(p, base)} is on disk but not pooled")
+    for p in sorted(set(pooled) - set(on_disk)):
+        problems.append(f"{os.path.relpath(p, base)} is pooled but is not in an s4-run or s6-run folder")
+    for p in sorted(set(listed("s4-pooled")) - set(pooled)):
+        problems.append(f"{os.path.relpath(p, base)} is in the original pool but not in this one")
+    for pr in problems:
+        print(f"   FAIL results/s6-pooled/pooled.json: {pr}")
+    if not problems:
+        print(f"   ok   results/s6-pooled/pooled.json pools all {len(on_disk)} jobs of the s4-run and s6-run folders "
+              f"once each, including the {len(listed('s4-pooled'))} of results/s4-pooled")
+    return not problems
+
+
 def check_pooled(path):
     """A pooled.json (criteria-v3): schema, criteria hash, full recomputation, independent sample."""
     import pool
@@ -337,6 +370,7 @@ def main():
     if not pooled:
         print("   none yet")
     ok &= check_holdout_result()
+    ok &= check_pool_complete()
     import subprocess
     print("== mitigation experiment (every ratio and interval recomputed from the raw samples)")
     mit = sorted(glob.glob(os.path.join(REPO, "results", "mitigate-run-*")))

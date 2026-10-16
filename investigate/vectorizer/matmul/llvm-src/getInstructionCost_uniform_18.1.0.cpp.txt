@@ -1,0 +1,12 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpt, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-18.1.0/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp (tag llvmorg-18.1.0), lines 6419 to 6427
+
+LoopVectorizationCostModel::VectorizationCostTy
+LoopVectorizationCostModel::getInstructionCost(Instruction *I,
+                                               ElementCount VF) {
+  // If we know that this instruction will remain uniform, check the cost of
+  // the scalar version.
+  if (isUniformAfterVectorization(I, VF))
+    VF = ElementCount::getFixed(1);
+
+  if (VF.isVector() && isProfitableToScalarize(I, VF))

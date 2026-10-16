@@ -1,0 +1,2457 @@
+{
+ "compiler_id": "opt1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:05:32+00:00",
+ "http_status": 200,
+ "name": "E-c18-variants-fast-scev",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-passes=print<scalar-evolution> -disable-output"
+  },
+  "source": "; Standalone module made from the IR dumps in raw/B-c18-variants-fast-ir.json (see extract.py).\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\n%\"class.std::__1::vector\" = type { ptr, ptr, ptr }\n\ndeclare void @llvm.trap() #9999\ndeclare i64 @llvm.umax.i64(i64, i64)\ndeclare i32 @__gxx_personality_v0(...)\n\n; *** IR Dump Before LoopVectorizePass on _Z9v_rev_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z9v_rev_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %10 = load ptr, ptr %9, align 8\n  %11 = load ptr, ptr %0, align 8\n  %12 = ptrtoint ptr %10 to i64\n  %13 = ptrtoint ptr %11 to i64\n  %14 = sub i64 %12, %13\n  %15 = icmp ult i64 %14, %8\n  br i1 %15, label %bb20, label %bb16\n\nbb16:                                               ; preds = %entry\n  %17 = icmp eq ptr %4, %5\n  br i1 %17, label %bb22, label %bb18\n\nbb18:                                               ; preds = %bb16\n  %19 = ashr exact i64 %8, 2\n  br label %bb23\n\nbb20:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb21:                                               ; preds = %bb23\n  br label %bb22\n\nbb22:                                               ; preds = %bb21, %bb16\n  ret void\n\nbb23:                                               ; preds = %bb18, %bb23\n  %24 = phi i64 [ %25, %bb23 ], [ %19, %bb18 ]\n  %25 = add i64 %24, -1\n  %26 = getelementptr inbounds i32, ptr %5, i64 %25\n  %27 = load i32, ptr %26, align 4\n  %28 = shl nsw i32 %27, 1\n  %29 = getelementptr inbounds i32, ptr %11, i64 %25\n  store i32 %28, ptr %29, align 4\n  %30 = icmp eq i64 %25, 0\n  br i1 %30, label %bb21, label %bb23\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z10v_rev_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z10v_rev_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 personality ptr @__gxx_personality_v0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = load ptr, ptr %0, align 8\n  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %11 = load ptr, ptr %10, align 8\n  %12 = ptrtoint ptr %11 to i64\n  %13 = ptrtoint ptr %9 to i64\n  %14 = sub i64 %12, %13\n  %15 = icmp ult i64 %14, %8\n  br i1 %15, label %bb20, label %bb16\n\nbb16:                                               ; preds = %entry\n  %17 = icmp eq ptr %4, %5\n  br i1 %17, label %bb22, label %bb18\n\nbb18:                                               ; preds = %bb16\n  %19 = ashr exact i64 %8, 2\n  br label %bb23\n\nbb20:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb21:                                               ; preds = %bb23\n  br label %bb22\n\nbb22:                                               ; preds = %bb21, %bb16\n  ret void\n\nbb23:                                               ; preds = %bb18, %bb23\n  %24 = phi i64 [ %25, %bb23 ], [ %19, %bb18 ]\n  %25 = add i64 %24, -1\n  %26 = getelementptr inbounds i32, ptr %5, i64 %25\n  %27 = load i32, ptr %26, align 4\n  %28 = shl nsw i32 %27, 1\n  %29 = getelementptr inbounds i32, ptr %9, i64 %25\n  store i32 %28, ptr %29, align 4\n  %30 = icmp eq i64 %25, 0\n  br i1 %30, label %bb21, label %bb23\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z9v_rev_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z9v_rev_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %10 = load ptr, ptr %9, align 8\n  %11 = load ptr, ptr %0, align 8\n  %12 = ptrtoint ptr %10 to i64\n  %13 = ptrtoint ptr %11 to i64\n  %14 = sub i64 %12, %13\n  %15 = icmp ult i64 %14, %8\n  br i1 %15, label %bb20, label %bb16\n\nbb16:                                               ; preds = %entry\n  %17 = icmp eq ptr %4, %5\n  br i1 %17, label %bb22, label %bb18\n\nbb18:                                               ; preds = %bb16\n  %19 = ashr exact i64 %8, 2\n  br label %bb23\n\nbb20:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb21:                                               ; preds = %bb23\n  br label %bb22\n\nbb22:                                               ; preds = %bb21, %bb16\n  ret void\n\nbb23:                                               ; preds = %bb18, %bb23\n  %24 = phi i64 [ %25, %bb23 ], [ %19, %bb18 ]\n  %25 = add i64 %24, -1\n  %26 = getelementptr inbounds i32, ptr %5, i64 %25\n  %27 = load i32, ptr %26, align 4\n  %28 = shl nsw i32 %27, 1\n  %29 = getelementptr inbounds i32, ptr %11, i64 %25\n  store i32 %28, ptr %29, align 4\n  %30 = icmp eq i64 %25, 0\n  br i1 %30, label %bb21, label %bb23\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z9v_rev_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z9v_rev_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = icmp eq ptr %4, %5\n  br i1 %6, label %bb21, label %bb7\n\nbb7:                                                ; preds = %entry\n  %8 = ptrtoint ptr %4 to i64\n  %9 = ptrtoint ptr %5 to i64\n  %10 = sub i64 %8, %9\n  %11 = ashr exact i64 %10, 2\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %0, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %11, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb26\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb7, %bb26\n  %23 = phi i64 [ 0, %bb7 ], [ %31, %bb26 ]\n  %24 = icmp eq i64 %23, %18\n  br i1 %24, label %bb25, label %bb26\n\nbb25:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb26:                                               ; preds = %bb22\n  %27 = getelementptr inbounds i32, ptr %5, i64 %23\n  %28 = load i32, ptr %27, align 4\n  %29 = shl nsw i32 %28, 1\n  %30 = getelementptr inbounds i32, ptr %14, i64 %23\n  store i32 %29, ptr %30, align 4\n  %31 = add nuw i64 %23, 1\n  %32 = icmp eq i64 %31, %19\n  br i1 %32, label %bb20, label %bb22\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z12v_rev_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z12v_rev_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = load ptr, ptr %0, align 8\n  %4 = load ptr, ptr %1, align 8\n  %5 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %6 = load ptr, ptr %5, align 8\n  %7 = icmp eq ptr %6, %4\n  br i1 %7, label %bb22, label %bb8\n\nbb8:                                                ; preds = %entry\n  %9 = ptrtoint ptr %6 to i64\n  %10 = ptrtoint ptr %4 to i64\n  %11 = sub i64 %9, %10\n  %12 = ashr exact i64 %11, 2\n  %13 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %14 = load ptr, ptr %13, align 8\n  %15 = ptrtoint ptr %14 to i64\n  %16 = ptrtoint ptr %3 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = add nsw i64 %12, -1\n  %20 = icmp ult i64 %19, %18\n  br label %bb23\n\nbb21:                                               ; preds = %bb26\n  br label %bb22\n\nbb22:                                               ; preds = %bb21, %entry\n  ret void\n\nbb23:                                               ; preds = %bb8, %bb26\n  %24 = phi i64 [ %27, %bb26 ], [ %12, %bb8 ]\n  br i1 %20, label %bb26, label %bb25\n\nbb25:                                               ; preds = %bb23\n  tail call void @llvm.trap()\n  unreachable\n\nbb26:                                               ; preds = %bb23\n  %27 = add i64 %24, -1\n  %28 = getelementptr inbounds i32, ptr %4, i64 %27\n  %29 = load i32, ptr %28, align 4\n  %30 = shl nsw i32 %29, 1\n  %31 = getelementptr inbounds i32, ptr %3, i64 %27\n  store i32 %30, ptr %31, align 4\n  %32 = icmp eq i64 %27, 0\n  br i1 %32, label %bb21, label %bb23\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z12v_fwd_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z12v_fwd_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = load ptr, ptr %0, align 8\n  %4 = load ptr, ptr %1, align 8\n  %5 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %6 = load ptr, ptr %5, align 8\n  %7 = ptrtoint ptr %6 to i64\n  %8 = ptrtoint ptr %3 to i64\n  %9 = sub i64 %7, %8\n  %10 = ashr exact i64 %9, 2\n  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %12 = load ptr, ptr %11, align 8\n  %13 = icmp eq ptr %12, %4\n  br i1 %13, label %bb21, label %bb14\n\nbb14:                                               ; preds = %entry\n  %15 = ptrtoint ptr %12 to i64\n  %16 = ptrtoint ptr %4 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %18, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb26\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb14, %bb26\n  %23 = phi i64 [ %31, %bb26 ], [ 0, %bb14 ]\n  %24 = icmp eq i64 %23, %10\n  br i1 %24, label %bb25, label %bb26\n\nbb25:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb26:                                               ; preds = %bb22\n  %27 = getelementptr inbounds i32, ptr %4, i64 %23\n  %28 = load i32, ptr %27, align 4\n  %29 = shl nsw i32 %28, 1\n  %30 = getelementptr inbounds i32, ptr %3, i64 %23\n  store i32 %29, ptr %30, align 4\n  %31 = add nuw i64 %23, 1\n  %32 = icmp eq i64 %31, %19\n  br i1 %32, label %bb20, label %bb22\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z7v_rev_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z7v_rev_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %1, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = icmp eq ptr %4, %5\n  br i1 %10, label %bb21, label %bb11\n\nbb11:                                               ; preds = %entry\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %0, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %9, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb31\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb11, %bb31\n  %23 = phi i64 [ 0, %bb11 ], [ %36, %bb31 ]\n  %24 = xor i64 %23, -1\n  %25 = add i64 %9, %24\n  %26 = icmp ugt i64 %9, %25\n  br i1 %26, label %bb28, label %bb27\n\nbb27:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb28:                                               ; preds = %bb22\n  %29 = icmp ugt i64 %18, %25\n  br i1 %29, label %bb31, label %bb30\n\nbb30:                                               ; preds = %bb28\n  tail call void @llvm.trap()\n  unreachable\n\nbb31:                                               ; preds = %bb28\n  %32 = getelementptr inbounds i32, ptr %5, i64 %25\n  %33 = load i32, ptr %32, align 4\n  %34 = shl nsw i32 %33, 1\n  %35 = getelementptr inbounds i32, ptr %14, i64 %25\n  store i32 %34, ptr %35, align 4\n  %36 = add nuw i64 %23, 1\n  %37 = icmp eq i64 %36, %19\n  br i1 %37, label %bb20, label %bb22\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z8v_s2_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z8v_s2_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %11 = load ptr, ptr %10, align 8\n  %12 = load ptr, ptr %1, align 8\n  %13 = ptrtoint ptr %11 to i64\n  %14 = ptrtoint ptr %12 to i64\n  %15 = sub i64 %13, %14\n  %16 = ashr exact i64 %15, 2\n  %17 = lshr i64 %16, 1\n  %18 = icmp ult i64 %17, %9\n  br i1 %18, label %bb23, label %bb19\n\nbb19:                                               ; preds = %entry\n  %20 = icmp eq ptr %4, %5\n  br i1 %20, label %bb25, label %bb21\n\nbb21:                                               ; preds = %bb19\n  %22 = call i64 @llvm.umax.i64(i64 %9, i64 1)\n  br label %bb26\n\nbb23:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb24:                                               ; preds = %bb35\n  br label %bb25\n\nbb25:                                               ; preds = %bb24, %bb19\n  ret void\n\nbb26:                                               ; preds = %bb21, %bb35\n  %27 = phi i64 [ %42, %bb35 ], [ 0, %bb21 ]\n  %28 = shl nuw i64 %27, 1\n  %29 = icmp ugt i64 %16, %28\n  br i1 %29, label %bb31, label %bb30\n\nbb30:                                               ; preds = %bb26\n  tail call void @llvm.trap()\n  unreachable\n\nbb31:                                               ; preds = %bb26\n  %32 = or disjoint i64 %28, 1\n  %33 = icmp ugt i64 %16, %32\n  br i1 %33, label %bb35, label %bb34\n\nbb34:                                               ; preds = %bb31\n  tail call void @llvm.trap()\n  unreachable\n\nbb35:                                               ; preds = %bb31\n  %36 = getelementptr inbounds i32, ptr %12, i64 %28\n  %37 = load i32, ptr %36, align 4\n  %38 = getelementptr inbounds i32, ptr %12, i64 %32\n  %39 = load i32, ptr %38, align 4\n  %40 = add nsw i32 %39, %37\n  %41 = getelementptr inbounds i32, ptr %5, i64 %27\n  store i32 %40, ptr %41, align 4\n  %42 = add nuw i64 %27, 1\n  %43 = icmp eq i64 %42, %22\n  br i1 %43, label %bb24, label %bb26\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z12v_s2_pre_mulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z12v_s2_pre_mulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = icmp sgt i64 %9, -1\n  br i1 %10, label %bb11, label %bb25\n\nbb11:                                               ; preds = %entry\n  %12 = lshr exact i64 %8, 1\n  %13 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %14 = load ptr, ptr %13, align 8\n  %15 = load ptr, ptr %1, align 8\n  %16 = ptrtoint ptr %14 to i64\n  %17 = ptrtoint ptr %15 to i64\n  %18 = sub i64 %16, %17\n  %19 = ashr exact i64 %18, 2\n  %20 = icmp ugt i64 %12, %19\n  br i1 %20, label %bb25, label %bb21\n\nbb21:                                               ; preds = %bb11\n  %22 = icmp eq ptr %4, %5\n  br i1 %22, label %bb27, label %bb23\n\nbb23:                                               ; preds = %bb21\n  %24 = call i64 @llvm.umax.i64(i64 %9, i64 1)\n  br label %bb28\n\nbb25:                                               ; preds = %bb11, %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb26:                                               ; preds = %bb37\n  br label %bb27\n\nbb27:                                               ; preds = %bb26, %bb21\n  ret void\n\nbb28:                                               ; preds = %bb23, %bb37\n  %29 = phi i64 [ %44, %bb37 ], [ 0, %bb23 ]\n  %30 = shl nuw i64 %29, 1\n  %31 = icmp ugt i64 %19, %30\n  br i1 %31, label %bb33, label %bb32\n\nbb32:                                               ; preds = %bb28\n  tail call void @llvm.trap()\n  unreachable\n\nbb33:                                               ; preds = %bb28\n  %34 = or disjoint i64 %30, 1\n  %35 = icmp ugt i64 %19, %34\n  br i1 %35, label %bb37, label %bb36\n\nbb36:                                               ; preds = %bb33\n  tail call void @llvm.trap()\n  unreachable\n\nbb37:                                               ; preds = %bb33\n  %38 = getelementptr inbounds i32, ptr %15, i64 %30\n  %39 = load i32, ptr %38, align 4\n  %40 = getelementptr inbounds i32, ptr %15, i64 %34\n  %41 = load i32, ptr %40, align 4\n  %42 = add nsw i32 %41, %39\n  %43 = getelementptr inbounds i32, ptr %5, i64 %29\n  store i32 %42, ptr %43, align 4\n  %44 = add nuw i64 %29, 1\n  %45 = icmp eq i64 %44, %24\n  br i1 %45, label %bb26, label %bb28\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z9v_s2_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z9v_s2_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 personality ptr @__gxx_personality_v0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = icmp sgt i64 %9, -1\n  br i1 %10, label %bb12, label %bb11\n\nbb11:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb12:                                               ; preds = %entry\n  %13 = load ptr, ptr %1, align 8\n  %14 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %15 = load ptr, ptr %14, align 8\n  %16 = ptrtoint ptr %15 to i64\n  %17 = ptrtoint ptr %13 to i64\n  %18 = sub i64 %16, %17\n  %19 = ashr exact i64 %18, 2\n  %20 = lshr exact i64 %8, 1\n  %21 = icmp ult i64 %19, %20\n  br i1 %21, label %bb26, label %bb22\n\nbb22:                                               ; preds = %bb12\n  %23 = icmp eq ptr %4, %5\n  br i1 %23, label %bb28, label %bb24\n\nbb24:                                               ; preds = %bb22\n  %25 = call i64 @llvm.umax.i64(i64 %9, i64 1)\n  br label %bb29\n\nbb26:                                               ; preds = %bb12\n  tail call void @llvm.trap()\n  unreachable\n\nbb27:                                               ; preds = %bb35\n  br label %bb28\n\nbb28:                                               ; preds = %bb27, %bb22\n  ret void\n\nbb29:                                               ; preds = %bb24, %bb35\n  %30 = phi i64 [ %42, %bb35 ], [ 0, %bb24 ]\n  %31 = shl nuw i64 %30, 1\n  %32 = or disjoint i64 %31, 1\n  %33 = icmp ugt i64 %20, %32\n  br i1 %33, label %bb35, label %bb34\n\nbb34:                                               ; preds = %bb29\n  tail call void @llvm.trap()\n  unreachable\n\nbb35:                                               ; preds = %bb29\n  %36 = getelementptr inbounds i32, ptr %13, i64 %31\n  %37 = load i32, ptr %36, align 4\n  %38 = getelementptr inbounds i32, ptr %13, i64 %32\n  %39 = load i32, ptr %38, align 4\n  %40 = add nsw i32 %39, %37\n  %41 = getelementptr inbounds i32, ptr %5, i64 %30\n  store i32 %40, ptr %41, align 4\n  %42 = add nuw i64 %30, 1\n  %43 = icmp eq i64 %42, %25\n  br i1 %43, label %bb27, label %bb29\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z8v_s2_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z8v_s2_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = ptrtoint ptr %4 to i64\n  %7 = ptrtoint ptr %5 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 2\n  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %11 = load ptr, ptr %10, align 8\n  %12 = load ptr, ptr %1, align 8\n  %13 = ptrtoint ptr %11 to i64\n  %14 = ptrtoint ptr %12 to i64\n  %15 = sub i64 %13, %14\n  %16 = ashr exact i64 %15, 2\n  %17 = lshr i64 %16, 1\n  %18 = icmp ult i64 %17, %9\n  br i1 %18, label %bb23, label %bb19\n\nbb19:                                               ; preds = %entry\n  %20 = icmp eq ptr %4, %5\n  br i1 %20, label %bb25, label %bb21\n\nbb21:                                               ; preds = %bb19\n  %22 = call i64 @llvm.umax.i64(i64 %9, i64 1)\n  br label %bb26\n\nbb23:                                               ; preds = %entry\n  tail call void @llvm.trap()\n  unreachable\n\nbb24:                                               ; preds = %bb26\n  br label %bb25\n\nbb25:                                               ; preds = %bb24, %bb19\n  ret void\n\nbb26:                                               ; preds = %bb21, %bb26\n  %27 = phi i64 [ %36, %bb26 ], [ 0, %bb21 ]\n  %28 = shl nuw i64 %27, 1\n  %29 = getelementptr inbounds i32, ptr %12, i64 %28\n  %30 = load i32, ptr %29, align 4\n  %31 = or disjoint i64 %28, 1\n  %32 = getelementptr inbounds i32, ptr %12, i64 %31\n  %33 = load i32, ptr %32, align 4\n  %34 = add nsw i32 %33, %30\n  %35 = getelementptr inbounds i32, ptr %5, i64 %27\n  store i32 %34, ptr %35, align 4\n  %36 = add nuw nsw i64 %27, 1\n  %37 = icmp eq i64 %36, %22\n  br i1 %37, label %bb24, label %bb26\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z11v_s2_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z11v_s2_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = load ptr, ptr %0, align 8\n  %4 = load ptr, ptr %1, align 8\n  %5 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %6 = load ptr, ptr %5, align 8\n  %7 = ptrtoint ptr %6 to i64\n  %8 = ptrtoint ptr %4 to i64\n  %9 = sub i64 %7, %8\n  %10 = ashr exact i64 %9, 2\n  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %12 = load ptr, ptr %11, align 8\n  %13 = icmp eq ptr %12, %3\n  br i1 %13, label %bb21, label %bb14\n\nbb14:                                               ; preds = %entry\n  %15 = ptrtoint ptr %12 to i64\n  %16 = ptrtoint ptr %3 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %18, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb28\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb14, %bb28\n  %23 = phi i64 [ %35, %bb28 ], [ 0, %bb14 ]\n  %24 = shl i64 %23, 1\n  %25 = or disjoint i64 %24, 1\n  %26 = icmp ult i64 %25, %10\n  br i1 %26, label %bb28, label %bb27\n\nbb27:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb28:                                               ; preds = %bb22\n  %29 = getelementptr inbounds i32, ptr %4, i64 %24\n  %30 = load i32, ptr %29, align 4\n  %31 = getelementptr inbounds i32, ptr %4, i64 %25\n  %32 = load i32, ptr %31, align 4\n  %33 = add nsw i32 %32, %30\n  %34 = getelementptr inbounds i32, ptr %3, i64 %23\n  store i32 %33, ptr %34, align 4\n  %35 = add nuw i64 %23, 1\n  %36 = icmp eq i64 %35, %19\n  br i1 %36, label %bb20, label %bb22\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z8v_s2_oneRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z8v_s2_oneRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %4 = load ptr, ptr %3, align 8\n  %5 = load ptr, ptr %0, align 8\n  %6 = icmp eq ptr %4, %5\n  br i1 %6, label %bb21, label %bb7\n\nbb7:                                                ; preds = %entry\n  %8 = ptrtoint ptr %4 to i64\n  %9 = ptrtoint ptr %5 to i64\n  %10 = sub i64 %8, %9\n  %11 = ashr exact i64 %10, 2\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %1, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  %19 = call i64 @llvm.umax.i64(i64 %11, i64 1)\n  br label %bb22\n\nbb20:                                               ; preds = %bb27\n  br label %bb21\n\nbb21:                                               ; preds = %bb20, %entry\n  ret void\n\nbb22:                                               ; preds = %bb7, %bb27\n  %23 = phi i64 [ 0, %bb7 ], [ %31, %bb27 ]\n  %24 = shl i64 %23, 1\n  %25 = icmp ugt i64 %18, %24\n  br i1 %25, label %bb27, label %bb26\n\nbb26:                                               ; preds = %bb22\n  tail call void @llvm.trap()\n  unreachable\n\nbb27:                                               ; preds = %bb22\n  %28 = getelementptr inbounds i32, ptr %14, i64 %24\n  %29 = load i32, ptr %28, align 4\n  %30 = getelementptr inbounds i32, ptr %5, i64 %23\n  store i32 %29, ptr %30, align 4\n  %31 = add nuw i64 %23, 1\n  %32 = icmp eq i64 %31, %19\n  br i1 %32, label %bb20, label %bb22\n}\n\n\n; *** IR Dump Before LoopVectorizePass on _Z6v_s2_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ ***\n; Function Attrs: mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable\ndefine dso_local void @_Z6v_s2_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1) local_unnamed_addr #0 {\nentry:\n  %3 = load ptr, ptr %0, align 8\n  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1\n  %5 = load ptr, ptr %4, align 8\n  %6 = ptrtoint ptr %5 to i64\n  %7 = ptrtoint ptr %3 to i64\n  %8 = sub i64 %6, %7\n  %9 = ashr exact i64 %8, 1\n  %10 = icmp eq ptr %5, %3\n  br i1 %10, label %bb20, label %bb11\n\nbb11:                                               ; preds = %entry\n  %12 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1\n  %13 = load ptr, ptr %12, align 8\n  %14 = load ptr, ptr %1, align 8\n  %15 = ptrtoint ptr %13 to i64\n  %16 = ptrtoint ptr %14 to i64\n  %17 = sub i64 %15, %16\n  %18 = ashr exact i64 %17, 2\n  br label %bb21\n\nbb19:                                               ; preds = %bb29\n  br label %bb20\n\nbb20:                                               ; preds = %bb19, %entry\n  ret void\n\nbb21:                                               ; preds = %bb11, %bb29\n  %22 = phi i64 [ 0, %bb11 ], [ %37, %bb29 ]\n  %23 = icmp ugt i64 %18, %22\n  br i1 %23, label %bb25, label %bb24\n\nbb24:                                               ; preds = %bb21\n  tail call void @llvm.trap()\n  unreachable\n\nbb25:                                               ; preds = %bb21\n  %26 = or disjoint i64 %22, 1\n  %27 = icmp ugt i64 %18, %26\n  br i1 %27, label %bb29, label %bb28\n\nbb28:                                               ; preds = %bb25\n  tail call void @llvm.trap()\n  unreachable\n\nbb29:                                               ; preds = %bb25\n  %30 = getelementptr inbounds i32, ptr %14, i64 %22\n  %31 = load i32, ptr %30, align 4\n  %32 = getelementptr inbounds i32, ptr %14, i64 %26\n  %33 = load i32, ptr %32, align 4\n  %34 = add nsw i32 %33, %31\n  %35 = lshr exact i64 %22, 1\n  %36 = getelementptr inbounds i32, ptr %3, i64 %35\n  store i32 %34, ptr %36, align 4\n  %37 = add i64 %22, 2\n  %38 = icmp ult i64 %37, %9\n  br i1 %38, label %bb21, label %bb19\n}\n\nattributes #0 = { mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable }\nattributes #9999 = { cold noreturn nounwind memory(inaccessiblemem: write) }\n"
+ },
+ "request_sha256": "f99415a4b934f3da2d84979332ab24085c0eb0733755d85d84909106e4f362b7",
+ "response": {
+  "asm": [
+   {
+    "text": "<No output file>"
+   }
+  ],
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "-passes=print<scalar-evolution>",
+   "-disable-output",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 59,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.8957330007106066,
+  "stderr": [
+   {
+    "text": "WARNING: The -o (output filename) option is ignored when"
+   },
+   {
+    "text": "the --disable-output option is used."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z9v_rev_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z9v_rev_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %9 = load ptr, ptr %8, align 8"
+   },
+   {
+    "text": "  -->  %9 U: full-set S: full-set"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = ptrtoint ptr %9 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %9 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = sub i64 %11, %12"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %10 to i64)) + (ptrtoint ptr %9 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = phi i64 [ %18, %bb23 ], [ %16, %bb18 ]"
+   },
+   {
+    "text": "  -->  {%16,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 1\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %18 = add i64 %17, -1"
+   },
+   {
+    "text": "  -->  {(-1 + %16)<nsw>,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 0\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %19 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %4),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %4\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4"
+   },
+   {
+    "text": "  -->  %20 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %21 = shl nsw i32 %20, 1"
+   },
+   {
+    "text": "  -->  (2 * %20) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %10, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %10),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %10\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z9v_rev_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb23: backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: constant max backedge-taken count is -1"
+   },
+   {
+    "text": "Loop %bb23: symbolic max backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: Predicated backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb23: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z10v_rev_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z10v_rev_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %8 U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %9, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %8 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %8 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = sub i64 %11, %12"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %8 to i64)) + (ptrtoint ptr %10 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = phi i64 [ %18, %bb23 ], [ %16, %bb18 ]"
+   },
+   {
+    "text": "  -->  {%16,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 1\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %18 = add i64 %17, -1"
+   },
+   {
+    "text": "  -->  {(-1 + %16)<nsw>,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 0\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %19 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %4),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %4\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4"
+   },
+   {
+    "text": "  -->  %20 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %21 = shl nsw i32 %20, 1"
+   },
+   {
+    "text": "  -->  (2 * %20) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %8, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %8),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %8\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z10v_rev_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb23: backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: constant max backedge-taken count is -1"
+   },
+   {
+    "text": "Loop %bb23: symbolic max backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: Predicated backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb23: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z9v_rev_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z9v_rev_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %9 = load ptr, ptr %8, align 8"
+   },
+   {
+    "text": "  -->  %9 U: full-set S: full-set"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = ptrtoint ptr %9 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %9 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = sub i64 %11, %12"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %10 to i64)) + (ptrtoint ptr %9 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = phi i64 [ %18, %bb23 ], [ %16, %bb18 ]"
+   },
+   {
+    "text": "  -->  {%16,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 1\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %18 = add i64 %17, -1"
+   },
+   {
+    "text": "  -->  {(-1 + %16)<nsw>,+,-1}<%bb23> U: full-set S: full-set\t\tExits: 0\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %19 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %4),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %4\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %20 = load i32, ptr %19, align 4"
+   },
+   {
+    "text": "  -->  %20 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %21 = shl nsw i32 %20, 1"
+   },
+   {
+    "text": "  -->  (2 * %20) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %10, i64 %18"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %16)<nsw> + %10),+,-4}<%bb23> U: full-set S: full-set\t\tExits: %10\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z9v_rev_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb23: backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: constant max backedge-taken count is -1"
+   },
+   {
+    "text": "Loop %bb23: symbolic max backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: Predicated backedge-taken count is (-1 + %16)<nsw>"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb23: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z9v_rev_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z9v_rev_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  -->  %9 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %12 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %9, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %9) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %18 = phi i64 [ 0, %bb7 ], [ %24, %bb26 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%bb22> U: [0,-1) S: [0,-1)\t\tExits: (%16 umin_seq (-1 + (1 umax %9)))\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %20 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  -->  {%4,+,4}<%bb22> U: full-set S: full-set\t\tExits: ((4 * (%16 umin_seq (-1 + (1 umax %9)))) + %4)\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %21 = load i32, ptr %20, align 4"
+   },
+   {
+    "text": "  -->  %21 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %22 = shl nsw i32 %21, 1"
+   },
+   {
+    "text": "  -->  (2 * %21) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %12, i64 %18"
+   },
+   {
+    "text": "  -->  {%12,+,4}<%bb22> U: full-set S: full-set\t\tExits: ((4 * (%16 umin_seq (-1 + (1 umax %9)))) + %12)\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %24 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%bb22> U: [1,0) S: [1,0)\t\tExits: (1 + (%16 umin_seq (-1 + (1 umax %9))))<nuw>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z9v_rev_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb22: <multiple exits> backedge-taken count is (%16 umin_seq (-1 + (1 umax %9)))"
+   },
+   {
+    "text": "  exit count for bb22: %16"
+   },
+   {
+    "text": "  exit count for bb26: (-1 + (1 umax %9))"
+   },
+   {
+    "text": "Loop %bb22: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %bb22: symbolic max backedge-taken count is (%16 umin_seq (-1 + (1 umax %9)))"
+   },
+   {
+    "text": "  symbolic max exit count for bb22: %16"
+   },
+   {
+    "text": "  symbolic max exit count for bb26: (-1 + (1 umax %9))"
+   },
+   {
+    "text": "Loop %bb22: Predicated backedge-taken count is (%16 umin_seq (-1 + (1 umax %9)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb22: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z12v_rev_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z12v_rev_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %2 U: full-set S: full-set"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %4, align 8"
+   },
+   {
+    "text": "  -->  %5 U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %5 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = sub i64 %7, %8"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %3 to i64)) + (ptrtoint ptr %5 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %10 = ashr exact i64 %9, 2"
+   },
+   {
+    "text": "  -->  %10 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %2 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %2 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %2 to i64)) + (ptrtoint ptr %12 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = add nsw i64 %10, -1"
+   },
+   {
+    "text": "  -->  (-1 + %10)<nsw> U: [-2305843009213693953,2305843009213693951) S: [-2305843009213693953,2305843009213693951)"
+   },
+   {
+    "text": "  %19 = phi i64 [ %20, %bb26 ], [ %10, %bb8 ]"
+   },
+   {
+    "text": "  -->  {%10,+,-1}<%bb23> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %20 = add i64 %19, -1"
+   },
+   {
+    "text": "  -->  {(-1 + %10)<nsw>,+,-1}<%bb23> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds i32, ptr %3, i64 %20"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %10)<nsw> + %3),+,-4}<%bb23> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "  %22 = load i32, ptr %21, align 4"
+   },
+   {
+    "text": "  -->  %22 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %23 = shl nsw i32 %22, 1"
+   },
+   {
+    "text": "  -->  (2 * %22) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Variant }"
+   },
+   {
+    "text": "  %24 = getelementptr inbounds i32, ptr %2, i64 %20"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %10)<nsw> + %2),+,-4}<%bb23> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb23: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z12v_rev_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb23: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb23: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb26: (-1 + %10)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: constant max backedge-taken count is -1"
+   },
+   {
+    "text": "Loop %bb23: symbolic max backedge-taken count is (-1 + %10)<nsw>"
+   },
+   {
+    "text": "  symbolic max exit count for bb23: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb26: (-1 + %10)<nsw>"
+   },
+   {
+    "text": "Loop %bb23: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z12v_fwd_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z12v_fwd_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %2 U: full-set S: full-set"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %4, align 8"
+   },
+   {
+    "text": "  -->  %5 U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %5 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %2 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %2 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %2 to i64)) + (ptrtoint ptr %5 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  -->  %9 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %3 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %16, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %16) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %18 = phi i64 [ %24, %bb26 ], [ 0, %bb14 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%bb22> U: [0,-1) S: [0,-1)\t\tExits: (%9 umin_seq (-1 + (1 umax %16)))\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %20 = getelementptr inbounds i32, ptr %3, i64 %18"
+   },
+   {
+    "text": "  -->  {%3,+,4}<%bb22> U: full-set S: full-set\t\tExits: ((4 * (%9 umin_seq (-1 + (1 umax %16)))) + %3)\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %21 = load i32, ptr %20, align 4"
+   },
+   {
+    "text": "  -->  %21 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %22 = shl nsw i32 %21, 1"
+   },
+   {
+    "text": "  -->  (2 * %21) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %2, i64 %18"
+   },
+   {
+    "text": "  -->  {%2,+,4}<%bb22> U: full-set S: full-set\t\tExits: ((4 * (%9 umin_seq (-1 + (1 umax %16)))) + %2)\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %24 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%bb22> U: [1,0) S: [1,0)\t\tExits: (1 + (%9 umin_seq (-1 + (1 umax %16))))<nuw>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z12v_fwd_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb22: <multiple exits> backedge-taken count is (%9 umin_seq (-1 + (1 umax %16)))"
+   },
+   {
+    "text": "  exit count for bb22: %9"
+   },
+   {
+    "text": "  exit count for bb26: (-1 + (1 umax %16))"
+   },
+   {
+    "text": "Loop %bb22: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %bb22: symbolic max backedge-taken count is (%9 umin_seq (-1 + (1 umax %16)))"
+   },
+   {
+    "text": "  symbolic max exit count for bb22: %9"
+   },
+   {
+    "text": "  symbolic max exit count for bb26: (-1 + (1 umax %16))"
+   },
+   {
+    "text": "Loop %bb22: Predicated backedge-taken count is (%9 umin_seq (-1 + (1 umax %16)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb22: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z7v_rev_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z7v_rev_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %8 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %12 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %8) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %18 = phi i64 [ 0, %bb11 ], [ %27, %bb31 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%bb22> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %19 = xor i64 %18, -1"
+   },
+   {
+    "text": "  -->  {-1,+,-1}<nw><%bb22> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %20 = add i64 %8, %19"
+   },
+   {
+    "text": "  -->  {(-1 + %8)<nsw>,+,-1}<nw><%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %4, i64 %20"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %8)<nsw> + %4),+,-4}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %24 = load i32, ptr %23, align 4"
+   },
+   {
+    "text": "  -->  %24 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %25 = shl nsw i32 %24, 1"
+   },
+   {
+    "text": "  -->  (2 * %24) U: [0,-1) S: [-2147483648,2147483647)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %12, i64 %20"
+   },
+   {
+    "text": "  -->  {(-4 + (4 * %8)<nsw> + %12),+,-4}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %27 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%bb22> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z7v_rev_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb22: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb28: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb31: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb22: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %bb22: symbolic max backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": "  symbolic max exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb28: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb31: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb22: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z8v_s2_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z8v_s2_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %8 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %9, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = sub i64 %12, %13"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %11 to i64)) + (ptrtoint ptr %10 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = ashr exact i64 %14, 2"
+   },
+   {
+    "text": "  -->  %15 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %16 = lshr i64 %15, 1"
+   },
+   {
+    "text": "  -->  (%15 /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %19 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %8) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %20 = phi i64 [ %31, %bb35 ], [ 0, %bb21 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%bb26> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %21 = shl nuw i64 %20, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><%bb26> U: [0,-3) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %23 = or disjoint i64 %21, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><%bb26> U: [1,-2) S: [1,-2)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %11, i64 %21"
+   },
+   {
+    "text": "  -->  {%11,+,8}<%bb26> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %26 = load i32, ptr %25, align 4"
+   },
+   {
+    "text": "  -->  %26 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %11, i64 %23"
+   },
+   {
+    "text": "  -->  {(4 + %11),+,8}<%bb26> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %28 = load i32, ptr %27, align 4"
+   },
+   {
+    "text": "  -->  %28 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %29 = add nsw i32 %28, %26"
+   },
+   {
+    "text": "  -->  (%26 + %28) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %30 = getelementptr inbounds i32, ptr %4, i64 %20"
+   },
+   {
+    "text": "  -->  {%4,+,4}<%bb26> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %31 = add nuw i64 %20, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%bb26> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z8v_s2_preRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb26: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb26: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb31: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb35: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb26: constant max backedge-taken count is 9223372036854775806"
+   },
+   {
+    "text": "Loop %bb26: symbolic max backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": "  symbolic max exit count for bb26: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb31: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb35: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb26: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z12v_s2_pre_mulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z12v_s2_pre_mulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %8 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = lshr exact i64 %7, 1"
+   },
+   {
+    "text": "  -->  (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %13 U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = ptrtoint ptr %13 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %13 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = sub i64 %14, %15"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %13 to i64)) + (ptrtoint ptr %12 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %17 = ashr exact i64 %16, 2"
+   },
+   {
+    "text": "  -->  %17 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %20 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %8) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %21 = phi i64 [ %32, %bb37 ], [ 0, %bb23 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%bb28> U: [0,2305843009213693951) S: [0,2305843009213693951)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %22 = shl nuw i64 %21, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%bb28> U: [0,4611686018427387901) S: [0,4611686018427387901)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %24 = or disjoint i64 %22, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%bb28> U: [1,4611686018427387902) S: [1,4611686018427387902)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %26 = getelementptr inbounds i32, ptr %13, i64 %22"
+   },
+   {
+    "text": "  -->  {%13,+,8}<nw><%bb28> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %27 = load i32, ptr %26, align 4"
+   },
+   {
+    "text": "  -->  %27 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Variant }"
+   },
+   {
+    "text": "  %28 = getelementptr inbounds i32, ptr %13, i64 %24"
+   },
+   {
+    "text": "  -->  {(4 + %13),+,8}<nw><%bb28> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %29 = load i32, ptr %28, align 4"
+   },
+   {
+    "text": "  -->  %29 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Variant }"
+   },
+   {
+    "text": "  %30 = add nsw i32 %29, %27"
+   },
+   {
+    "text": "  -->  (%27 + %29) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Variant }"
+   },
+   {
+    "text": "  %31 = getelementptr inbounds i32, ptr %4, i64 %21"
+   },
+   {
+    "text": "  -->  {%4,+,4}<nw><%bb28> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "  %32 = add nuw i64 %21, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%bb28> U: [1,2305843009213693952) S: [1,2305843009213693952)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb28: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z12v_s2_pre_mulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb28: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb28: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb33: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb37: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb28: constant max backedge-taken count is 2305843009213693950"
+   },
+   {
+    "text": "Loop %bb28: symbolic max backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": "  symbolic max exit count for bb28: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb33: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb37: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb28: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z9v_s2_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z9v_s2_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %8 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %11, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %10 to i64)) + (ptrtoint ptr %12 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = lshr exact i64 %7, 1"
+   },
+   {
+    "text": "  -->  (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %20 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %8) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %21 = phi i64 [ %31, %bb35 ], [ 0, %bb24 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%bb29> U: [0,2305843009213693951) S: [0,2305843009213693951)\t\tExits: ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %22 = shl nuw i64 %21, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%bb29> U: [0,4611686018427387901) S: [0,4611686018427387901)\t\tExits: (2 * ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)))<nuw><nsw>\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %23 = or disjoint i64 %22, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%bb29> U: [1,4611686018427387902) S: [1,4611686018427387902)\t\tExits: (1 + (2 * ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %10, i64 %22"
+   },
+   {
+    "text": "  -->  {%10,+,8}<nw><%bb29> U: full-set S: full-set\t\tExits: ((8 * ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))) + %10)\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %26 = load i32, ptr %25, align 4"
+   },
+   {
+    "text": "  -->  %26 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb29: Variant }"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %10, i64 %23"
+   },
+   {
+    "text": "  -->  {(4 + %10),+,8}<nw><%bb29> U: full-set S: full-set\t\tExits: (4 + (8 * ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))) + %10)\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %28 = load i32, ptr %27, align 4"
+   },
+   {
+    "text": "  -->  %28 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb29: Variant }"
+   },
+   {
+    "text": "  %29 = add nsw i32 %28, %26"
+   },
+   {
+    "text": "  -->  (%26 + %28) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb29: Variant }"
+   },
+   {
+    "text": "  %30 = getelementptr inbounds i32, ptr %4, i64 %21"
+   },
+   {
+    "text": "  -->  {%4,+,4}<nw><%bb29> U: full-set S: full-set\t\tExits: ((4 * ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)))<nuw> + %4)\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "  %31 = add nuw i64 %21, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%bb29> U: [1,2305843009213693952) S: [1,2305843009213693952)\t\tExits: (1 + ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)))<nuw><nsw>\t\tLoopDispositions: { %bb29: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z9v_s2_spanRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb29: <multiple exits> backedge-taken count is ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))"
+   },
+   {
+    "text": "  exit count for bb29: ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  exit count for bb35: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb29: constant max backedge-taken count is 2305843009213693950"
+   },
+   {
+    "text": "Loop %bb29: symbolic max backedge-taken count is ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))"
+   },
+   {
+    "text": "  symbolic max exit count for bb29: ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for bb35: (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb29: Predicated backedge-taken count is ((-1 + (1 umax %8)) umin ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb29: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z8v_s2_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z8v_s2_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 2"
+   },
+   {
+    "text": "  -->  %8 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %10 = load ptr, ptr %9, align 8"
+   },
+   {
+    "text": "  -->  %10 U: full-set S: full-set"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = ptrtoint ptr %10 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %10 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = sub i64 %12, %13"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %11 to i64)) + (ptrtoint ptr %10 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = ashr exact i64 %14, 2"
+   },
+   {
+    "text": "  -->  %15 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %16 = lshr i64 %15, 1"
+   },
+   {
+    "text": "  -->  (%15 /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %19 = call i64 @llvm.umax.i64(i64 %8, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %8) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %20 = phi i64 [ %29, %bb26 ], [ 0, %bb21 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%bb26> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: (-1 + (1 umax %8))\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %21 = shl nuw i64 %20, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><%bb26> U: [0,-3) S: [-9223372036854775808,9223372036854775807)\t\tExits: (-2 + (2 * (1 umax %8)))\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %11, i64 %21"
+   },
+   {
+    "text": "  -->  {%11,+,8}<%bb26> U: full-set S: full-set\t\tExits: (-8 + (8 * (1 umax %8)) + %11)\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %23 = load i32, ptr %22, align 4"
+   },
+   {
+    "text": "  -->  %23 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %24 = or disjoint i64 %21, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><%bb26> U: [1,-2) S: [1,-2)\t\tExits: (-1 + (2 * (1 umax %8)))\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %25 = getelementptr inbounds i32, ptr %11, i64 %24"
+   },
+   {
+    "text": "  -->  {(4 + %11),+,8}<%bb26> U: full-set S: full-set\t\tExits: (-4 + (8 * (1 umax %8)) + %11)\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %26 = load i32, ptr %25, align 4"
+   },
+   {
+    "text": "  -->  %26 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %27 = add nsw i32 %26, %23"
+   },
+   {
+    "text": "  -->  (%23 + %26) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb26: Variant }"
+   },
+   {
+    "text": "  %28 = getelementptr inbounds i32, ptr %4, i64 %20"
+   },
+   {
+    "text": "  -->  {%4,+,4}<nuw><%bb26> U: full-set S: full-set\t\tExits: (-4 + (4 * (1 umax %8)) + %4)\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "  %29 = add nuw nsw i64 %20, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%bb26> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: (1 umax %8)\t\tLoopDispositions: { %bb26: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z8v_s2_rawRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb26: backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb26: constant max backedge-taken count is 9223372036854775806"
+   },
+   {
+    "text": "Loop %bb26: symbolic max backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": "Loop %bb26: Predicated backedge-taken count is (-1 + (1 umax %8))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %bb26: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z11v_s2_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z11v_s2_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %2 U: full-set S: full-set"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %5 = load ptr, ptr %4, align 8"
+   },
+   {
+    "text": "  -->  %5 U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %5 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %5 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %3 to i64)) + (ptrtoint ptr %5 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  -->  %9 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %2 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %2 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %2 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %16, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %16) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %18 = phi i64 [ %28, %bb28 ], [ 0, %bb14 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%bb22> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %19 = shl i64 %18, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<%bb22> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %20 = or disjoint i64 %19, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %22 = getelementptr inbounds i32, ptr %3, i64 %19"
+   },
+   {
+    "text": "  -->  {%3,+,8}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %23 = load i32, ptr %22, align 4"
+   },
+   {
+    "text": "  -->  %23 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %24 = getelementptr inbounds i32, ptr %3, i64 %20"
+   },
+   {
+    "text": "  -->  {(4 + %3),+,8}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %25 = load i32, ptr %24, align 4"
+   },
+   {
+    "text": "  -->  %25 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %26 = add nsw i32 %25, %23"
+   },
+   {
+    "text": "  -->  (%23 + %25) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %2, i64 %18"
+   },
+   {
+    "text": "  -->  {%2,+,4}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %28 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%bb22> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z11v_s2_manualRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb22: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb28: (-1 + (1 umax %16))"
+   },
+   {
+    "text": "Loop %bb22: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %bb22: symbolic max backedge-taken count is (-1 + (1 umax %16))"
+   },
+   {
+    "text": "  symbolic max exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb28: (-1 + (1 umax %16))"
+   },
+   {
+    "text": "Loop %bb22: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z8v_s2_oneRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z8v_s2_oneRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %3 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  -->  %3 U: full-set S: full-set"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %3 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %3 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = sub i64 %6, %7"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %9 = ashr exact i64 %8, 2"
+   },
+   {
+    "text": "  -->  %9 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %12 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = call i64 @llvm.umax.i64(i64 %9, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %9) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %18 = phi i64 [ 0, %bb7 ], [ %24, %bb27 ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%bb22> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %19 = shl i64 %18, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<%bb22> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds i32, ptr %12, i64 %19"
+   },
+   {
+    "text": "  -->  {%12,+,8}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %22 = load i32, ptr %21, align 4"
+   },
+   {
+    "text": "  -->  %22 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Variant }"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %4, i64 %18"
+   },
+   {
+    "text": "  -->  {%4,+,4}<%bb22> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "  %24 = add nuw i64 %18, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%bb22> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb22: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z8v_s2_oneRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb22: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb27: (-1 + (1 umax %9))"
+   },
+   {
+    "text": "Loop %bb22: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %bb22: symbolic max backedge-taken count is (-1 + (1 umax %9))"
+   },
+   {
+    "text": "  symbolic max exit count for bb22: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb27: (-1 + (1 umax %9))"
+   },
+   {
+    "text": "Loop %bb22: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function '_Z6v_s2_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_':"
+   },
+   {
+    "text": "Classifying expressions for: @_Z6v_s2_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "  %2 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  -->  %2 U: full-set S: full-set"
+   },
+   {
+    "text": "  %3 = getelementptr inbounds %\"class.std::__1::vector\", ptr %0, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %0)<nuw> U: [8,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %4 = load ptr, ptr %3, align 8"
+   },
+   {
+    "text": "  -->  %4 U: full-set S: full-set"
+   },
+   {
+    "text": "  %5 = ptrtoint ptr %4 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %4 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %6 = ptrtoint ptr %2 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %2 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %7 = sub i64 %5, %6"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %2 to i64)) + (ptrtoint ptr %4 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %8 = ashr exact i64 %7, 1"
+   },
+   {
+    "text": "  -->  %8 U: [-4611686018427387904,4611686018427387904) S: [-4611686018427387904,4611686018427387904)"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds %\"class.std::__1::vector\", ptr %1, i64 0, i32 1"
+   },
+   {
+    "text": "  -->  (8 + %1) U: [0,-7) S: [-9223372036854775808,9223372036854775801)"
+   },
+   {
+    "text": "  %11 = load ptr, ptr %10, align 8"
+   },
+   {
+    "text": "  -->  %11 U: full-set S: full-set"
+   },
+   {
+    "text": "  %12 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  -->  %12 U: full-set S: full-set"
+   },
+   {
+    "text": "  %13 = ptrtoint ptr %11 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %11 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %14 = ptrtoint ptr %12 to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %12 to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %15 = sub i64 %13, %14"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %12 to i64)) + (ptrtoint ptr %11 to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %16 = ashr exact i64 %15, 2"
+   },
+   {
+    "text": "  -->  %16 U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %17 = phi i64 [ 0, %bb11 ], [ %28, %bb29 ]"
+   },
+   {
+    "text": "  -->  {0,+,2}<%bb21> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %19 = or disjoint i64 %17, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<%bb21> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %21 = getelementptr inbounds i32, ptr %12, i64 %17"
+   },
+   {
+    "text": "  -->  {%12,+,8}<%bb21> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %22 = load i32, ptr %21, align 4"
+   },
+   {
+    "text": "  -->  %22 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Variant }"
+   },
+   {
+    "text": "  %23 = getelementptr inbounds i32, ptr %12, i64 %19"
+   },
+   {
+    "text": "  -->  {(4 + %12),+,8}<%bb21> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %24 = load i32, ptr %23, align 4"
+   },
+   {
+    "text": "  -->  %24 U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Variant }"
+   },
+   {
+    "text": "  %25 = add nsw i32 %24, %22"
+   },
+   {
+    "text": "  -->  (%22 + %24) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Variant }"
+   },
+   {
+    "text": "  %26 = lshr exact i64 %17, 1"
+   },
+   {
+    "text": "  -->  ({0,+,2}<%bb21> /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %27 = getelementptr inbounds i32, ptr %2, i64 %26"
+   },
+   {
+    "text": "  -->  ((4 * ({0,+,2}<%bb21> /u 2)) + %2) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "  %28 = add i64 %17, 2"
+   },
+   {
+    "text": "  -->  {2,+,2}<%bb21> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %bb21: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @_Z6v_s2_jRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_"
+   },
+   {
+    "text": "Loop %bb21: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for bb21: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb25: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for bb29: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "Loop %bb21: Unpredictable constant max backedge-taken count. "
+   },
+   {
+    "text": "Loop %bb21: Unpredictable symbolic max backedge-taken count. "
+   },
+   {
+    "text": "  symbolic max exit count for bb21: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb25: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for bb29: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "Loop %bb21: Unpredictable predicated backedge-taken count."
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/ir/c18-variants-fast.ll",
+ "url": "https://godbolt.org/api/compiler/opt1810/compile",
+ "user_arguments": "-passes=print<scalar-evolution> -disable-output"
+}

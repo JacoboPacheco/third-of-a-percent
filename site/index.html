@@ -75,7 +75,7 @@
           <div class="race-axis" id="race-axis" aria-hidden="true"></div>
           <div class="race-cv"><canvas id="race-cv" height="150" role="img" aria-label="Illustration: a row of array elements processed with the check on or off"></canvas></div>
           <div class="race-read" aria-live="polite">
-            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">19</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">Clang 18 could not vectorize it with the check inside. Switching SIMD off by hand costs 3.3× (about a third of the as-compiled extra); the rest is the compare and jump (inferred).</span></span></div>
+            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">20</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">Clang 18 could not vectorize it with the check inside. Switching SIMD off by hand costs 3.3× (about a third of the as-compiled extra); the rest is the compare and jump (inferred).</span></span></div>
             <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
           </div>
           <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
@@ -104,7 +104,7 @@
         <div class="mech-head">
           <h2 id="mech-h">Why does the check slow it down?</h2>
           <p class="mech-gist">SIMD: one instruction, four elements. A check before every element can stop the compiler from grouping them.</p>
-          <p class="mech-note">An illustration of the mechanism, inferred from the compiler&rsquo;s remarks and the machine code; steps are not time, and the speeds are measured above.</p>
+          <p class="mech-note">Steps are not time; the speeds are measured above. That the check is a loop exit clang cannot count is observed (<a href="details.html#passlevel">pass-level evidence</a>); that this stops SIMD is inferred.</p>
         </div>
         <div class="mech-card" id="mech-card">
           <div class="mech-tiles" id="mech-tiles" role="radiogroup" aria-label="Loop shape for the demo"></div>
@@ -135,6 +135,7 @@
           <span class="ctl-label" id="cpu-label">CPU</span>
           <div class="seg" id="cpu-seg" role="radiogroup" aria-labelledby="cpu-label"></div>
           <span class="few" id="cpu-few"></span>
+          <span class="few" id="cpu-verdict" aria-live="polite"></span>
         </div>
         <div class="ctl">
           <span class="ctl-label" id="col-label">Loops</span>
@@ -181,7 +182,7 @@
           <li>Your production average: these are single loops, not services.</li>
           <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
           <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
-          <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the stored samples leaves every verdict on the two best-sampled AMD models unchanged and the third is fragile (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
+          <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the 75-job pool leaves the verdicts of the three AMD models unchanged, but the two Xeon models (6 jobs each, inconclusive) change form with the interval method (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
         </ul>
         <p class="cannot-more"><a href="details.html#limits-full">Every limit, in full &rarr;</a></p>
       </aside>
@@ -193,7 +194,7 @@
       <h2><span class="secno">1</span>Result</h2>
       <p class="gist">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times; as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</p>
       <p>Every ratio is the time a loop takes with the checks on divided by its time with them off (1&times; is free, 2&times; twice as long), at two working-set sizes that fit the fastest cache (L1) and the second (L2).</p>
-      <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged.</p>
+      <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged, and so does one run judged alone.</p>
       <p class="tcap" id="cpu-cap"><b>Table 1.</b> Per CPU model, pooled over every job that drew it. &ldquo;Pattern&rdquo; asks whether every judged forward loop stayed at most 2% above 1&times; (aligned, interval included) and every loop that loses SIMD stayed far above it (interval above 1.5&times; in both columns), by rules written before these runs. Placement-sensitive cells are left out of the 2% test and shown in their own column (section 3).</p>
       <div class="tablewrap">
         <table class="tbl" id="cpu-table">
@@ -209,7 +210,7 @@
       <h2><span class="secno">2</span>Why the cost is so uneven</h2>
       <p class="gist">SIMD does several array elements per instruction. A check inside the loop can stop the compiler from using it.</p>
       <p>SIMD (single instruction, multiple data) handles several array elements with one instruction: here one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once. A compiler uses it only when it can prove that safe, and the bounds check makes the proof harder, because it can stop the loop at any element.</p>
-      <p>The machine-code view of each loop shows both outcomes. In the reverse loop the check sits inside the loop with nothing to hoist it out, the compiler reports that it <q>could not determine number of loop iterations</q>, and the four-at-a-time loop is replaced by a loop that handles one element per pass plus a compare and a jump to the trap. In the forward loops the compiler tests the sizes once before the loop and keeps the SIMD body; the check only runs on the few elements left over at the end, and in the forward sum the compiler removes it altogether.<a class="fnref" href="details.html#fn-novec" id="fnref-novec">1</a></p>
+      <p>The machine-code view of each loop shows both outcomes. Each check is another way out of the loop, and clang vectorized a loop only when it could count the iterations to every exit (observed; that the count is the cause is inferred). In the forward loops it can: the sizes are tested once, before the loop, and the check runs only on the leftover elements. In the reverse loop the check no longer depends on the loop counter, its branch stays inside the loop with no count (<q>could not determine number of loop iterations</q>), so the four-at-a-time loop is replaced by one element per pass plus a compare and a jump to the trap. <a href="details.html#passlevel">Pass-level evidence</a>.<a class="fnref" href="details.html#fn-novec" id="fnref-novec">1</a></p>
     </section>
 
     <section id="placement">

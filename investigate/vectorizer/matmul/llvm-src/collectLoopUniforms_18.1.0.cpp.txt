@@ -1,0 +1,21 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpt, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-18.1.0/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp
+// Function LoopVectorizationCostModel::collectLoopUniforms: lines 4197 to 4422 at tag llvmorg-18.1.0
+// (sha256 of the whole function: 7d63e10f840c877b3da66bc334e75e5c3ea4473174d63f5b255f5d8d4424984d). Excerpt: lines 4243 to 4258.
+
+  };
+
+  // Start with the conditional branch. If the branch condition is an
+  // instruction contained in the loop that is only used by the branch, it is
+  // uniform.
+  auto *Cmp = dyn_cast<Instruction>(Latch->getTerminator()->getOperand(0));
+  if (Cmp && TheLoop->contains(Cmp) && Cmp->hasOneUse())
+    addToWorklistIfAllowed(Cmp);
+
+  auto PrevVF = VF.divideCoefficientBy(2);
+  // Return true if all lanes perform the same memory operation, and we can
+  // thus chose to execute only one.
+  auto isUniformMemOpUse = [&](Instruction *I) {
+    // If the value was already known to not be uniform for the previous
+    // (smaller VF), it cannot be uniform for the larger VF.
+    if (PrevVF.isVector()) {

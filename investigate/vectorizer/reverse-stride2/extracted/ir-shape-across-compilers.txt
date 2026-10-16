@@ -1,0 +1,72 @@
+# Made by excerpts.py from: raw/B-c18-kernels-fast-ir, raw/B-c19-kernels-fast-ir, raw/B-c20-kernels-fast-ir, raw/B-ctrunk-kernels-fast-ir
+# The IR just before the loop vectorizer for the five project loops, clang 18.1.0 against 19.1.0, 20.1.0 and trunk (hardening FAST).
+# Each function is reduced to its instruction lines with these spellings made equal: no debug, TBAA, branch-weight or
+# loop metadata; no `llvm.assume` calls; `ptrtoaddr` as `ptrtoint`; `inbounds nuw` as `inbounds`; the vector's member
+# access written as a byte offset; `icmp ugt a, b` as `icmp ult b, a`; values numbered by first appearance.
+# `same` means the lists are identical, so the blocks, the operations, the operands and the trap branches agree.
+
+kern_k01_sum_fwd   18.1.0 against 19.1.0 same (28 lines)
+kern_k01_sum_fwd   18.1.0 against 20.1.0 same (28 lines)
+kern_k01_sum_fwd   18.1.0 against trunk  differs:
+        -%v18 = phi i64 [ %v19, %v12 ], [ 0, %v6 ]
+        -%v20 = phi i64 [ %v14, %v12 ], [ 0, %v6 ]
+        +%v18 = phi i64 [ 0, %v6 ], [ %v19, %v12 ]
+        +%v20 = phi i64 [ 0, %v6 ], [ %v14, %v12 ]
+kern_k02_add_fwd   18.1.0 against 19.1.0 same (54 lines)
+kern_k02_add_fwd   18.1.0 against 20.1.0 same (54 lines)
+kern_k02_add_fwd   18.1.0 against trunk  same (54 lines)
+kern_k03_stencil   18.1.0 against 19.1.0 differs:
+        -%v21 = getelementptr i32, ptr %v3, i64 -1
+        +%v21 = getelementptr i8, ptr %v3, i64 -4
+kern_k03_stencil   18.1.0 against 20.1.0 differs:
+        -%v21 = getelementptr i32, ptr %v3, i64 -1
+        +%v21 = getelementptr i8, ptr %v3, i64 -4
+kern_k03_stencil   18.1.0 against trunk  differs:
+        -%v21 = getelementptr i32, ptr %v3, i64 -1
+        -br label %v22
+        +br label %v21
+        +21:
+        +br label %v10
+        -br label %v10
+        +ret void
+        -ret void
+        -24:
+        -%v23 = phi i64 [ 2, %v9 ], [ %v24, %v25 ]
+        -%v26 = phi i64 [ 1, %v9 ], [ %v23, %v25 ]
+        -%v27 = icmp eq i64 %v23, %v20
+        -br i1 %v27, label %v28, label %v25
+        -28:
+        +%v22 = phi i64 [ 2, %v9 ], [ %v23, %v24 ]
+        +%v25 = phi i64 [ 1, %v9 ], [ %v22, %v24 ]
+        +%v26 = icmp eq i64 %v22, %v20
+        +br i1 %v26, label %v27, label %v24
+        +27:
+        -29:
+        -%v29 = getelementptr i32, ptr %v21, i64 %v26
+        +28:
+        +%v28 = getelementptr i32, ptr %v3, i64 %v25
+        +%v29 = getelementptr i8, ptr %v28, i64 -4
+        -%v31 = getelementptr inbounds i32, ptr %v3, i64 %v26
+        +%v31 = getelementptr inbounds i32, ptr %v3, i64 %v25
+        -%v34 = getelementptr inbounds i32, ptr %v3, i64 %v23
+        +%v34 = getelementptr inbounds i32, ptr %v3, i64 %v22
+        -%v37 = getelementptr inbounds i32, ptr %v14, i64 %v26
+        +%v37 = getelementptr inbounds i32, ptr %v14, i64 %v25
+        -%v24 = add nuw i64 %v23, 1
+        -%v38 = icmp eq i64 %v24, %v7
+        -br i1 %v38, label %v39, label %v22
+        +%v23 = add nuw i64 %v22, 1
+        +%v38 = icmp eq i64 %v23, %v7
+        +br i1 %v38, label %v39, label %v21
+kern_k04_rev       18.1.0 against 19.1.0 same (39 lines)
+kern_k04_rev       18.1.0 against 20.1.0 same (39 lines)
+kern_k04_rev       18.1.0 against trunk  same (39 lines)
+kern_k05_stride2   18.1.0 against 19.1.0 same (49 lines)
+kern_k05_stride2   18.1.0 against 20.1.0 same (49 lines)
+kern_k05_stride2   18.1.0 against trunk  same (49 lines)
+
+In the raw dumps (every assume call has a `separate_storage` operand bundle), per function: llvm.assume calls, ptrtoaddr, ptrtoint:
+    18.1.0  k04_rev: 0, 0, 4; k05_stride2: 0, 0, 4
+    19.1.0  k04_rev: 0, 0, 4; k05_stride2: 0, 0, 4
+    20.1.0  k04_rev: 0, 0, 4; k05_stride2: 0, 0, 4
+    trunk   k04_rev: 2, 4, 0; k05_stride2: 3, 4, 0

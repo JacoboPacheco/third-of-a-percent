@@ -1,0 +1,44 @@
+# Made by excerpts.py from: raw/G-c18-kernels-fast-frontend-ir, raw/G-opt1810-print-O2-pipeline, raw/G-opt1810-full-O2-control, raw/G-opt1810-full-O2-unswitch-after-indvars, raw/G-opt1810-full-O2-unswitch-before-lv
+# Input: the IR clang 18.1.0 prints with -O2 -disable-llvm-passes (sources/ir/c18-kernels-fast-frontend.ll).
+# Pipeline: the text `opt -passes=default<O2> -print-pipeline-passes` prints (raw/G-opt1810-print-O2-pipeline.json),
+# run unchanged, with `loop-mssa(simple-loop-unswitch<no-nontrivial;trivial>)` inserted right after `loop(loop-idiom,indvars,loop-deletion,loop-unroll-full)`, or just before `loop-vectorize<no-interleave-forced-only;no-vectorize-forced-only;>`.
+
+function           control                     unswitch after indvars      unswitch before vectorizer
+kern_k01_sum_fwd   vectorized                  vectorized                  vectorized                
+kern_k02_add_fwd   vectorized                  vectorized                  vectorized                
+kern_k03_stencil   vectorized                  vectorized                  vectorized                
+kern_k04_rev       not vectorized              vectorized                  vectorized                
+kern_k05_stride2   not vectorized              not vectorized              not vectorized            
+
+remarks, control:
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 2, interleaved count: 2)
+    remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)
+    remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations
+    remark: <unknown>:0:0: loop not vectorized
+    remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations
+    remark: <unknown>:0:0: loop not vectorized
+
+remarks, unswitch after indvars:
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 2, interleaved count: 2)
+    remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)
+    remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations
+    remark: <unknown>:0:0: loop not vectorized
+
+remarks, unswitch before vectorizer:
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 2, interleaved count: 2)
+    remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)
+    remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 2)
+    remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations
+    remark: <unknown>:0:0: loop not vectorized
+
+simple-loop-unswitch passes in each pipeline text, with their character offsets; offsets of the indvars group and of loop-vectorize:
+    control                    unswitch at [1661]; indvars at 1980; loop-vectorize at 2880
+    unswitch after indvars     unswitch at [1661, 2030]; indvars at 1980; loop-vectorize at 2935
+    unswitch before vectorizer unswitch at [1661, 2890]; indvars at 1980; loop-vectorize at 2935

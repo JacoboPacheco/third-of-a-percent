@@ -2,6 +2,8 @@
 
 Status: partly shown, partly inferred. The "why" at compiler-source level is NOT shown.
 
+Later work: the open questions below (what changed between clang 18 and 19, and whether the library or the compiler is responsible) are addressed, with every claim labelled observed, inferred or not established, in the compile-only study [`investigate/vectorizer/matmul`](../investigate/vectorizer/matmul/README.md). This note is kept as written.
+
 ## What was compared
 - clang 18 asm and remarks: `results/s3-audit-run-38127024171/results-amd-epyc-9v45-96-core-processor-j2/{asm,remarks}/k08_matmul.{none,fast}`.
 - clang 19 asm and remarks: `versions/results/38471430657/versions-19-amd-epyc-7763-64-core-processor-j10/...` (20 and 21: remarks and a grep of the asm only).

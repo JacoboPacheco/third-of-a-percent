@@ -1,0 +1,217 @@
+# Made by excerpts.py from: raw/A-c18-kernels-fast, raw/A-c18-kernels-none
+# k02_add_fwd, hardening FAST
+kern_k02_add_fwd(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&):
+        mov     r8, qword ptr [rsi]
+        mov     rax, qword ptr [rsi + 8]
+        sub     rax, r8
+        je      .LBB1_12
+        sar     rax, 2
+        mov     rsi, qword ptr [rdx]
+        mov     rcx, qword ptr [rdx + 8]
+        sub     rcx, rsi
+        sar     rcx, 2
+        mov     r9, qword ptr [rdi]
+        mov     rdx, qword ptr [rdi + 8]
+        sub     rdx, r9
+        sar     rdx, 2
+        cmp     rax, 1
+        adc     rax, 0
+        lea     r10, [rax - 1]
+        cmp     r10, rdx
+        cmovae  r10, rdx
+        cmp     r10, rcx
+        cmovae  r10, rcx
+        cmp     r10, 7
+        ja      .LBB1_6
+        xor     edi, edi
+        jmp     .LBB1_3
+.LBB1_6:
+        mov     r11, r9
+        sub     r11, r8
+        xor     edi, edi
+        cmp     r11, 16
+        jb      .LBB1_3
+        mov     r11, r9
+        sub     r11, rsi
+        cmp     r11, 16
+        jb      .LBB1_3
+        inc     r10
+        mov     edi, r10d
+        and     edi, 3
+        mov     r11d, 4
+        cmovne  r11, rdi
+        mov     rdi, r10
+        sub     rdi, r11
+        xor     r10d, r10d
+.LBB1_9:
+        movdqu  xmm0, xmmword ptr [r8 + 4*r10]
+        movdqu  xmm1, xmmword ptr [rsi + 4*r10]
+        paddd   xmm1, xmm0
+        movdqu  xmmword ptr [r9 + 4*r10], xmm1
+        add     r10, 4
+        cmp     rdi, r10
+        jne     .LBB1_9
+.LBB1_3:
+        sub     rdx, rdi
+        sub     rcx, rdi
+        sub     rax, rdi
+        lea     r8, [r8 + 4*rdi]
+        lea     rsi, [rsi + 4*rdi]
+        lea     rdi, [r9 + 4*rdi]
+        xor     r9d, r9d
+.LBB1_4:
+        cmp     rcx, r9
+        je      .LBB1_5
+        cmp     rdx, r9
+        je      .LBB1_5
+        mov     r10d, dword ptr [rsi + 4*r9]
+        add     r10d, dword ptr [r8 + 4*r9]
+        mov     dword ptr [rdi + 4*r9], r10d
+        inc     r9
+        cmp     rax, r9
+        jne     .LBB1_4
+.LBB1_12:
+        ret
+.LBB1_5:
+        ud2
+
+
+# k04_rev, hardening NONE
+kern_k04_rev(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):
+        mov     rax, qword ptr [rsi]
+        mov     rsi, qword ptr [rsi + 8]
+        sub     rsi, rax
+        je      .LBB3_12
+        sar     rsi, 2
+        mov     rcx, qword ptr [rdi]
+        cmp     rsi, 8
+        jb      .LBB3_7
+        mov     rdx, rax
+        sub     rdx, rcx
+        cmp     rdx, 32
+        jb      .LBB3_7
+        mov     rdi, rsi
+        and     rdi, -8
+        mov     edx, esi
+        and     edx, 7
+        lea     r8, [rax + 4*rsi]
+        add     r8, -16
+        lea     r9, [rcx + 4*rsi]
+        add     r9, -16
+        mov     r10, rdi
+        neg     r10
+        xor     r11d, r11d
+.LBB3_4:
+        movdqu  xmm0, xmmword ptr [r8 + 4*r11 - 16]
+        movdqu  xmm1, xmmword ptr [r8 + 4*r11]
+        paddd   xmm1, xmm1
+        paddd   xmm0, xmm0
+        movdqu  xmmword ptr [r9 + 4*r11], xmm1
+        movdqu  xmmword ptr [r9 + 4*r11 - 16], xmm0
+        add     r11, -8
+        cmp     r10, r11
+        jne     .LBB3_4
+        cmp     rsi, rdi
+        jne     .LBB3_8
+        jmp     .LBB3_12
+.LBB3_7:
+        mov     rdx, rsi
+.LBB3_8:
+        lea     rdi, [rdx - 1]
+        mov     r8, rdx
+        and     r8, 3
+        je      .LBB3_13
+.LBB3_9:
+        lea     rsi, [rdx - 1]
+        mov     r9d, dword ptr [rax + 4*rdx - 4]
+        add     r9d, r9d
+        mov     dword ptr [rcx + 4*rdx - 4], r9d
+        mov     rdx, rsi
+        dec     r8
+        jne     .LBB3_9
+        cmp     rdi, 3
+        jb      .LBB3_12
+.LBB3_11:
+        mov     edx, dword ptr [rax + 4*rsi - 4]
+        add     edx, edx
+        mov     dword ptr [rcx + 4*rsi - 4], edx
+        mov     edx, dword ptr [rax + 4*rsi - 8]
+        add     edx, edx
+        mov     dword ptr [rcx + 4*rsi - 8], edx
+        mov     edx, dword ptr [rax + 4*rsi - 12]
+        add     edx, edx
+        mov     dword ptr [rcx + 4*rsi - 12], edx
+        mov     edx, dword ptr [rax + 4*rsi - 16]
+        add     edx, edx
+        mov     dword ptr [rcx + 4*rsi - 16], edx
+        lea     rdx, [rsi - 4]
+        mov     rsi, rdx
+        test    rdx, rdx
+        jne     .LBB3_11
+.LBB3_12:
+        ret
+.LBB3_13:
+        mov     rsi, rdx
+        cmp     rdi, 3
+        jae     .LBB3_11
+        jmp     .LBB3_12
+
+
+# k04_rev, hardening FAST
+kern_k04_rev(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):
+        mov     rax, qword ptr [rsi]
+        mov     rcx, qword ptr [rsi + 8]
+        sub     rcx, rax
+        je      .LBB3_4
+        sar     rcx, 2
+        mov     rdx, qword ptr [rdi]
+        mov     rsi, qword ptr [rdi + 8]
+        sub     rsi, rdx
+        sar     rsi, 2
+        lea     rdi, [rcx - 1]
+.LBB3_2:
+        cmp     rdi, rsi
+        jae     .LBB3_5
+        mov     r8d, dword ptr [rax + 4*rcx - 4]
+        add     r8d, r8d
+        mov     dword ptr [rdx + 4*rcx - 4], r8d
+        lea     r8, [rcx - 1]
+        mov     rcx, r8
+        test    r8, r8
+        jne     .LBB3_2
+.LBB3_4:
+        ret
+.LBB3_5:
+        ud2
+
+
+# k05_stride2, hardening FAST
+kern_k05_stride2(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&):
+        mov     rax, qword ptr [rdi]
+        mov     rcx, qword ptr [rdi + 8]
+        sub     rcx, rax
+        je      .LBB4_5
+        sar     rcx, 2
+        mov     rdx, qword ptr [rsi]
+        mov     rsi, qword ptr [rsi + 8]
+        sub     rsi, rdx
+        sar     rsi, 2
+        cmp     rcx, 1
+        adc     rcx, 0
+        xor     edi, edi
+.LBB4_2:
+        cmp     rsi, rdi
+        jbe     .LBB4_6
+        lea     r8, [rdi + 1]
+        cmp     rsi, r8
+        jbe     .LBB4_6
+        mov     r8d, dword ptr [rdx + 4*rdi + 4]
+        add     r8d, dword ptr [rdx + 4*rdi]
+        mov     dword ptr [rax + 2*rdi], r8d
+        add     rdi, 2
+        dec     rcx
+        jne     .LBB4_2
+.LBB4_5:
+        ret
+.LBB4_6:
+        ud2

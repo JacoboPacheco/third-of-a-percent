@@ -1,0 +1,1665 @@
+{
+ "compiler_id": "opt1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:42:04+00:00",
+ "http_status": 200,
+ "name": "H-opt1810-s2-bound-scev",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-passes=print<scalar-evolution> -disable-output"
+  },
+  "source": "; Hand-written (make_s2_bound.py). One stride-2 loop with one in-loop check; only the bound's expression and the\n; flags of the shift differ between the functions. See the docstring of make_s2_bound.py.\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\ndeclare void @llvm.trap() #0\ndeclare i64 @llvm.umax.i64(i64, i64)\ndeclare i64 @llvm.umin.i64(i64, i64)\nattributes #0 = { cold noreturn nounwind }\n\ndefine void @f_full_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_full_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n"
+ },
+ "request_sha256": "5962cee19e53c2870038086805f66031cbe01df84224ab433a0ee764606fd6fc",
+ "response": {
+  "asm": [
+   {
+    "text": "<No output file>"
+   }
+  ],
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "-passes=print<scalar-evolution>",
+   "-disable-output",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 60,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.7622929997742176,
+  "stderr": [
+   {
+    "text": "WARNING: The -o (output filename) option is ignored when"
+   },
+   {
+    "text": "the --disable-output option is used."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_full_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_full_plain"
+   },
+   {
+    "text": "  %bound = add i64 %an, 0"
+   },
+   {
+    "text": "  -->  %an U: full-set S: full-set"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_full_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ashr2_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ashr2_plain"
+   },
+   {
+    "text": "  %bound = ashr i64 %an, 2"
+   },
+   {
+    "text": "  -->  %bound U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ashr2_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_lshr1_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_lshr1_plain"
+   },
+   {
+    "text": "  %bound = lshr i64 %an, 1"
+   },
+   {
+    "text": "  -->  (%an /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,4611686018427387904) S: [0,4611686018427387904)\t\tExits: (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: (2 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: (1 + (2 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,4611686018427387905) S: [1,4611686018427387905)\t\tExits: (1 + (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_lshr1_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (%an /u 2)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 4611686018427387903"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (%an /u 2)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_and62_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_and62_plain"
+   },
+   {
+    "text": "  %bound = and i64 %an, 4611686018427387903"
+   },
+   {
+    "text": "  -->  (zext i62 (trunc i64 %an to i62) to i64) U: [0,4611686018427387904) S: [0,4611686018427387904)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,2305843009213693952) S: [0,2305843009213693952)\t\tExits: (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,4611686018427387903) S: [0,4611686018427387903)\t\tExits: (2 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,4611686018427387904) S: [1,4611686018427387904)\t\tExits: (1 + (2 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<nw><%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<nw><%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,2305843009213693953) S: [1,2305843009213693953)\t\tExits: (1 + (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_and62_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 2305843009213693951"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_umin40_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_umin40_plain"
+   },
+   {
+    "text": "  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)"
+   },
+   {
+    "text": "  -->  (1099511627776 umin %an) U: [0,1099511627777) S: [0,1099511627777)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,549755813889) S: [0,549755813889)\t\tExits: (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,1099511627777) S: [0,1099511627777)\t\tExits: (2 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,1099511627778) S: [1,1099511627778)\t\tExits: (1 + (2 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<nw><%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<nw><%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,549755813890) S: [1,549755813890)\t\tExits: (1 + (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_umin40_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (1099511627776 umin %an)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 549755813888"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (1099511627776 umin %an)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ptr_ashr_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ptr_ashr_plain"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %end to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %beg to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bound = ashr exact i64 %bytes, 2"
+   },
+   {
+    "text": "  -->  %bound U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ptr_ashr_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ptr_lshr_plain':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ptr_lshr_plain"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %end to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %beg to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bound = lshr exact i64 %bytes, 1"
+   },
+   {
+    "text": "  -->  (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,4611686018427387904) S: [0,4611686018427387904)\t\tExits: (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: (2 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: (1 + (2 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,4611686018427387905) S: [1,4611686018427387905)\t\tExits: (1 + (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ptr_lshr_plain"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 4611686018427387903"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_full_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_full_nuw"
+   },
+   {
+    "text": "  %bound = add i64 %an, 0"
+   },
+   {
+    "text": "  -->  %an U: full-set S: full-set"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_full_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ashr2_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ashr2_nuw"
+   },
+   {
+    "text": "  %bound = ashr i64 %an, 2"
+   },
+   {
+    "text": "  -->  %bound U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ashr2_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_lshr1_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_lshr1_nuw"
+   },
+   {
+    "text": "  %bound = lshr i64 %an, 1"
+   },
+   {
+    "text": "  -->  (%an /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,4611686018427387904) S: [0,4611686018427387904)\t\tExits: (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: (2 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: (1 + (2 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,4611686018427387905) S: [1,4611686018427387905)\t\tExits: (1 + (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_lshr1_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (%an /u 2)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 4611686018427387903"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (%an /u 2)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (%an /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_and62_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_and62_nuw"
+   },
+   {
+    "text": "  %bound = and i64 %an, 4611686018427387903"
+   },
+   {
+    "text": "  -->  (zext i62 (trunc i64 %an to i62) to i64) U: [0,4611686018427387904) S: [0,4611686018427387904)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,2305843009213693952) S: [0,2305843009213693952)\t\tExits: (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,4611686018427387903) S: [0,4611686018427387903)\t\tExits: (2 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,4611686018427387904) S: [1,4611686018427387904)\t\tExits: (1 + (2 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<nw><%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<nw><%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,2305843009213693953) S: [1,2305843009213693953)\t\tExits: (1 + (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_and62_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 2305843009213693951"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_umin40_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_umin40_nuw"
+   },
+   {
+    "text": "  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)"
+   },
+   {
+    "text": "  -->  (1099511627776 umin %an) U: [0,1099511627777) S: [0,1099511627777)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,549755813889) S: [0,549755813889)\t\tExits: (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,1099511627777) S: [0,1099511627777)\t\tExits: (2 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,1099511627778) S: [1,1099511627778)\t\tExits: (1 + (2 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<nw><%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<nw><%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,549755813890) S: [1,549755813890)\t\tExits: (1 + (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_umin40_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (1099511627776 umin %an)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 549755813888"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (1099511627776 umin %an)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (1099511627776 umin %an)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ptr_ashr_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ptr_ashr_nuw"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %end to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %beg to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bound = ashr exact i64 %bytes, 2"
+   },
+   {
+    "text": "  -->  %bound U: [-2305843009213693952,2305843009213693952) S: [-2305843009213693952,2305843009213693952)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><%loop> U: [0,-1) S: [0,-1)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><%loop> U: [0,-1) S: [-9223372036854775808,9223372036854775807)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<%loop> U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><%loop> U: [1,0) S: [1,0)\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ptr_ashr_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> Unpredictable backedge-taken count."
+   },
+   {
+    "text": "  exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is -2"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (-1 + (1 umax %n))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ***COULDNOTCOMPUTE***"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Unpredictable predicated backedge-taken count."
+   },
+   {
+    "text": "Printing analysis 'Scalar Evolution Analysis' for function 'f_ptr_lshr_nuw':"
+   },
+   {
+    "text": "Classifying expressions for: @f_ptr_lshr_nuw"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %end to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  -->  (ptrtoint ptr %beg to i64) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  -->  ((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) U: full-set S: full-set"
+   },
+   {
+    "text": "  %bound = lshr exact i64 %bytes, 1"
+   },
+   {
+    "text": "  -->  (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2) U: [0,-9223372036854775808) S: [0,-9223372036854775808)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  -->  (1 umax %n) U: [1,0) S: [1,0)"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  -->  {0,+,1}<nuw><nsw><%loop> U: [0,4611686018427387904) S: [0,4611686018427387904)\t\tExits: (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {0,+,2}<nuw><nsw><%loop> U: [0,9223372036854775807) S: [0,9223372036854775807)\t\tExits: (2 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  -->  {1,+,2}<nuw><nsw><%loop> U: [1,-9223372036854775808) S: [1,-9223372036854775808)\t\tExits: (1 + (2 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>)<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  -->  {%a,+,8}<%loop> U: full-set S: full-set\t\tExits: ((8 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  -->  %va U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  -->  {(4 + %a),+,8}<%loop> U: full-set S: full-set\t\tExits: (4 + (8 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))) + %a)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  -->  %vb U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  -->  (%va + %vb) U: full-set S: full-set\t\tExits: <<Unknown>>\t\tLoopDispositions: { %loop: Variant }"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  -->  {%c,+,4}<nw><%loop> U: full-set S: full-set\t\tExits: ((4 * (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw> + %c)\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  -->  {1,+,1}<nuw><nsw><%loop> U: [1,4611686018427387905) S: [1,4611686018427387905)\t\tExits: (1 + (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n))))<nuw><nsw>\t\tLoopDispositions: { %loop: Computable }"
+   },
+   {
+    "text": "Determining loop execution counts for: @f_ptr_lshr_nuw"
+   },
+   {
+    "text": "Loop %loop: <multiple exits> backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  exit count for loop: ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: constant max backedge-taken count is 4611686018427387903"
+   },
+   {
+    "text": "Loop %loop: symbolic max backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": "  symbolic max exit count for loop: ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)"
+   },
+   {
+    "text": "  symbolic max exit count for cont: (-1 + (1 umax %n))"
+   },
+   {
+    "text": "Loop %loop: Predicated backedge-taken count is (((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2) umin_seq (-1 + (1 umax %n)))"
+   },
+   {
+    "text": " Predicates:"
+   },
+   {
+    "text": "Loop %loop: Trip multiple is 1"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/handwritten/s2-bound.ll",
+ "url": "https://godbolt.org/api/compiler/opt1810/compile",
+ "user_arguments": "-passes=print<scalar-evolution> -disable-output"
+}

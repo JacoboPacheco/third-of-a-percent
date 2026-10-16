@@ -1,0 +1,84 @@
+{
+ "compiler_id": "opttrunk",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:41:47+00:00",
+ "http_status": 200,
+ "name": "V-opttrunk-version",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "--version"
+  },
+  "source": "; Hand-written (make_s2_bound.py). One stride-2 loop with one in-loop check; only the bound's expression and the\n; flags of the shift differ between the functions. See the docstring of make_s2_bound.py.\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\ndeclare void @llvm.trap() #0\ndeclare i64 @llvm.umax.i64(i64, i64)\ndeclare i64 @llvm.umin.i64(i64, i64)\nattributes #0 = { cold noreturn nounwind }\n\ndefine void @f_full_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_full_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n"
+ },
+ "request_sha256": "84e1b29481528670ac219a5cdadd7ebb2fa533f141e210767b69cb1b0c8d61a6",
+ "response": {
+  "asm": [
+   {
+    "text": "<No output file>"
+   }
+  ],
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "--version",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 41,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.02869500033557415,
+  "queueTime": 6,
+  "stderr": [],
+  "stdout": [
+   {
+    "text": "LLVM (http://llvm.org/):"
+   },
+   {
+    "text": "  LLVM version 24.0.0git"
+   },
+   {
+    "text": "  Optimized build."
+   },
+   {
+    "text": "  Default target: x86_64-unknown-linux-gnu"
+   },
+   {
+    "text": "  Host CPU: broadwell"
+   }
+  ],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/handwritten/s2-bound.ll",
+ "url": "https://godbolt.org/api/compiler/opttrunk/compile",
+ "user_arguments": "--version"
+}

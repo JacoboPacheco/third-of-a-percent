@@ -1,0 +1,2587 @@
+{
+ "compiler_id": "opt1810",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:42:12+00:00",
+ "http_status": 200,
+ "name": "H-opt1810-s2-bound-lv",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "llvm",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-passes=loop-vectorize -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+  },
+  "source": "; Hand-written (make_s2_bound.py). One stride-2 loop with one in-loop check; only the bound's expression and the\n; flags of the shift differ between the functions. See the docstring of make_s2_bound.py.\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-unknown-linux-gnu\"\n\ndeclare void @llvm.trap() #0\ndeclare i64 @llvm.umax.i64(i64, i64)\ndeclare i64 @llvm.umin.i64(i64, i64)\nattributes #0 = { cold noreturn nounwind }\n\ndefine void @f_full_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_full_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = add i64 %an, 0\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ashr2_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = ashr i64 %an, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_lshr1_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = lshr i64 %an, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_and62_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = and i64 %an, 4611686018427387903\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_umin40_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {\nentry:\n  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_ashr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = ashr exact i64 %bytes, 2\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n\ndefine void @f_ptr_lshr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {\nentry:\n  %pe = ptrtoint ptr %end to i64\n  %pb = ptrtoint ptr %beg to i64\n  %bytes = sub i64 %pe, %pb\n  %bound = lshr exact i64 %bytes, 1\n  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)\n  br label %loop\nloop:\n  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]\n  %d = shl nuw i64 %i, 1\n  %e = or disjoint i64 %d, 1\n  %ok = icmp ugt i64 %bound, %e\n  br i1 %ok, label %cont, label %trap\ntrap:\n  call void @llvm.trap()\n  unreachable\ncont:\n  %pa = getelementptr inbounds i32, ptr %a, i64 %d\n  %va = load i32, ptr %pa, align 4\n  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e\n  %vb = load i32, ptr %pb2, align 4\n  %s = add nsw i32 %vb, %va\n  %pc = getelementptr inbounds i32, ptr %c, i64 %i\n  store i32 %s, ptr %pc, align 4\n  %i.next = add nuw i64 %i, 1\n  %done = icmp eq i64 %i.next, %n1\n  br i1 %done, label %exit, label %loop\nexit:\n  ret void\n}\n"
+ },
+ "request_sha256": "fb9cd0b8c1ba767acc459b20d334cd5237525738cf0688ad1a54b31e7bb1bb0c",
+ "response": {
+  "asm": [
+   {
+    "text": "declare void @llvm.trap() #0"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umax.i64(i64, i64) #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umin.i64(i64, i64) #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_full_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = add i64 %an, 0"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ashr2_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = ashr i64 %an, 2"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_lshr1_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = lshr i64 %an, 1"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_and62_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = and i64 %an, 4611686018427387903"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_umin40_plain(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ptr_ashr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  %bound = ashr exact i64 %bytes, 2"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ptr_lshr_plain(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  %bound = lshr exact i64 %bytes, 1"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_full_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = add i64 %an, 0"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ashr2_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = ashr i64 %an, 2"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_lshr1_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = lshr i64 %an, 1"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl nuw <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_and62_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = and i64 %an, 4611686018427387903"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl nuw <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_umin40_nuw(ptr noalias %c, ptr noalias %a, i64 %n, i64 %an) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %bound = call i64 @llvm.umin.i64(i64 %an, i64 1099511627776)"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl nuw <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ptr_ashr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  %bound = ashr exact i64 %bytes, 2"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ 0, %entry ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "define void @f_ptr_lshr_nuw(ptr noalias %c, ptr noalias %a, i64 %n, ptr %beg, ptr %end) {"
+   },
+   {
+    "text": "entry:"
+   },
+   {
+    "text": "  %pe = ptrtoint ptr %end to i64"
+   },
+   {
+    "text": "  %pb = ptrtoint ptr %beg to i64"
+   },
+   {
+    "text": "  %bytes = sub i64 %pe, %pb"
+   },
+   {
+    "text": "  %bound = lshr exact i64 %bytes, 1"
+   },
+   {
+    "text": "  %n1 = call i64 @llvm.umax.i64(i64 %n, i64 1)"
+   },
+   {
+    "text": "  %0 = add i64 %n1, -1"
+   },
+   {
+    "text": "  %1 = freeze i64 %0"
+   },
+   {
+    "text": "  %umax = call i64 @llvm.umax.i64(i64 %bound, i64 1)"
+   },
+   {
+    "text": "  %2 = lshr i64 %umax, 1"
+   },
+   {
+    "text": "  %umin = call i64 @llvm.umin.i64(i64 %1, i64 %2)"
+   },
+   {
+    "text": "  %3 = add nuw nsw i64 %umin, 1"
+   },
+   {
+    "text": "  %min.iters.check = icmp ule i64 %3, 4"
+   },
+   {
+    "text": "  br i1 %min.iters.check, label %scalar.ph, label %vector.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "  %n.mod.vf = urem i64 %3, 4"
+   },
+   {
+    "text": "  %4 = icmp eq i64 %n.mod.vf, 0"
+   },
+   {
+    "text": "  %5 = select i1 %4, i64 4, i64 %n.mod.vf"
+   },
+   {
+    "text": "  %n.vec = sub i64 %3, %5"
+   },
+   {
+    "text": "  br label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.body:"
+   },
+   {
+    "text": "  %index = phi i64 [ 0, %vector.ph ], [ %index.next, %vector.body ]"
+   },
+   {
+    "text": "  %vec.ind = phi <4 x i64> [ <i64 0, i64 1, i64 2, i64 3>, %vector.ph ], [ %vec.ind.next, %vector.body ]"
+   },
+   {
+    "text": "  %6 = add i64 %index, 0"
+   },
+   {
+    "text": "  %7 = shl nuw <4 x i64> %vec.ind, <i64 1, i64 1, i64 1, i64 1>"
+   },
+   {
+    "text": "  %8 = extractelement <4 x i64> %7, i32 0"
+   },
+   {
+    "text": "  %9 = getelementptr inbounds i32, ptr %a, i64 %8"
+   },
+   {
+    "text": "  %10 = getelementptr inbounds i32, ptr %9, i32 0"
+   },
+   {
+    "text": "  %wide.vec = load <8 x i32>, ptr %10, align 4"
+   },
+   {
+    "text": "  %strided.vec = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 0, i32 2, i32 4, i32 6>"
+   },
+   {
+    "text": "  %strided.vec1 = shufflevector <8 x i32> %wide.vec, <8 x i32> poison, <4 x i32> <i32 1, i32 3, i32 5, i32 7>"
+   },
+   {
+    "text": "  %11 = add nsw <4 x i32> %strided.vec1, %strided.vec"
+   },
+   {
+    "text": "  %12 = getelementptr inbounds i32, ptr %c, i64 %6"
+   },
+   {
+    "text": "  %13 = getelementptr inbounds i32, ptr %12, i32 0"
+   },
+   {
+    "text": "  store <4 x i32> %11, ptr %13, align 4"
+   },
+   {
+    "text": "  %index.next = add nuw i64 %index, 4"
+   },
+   {
+    "text": "  %vec.ind.next = add <4 x i64> %vec.ind, <i64 4, i64 4, i64 4, i64 4>"
+   },
+   {
+    "text": "  %14 = icmp eq i64 %index.next, %n.vec"
+   },
+   {
+    "text": "  br i1 %14, label %middle.block, label %vector.body"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "  br label %scalar.ph"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "scalar.ph:"
+   },
+   {
+    "text": "  %bc.resume.val = phi i64 [ %n.vec, %middle.block ], [ 0, %entry ]"
+   },
+   {
+    "text": "  br label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "loop:"
+   },
+   {
+    "text": "  %i = phi i64 [ %bc.resume.val, %scalar.ph ], [ %i.next, %cont ]"
+   },
+   {
+    "text": "  %d = shl nuw i64 %i, 1"
+   },
+   {
+    "text": "  %e = or disjoint i64 %d, 1"
+   },
+   {
+    "text": "  %ok = icmp ugt i64 %bound, %e"
+   },
+   {
+    "text": "  br i1 %ok, label %cont, label %trap"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "trap:"
+   },
+   {
+    "text": "  call void @llvm.trap()"
+   },
+   {
+    "text": "  unreachable"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "cont:"
+   },
+   {
+    "text": "  %pa = getelementptr inbounds i32, ptr %a, i64 %d"
+   },
+   {
+    "text": "  %va = load i32, ptr %pa, align 4"
+   },
+   {
+    "text": "  %pb2 = getelementptr inbounds i32, ptr %a, i64 %e"
+   },
+   {
+    "text": "  %vb = load i32, ptr %pb2, align 4"
+   },
+   {
+    "text": "  %s = add nsw i32 %vb, %va"
+   },
+   {
+    "text": "  %pc = getelementptr inbounds i32, ptr %c, i64 %i"
+   },
+   {
+    "text": "  store i32 %s, ptr %pc, align 4"
+   },
+   {
+    "text": "  %i.next = add nuw i64 %i, 1"
+   },
+   {
+    "text": "  %done = icmp eq i64 %i.next, %n1"
+   },
+   {
+    "text": "  br i1 %done, label %exit, label %loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "exit:"
+   },
+   {
+    "text": "  ret void"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "attributes #0 = { cold noreturn nounwind memory(inaccessiblemem: write) }"
+   },
+   {
+    "text": "attributes #1 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }"
+   },
+   {
+    "text": ""
+   }
+  ],
+  "asmSize": 32602,
+  "code": 0,
+  "compilationOptions": [
+   "-o",
+   "/app/output.s",
+   "-S",
+   "-passes=loop-vectorize",
+   "-pass-remarks=loop-vectorize",
+   "-pass-remarks-missed=loop-vectorize",
+   "-pass-remarks-analysis=loop-vectorize",
+   "-S",
+   "/app/example.ll"
+  ],
+  "downloads": [],
+  "execTime": 273,
+  "inputFilename": "example.ll",
+  "instructionSet": "llvm",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.06485899910330772,
+  "stderr": [
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized: could not determine number of loop iterations"
+   },
+   {
+    "text": "remark: <unknown>:0:0: loop not vectorized"
+   },
+   {
+    "text": "remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial"
+   },
+   {
+    "text": "remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/handwritten/s2-bound.ll",
+ "url": "https://godbolt.org/api/compiler/opt1810/compile",
+ "user_arguments": "-passes=loop-vectorize -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize -pass-remarks-analysis=loop-vectorize -S"
+}

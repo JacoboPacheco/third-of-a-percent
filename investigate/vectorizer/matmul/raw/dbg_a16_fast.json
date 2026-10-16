@@ -1,0 +1,1840 @@
+{
+ "compiler_id": "clang160assert",
+ "fetched_at": "2026-10-15T23:56:02+00:00",
+ "name": "dbg_a16_fast",
+ "request": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_ENABLE_ASSERTIONS=1 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -mllvm -debug-only=loop-vectorize"
+  },
+  "source": "// kern_k08_matmul from kernels/k08_matmul.cpp, copied verbatim (the function only, no main).\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k08_matmul(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                               const std::vector<int32_t>& b, size_t d) {\n  for (size_t i = 0; i < d; ++i)\n    for (size_t k = 0; k < d; ++k) {\n      int32_t aik = a[i * d + k];\n      for (size_t j = 0; j < d; ++j) c[i * d + j] += aik * b[k * d + j];  // LOOP\n    }\n}\n"
+ },
+ "request_sha256": "a173304c8d3a55a6a48bb5d34b6a7dcd018dce483190913e1f0862d4c86b9ea7",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "kern_k08_matmul(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&, unsigned long):"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        push    rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "file": null,
+     "line": 7
+    },
+    "text": "        sub     rsp, 40"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 8
+    },
+    "text": "        test    rcx, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_6",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        je      .LBB0_6"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rax, qword ptr [rsi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rsi, qword ptr [rsi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp + 32], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rsi, rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rsi, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        lea     rax, [4*rcx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        mov     qword ptr [rsp + 8], rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        xor     r9d, r9d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        xor     r10d, r10d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        xor     ebx, ebx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        mov     qword ptr [rsp + 16], rdx"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_2:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     qword ptr [rsp + 24], rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        imul    rbx, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r14, qword ptr [rdx]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r15, qword ptr [rdx + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     r15, r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     r15, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     r12d, r12d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 0
+    },
+    "text": "        xor     r13d, r13d"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_3:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "        lea     rax, [rbx + r13]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        cmp     rsi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_4",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        jbe     .LBB0_4"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rsp + 32]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 10
+    },
+    "text": "        mov     ebp, dword ptr [rdx + 4*rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     r11, qword ptr [rdi]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rdx, qword ptr [rdi + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sub     rdx, r11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 0
+    },
+    "text": "        sar     rdx, 2"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "        add     r11, r10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_10:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     r8, [r12 + rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        cmp     r15, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_11",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        jbe     .LBB0_11"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        lea     r8, [r9 + rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        cmp     rdx, r8"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_15",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        jbe     .LBB0_15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 0
+    },
+    "text": "        mov     r8d, dword ptr [r14 + 4*rax]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 58,
+     "file": null,
+     "line": 11
+    },
+    "text": "        imul    r8d, ebp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "        add     dword ptr [r11 + 4*rax], r8d"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "        inc     rax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 11
+    },
+    "text": "        cmp     rcx, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_10",
+      "range": {
+       "endCol": 25,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "        jne     .LBB0_10"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 31,
+     "file": null,
+     "line": 9
+    },
+    "text": "        inc     r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "        add     r14, qword ptr [rsp + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "        add     r12, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 9
+    },
+    "text": "        cmp     r13, rcx"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_3",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "        jne     .LBB0_3"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 0
+    },
+    "text": "        mov     rbx, qword ptr [rsp + 24]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 8
+    },
+    "text": "        inc     rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        add     r10, qword ptr [rsp + 8]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        add     r9, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 8
+    },
+    "text": "        cmp     rbx, rcx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 8
+    },
+    "text": "        mov     rdx, qword ptr [rsp + 16]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".LBB0_2",
+      "range": {
+       "endCol": 24,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "        jne     .LBB0_2"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_6:"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        add     rsp, 40"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     rbx"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     r12"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     r13"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     r14"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     r15"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        pop     rbp"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "        ret"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_11:"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str",
+      "range": {
+       "endCol": 35,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rdi, [rip + .L.str]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.1",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rsi, [rip + .L.str.1]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.2",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rcx, [rip + .L.str.2]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.3",
+      "range": {
+       "endCol": 36,
+       "startCol": 28
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     r8, [rip + .L.str.3]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        mov     edx, 1469"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        call    std::__1::__libcpp_verbose_abort(char const*, ...)@PLT"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_15:"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str",
+      "range": {
+       "endCol": 35,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        lea     rdi, [rip + .L.str]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.1",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        lea     rsi, [rip + .L.str.1]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.2",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        lea     rcx, [rip + .L.str.2]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.3",
+      "range": {
+       "endCol": 36,
+       "startCol": 28
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        lea     r8, [rip + .L.str.3]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        mov     edx, 1459"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        call    std::__1::__libcpp_verbose_abort(char const*, ...)@PLT"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".LBB0_4:"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str",
+      "range": {
+       "endCol": 35,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rdi, [rip + .L.str]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.1",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rsi, [rip + .L.str.1]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.2",
+      "range": {
+       "endCol": 37,
+       "startCol": 29
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     rcx, [rip + .L.str.2]"
+   },
+   {
+    "labels": [
+     {
+      "name": ".L.str.3",
+      "range": {
+       "endCol": 36,
+       "startCol": 28
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        lea     r8, [rip + .L.str.3]"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        mov     edx, 1469"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        xor     eax, eax"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        call    std::__1::__libcpp_verbose_abort(char const*, ...)@PLT"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        mov     rdi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": "__clang_call_terminate",
+      "range": {
+       "endCol": 39,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        call    __clang_call_terminate"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        mov     rdi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": "__clang_call_terminate",
+      "range": {
+       "endCol": 39,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1459
+    },
+    "text": "        call    __clang_call_terminate"
+   },
+   {
+    "labels": [],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        mov     rdi, rax"
+   },
+   {
+    "labels": [
+     {
+      "name": "__clang_call_terminate",
+      "range": {
+       "endCol": 39,
+       "startCol": 17
+      }
+     }
+    ],
+    "source": {
+     "column": 5,
+     "file": "/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector",
+     "line": 1469
+    },
+    "text": "        call    __clang_call_terminate"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "__clang_call_terminate:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        push    rax"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        call    __cxa_begin_catch@PLT"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        call    std::terminate()@PLT"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".L.str:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        .asciz  \"%s:%d: assertion %s failed: %s\""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".L.str.1:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        .asciz  \"/cefs/33/33ffeb1993568d15542a3061_consolidated/compilers_c++_clang_assertions-16.0.0/bin/../include/c++/v1/vector\""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".L.str.2:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        .asciz  \"__n < size()\""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ".L.str.3:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        .asciz  \"vector[] index out of bounds\""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": ""
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "DW.ref.__gxx_personality_v0:"
+   },
+   {
+    "labels": [],
+    "source": null,
+    "text": "        .quad   __gxx_personality_v0"
+   }
+  ],
+  "asmSize": 128988,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-12.2.0",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-march=x86-64",
+   "-stdlib=libc++",
+   "-D_LIBCPP_ENABLE_ASSERTIONS=1",
+   "-Rpass=loop-vectorize",
+   "-Rpass-missed=loop-vectorize",
+   "-Rpass-analysis=loop-vectorize",
+   "-mllvm",
+   "-debug-only=loop-vectorize",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 3102,
+  "filteredCount": 10050,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {
+   ".L.str": 113,
+   ".L.str.1": 116,
+   ".L.str.2": 119,
+   ".L.str.3": 122,
+   ".LBB0_10": 43,
+   ".LBB0_11": 77,
+   ".LBB0_15": 85,
+   ".LBB0_2": 22,
+   ".LBB0_3": 31,
+   ".LBB0_4": 93,
+   ".LBB0_6": 68,
+   "DW.ref.__gxx_personality_v0": 125,
+   "__clang_call_terminate": 108,
+   "kern_k08_matmul(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&, unsigned long)": 1
+  },
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 43,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.3026470001786947,
+  "stderr": [
+   {
+    "text": ""
+   },
+   {
+    "text": "LV: Checking a loop in '_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m' from example.cpp:11:7"
+   },
+   {
+    "text": "LV: Loop hints: force=? width=0 interleave=0"
+   },
+   {
+    "text": "LV: Found a loop: for.body8"
+   },
+   {
+    "text": "LV: Found an induction variable."
+   },
+   {
+    "text": "LV: We can vectorize this loop (with a runtime bound check)!"
+   },
+   {
+    "text": "LV: Found trip count: 0"
+   },
+   {
+    "text": "LV: The max safe fixed VF is: 67108864."
+   },
+   {
+    "text": "LV: The max safe scalable VF is: vscale x 0."
+   },
+   {
+    "text": "LV: The Smallest and Widest types: 32 / 32 bits."
+   },
+   {
+    "text": "LV: The Widest register safe to use is: 128 bits."
+   },
+   {
+    "text": "LV: The Widest register safe to use is: vscale x 0 bits."
+   },
+   {
+    "text": "LV: The target has no scalable vector registers."
+   },
+   {
+    "text": "LV: Found uniform instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found uniform instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found (forced) scalar instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Scalarizing:  %add10 = add nuw i64 %j.059, %mul9, !dbg !1473"
+   },
+   {
+    "text": "LV: Scalarizing:  %cmp.i42 = icmp ugt i64 %sub.ptr.div.i.i41, %add10, !dbg !1477"
+   },
+   {
+    "text": "LV: Scalarizing:  %add14 = add nuw i64 %j.059, %mul, !dbg !1478"
+   },
+   {
+    "text": "LV: Scalarizing:  %cmp.i53 = icmp ugt i64 %sub.ptr.div.i.i52, %add14, !dbg !1492"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Scalarizing:  %13 = load i32, ptr %arrayidx.i45, align 4, !dbg !1494, !tbaa !1464"
+   },
+   {
+    "text": "LV: Scalarizing:  %mul12 = mul nsw i32 %13, %6, !dbg !1495"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Scalarizing:  %14 = load i32, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Scalarizing:  %add16 = add nsw i32 %14, %mul12, !dbg !1497"
+   },
+   {
+    "text": "LV: Scalarizing:  store i32 %add16, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Scalarizing:  %inc = add nuw i64 %j.059, 1, !dbg !1498"
+   },
+   {
+    "text": "LV: Scalarizing:  %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Scalarizing:  %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Scalarizing:  %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "VPlan 'Initial VPlan for VF={1},UF>=1' {"
+   },
+   {
+    "text": "Live-in vp<%1> = vector-trip-count"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "Successor(s): vector loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "<x1> vector loop: {"
+   },
+   {
+    "text": "  vector.body:"
+   },
+   {
+    "text": "    EMIT vp<%2> = CANONICAL-INDUCTION"
+   },
+   {
+    "text": "    vp<%3>    = SCALAR-STEPS vp<%2>, ir<1>"
+   },
+   {
+    "text": "    CLONE ir<%add10> = add vp<%3>, ir<%mul9>"
+   },
+   {
+    "text": "    CLONE ir<%add14> = add vp<%3>, ir<%mul>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i45> = getelementptr ir<%3>, ir<%add10>"
+   },
+   {
+    "text": "    CLONE ir<%13> = load ir<%arrayidx.i45>"
+   },
+   {
+    "text": "    CLONE ir<%mul12> = mul ir<%13>, ir<%6>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i56> = getelementptr ir<%8>, ir<%add14>"
+   },
+   {
+    "text": "    CLONE ir<%14> = load ir<%arrayidx.i56>"
+   },
+   {
+    "text": "    CLONE ir<%add16> = add ir<%14>, ir<%mul12>"
+   },
+   {
+    "text": "    CLONE store ir<%add16>, ir<%arrayidx.i56>"
+   },
+   {
+    "text": "    EMIT vp<%13> = VF * UF +(nuw)  vp<%2>, !dbg example.cpp:11:33"
+   },
+   {
+    "text": "    EMIT branch-on-count  vp<%13> vp<%1>, !dbg example.cpp:11:33"
+   },
+   {
+    "text": "  No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "Successor(s): middle.block"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "VPlan 'Initial VPlan for VF={2,4},UF>=1' {"
+   },
+   {
+    "text": "Live-in vp<%1> = vector-trip-count"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "vector.ph:"
+   },
+   {
+    "text": "Successor(s): vector loop"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "<x1> vector loop: {"
+   },
+   {
+    "text": "  vector.body:"
+   },
+   {
+    "text": "    EMIT vp<%2> = CANONICAL-INDUCTION"
+   },
+   {
+    "text": "    WIDEN-INDUCTION %j.059 = phi 0, %inc, ir<1>"
+   },
+   {
+    "text": "    WIDEN ir<%add10> = add ir<%j.059>, ir<%mul9>"
+   },
+   {
+    "text": "    WIDEN ir<%add14> = add ir<%j.059>, ir<%mul>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i45> = getelementptr ir<%3>, ir<%add10>"
+   },
+   {
+    "text": "    WIDEN ir<%13> = load ir<%arrayidx.i45>"
+   },
+   {
+    "text": "    WIDEN ir<%mul12> = mul ir<%13>, ir<%6>"
+   },
+   {
+    "text": "    CLONE ir<%arrayidx.i56> = getelementptr ir<%8>, ir<%add14>"
+   },
+   {
+    "text": "    WIDEN ir<%14> = load ir<%arrayidx.i56>"
+   },
+   {
+    "text": "    WIDEN ir<%add16> = add ir<%14>, ir<%mul12>"
+   },
+   {
+    "text": "    WIDEN store ir<%arrayidx.i56>, ir<%add16>"
+   },
+   {
+    "text": "    EMIT vp<%12> = VF * UF +(nuw)  vp<%2>, !dbg example.cpp:11:33"
+   },
+   {
+    "text": "    EMIT branch-on-count  vp<%12> vp<%1>, !dbg example.cpp:11:33"
+   },
+   {
+    "text": "  No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "Successor(s): middle.block"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "middle.block:"
+   },
+   {
+    "text": "No successors"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %j.059 = phi i64 [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ], [ %inc, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %add10 = add nuw i64 %j.059, %mul9, !dbg !1473"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %cmp.i42 = icmp ugt i64 %sub.ptr.div.i.i41, %add10, !dbg !1477"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   br i1 %cmp.i42, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit47, label %cond.false.i43, !dbg !1477, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %add14 = add nuw i64 %j.059, %mul, !dbg !1478"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %cmp.i53 = icmp ugt i64 %sub.ptr.div.i.i52, %add14, !dbg !1492"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   br i1 %cmp.i53, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit, label %cond.false.i54, !dbg !1492, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %13 = load i32, ptr %arrayidx.i45, align 4, !dbg !1494, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %mul12 = mul nsw i32 %13, %6, !dbg !1495"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %14 = load i32, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %add16 = add nsw i32 %14, %mul12, !dbg !1497"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   store i32 %add16, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %inc = add nuw i64 %j.059, 1, !dbg !1498"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 1 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 1 For instruction:   br i1 %exitcond.not, label %for.cond5.for.cond.cleanup7_crit_edge, label %for.body8, !dbg !1468, !llvm.loop !1500"
+   },
+   {
+    "text": "LV: Scalar loop costs: 11."
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %j.059 = phi i64 [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ], [ %inc, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %add10 = add nuw i64 %j.059, %mul9, !dbg !1473"
+   },
+   {
+    "text": "LV: Found an estimated cost of 7 for VF 2 For instruction:   %cmp.i42 = icmp ugt i64 %sub.ptr.div.i.i41, %add10, !dbg !1477"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   br i1 %cmp.i42, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit47, label %cond.false.i43, !dbg !1477, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %add14 = add nuw i64 %j.059, %mul, !dbg !1478"
+   },
+   {
+    "text": "LV: Found an estimated cost of 7 for VF 2 For instruction:   %cmp.i53 = icmp ugt i64 %sub.ptr.div.i.i52, %add14, !dbg !1492"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   br i1 %cmp.i53, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit, label %cond.false.i54, !dbg !1492, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %13 = load i32, ptr %arrayidx.i45, align 4, !dbg !1494, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 6 for VF 2 For instruction:   %mul12 = mul nsw i32 %13, %6, !dbg !1495"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %14 = load i32, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %add16 = add nsw i32 %14, %mul12, !dbg !1497"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   store i32 %add16, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %inc = add nuw i64 %j.059, 1, !dbg !1498"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 2 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 2 For instruction:   br i1 %exitcond.not, label %for.cond5.for.cond.cleanup7_crit_edge, label %for.body8, !dbg !1468, !llvm.loop !1500"
+   },
+   {
+    "text": "LV: Vector loop of width 2 costs: 14."
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %j.059 = phi i64 [ 0, %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ], [ %inc, %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit ]"
+   },
+   {
+    "text": "LV: Found an estimated cost of 2 for VF 4 For instruction:   %add10 = add nuw i64 %j.059, %mul9, !dbg !1473"
+   },
+   {
+    "text": "LV: Found an estimated cost of 14 for VF 4 For instruction:   %cmp.i42 = icmp ugt i64 %sub.ptr.div.i.i41, %add10, !dbg !1477"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   br i1 %cmp.i42, label %_ZNKSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit47, label %cond.false.i43, !dbg !1477, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 2 for VF 4 For instruction:   %add14 = add nuw i64 %j.059, %mul, !dbg !1478"
+   },
+   {
+    "text": "LV: Found an estimated cost of 14 for VF 4 For instruction:   %cmp.i53 = icmp ugt i64 %sub.ptr.div.i.i52, %add14, !dbg !1492"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   br i1 %cmp.i53, label %_ZNSt3__16vectorIiNS_9allocatorIiEEEixB7v160000Em.exit, label %cond.false.i54, !dbg !1492, !prof !1461"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %arrayidx.i45 = getelementptr inbounds i32, ptr %3, i64 %add10, !dbg !1493"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %13 = load i32, ptr %arrayidx.i45, align 4, !dbg !1494, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 6 for VF 4 For instruction:   %mul12 = mul nsw i32 %13, %6, !dbg !1495"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   %arrayidx.i56 = getelementptr inbounds i32, ptr %8, i64 %add14, !dbg !1496"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %14 = load i32, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %add16 = add nsw i32 %14, %mul12, !dbg !1497"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   store i32 %add16, ptr %arrayidx.i56, align 4, !dbg !1497, !tbaa !1464"
+   },
+   {
+    "text": "LV: Found an estimated cost of 2 for VF 4 For instruction:   %inc = add nuw i64 %j.059, 1, !dbg !1498"
+   },
+   {
+    "text": "LV: Found an estimated cost of 1 for VF 4 For instruction:   %exitcond.not = icmp eq i64 %inc, %d, !dbg !1499"
+   },
+   {
+    "text": "LV: Found an estimated cost of 0 for VF 4 For instruction:   br i1 %exitcond.not, label %for.cond5.for.cond.cleanup7_crit_edge, label %for.body8, !dbg !1468, !llvm.loop !1500"
+   },
+   {
+    "text": "LV: Vector loop of width 4 costs: 11."
+   },
+   {
+    "text": "LV: Selecting VF: 1."
+   },
+   {
+    "text": "LV(REG): Calculating max register usage:"
+   },
+   {
+    "text": "LV(REG): At #0 Interval # 0"
+   },
+   {
+    "text": "LV(REG): At #1 Interval # 1"
+   },
+   {
+    "text": "LV(REG): At #2 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #4 Interval # 2"
+   },
+   {
+    "text": "LV(REG): At #5 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #7 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #8 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #9 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #10 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #11 Interval # 3"
+   },
+   {
+    "text": "LV(REG): At #12 Interval # 4"
+   },
+   {
+    "text": "LV(REG): At #14 Interval # 1"
+   },
+   {
+    "text": "LV(REG): At #15 Interval # 1"
+   },
+   {
+    "text": "LV(REG): VF = 1"
+   },
+   {
+    "text": "LV(REG): Found max usage: 1 item"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::ScalarRC, 4 registers"
+   },
+   {
+    "text": "LV(REG): Found invariant usage: 1 item"
+   },
+   {
+    "text": "LV(REG): RegisterClass: Generic::ScalarRC, 7 registers"
+   },
+   {
+    "text": "LV: The target has 16 registers of Generic::ScalarRC register class"
+   },
+   {
+    "text": "LV: Loop cost is 11"
+   },
+   {
+    "text": "LV: IC is 1"
+   },
+   {
+    "text": "LV: VF is 1"
+   },
+   {
+    "text": "LV: Not Interleaving."
+   },
+   {
+    "text": "LV: Vectorization is possible but not beneficial."
+   },
+   {
+    "text": "LV: Interleaving is not beneficial."
+   },
+   {
+    "tag": {
+     "column": 7,
+     "file": "example.cpp",
+     "line": 11,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]"
+    },
+    "text": "\u001b[1m<source>:11:7: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]\u001b[0m"
+   },
+   {
+    "text": "      for (size_t j = 0; j < d; ++j) c[i * d + j] += aik * b[k * d + j];  // LOOP"
+   },
+   {
+    "text": "\u001b[0;1;32m      ^"
+   },
+   {
+    "tag": {
+     "column": 7,
+     "file": "example.cpp",
+     "line": 11,
+     "severity": 3,
+     "text": "remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]"
+    },
+    "text": "\u001b[0m\u001b[1m<source>:11:7: \u001b[0m\u001b[0;1;34mremark: \u001b[0m\u001b[1mthe cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]\u001b[0m"
+   }
+  ],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_file": "src/k08_matmul.cpp",
+ "url": "https://godbolt.org/api/compiler/clang160assert/compile"
+}

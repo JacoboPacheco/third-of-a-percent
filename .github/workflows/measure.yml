@@ -40,7 +40,9 @@ permissions:
 jobs:
   measure:
     runs-on: ubuntu-24.04
-    timeout-minutes: 22
+    # A full job takes about 21 minutes; at 22, 33 of 60 jobs in six runs on Oct 15 were cancelled at the
+    # limit and returned nothing. 45 leaves room for slow runners.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

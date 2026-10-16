@@ -1,0 +1,92 @@
+{
+ "compiler_id": "clang_trunk",
+ "compiler_options": {},
+ "fetched_at": "2026-10-16T00:41:45+00:00",
+ "http_status": 200,
+ "name": "V-ctrunk-version",
+ "request_body": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "--version"
+  },
+  "source": "// Five of the project's loop functions, copied verbatim from kernels/kNN_*.cpp (written by make_sources.py).\n// k01 forward sum, k02 forward add, k03 stencil (forward), k04 reverse, k05 stride-2.\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) int64_t kern_k01_sum_fwd(const std::vector<int32_t>& a) {\n  int64_t s = 0;\n  for (size_t i = 0; i < a.size(); ++i) s += a[i];  // LOOP\n  return s;\n}\n\n__attribute__((noinline)) void kern_k02_add_fwd(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                                const std::vector<int32_t>& b) {\n  for (size_t i = 0; i < a.size(); ++i) c[i] = a[i] + b[i];  // LOOP\n}\n\n__attribute__((noinline)) void kern_k03_stencil(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 1; i + 1 < a.size(); ++i) c[i] = a[i - 1] + a[i] + a[i + 1];  // LOOP\n}\n\n__attribute__((noinline)) void kern_k04_rev(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = a.size(); i-- > 0;) c[i] = a[i] * 2;  // LOOP\n}\n\n__attribute__((noinline)) void kern_k05_stride2(std::vector<int32_t>& c, const std::vector<int32_t>& a) {\n  for (size_t i = 0; i < c.size(); ++i) c[i] = a[2 * i] + a[2 * i + 1];  // LOOP\n}\n"
+ },
+ "request_sha256": "81a0a17d2e246ab5a340090de137ecf222e7592ba23ecfecc1edf043802eb64d",
+ "response": {
+  "asm": [
+   {
+    "labels": [],
+    "source": null,
+    "text": "<No output file>"
+   }
+  ],
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-snapshot",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "--version",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 53,
+  "filteredCount": 0,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "labelDefinitions": {},
+  "okToCache": true,
+  "optOutput": [],
+  "parsingTime": 0,
+  "popularArguments": {},
+  "processExecutionResultTime": 0.06125799939036369,
+  "queueTime": 6,
+  "stderr": [],
+  "stdout": [
+   {
+    "text": "clang version 24.0.0git (https://github.com/llvm/llvm-project.git efd496572478672274aaf162a2a924c1cf5cb09c)"
+   },
+   {
+    "text": "Target: x86_64-unknown-linux-gnu"
+   },
+   {
+    "text": "Thread model: posix"
+   },
+   {
+    "text": "InstalledDir: /cefs/57/57dbf905c22684a422e2f056_clang-trunk-20261015/bin"
+   }
+  ],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_path": "sources/kernels.cpp",
+ "url": "https://godbolt.org/api/compiler/clang_trunk/compile",
+ "user_arguments": "--version"
+}

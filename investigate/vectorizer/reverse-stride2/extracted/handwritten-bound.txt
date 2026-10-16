@@ -1,0 +1,21 @@
+# Made by excerpts.py from: raw/H-opt1810-s2-bound-scev, raw/H-opt2010-s2-bound-scev, raw/H-opttrunk-s2-bound-scev, raw/H-opt1810-s2-bound-lv
+# One stride-2 loop, one check `bound > ((i << 1) | 1)`, the same in every function (sources/handwritten/s2-bound.ll).
+# Only the expression of the bound differs, and whether the shift has `nuw`.
+# Columns: ScalarEvolution's count of the checked exit on opt 18.1.0, 20.1.0 and trunk (`no` = ***COULDNOTCOMPUTE***);
+# then whether `opt -passes=loop-vectorize` (18.1.0) made a vector.body; then the exit count on opt 18.1.0.
+
+bound      shift  18.1.0   20.1.0   trunk    vectorized  exit count on opt 18.1.0
+full       plain  no       no       no       no          ***COULDNOTCOMPUTE***
+ashr2      plain  no       no       no       no          ***COULDNOTCOMPUTE***
+lshr1      plain  count    count    count    yes         ((1 umax (%an /u 2)) /u 2)
+and62      plain  count    count    count    yes         ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)
+umin40     plain  count    count    count    yes         ((1 umax (1099511627776 umin %an)) /u 2)
+ptr_ashr   plain  no       no       no       no          ***COULDNOTCOMPUTE***
+ptr_lshr   plain  count    count    count    yes         ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)
+full       nuw    no       no       no       no          ***COULDNOTCOMPUTE***
+ashr2      nuw    no       no       no       no          ***COULDNOTCOMPUTE***
+lshr1      nuw    count    count    count    yes         ((1 umax (%an /u 2)) /u 2)
+and62      nuw    count    count    count    yes         ((1 umax (zext i62 (trunc i64 %an to i62) to i64)) /u 2)
+umin40     nuw    count    count    count    yes         ((1 umax (1099511627776 umin %an)) /u 2)
+ptr_ashr   nuw    no       no       no       no          ***COULDNOTCOMPUTE***
+ptr_lshr   nuw    count    count    count    yes         ((1 umax (((-1 * (ptrtoint ptr %beg to i64)) + (ptrtoint ptr %end to i64)) /u 2)) /u 2)

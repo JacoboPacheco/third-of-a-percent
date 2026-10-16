@@ -1,0 +1,113 @@
+{
+ "author": {
+  "avatar_url": "https://avatars.githubusercontent.com/u/450489?v=4",
+  "events_url": "https://api.github.com/users/fhahn/events{/privacy}",
+  "followers_url": "https://api.github.com/users/fhahn/followers",
+  "following_url": "https://api.github.com/users/fhahn/following{/other_user}",
+  "gists_url": "https://api.github.com/users/fhahn/gists{/gist_id}",
+  "gravatar_id": "",
+  "html_url": "https://github.com/fhahn",
+  "id": 450489,
+  "login": "fhahn",
+  "node_id": "MDQ6VXNlcjQ1MDQ4OQ==",
+  "organizations_url": "https://api.github.com/users/fhahn/orgs",
+  "received_events_url": "https://api.github.com/users/fhahn/received_events",
+  "repos_url": "https://api.github.com/users/fhahn/repos",
+  "site_admin": false,
+  "starred_url": "https://api.github.com/users/fhahn/starred{/owner}{/repo}",
+  "subscriptions_url": "https://api.github.com/users/fhahn/subscriptions",
+  "type": "User",
+  "url": "https://api.github.com/users/fhahn",
+  "user_view_type": "public"
+ },
+ "comments_url": "https://api.github.com/repos/llvm/llvm-project/commits/b6a8f5486bc12b132ec984bc8767506e3bcb6694/comments",
+ "commit": {
+  "author": {
+   "date": "2024-04-28T12:15:54Z",
+   "email": "flo@fhahn.com",
+   "name": "Florian Hahn"
+  },
+  "comment_count": 0,
+  "committer": {
+   "date": "2024-04-28T12:15:55Z",
+   "email": "flo@fhahn.com",
+   "name": "Florian Hahn"
+  },
+  "message": "[LV] Consider all exit branch conditions uniform.\n\nIf we vectorize a loop with multiple exits, all exiting branches should\nbe considered uniform, as the resulting loop will be controlled by the\ncanonical IV only. Previously we were overestimating the cost of values\ncontributing to the other exits.",
+  "tree": {
+   "sha": "2365818f383460000ed327771459ad44471d1335",
+   "url": "https://api.github.com/repos/llvm/llvm-project/git/trees/2365818f383460000ed327771459ad44471d1335"
+  },
+  "url": "https://api.github.com/repos/llvm/llvm-project/git/commits/b6a8f5486bc12b132ec984bc8767506e3bcb6694",
+  "verification": {
+   "payload": "tree 2365818f383460000ed327771459ad44471d1335\nparent 19d2d3fe50c301272350d12c53c801b17e29e64e\nauthor Florian Hahn <flo@fhahn.com> 1714306554 +0100\ncommitter Florian Hahn <flo@fhahn.com> 1714306555 +0100\n\n[LV] Consider all exit branch conditions uniform.\n\nIf we vectorize a loop with multiple exits, all exiting branches should\nbe considered uniform, as the resulting loop will be controlled by the\ncanonical IV only. Previously we were overestimating the cost of values\ncontributing to the other exits.\n",
+   "reason": "valid",
+   "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQR/f1qAQ53nKa1PpBaeVN6keo9ENAUCZi49+wAKCRCeVN6keo9E\nNOWXAQDrh4wK5dgciHd3diBp89vXUnEZv4wbDyZqox/vtOuLKQEA9bVSZ39L0s8y\n8bunYUtD4kv0cVJ3VtQntHTob0tPFws=\n=SG8H\n-----END PGP SIGNATURE-----",
+   "verified": true,
+   "verified_at": "2024-11-06T13:42:30Z"
+  }
+ },
+ "committer": {
+  "avatar_url": "https://avatars.githubusercontent.com/u/450489?v=4",
+  "events_url": "https://api.github.com/users/fhahn/events{/privacy}",
+  "followers_url": "https://api.github.com/users/fhahn/followers",
+  "following_url": "https://api.github.com/users/fhahn/following{/other_user}",
+  "gists_url": "https://api.github.com/users/fhahn/gists{/gist_id}",
+  "gravatar_id": "",
+  "html_url": "https://github.com/fhahn",
+  "id": 450489,
+  "login": "fhahn",
+  "node_id": "MDQ6VXNlcjQ1MDQ4OQ==",
+  "organizations_url": "https://api.github.com/users/fhahn/orgs",
+  "received_events_url": "https://api.github.com/users/fhahn/received_events",
+  "repos_url": "https://api.github.com/users/fhahn/repos",
+  "site_admin": false,
+  "starred_url": "https://api.github.com/users/fhahn/starred{/owner}{/repo}",
+  "subscriptions_url": "https://api.github.com/users/fhahn/subscriptions",
+  "type": "User",
+  "url": "https://api.github.com/users/fhahn",
+  "user_view_type": "public"
+ },
+ "files": [
+  {
+   "additions": 11,
+   "blob_url": "https://github.com/llvm/llvm-project/blob/b6a8f5486bc12b132ec984bc8767506e3bcb6694/llvm%2Flib%2FTransforms%2FVectorize%2FLoopVectorize.cpp",
+   "changes": 18,
+   "contents_url": "https://api.github.com/repos/llvm/llvm-project/contents/llvm%2Flib%2FTransforms%2FVectorize%2FLoopVectorize.cpp?ref=b6a8f5486bc12b132ec984bc8767506e3bcb6694",
+   "deletions": 7,
+   "filename": "llvm/lib/Transforms/Vectorize/LoopVectorize.cpp",
+   "patch": "@@ -4167,7 +4167,6 @@ void LoopVectorizationCostModel::collectLoopUniforms(ElementCount VF) {\n \n   // Worklist containing uniform instructions demanding lane 0.\n   SetVector<Instruction *> Worklist;\n-  BasicBlock *Latch = TheLoop->getLoopLatch();\n \n   // Add uniform instructions demanding lane 0 to the worklist. Instructions\n   // that are scalar with predication must not be considered uniform after\n@@ -4189,12 +4188,16 @@ void LoopVectorizationCostModel::collectLoopUniforms(ElementCount VF) {\n     Worklist.insert(I);\n   };\n \n-  // Start with the conditional branch. If the branch condition is an\n-  // instruction contained in the loop that is only used by the branch, it is\n-  // uniform.\n-  auto *Cmp = dyn_cast<Instruction>(Latch->getTerminator()->getOperand(0));\n-  if (Cmp && TheLoop->contains(Cmp) && Cmp->hasOneUse())\n-    addToWorklistIfAllowed(Cmp);\n+  // Start with the conditional branches exiting the loop. If the branch\n+  // condition is an instruction contained in the loop that is only used by the\n+  // branch, it is uniform.\n+  SmallVector<BasicBlock *> Exiting;\n+  TheLoop->getExitingBlocks(Exiting);\n+  for (BasicBlock *E : Exiting) {\n+    auto *Cmp = dyn_cast<Instruction>(E->getTerminator()->getOperand(0));\n+    if (Cmp && TheLoop->contains(Cmp) && Cmp->hasOneUse())\n+      addToWorklistIfAllowed(Cmp);\n+  }\n \n   auto PrevVF = VF.divideCoefficientBy(2);\n   // Return true if all lanes perform the same memory operation, and we can\n@@ -4335,6 +4338,7 @@ void LoopVectorizationCostModel::collectLoopUniforms(ElementCount VF) {\n   // nodes separately. An induction variable will remain uniform if all users\n   // of the induction variable and induction variable update remain uniform.\n   // The code below handles both pointer and non-pointer induction variables.\n+  BasicBlock *Latch = TheLoop->getLoopLatch();\n   for (const auto &Induction : Legal->getInductionVars()) {\n     auto *Ind = Induction.first;\n     auto *IndUpdate = cast<Instruction>(Ind->getIncomingValueForBlock(Latch));",
+   "raw_url": "https://github.com/llvm/llvm-project/raw/b6a8f5486bc12b132ec984bc8767506e3bcb6694/llvm%2Flib%2FTransforms%2FVectorize%2FLoopVectorize.cpp",
+   "sha": "e2dd62619b01d8a9f437e15968668ee36e4b2d92",
+   "status": "modified"
+  },
+  {
+   "additions": 17,
+   "blob_url": "https://github.com/llvm/llvm-project/blob/b6a8f5486bc12b132ec984bc8767506e3bcb6694/llvm%2Ftest%2FTransforms%2FLoopVectorize%2FAArch64%2Finduction-costs.ll",
+   "changes": 34,
+   "contents_url": "https://api.github.com/repos/llvm/llvm-project/contents/llvm%2Ftest%2FTransforms%2FLoopVectorize%2FAArch64%2Finduction-costs.ll?ref=b6a8f5486bc12b132ec984bc8767506e3bcb6694",
+   "deletions": 17,
+   "filename": "llvm/test/Transforms/LoopVectorize/AArch64/induction-costs.ll",
+   "patch": "@@ -9,37 +9,37 @@ define i32 @multi_exit_iv_uniform(i32 %a, i64 %N, ptr %dst) {\n ; CHECK-NEXT:  entry:\n ; CHECK-NEXT:    [[UMIN:%.*]] = call i64 @llvm.umin.i64(i64 [[N]], i64 2147483648)\n ; CHECK-NEXT:    [[TMP0:%.*]] = add nuw nsw i64 [[UMIN]], 1\n-; CHECK-NEXT:    [[MIN_ITERS_CHECK:%.*]] = icmp ule i64 [[TMP0]], 4\n+; CHECK-NEXT:    [[MIN_ITERS_CHECK:%.*]] = icmp ule i64 [[TMP0]], 8\n ; CHECK-NEXT:    br i1 [[MIN_ITERS_CHECK]], label [[SCALAR_PH:%.*]], label [[VECTOR_PH:%.*]]\n ; CHECK:       vector.ph:\n-; CHECK-NEXT:    [[N_MOD_VF:%.*]] = urem i64 [[TMP0]], 4\n+; CHECK-NEXT:    [[N_MOD_VF:%.*]] = urem i64 [[TMP0]], 8\n ; CHECK-NEXT:    [[TMP1:%.*]] = icmp eq i64 [[N_MOD_VF]], 0\n-; CHECK-NEXT:    [[TMP2:%.*]] = select i1 [[TMP1]], i64 4, i64 [[N_MOD_VF]]\n+; CHECK-NEXT:    [[TMP2:%.*]] = select i1 [[TMP1]], i64 8, i64 [[N_MOD_VF]]\n ; CHECK-NEXT:    [[N_VEC:%.*]] = sub i64 [[TMP0]], [[TMP2]]\n-; CHECK-NEXT:    [[BROADCAST_SPLATINSERT:%.*]] = insertelement <2 x i32> poison, i32 [[A]], i64 0\n-; CHECK-NEXT:    [[BROADCAST_SPLAT:%.*]] = shufflevector <2 x i32> [[BROADCAST_SPLATINSERT]], <2 x i32> poison, <2 x i32> zeroinitializer\n+; CHECK-NEXT:    [[BROADCAST_SPLATINSERT:%.*]] = insertelement <4 x i32> poison, i32 [[A]], i64 0\n+; CHECK-NEXT:    [[BROADCAST_SPLAT:%.*]] = shufflevector <4 x i32> [[BROADCAST_SPLATINSERT]], <4 x i32> poison, <4 x i32> zeroinitializer\n ; CHECK-NEXT:    br label [[VECTOR_BODY:%.*]]\n ; CHECK:       vector.body:\n ; CHECK-NEXT:    [[INDEX:%.*]] = phi i64 [ 0, [[VECTOR_PH]] ], [ [[INDEX_NEXT:%.*]], [[VECTOR_BODY]] ]\n-; CHECK-NEXT:    [[VEC_PHI:%.*]] = phi <2 x i32> [ zeroinitializer, [[VECTOR_PH]] ], [ [[TMP10:%.*]], [[VECTOR_BODY]] ]\n-; CHECK-NEXT:    [[VEC_PHI1:%.*]] = phi <2 x i32> [ zeroinitializer, [[VECTOR_PH]] ], [ [[TMP11:%.*]], [[VECTOR_BODY]] ]\n+; CHECK-NEXT:    [[VEC_PHI:%.*]] = phi <4 x i32> [ zeroinitializer, [[VECTOR_PH]] ], [ [[TMP10:%.*]], [[VECTOR_BODY]] ]\n+; CHECK-NEXT:    [[VEC_PHI1:%.*]] = phi <4 x i32> [ zeroinitializer, [[VECTOR_PH]] ], [ [[TMP11:%.*]], [[VECTOR_BODY]] ]\n ; CHECK-NEXT:    [[TMP3:%.*]] = add i64 [[INDEX]], 0\n-; CHECK-NEXT:    [[TMP4:%.*]] = add i64 [[INDEX]], 2\n+; CHECK-NEXT:    [[TMP4:%.*]] = add i64 [[INDEX]], 4\n ; CHECK-NEXT:    [[TMP5:%.*]] = getelementptr i64, ptr [[DST]], i64 [[TMP3]]\n ; CHECK-NEXT:    [[TMP6:%.*]] = getelementptr i64, ptr [[DST]], i64 [[TMP4]]\n-; CHECK-NEXT:    [[TMP7:%.*]] = zext <2 x i32> [[BROADCAST_SPLAT]] to <2 x i64>\n+; CHECK-NEXT:    [[TMP7:%.*]] = zext <4 x i32> [[BROADCAST_SPLAT]] to <4 x i64>\n ; CHECK-NEXT:    [[TMP8:%.*]] = getelementptr i64, ptr [[TMP5]], i32 0\n-; CHECK-NEXT:    [[TMP9:%.*]] = getelementptr i64, ptr [[TMP5]], i32 2\n-; CHECK-NEXT:    store <2 x i64> [[TMP7]], ptr [[TMP8]], align 8\n-; CHECK-NEXT:    store <2 x i64> [[TMP7]], ptr [[TMP9]], align 8\n-; CHECK-NEXT:    [[TMP10]] = add <2 x i32> [[VEC_PHI]], <i32 -1, i32 -1>\n-; CHECK-NEXT:    [[TMP11]] = add <2 x i32> [[VEC_PHI1]], <i32 -1, i32 -1>\n-; CHECK-NEXT:    [[INDEX_NEXT]] = add nuw i64 [[INDEX]], 4\n+; CHECK-NEXT:    [[TMP9:%.*]] = getelementptr i64, ptr [[TMP5]], i32 4\n+; CHECK-NEXT:    store <4 x i64> [[TMP7]], ptr [[TMP8]], align 8\n+; CHECK-NEXT:    store <4 x i64> [[TMP7]], ptr [[TMP9]], align 8\n+; CHECK-NEXT:    [[TMP10]] = add <4 x i32> [[VEC_PHI]], <i32 -1, i32 -1, i32 -1, i32 -1>\n+; CHECK-NEXT:    [[TMP11]] = add <4 x i32> [[VEC_PHI1]], <i32 -1, i32 -1, i32 -1, i32 -1>\n+; CHECK-NEXT:    [[INDEX_NEXT]] = add nuw i64 [[INDEX]], 8\n ; CHECK-NEXT:    [[TMP12:%.*]] = icmp eq i64 [[INDEX_NEXT]], [[N_VEC]]\n ; CHECK-NEXT:    br i1 [[TMP12]], label [[MIDDLE_BLOCK:%.*]], label [[VECTOR_BODY]], !llvm.loop [[LOOP0:![0-9]+]]\n ; CHECK:       middle.block:\n-; CHECK-NEXT:    [[BIN_RDX:%.*]] = add <2 x i32> [[TMP11]], [[TMP10]]\n-; CHECK-NEXT:    [[TMP13:%.*]] = call i32 @llvm.vector.reduce.add.v2i32(<2 x i32> [[BIN_RDX]])\n+; CHECK-NEXT:    [[BIN_RDX:%.*]] = add <4 x i32> [[TMP11]], [[TMP10]]\n+; CHECK-NEXT:    [[TMP13:%.*]] = call i32 @llvm.vector.reduce.add.v4i32(<4 x i32> [[BIN_RDX]])\n ; CHECK-NEXT:    br label [[SCALAR_PH]]\n ; CHECK:       scalar.ph:\n ; CHECK-NEXT:    [[BC_RESUME_VAL:%.*]] = phi i64 [ [[N_VEC]], [[MIDDLE_BLOCK]] ], [ 0, [[ENTRY:%.*]] ]",
+   "raw_url": "https://github.com/llvm/llvm-project/raw/b6a8f5486bc12b132ec984bc8767506e3bcb6694/llvm%2Ftest%2FTransforms%2FLoopVectorize%2FAArch64%2Finduction-costs.ll",
+   "sha": "4d9c850abdf3da1c39e5c69223b385bbe537d677",
+   "status": "modified"
+  }
+ ],
+ "html_url": "https://github.com/llvm/llvm-project/commit/b6a8f5486bc12b132ec984bc8767506e3bcb6694",
+ "node_id": "C_kwDOBITxeNoAKGI2YThmNTQ4NmJjMTJiMTMyZWM5ODRiYzg3Njc1MDZlM2JjYjY2OTQ",
+ "parents": [
+  {
+   "html_url": "https://github.com/llvm/llvm-project/commit/19d2d3fe50c301272350d12c53c801b17e29e64e",
+   "sha": "19d2d3fe50c301272350d12c53c801b17e29e64e",
+   "url": "https://api.github.com/repos/llvm/llvm-project/commits/19d2d3fe50c301272350d12c53c801b17e29e64e"
+  }
+ ],
+ "sha": "b6a8f5486bc12b132ec984bc8767506e3bcb6694",
+ "stats": {
+  "additions": 28,
+  "deletions": 24,
+  "total": 52
+ },
+ "url": "https://api.github.com/repos/llvm/llvm-project/commits/b6a8f5486bc12b132ec984bc8767506e3bcb6694"
+}

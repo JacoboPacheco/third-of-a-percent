@@ -1,0 +1,71 @@
+# Made by excerpts.py from: raw/D-c18assert-kernels-fast-indvars, raw/D-c18assert-kernels-fast-laa, raw/D-c18assert-kernels-fast-lv-laa, raw/D-c20assert-kernels-fast-lv
+# clang 18.1.0 (assertions build), -mllvm -debug-only=indvars: the line about an exit whose count is unknown (the compare is the reverse loop's check; see README)
+Unknown exit count: Replacing   %cmp.i11 = icmp ugt i64 %sub.ptr.div.i.i10, %dec, !dbg !30 with   %cmp.i11.first_iter = icmp ult i64 %4, %sub.ptr.div.i.i10, !dbg !26
+
+# clang 18.1.0 (assertions build), -mllvm -debug-only=loop-accesses
+LAA: Found a loop in _Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: for.body
+LAA: SCEV could not compute the loop exit count.
+LAA: Found a loop in _Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: for.body
+LAA: SCEV could not compute the loop exit count.
+
+# clang 18.1.0 (assertions build), -mllvm -debug-only=loop-vectorize,loop-accesses in one run, with the compiler's
+# remarks in between: the order of the messages for each loop. For the two rejected loops the loop-access analysis's line
+# comes first, then the remark, then `LV: Can't vectorize due to memory conflicts`. On this build `LV: We can vectorize
+# this loop!` is also printed for those two loops, right before `LV: Not vectorizing: Cannot prove legality.`. Why that
+# line is printed there is NOT ESTABLISHED by these files; the verdict is the `Not vectorizing` line and the remark
+# `loop not vectorized`.
+LV: Checking a loop in '_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE' from example.cpp:9:3
+LV: Found an induction variable.
+LAA: Found a loop in _Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE: _ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit
+LV: We can vectorize this loop!
+<source>:9:3: remark: vectorized loop (vectorization width: 2, interleaved count: 2) [-Rpass=loop-vectorize]
+LAA: Found a loop in _Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE: _ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit
+LAA: Found a loop in _Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE: vector.body
+LV: Checking a loop in '_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_' from example.cpp:15:3
+LV: Found an induction variable.
+LAA: Found a loop in _Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_: _ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit
+LV: We can vectorize this loop (with a runtime bound check)!
+<source>:15:3: remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]
+LAA: Found a loop in _Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_: vector.body
+LV: Checking a loop in '_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:19:3
+LV: Found an induction variable.
+LV: Did not find one integer induction var.
+LAA: Found a loop in _Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: _ZNKSt3__16vectorIiNS_9allocatorIiEEEixB8fe180100Em.exit33
+LV: We can vectorize this loop (with a runtime bound check)!
+<source>:19:3: remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]
+LAA: Found a loop in _Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: vector.body
+LV: Checking a loop in '_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:23:3
+LV: Found an induction variable.
+LV: Did not find one integer induction var.
+LAA: Found a loop in _Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: for.body
+LAA: SCEV could not compute the loop exit count.
+<source>:23:3: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+LV: Can't vectorize due to memory conflicts
+LV: We can vectorize this loop!
+LV: Not vectorizing: Cannot prove legality.
+<source>:23:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+LV: Checking a loop in '_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:27:3
+LV: Found an induction variable.
+LAA: Found a loop in _Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_: for.body
+LAA: SCEV could not compute the loop exit count.
+<source>:27:3: remark: loop not vectorized: could not determine number of loop iterations [-Rpass-analysis=loop-vectorize]
+LV: Can't vectorize due to memory conflicts
+LV: We can vectorize this loop!
+LV: Not vectorizing: Cannot prove legality.
+<source>:27:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+
+# clang 20.1.0 (assertions build), -mllvm -debug-only=loop-vectorize: the verdict of each loop
+LV: Checking a loop in '_Z16kern_k01_sum_fwdRKNSt3__16vectorIiNS_9allocatorIiEEEE' from example.cpp:9:3
+LV: We can vectorize this loop!
+LV: Checking a loop in '_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_' from example.cpp:15:3
+LV: We can vectorize this loop (with a runtime bound check)!
+LV: Loop requires scalar epilogue: not exiting from latch block
+LV: Checking a loop in '_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:19:3
+LV: We can vectorize this loop (with a runtime bound check)!
+LV: Loop requires scalar epilogue: not exiting from latch block
+LV: Checking a loop in '_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:23:3
+LV: Not vectorizing: Writes to memory unsupported in early exit loops.
+LV: Not vectorizing: Cannot prove legality.
+LV: Checking a loop in '_Z16kern_k05_stride2RNSt3__16vectorIiNS_9allocatorIiEEEERKS3_' from example.cpp:27:3
+LV: Not vectorizing: Loop has too many uncountable exits.
+LV: Not vectorizing: Cannot prove legality.

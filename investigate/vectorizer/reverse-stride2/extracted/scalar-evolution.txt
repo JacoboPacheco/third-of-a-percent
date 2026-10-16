@@ -1,0 +1,162 @@
+# Made by excerpts.py from: raw/E-c18-kernels-fast-scev, raw/A-c18-kernels-fast, raw/E-c18-kernels-none-scev, raw/A-c18-kernels-none, raw/E-c18-variants-fast-scev, raw/A-c18-variants-fast, raw/E-c18-variants2-fast-scev, raw/A-c18-variants2-fast, raw/E-c18-variants3-fast-scev, raw/A-c18-variants3-fast, raw/E-c19-kernels-fast-scev, raw/A-c19-kernels-fast, raw/E-c20-kernels-fast-scev, raw/A-c20-kernels-fast, raw/E-c20-variants-fast-scev, raw/A-c20-variants-fast, raw/E-ctrunk-kernels-fast-scev, raw/A-ctrunk-kernels-fast
+## c18, kernels, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+kern_k01_sum_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 2x2
+kern_k02_add_fwd   backedge-taken count computable      exits: %17 [bb30], %24 [bb34], (-1 + (1 umax %10)) [bb37]
+                   clang: vectorized 4x1
+kern_k03_stencil   backedge-taken count computable      exits: (-1 + (1 umax %16)) [bb24], (-3 + %8)<nsw> [bb29]
+                   clang: vectorized 4x2
+kern_k04_rev       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %9)<nsw> [bb26]
+                   clang: not vectorized: could not determine number of loop iterations
+kern_k05_stride2   backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb27], (-1 + (1 umax %9)) [bb31]
+                   clang: not vectorized: could not determine number of loop iterations
+tally: computable and vectorized 3, not computable and not vectorized 2, mismatch 0
+
+## c18, kernels, hardening NONE (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+kern_k01_sum_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 2x2
+kern_k02_add_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+kern_k03_stencil   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+kern_k04_rev       backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+kern_k05_stride2   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+tally: computable and vectorized 5, not computable and not vectorized 0, mismatch 0
+
+## c18, variants, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+v_rev_pre          backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_span         backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_raw          backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_fwd          backedge-taken count computable      exits: %16 [bb22], (-1 + (1 umax %9)) [bb26]
+                   clang: vectorized 4x2
+v_rev_manual       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %10)<nsw> [bb26]
+                   clang: not vectorized: could not determine number of loop iterations
+v_fwd_manual       backedge-taken count computable      exits: %9 [bb22], (-1 + (1 umax %16)) [bb26]
+                   clang: vectorized 4x2
+v_rev_j            backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb28], (-1 + (1 umax %8)) [bb31]
+                   clang: not vectorized: could not determine number of loop iterations
+v_s2_pre           backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb26], COULDNOTCOMPUTE [bb31], (-1 + (1 umax %8)) [bb35]
+                   clang: not vectorized: could not determine number of loop iterations
+v_s2_pre_mul       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb28], COULDNOTCOMPUTE [bb33], (-1 + (1 umax %8)) [bb37]
+                   clang: not vectorized: could not determine number of loop iterations
+v_s2_span          backedge-taken count computable      exits: ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2) [bb29], (-1 + (1 umax %8)) [bb35]
+                   clang: vectorized 4x1
+v_s2_raw           backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_s2_manual        backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], (-1 + (1 umax %16)) [bb28]
+                   clang: not vectorized: could not determine number of loop iterations
+v_s2_one           backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], (-1 + (1 umax %9)) [bb27]
+                   clang: not vectorized: could not determine number of loop iterations
+v_s2_j             backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb21], COULDNOTCOMPUTE [bb25], COULDNOTCOMPUTE [bb29]
+                   clang: not vectorized: could not determine number of loop iterations
+tally: computable and vectorized 7, not computable and not vectorized 7, mismatch 0
+
+## c18, variants2, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+v2_s2_guard        backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb25], (-1 + (1 umax %9)) [bb31]
+                   clang: not vectorized: could not determine number of loop iterations
+v2_s2_guard_masked backedge-taken count computable      exits: (zext i62 (trunc i64 (%15 /u 2) to i62) to i64) [bb27], (-1 + (1 umax %9)) [bb31]
+                   clang: vectorized 4x1
+v2_s2_masked       backedge-taken count computable      exits: (zext i62 (trunc i64 (%12 /u 2) to i62) to i64) [bb24], (-1 + (1 umax %16)) [bb28]
+                   clang: vectorized 4x1
+v2_rev_masked      backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb24], (-1 + %10)<nsw> [bb27]
+                   clang: not vectorized: could not determine number of loop iterations
+tally: computable and vectorized 2, not computable and not vectorized 2, mismatch 0
+
+## c18, variants3, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+v3_one_plain       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], (-1 + (1 umax %16)) [bb28]
+                   clang: not vectorized: could not determine number of loop iterations
+v3_one_half        backedge-taken count computable      exits: (%16 /u 2) [bb23], (-1 + (1 umax %10)) [bb27]
+                   clang: vectorized 4x1
+v3_one_min         backedge-taken count computable      exits: ((1099511627776 umin %12) /u 2) [bb24], (-1 + (1 umax %17)) [bb28]
+                   clang: vectorized 4x1
+v3_one_assume      backedge-taken count computable      exits: (%11 /u 2) [bb24], (-1 + (1 umax %17)) [bb28]
+                   clang: vectorized 4x1
+v3_two_plain       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb27], (-1 + (1 umax %16)) [bb31]
+                   clang: not vectorized: could not determine number of loop iterations
+v3_two_masked      backedge-taken count computable      exits: ((1 + (zext i63 (trunc i64 %12 to i63) to i64))<nuw> /u 2) [bb26], ((zext i63 (trunc i64 %12 to i63) to i64) /u 2) [bb31], (-1 + (1 umax %17)) [bb34]
+                   clang: vectorized 4x1
+tally: computable and vectorized 4, not computable and not vectorized 2, mismatch 0
+
+## c19, kernels, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+kern_k01_sum_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 2x2
+kern_k02_add_fwd   backedge-taken count computable      exits: %17 [bb30], %24 [bb34], (-1 + (1 umax %10)) [bb37]
+                   clang: vectorized 4x2
+kern_k03_stencil   backedge-taken count computable      exits: (-1 + (1 umax %16)) [bb24], (-3 + %8)<nsw> [bb29]
+                   clang: vectorized 4x2
+kern_k04_rev       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %9)<nsw> [bb26]
+                   clang: not vectorized: could not determine number of loop iterations
+kern_k05_stride2   backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb27], (-1 + (1 umax %9)) [bb31]
+                   clang: not vectorized: could not determine number of loop iterations
+tally: computable and vectorized 3, not computable and not vectorized 2, mismatch 0
+
+## c20, kernels, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+kern_k01_sum_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 2x2
+kern_k02_add_fwd   backedge-taken count computable      exits: %17 [bb30], %24 [bb34], (-1 + (1 umax %10)) [bb37]
+                   clang: vectorized 4x2
+kern_k03_stencil   backedge-taken count computable      exits: (-1 + (1 umax %16)) [bb24], (-3 + %8)<nsw> [bb29]
+                   clang: vectorized 4x2
+kern_k04_rev       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %9)<nsw> [bb26]
+                   clang: not vectorized: Cannot vectorize early exit loop with writes to memory
+kern_k05_stride2   backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb27], (-1 + (1 umax %9)) [bb31]
+                   clang: not vectorized: Cannot vectorize early exit loop with more than one early exit
+tally: computable and vectorized 3, not computable and not vectorized 2, mismatch 0
+
+## c20, variants, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+v_rev_pre          backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_span         backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_raw          backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_rev_fwd          backedge-taken count computable      exits: %16 [bb22], (-1 + (1 umax %9)) [bb26]
+                   clang: vectorized 4x2
+v_rev_manual       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %10)<nsw> [bb26]
+                   clang: not vectorized: Cannot vectorize early exit loop with writes to memory
+v_fwd_manual       backedge-taken count computable      exits: %9 [bb22], (-1 + (1 umax %16)) [bb26]
+                   clang: vectorized 4x2
+v_rev_j            backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb28], (-1 + (1 umax %8)) [bb31]
+                   clang: not vectorized: Cannot vectorize early exit loop with more than one early exit
+v_s2_pre           backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb26], COULDNOTCOMPUTE [bb31], (-1 + (1 umax %8)) [bb35]
+                   clang: not vectorized: Cannot vectorize early exit loop with more than one early exit
+v_s2_pre_mul       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb28], COULDNOTCOMPUTE [bb33], (-1 + (1 umax %8)) [bb37]
+                   clang: not vectorized: Cannot vectorize early exit loop with more than one early exit
+v_s2_span          backedge-taken count computable      exits: ((1 umax (((-1 * (ptrtoint ptr %4 to i64)) + (ptrtoint ptr %3 to i64)) /u 2)) /u 2) [bb33], (-1 + (1 umax %8)) [bb39]
+                   clang: vectorized 4x2
+v_s2_raw           backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 4x2
+v_s2_manual        backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], (-1 + (1 umax %16)) [bb28]
+                   clang: not vectorized: Cannot vectorize early exit loop with writes to memory
+v_s2_one           backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], (-1 + (1 umax %9)) [bb27]
+                   clang: not vectorized: Cannot vectorize early exit loop with writes to memory
+v_s2_j             backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb21], COULDNOTCOMPUTE [bb25], COULDNOTCOMPUTE [bb29]
+                   clang: not vectorized: could not determine number of loop iterations
+tally: computable and vectorized 7, not computable and not vectorized 7, mismatch 0
+
+## ctrunk, kernels, hardening FAST (ScalarEvolution of opt on the IR just before the loop vectorizer; remark of clang)
+
+kern_k01_sum_fwd   backedge-taken count computable      exits: (single exit)
+                   clang: vectorized 2x2
+kern_k02_add_fwd   backedge-taken count computable      exits: %17 [bb30], %24 [bb34], (-1 + (1 umax %10)) [bb37]
+                   clang: vectorized 4x2
+kern_k03_stencil   backedge-taken count computable      exits: (-1 + (1 umax %16)) [bb23], (-3 + %8)<nsw> [bb28]
+                   clang: vectorized 4x2
+kern_k04_rev       backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb23], (-1 + %9)<nsw> [bb26]
+                   clang: not vectorized: Cannot vectorize early exit loop with complex writes to memory
+kern_k05_stride2   backedge-taken count NOT computable  exits: COULDNOTCOMPUTE [bb22], COULDNOTCOMPUTE [bb27], (-1 + (1 umax %9)) [bb31]
+                   clang: not vectorized: Cannot vectorize early exit loop with complex writes to memory
+tally: computable and vectorized 3, not computable and not vectorized 2, mismatch 0

@@ -1,0 +1,47 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpts, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-18.1.0/llvm/lib/Target/X86/X86TargetTransformInfo.cpp (tag llvmorg-18.1.0), function X86TTIImpl::getCmpSelInstrCost
+
+// lines 3081 to 3096: the legalization factor LT.first, the declaration of ExtraCost and the condition under which it is set
+  std::pair<InstructionCost, MVT> LT = getTypeLegalizationCost(ValTy);
+
+  MVT MTy = LT.second;
+
+  int ISD = TLI->InstructionOpcodeToISD(Opcode);
+  assert(ISD && "Invalid opcode");
+
+  InstructionCost ExtraCost = 0;
+  if (Opcode == Instruction::ICmp || Opcode == Instruction::FCmp) {
+    // Some vector comparison predicates cost extra instructions.
+    // TODO: Should we invert this and assume worst case cmp costs
+    // and reduce for particular predicates?
+    if (MTy.isVector() &&
+        !((ST->hasXOP() && (!ST->hasAVX2() || MTy.is128BitVector())) ||
+          (ST->hasAVX512() && 32 <= MTy.getScalarSizeInBits()) ||
+          ST->hasBWI())) {
+
+// lines 3113 to 3118: the extra cost of an unsigned compare of vectors
+      case CmpInst::Predicate::ICMP_ULT:
+      case CmpInst::Predicate::ICMP_UGT:
+        // cmpgt(xor(x,signbit),xor(y,signbit))
+        // xor(cmpeq(pmaxu(x,y),x),-1)
+        ExtraCost = 2;
+        break;
+
+// lines 3320 to 3323: the lookup in AVX2CostTbl
+    if (const auto *Entry = CostTableLookup(AVX2CostTbl, ISD, MTy))
+      if (auto KindCost = Entry->Cost[CostKind])
+        return LT.first * (ExtraCost + *KindCost);
+
+
+// lines 3335 to 3338: the lookup in SSE42CostTbl
+    if (const auto *Entry = CostTableLookup(SSE42CostTbl, ISD, MTy))
+      if (auto KindCost = Entry->Cost[CostKind])
+        return LT.first * (ExtraCost + *KindCost);
+
+
+// lines 3345 to 3348: the lookup in SSE2CostTbl
+    if (const auto *Entry = CostTableLookup(SSE2CostTbl, ISD, MTy))
+      if (auto KindCost = Entry->Cost[CostKind])
+        return LT.first * (ExtraCost + *KindCost);
+
+

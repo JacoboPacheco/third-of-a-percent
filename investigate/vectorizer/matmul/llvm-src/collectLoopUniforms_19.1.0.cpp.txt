@@ -1,0 +1,21 @@
+// LLVM is licensed under Apache-2.0 with LLVM exceptions. Short excerpt, for reference.
+// Source: https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-19.1.0/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp
+// Function LoopVectorizationCostModel::collectLoopUniforms: lines 3549 to 3778 at tag llvmorg-19.1.0
+// (sha256 of the whole function: 26703f928c5b2cb4a842865cd9acba6dcd2a02ad2c2af3894b191f0be9bb0968). Excerpt: lines 3594 to 3609.
+
+  };
+
+  // Start with the conditional branches exiting the loop. If the branch
+  // condition is an instruction contained in the loop that is only used by the
+  // branch, it is uniform.
+  SmallVector<BasicBlock *> Exiting;
+  TheLoop->getExitingBlocks(Exiting);
+  for (BasicBlock *E : Exiting) {
+    auto *Cmp = dyn_cast<Instruction>(E->getTerminator()->getOperand(0));
+    if (Cmp && TheLoop->contains(Cmp) && Cmp->hasOneUse())
+      addToWorklistIfAllowed(Cmp);
+  }
+
+  auto PrevVF = VF.divideCoefficientBy(2);
+  // Return true if all lanes perform the same memory operation, and we can
+  // thus chose to execute only one.

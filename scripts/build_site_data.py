@@ -5,8 +5,9 @@
     python scripts/build_site_data.py --check   rebuild in memory and fail if site/data/ differs
 
 Copied unchanged:
-  pooled.json        results/s4-pooled/pooled.json (criteria-v3: every job of a CPU model pooled across
-                     jobs and runs, two-level bootstrap intervals, both columns, instruction counts)
+  pooled.json        results/s6-pooled/pooled.json (criteria-v3: every job of a CPU model pooled across
+                     jobs and runs, two-level bootstrap intervals, both columns, instruction counts;
+                     the jobs of results/s4-pooled plus those of the later runs of the same workflow)
   asm/<cpu>/         for each CPU model with enough jobs, the machine code of ONE of its jobs (the
                      none, fast, none_a64 and fast_a64 listings; the binaries are byte-identical across
                      jobs, which the pooled build control checks), plus builds.json extracted from that
@@ -36,7 +37,14 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "site", "data")
 
-POOLED = "results/s4-pooled/pooled.json"
+POOLED = "results/s6-pooled/pooled.json"
+# The first pooled measurement (3 runs, 30 jobs). The holdout (results/s5-holdout) was judged against this file,
+# so the holdout comparison keeps reading it; everything else on the page reads POOLED.
+POOLED_ORIGINAL = "results/s4-pooled/pooled.json"
+# The CPU model the first screen opens on (the race, the figure, the README image). It was the model with the most
+# jobs when the page was built, and it stays the opening view so that more jobs of another model do not move it;
+# if it is absent or has too few jobs, the model with the most jobs opens instead.
+DEFAULT_CPU_MODEL = "AMD EPYC 7763 64-Core Processor"
 HOLDOUT = "results/s5-holdout/pooled.json"
 HOLDOUT_PREREG = "results/s5-holdout/PREREGISTRATION.md"
 CRITERIA_FILE = "harness/criteria-v3.json"
@@ -432,7 +440,8 @@ def s1_forward():
 
 
 def intel_forward(pooled):
-    """The forward add at L1, aligned, in every Intel job of the S3 runs, the S4 smoke run and the pooled runs (no verdict)."""
+    """The forward add at L1, aligned, in every Intel job of the S3 runs, the S4 smoke run and the pooled runs, one row per
+    job (no verdict; the pooled Intel models are listed in cpus[] with their own pooled numbers)."""
     jobs = []
     files = glob.glob(os.path.join(REPO, "results", "s3-*", "results-intel-*", "results.json"))
     files += glob.glob(os.path.join(REPO, "results", "s4-smoke-*", "results-intel-*", "results.json"))
@@ -442,12 +451,14 @@ def intel_forward(pooled):
         if c and c.get("aligned"):
             jobs.append({"source": rel(os.path.dirname(f)), "cpu_short": cpu_short(doc["run"]["runner"]["cpu_model"]),
                          "aligned": c["aligned"]["ratio"], "aa_pct": doc["controls"]["aa"]["half_width_pct"]})
-    for c in pooled["cpus"]:
-        if "INTEL" in c["cpu_model"].upper():
-            x = next((q for q in c["cells"] if q["cell_id"] == "k02_add_fwd.L1"), None)
-            if x:
-                jobs.append({"source": POOLED, "cpu_short": cpu_short(c["cpu_model"]), "aligned": x["aligned"]["ratio"],
-                             "aa_pct": c["aa"]["half_width_pct"], "pooled_jobs": c["jobs"]})
+    for i in pooled["inputs"]:  # one row per pooled Intel job, from that job's own file (the rows are jobs, not pools)
+        if "INTEL" in i["cpu_model"].upper():
+            f = os.path.normpath(os.path.join(REPO, os.path.dirname(POOLED), i["path"]))
+            doc = load(f)
+            c = next((q for q in doc["cells"] if q["cell_id"] == "k02_add_fwd.L1"), None)
+            if c and c.get("aligned"):
+                jobs.append({"source": rel(os.path.dirname(f)), "cpu_short": cpu_short(i["cpu_model"]),
+                             "aligned": c["aligned"]["ratio"], "aa_pct": doc["controls"]["aa"]["half_width_pct"]})
     return {"cell": "k02_add_fwd.L1", "jobs": jobs, "aligned": minmax([j["aligned"] for j in jobs]),
             "cpus": sorted({j["cpu_short"] for j in jobs})}
 
@@ -720,7 +731,7 @@ def fixture_pooled(fx):
 def holdout_data(min_jobs):
     """The holdout run beside the original pooled runs: same rules, fresh draws (numbers read from both pooled.json)."""
     import statistics
-    orig, hold = load(os.path.join(REPO, POOLED)), load(os.path.join(REPO, HOLDOUT))
+    orig, hold = load(os.path.join(REPO, POOLED_ORIGINAL)), load(os.path.join(REPO, HOLDOUT))
     assert orig["criteria_sha256"] == hold["criteria_sha256"], "holdout was judged under other criteria"
 
     def side(doc):
@@ -741,7 +752,7 @@ def holdout_data(min_jobs):
         both = bool(o and h and o["enough"] and h["enough"])
         rows.append({"cpu_model": m, "cpu_short": cpu_short(m), "original": o, "holdout": h,
                      "reproduced": (o["form"] == h["form"]) if both else None})
-    return {"source": HOLDOUT, "original_source": POOLED, "preregistration": HOLDOUT_PREREG,
+    return {"source": HOLDOUT, "original_source": POOLED_ORIGINAL, "preregistration": HOLDOUT_PREREG,
             "result": "results/s5-holdout/RESULT.md",
             "preregistration_committed_utc": stored_holdout_time() or git_time(HOLDOUT_PREREG),
             "criteria_sha256": hold["criteria_sha256"], "runs": hold["runs"], "jobs": len(hold["inputs"]),
@@ -801,18 +812,25 @@ def build(out_dir):
         index["pooled"]["runs"].append({"run_id": rid, "workflow_run_url": url,
                                         "jobs": sum(1 for i in pooled["inputs"] if i["run_id"] == rid)})
     good = [c for c in index["cpus"] if c["enough"]]
+    # The page-level ranges (the lost-loop range, the forward range) describe the CPU models whose pooled verdict
+    # reached a form (map or holds-everywhere). A model with enough jobs and an inconclusive verdict is listed in
+    # cpus[] with its own numbers but is not folded into these ranges, since its forward cells are the ones that
+    # missed the written rule.
+    judged = [c for c in good if c["form"] != "inconclusive"] or good
     index["page"] = {
         "cpus_enough": len(good), "jobs_enough": sum(c["jobs"] for c in good),
         "cpus_few": [{"cpu_short": c["cpu_short"], "jobs": c["jobs"], "form": c["form"]} for c in index["cpus"] if not c["enough"]],
-        "lost": minmax([v for c in good for v in (c["lost"]["min"], c["lost"]["max"])]),
-        "lost_instr": minmax([v for c in good for v in (c["lost_instr"]["min"], c["lost_instr"]["max"])]),
-        "forward": {"aligned": minmax([v for c in good for v in (c["forward_aligned"]["min"], c["forward_aligned"]["max"])]),
-                    "compiled": minmax([v for c in good for v in (c["forward_compiled"]["min"], c["forward_compiled"]["max"])]),
-                    "compiled_max_cell": max((c["forward_compiled_max_cell"] for c in good), key=lambda x: x["ratio"])},
+        "judged_cpus": [c["cpu_short"] for c in judged],
+        "lost": minmax([v for c in judged for v in (c["lost"]["min"], c["lost"]["max"])]),
+        "lost_instr": minmax([v for c in judged for v in (c["lost_instr"]["min"], c["lost_instr"]["max"])]),
+        "forward": {"aligned": minmax([v for c in judged for v in (c["forward_aligned"]["min"], c["forward_aligned"]["max"])]),
+                    "compiled": minmax([v for c in judged for v in (c["forward_compiled"]["min"], c["forward_compiled"]["max"])]),
+                    "compiled_max_cell": max((c["forward_compiled_max_cell"] for c in judged), key=lambda x: x["ratio"])},
         "forms": sorted({c["form"] for c in good}),
     }
     index["page"]["lost_all_above_min"] = all(c["lost_ci_lo_min"] >= crit["verdict"]["lost_ci_lo_min_ratio"] for c in good)
-    index["default_cpu"] = max(good, key=lambda c: c["jobs"])["slug"]
+    index["default_cpu"] = next((c for c in good if c["cpu_model"] == DEFAULT_CPU_MODEL),
+                                max(good, key=lambda c: c["jobs"]))["slug"]
     index["method"] = method_record()
     index["programs"] = s3_programs()
     index["intel_forward"] = intel_forward(pooled)

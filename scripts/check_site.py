@@ -1191,6 +1191,65 @@ def interactive_checks(browser, base, ck, index, pooled, allowed, errors, saved,
     ctx.close()
 
 
+def check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec):
+    """The sentences app.js derives from the verdicts. Every CPU model with enough jobs is named with what the written
+    rules said about it (re-derived here from pooled.json, not copied from the page), the run-to-run notes cover every
+    model that had comparable runs, and nothing reads as if every model had a verdict. Also the pass-level wording."""
+    fx = lambda v: f"{v:.1f}" if v >= 2 else f"{v:.2f}"  # noqa: E731
+    pat = {r[0]: r[-1] for r in t1r}
+    intel_p, stable_p = dp.inner_text("#intel-p"), dp.inner_text("#stable-p")
+    other, method, limits = dp.inner_text("#otherdraws"), dp.inner_text("#method-full"), dp.inner_text("#limits-full")
+    rep = [c for c in cpus if c["reproduction"] and c["reproduction"]["checked"]]
+    ck.ok(bool(rep) and all(f"{c['reproduction']['outside']} of {c['reproduction']['checked']}" in rec and f"{c['reproduction']['max_gap_pct']:.1f}%" in rec
+                           and c["cpu_short"] in rec and c["cpu_short"] in method for c in rep),
+          f"run-to-run movement: the note beside Table 1 and the Method entry name every model with comparable runs ({[c['cpu_short'] for c in rep]}), with its count outside and its largest gap")
+    ck.ok(all(c["cpu_short"] in stable_p for c in cpus)
+          and all(f"{sum(1 for r in c['per_run'] if r['form'])} of its {len(c['per_run'])} runs" in stable_p for c in cpus if c["stability"] == "stable")
+          and all(f"{c['jobs']} jobs in {len(c['per_run'])} runs" in stable_p for c in cpus if c["stability"] != "stable" and c["form"] != "inconclusive")
+          and "enough jobs in each of its" not in stable_p and "give the same pattern pooled" not in stable_p,
+          "pooling note: every model is named with how many of its runs could be judged alone; a model whose runs cannot be compared is not called stable")
+    inc = [c for c in cpus if c["form"] == "inconclusive"]
+    ck.ok(all(c["cpu_short"] in limits and "inconclusive" in limits and "inconclusive" in pat[c["cpu_short"]]
+              and (c["cpu_short"] in intel_p or "Xeon" not in c["cpu_short"]) for c in inc)
+          and all("cannot be compared" in pat[c["cpu_short"]] for c in cpus if c["form"] == "map" and c["stability"] != "stable")
+          and all("the same in every run judged alone" in pat[c["cpu_short"]] for c in cpus if c["stability"] == "stable")
+          and "too few for a verdict" not in intel_p and "All CPU models drawn with enough jobs are AMD" not in limits
+          and "Few jobs on two models" not in limits and "the only model with enough jobs" not in method,
+          f"models the written rules left inconclusive ({[c['cpu_short'] for c in inc]}) are named with that word in Table 1, section 1 and the Limits; a model whose runs cannot be compared says so; no stale 'too few' wording")
+    for c in inc:
+        pc = next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])
+        lim = 1 + pc["verdict"]["forward_limit_pct"] / 100
+        ps = {q["cell_id"] for q in c["placement_sensitive"]}
+        miss = [x for x in pc["cells"] if x["class"] == "kept" and x["size_class"] in ("L1", "L2") and x["cell_id"] not in ps
+                and x["aligned"] and (x["aligned"]["ratio"] > lim or x["aligned"]["ci95"][1] > lim)]
+        ck.ok(bool(miss) and all(x["cell_id"] in c["why"] for x in miss)
+              and all(f"up to {fx(x['aligned']['ci95'][1])}×" in pat[c["cpu_short"]] and f"interval {fx(x['aligned']['ci95'][0])} to {fx(x['aligned']['ci95'][1])}×" in intel_p for x in miss),
+              f"{c['cpu_short']}: Table 1 and section 1 give the judged forward loops that miss the written rule, with their interval, as the harness's own reason says ({[x['cell_id'] for x in miss]})")
+    ck.ok(not re.search(r"\buses\s*[,.]", other) and not other.lstrip().startswith(",") and "Table 8" in other and other.count("Xeon 8370C") >= 1,
+          "the note beside Table 1 about models without a row reads as a sentence (no empty list)")
+    # Figure 1: a model with no verdict says so beside the switcher; the others show nothing there
+    for c in cpus:
+        page.click(f'#cpu-seg [data-cpu="{c["slug"]}"]')
+        page.wait_for_timeout(120)
+        vt = page.inner_text("#cpu-verdict").strip()
+        ck.ok((f"No verdict for {c['cpu_short']}" in vt and "inconclusive" in vt and "Table 1" in vt) if c["form"] == "inconclusive" else vt == "",
+              f"Figure 1, {c['cpu_short']}: {'the no-verdict note names it' if c['form'] == 'inconclusive' else 'no verdict note'}")
+    page.click(f'#cpu-seg [data-cpu="{index["default_cpu"]}"]')
+    page.wait_for_timeout(120)
+    # pass-level wording: observed or inferred on every statement, linked to the saved notes
+    pl = dp.inner_text("#pl-list")
+    hrefs = dp.evaluate("[...document.querySelectorAll('#why-full a, #method-full a, #limits-full a')].map(a => a.href)")
+    why = page.text_content("#why")
+    ck.ok(dp.locator("#passlevel").count() == 1 and pl.count("(observed") >= 6 and "inferred" in pl and "Nothing here is timed" in dp.inner_text("#why-full")
+          and any(h.endswith("investigate/vectorizer/reverse-stride2/README.md") for h in hrefs)
+          and any(h.endswith("investigate/vectorizer/matmul/README.md") for h in hrefs)
+          and sum(1 for h in hrefs if h.endswith("#passlevel")) >= 2,
+          "details: the pass-level evidence is its own subsection, every statement labelled observed or inferred, linked to the two saved notes and from the Method and the Limits")
+    ck.ok("observed" in why and "inferred" in why and page.locator('#why a[href="details.html#passlevel"]').count() == 1
+          and page.locator('.mech-note a[href="details.html#passlevel"]').count() == 1 and "observed" in page.text_content(".mech-note"),
+          "main page: the mechanism sentences say what is observed and what is inferred and link to the pass-level evidence (section 2 and the demo's note)")
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # messages may quote page text
@@ -1292,10 +1351,13 @@ def main():
                       f"hero caption for matrix multiply: the typed clang range and '{mm_.group(3) if mm_ else '?'}×' equal the timed toolchains {mm_vs} and the main-model L1 ratio ({mm_l1['min']:.3f} to {mm_l1['max']:.3f})")
                 seg = page.evaluate("[...document.querySelectorAll('#cpu-seg button')].map(b => b.dataset.cpu)")
                 few = page.inner_text("#cpu-few")
-                ck.ok(seg == [c["slug"] for c in cpus] and all(f["cpu_short"] in few for f in index["page"]["cpus_few"]) and "too few to judge" in few
-                      and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
-                      and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'"),
-                      f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs")
+                # the note names the models with too few jobs; when every model drawn had enough jobs it is empty
+                few_note = (all(f["cpu_short"] in few for f in index["page"]["cpus_few"]) and "too few to judge" in few
+                            and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
+                            and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'")
+                            ) if index["page"]["cpus_few"] else few.strip() == ""
+                ck.ok(seg == [c["slug"] for c in cpus] and few_note,
+                      f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs (none left out: an empty note)")
                 open_full(page)
                 ck.ok("instructions, not time" in page.inner_text("#fig2 .f2-instr"), "Figure 2: the instruction ratio sits in its header, labelled 'instructions, not time'")
                 with open(os.path.join(DATA, "pooled.json"), encoding="utf-8") as f:
@@ -1310,7 +1372,7 @@ def main():
                 dp.evaluate("document.getElementById('appb-details').open = true")
                 appb = dp.evaluate("""() => [...document.querySelectorAll('#appb-cpu tbody tr')].map(r => r.innerText)""")
                 ck.ok(len(appb) == len(index["cpus"]) and all("1.5" in r and "2%" in r for r, c in zip(appb, index["cpus"]) if c["enough"])
-                      and "results/s4-pooled/pooled.json" in dp.inner_text("#appendix-b")
+                      and index["pooled"]["source"] in dp.inner_text("#appendix-b")
                       and "not a statement about Google" in dp.inner_text("#appendix-b"),
                       "Appendix B: per CPU model the form, the numbers and the rule in plain words, the pooled file named by its path, and no claim about Google's services")
                 terms = page.evaluate("""() => { const t = document.getElementById('terms'), tb = document.getElementById('cpu-table');
@@ -1332,15 +1394,27 @@ def main():
                 ck.ok(all(page.locator(f"#{n}").count() == 1 and "Jobs:" in page.inner_text(f"#{n}") for n in ("cpu-note", "mit-note"))
                       and "Jobs:" in dp.inner_text("#sib-note")
                       and "Jobs:" in page.text_content("#fig1-cap"), "every table that quotes a range (Tables 1, 3, 4) and Figure 1's caption carry a one-line jobs note")
+                check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec)
                 low = dp.inner_text("#fwd-low")
-                ck.ok("9V45" in low and "includes 1" in low and "slowdowns only" in low,
-                      "beside Table 1: the judged forward loop below 1x on EPYC 9V45 is explained (interval of compiled / aligned includes 1; the rule bounds slowdowns only)")
+                # judged forward cells (not placement-sensitive) clearly below 1x aligned, on the models with enough jobs (the page lists these)
+                low_cells = [(c["cpu_short"], x["cell_id"]) for c in cpus
+                             for x in next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])["cells"]
+                             if x["class"] == "kept" and x["size_class"] in ("L1", "L2")
+                             and x["cell_id"] not in {q["cell_id"] for q in c["placement_sensitive"]} and x["aligned"]["ratio"] < 0.95]
+                ck.ok((all(name in low for name, _ in low_cells) and "includes 1" in low and "slowdowns only" in low) if low_cells else low.strip() == "",
+                      "beside Table 1: a judged forward loop clearly below 1x is explained (interval of compiled / aligned includes 1; the rule bounds slowdowns only); with none, there is no note")
                 ip = dp.inner_text("#instr-p")
                 ck.ok("not for every loop" in ip and "inferred" in ip and "same story" not in ip and "histogram" in ip,
                       "section 1: the instruction counts are said to agree for loops that lose SIMD, not for every loop, with the histogram and forward add as counter-examples, marked inferred")
+                norm_ = lambda m: m.replace("Xeon Platinum ", "Xeon ")  # noqa: E731
+                with open(os.path.join(DATA, "siblings.json"), encoding="utf-8") as f_:
+                    sib_other = [m for m in (norm_(x) for x in json.load(f_)["cpus"]) if m not in [c["cpu_short"] for c in cpus]]
+                prog_other = sorted({norm_(r["cpu_short"]) for r in index["programs"]["rows"]} - {c["cpu_short"] for c in cpus} - set(sib_other))
+                sib_cap, other_draws = dp.inner_text("#sib-cap"), dp.inner_text("#otherdraws")
                 ck.ok(all(w in dp.inner_text("#jobsets") for w in ("Section 5", "Section 6", "aligned", "as compiled"))
-                      and "Xeon" in dp.inner_text("#sib-cap") and "Xeon 6973P-C" in dp.inner_text("#otherdraws"),
-                      "results: one note states which job set and column each part uses; Table 4's caption names the Xeon draws; Table 1 explains the models without a row")
+                      and (all(m in sib_cap for m in sib_other) if sib_other else "the same CPU models as Table 1" in sib_cap)
+                      and all(m in other_draws for m in sib_other + prog_other),
+                      "results: one note states which job set and column each part uses; Table 4's caption names the draws beyond Table 1 (or says it has the same models); the note beside Table 1 names every model without a row")
                 ps_rows = dp.evaluate("[...document.querySelectorAll('#ps-table tbody tr')].map(r => r.textContent)")
                 ps_want = sum(len(c["placement_sensitive"]) for c in cpus)
                 ps_ids = {p["cell_id"].split(".")[0] for c in cpus for p in c["placement_sensitive"]}
@@ -1543,9 +1617,10 @@ def main():
                       and any(n.startswith("the check") for n in f2["notes"]) and any(n.startswith("this trap stops the program") for n in f2["notes"]),
                       "first screen (1280): Figure 2 shows the reverse loop's SIMD lines, the check and the trap, labelled in words")
                 open_full(page)
-                ck.ok("could not determine number of loop iterations" in page.inner_text("#fig2")
-                      or "no longer knows how many times" in page.inner_text("#fig2"),
-                      "Figure 2: the compiler's remark explained in plain words")
+                f2t = page.inner_text("#fig2")
+                ck.ok("no iteration count" in f2t and "second way out" in f2t and "(observed)" in f2t and "inferred" in f2t
+                      and page.locator('#fig2 a[href="details.html#passlevel"]').count() >= 1,
+                      "Figure 2: the compiler's remark explained in plain words (a second way out with no iteration count), the facts labelled observed or inferred, linked to the pass-level evidence")
                 ck.ok(page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(255, 255, 255)", "the page is white")
                 meth = page.inner_text("#method") + dp.inner_text("#method-full")
                 d1 = index["method"]["dayone"][0]
@@ -1719,10 +1794,13 @@ def main():
                       "abstract: the rewrite range of the reverse and matrix-multiply loops and the toolchain caveat")
                 seg = page.evaluate("[...document.querySelectorAll('#cpu-seg button')].map(b => b.dataset.cpu)")
                 few = page.inner_text("#cpu-few")
-                ck.ok(seg == [c["slug"] for c in cpus] and all(f["cpu_short"] in few for f in index["page"]["cpus_few"]) and "too few to judge" in few
-                      and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
-                      and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'"),
-                      f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs")
+                # the note names the models with too few jobs; when every model drawn had enough jobs it is empty
+                few_note = (all(f["cpu_short"] in few for f in index["page"]["cpus_few"]) and "too few to judge" in few
+                            and page.evaluate("getComputedStyle(document.getElementById('cpu-few')).display") == "block"
+                            and not page.evaluate("getComputedStyle(document.getElementById('cpu-few')).borderTopStyle !== 'none'")
+                            ) if index["page"]["cpus_few"] else few.strip() == ""
+                ck.ok(seg == [c["slug"] for c in cpus] and few_note,
+                      f"Figure 1: the switcher offers the CPU models with at least {index['criteria']['minimum_jobs']} jobs ({seg}) and names the others as too few jobs (none left out: an empty note)")
                 open_full(page)
                 ck.ok("instructions, not time" in page.inner_text("#fig2 .f2-instr"), "Figure 2: the instruction ratio sits in its header, labelled 'instructions, not time'")
                 with open(os.path.join(DATA, "pooled.json"), encoding="utf-8") as f:
@@ -1737,7 +1815,7 @@ def main():
                 dp.evaluate("document.getElementById('appb-details').open = true")
                 appb = dp.evaluate("""() => [...document.querySelectorAll('#appb-cpu tbody tr')].map(r => r.innerText)""")
                 ck.ok(len(appb) == len(index["cpus"]) and all("1.5" in r and "2%" in r for r, c in zip(appb, index["cpus"]) if c["enough"])
-                      and "results/s4-pooled/pooled.json" in dp.inner_text("#appendix-b")
+                      and index["pooled"]["source"] in dp.inner_text("#appendix-b")
                       and "not a statement about Google" in dp.inner_text("#appendix-b"),
                       "Appendix B: per CPU model the form, the numbers and the rule in plain words, the pooled file named by its path, and no claim about Google's services")
                 terms = page.evaluate("""() => { const t = document.getElementById('terms'), tb = document.getElementById('cpu-table');
@@ -1759,15 +1837,27 @@ def main():
                 ck.ok(all(page.locator(f"#{n}").count() == 1 and "Jobs:" in page.inner_text(f"#{n}") for n in ("cpu-note", "mit-note"))
                       and "Jobs:" in dp.inner_text("#sib-note")
                       and "Jobs:" in page.text_content("#fig1-cap"), "every table that quotes a range (Tables 1, 3, 4) and Figure 1's caption carry a one-line jobs note")
+                check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec)
                 low = dp.inner_text("#fwd-low")
-                ck.ok("9V45" in low and "includes 1" in low and "slowdowns only" in low,
-                      "beside Table 1: the judged forward loop below 1x on EPYC 9V45 is explained (interval of compiled / aligned includes 1; the rule bounds slowdowns only)")
+                # judged forward cells (not placement-sensitive) clearly below 1x aligned, on the models with enough jobs (the page lists these)
+                low_cells = [(c["cpu_short"], x["cell_id"]) for c in cpus
+                             for x in next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])["cells"]
+                             if x["class"] == "kept" and x["size_class"] in ("L1", "L2")
+                             and x["cell_id"] not in {q["cell_id"] for q in c["placement_sensitive"]} and x["aligned"]["ratio"] < 0.95]
+                ck.ok((all(name in low for name, _ in low_cells) and "includes 1" in low and "slowdowns only" in low) if low_cells else low.strip() == "",
+                      "beside Table 1: a judged forward loop clearly below 1x is explained (interval of compiled / aligned includes 1; the rule bounds slowdowns only); with none, there is no note")
                 ip = dp.inner_text("#instr-p")
                 ck.ok("not for every loop" in ip and "inferred" in ip and "same story" not in ip and "histogram" in ip,
                       "section 1: the instruction counts are said to agree for loops that lose SIMD, not for every loop, with the histogram and forward add as counter-examples, marked inferred")
+                norm_ = lambda m: m.replace("Xeon Platinum ", "Xeon ")  # noqa: E731
+                with open(os.path.join(DATA, "siblings.json"), encoding="utf-8") as f_:
+                    sib_other = [m for m in (norm_(x) for x in json.load(f_)["cpus"]) if m not in [c["cpu_short"] for c in cpus]]
+                prog_other = sorted({norm_(r["cpu_short"]) for r in index["programs"]["rows"]} - {c["cpu_short"] for c in cpus} - set(sib_other))
+                sib_cap, other_draws = dp.inner_text("#sib-cap"), dp.inner_text("#otherdraws")
                 ck.ok(all(w in dp.inner_text("#jobsets") for w in ("Section 5", "Section 6", "aligned", "as compiled"))
-                      and "Xeon" in dp.inner_text("#sib-cap") and "Xeon 6973P-C" in dp.inner_text("#otherdraws"),
-                      "results: one note states which job set and column each part uses; Table 4's caption names the Xeon draws; Table 1 explains the models without a row")
+                      and (all(m in sib_cap for m in sib_other) if sib_other else "the same CPU models as Table 1" in sib_cap)
+                      and all(m in other_draws for m in sib_other + prog_other),
+                      "results: one note states which job set and column each part uses; Table 4's caption names the draws beyond Table 1 (or says it has the same models); the note beside Table 1 names every model without a row")
                 ps_rows = dp.evaluate("[...document.querySelectorAll('#ps-table tbody tr')].map(r => r.textContent)")
                 ps_want = sum(len(c["placement_sensitive"]) for c in cpus)
                 ps_ids = {p["cell_id"].split(".")[0] for c in cpus for p in c["placement_sensitive"]}
@@ -1970,9 +2060,10 @@ def main():
                       and any(n.startswith("the check") for n in f2["notes"]) and any(n.startswith("this trap stops the program") for n in f2["notes"]),
                       "first screen (1280): Figure 2 shows the reverse loop's SIMD lines, the check and the trap, labelled in words")
                 open_full(page)
-                ck.ok("could not determine number of loop iterations" in page.inner_text("#fig2")
-                      or "no longer knows how many times" in page.inner_text("#fig2"),
-                      "Figure 2: the compiler's remark explained in plain words")
+                f2t = page.inner_text("#fig2")
+                ck.ok("no iteration count" in f2t and "second way out" in f2t and "(observed)" in f2t and "inferred" in f2t
+                      and page.locator('#fig2 a[href="details.html#passlevel"]').count() >= 1,
+                      "Figure 2: the compiler's remark explained in plain words (a second way out with no iteration count), the facts labelled observed or inferred, linked to the pass-level evidence")
                 ck.ok(page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(255, 255, 255)", "the page is white")
                 meth = page.inner_text("#method") + dp.inner_text("#method-full")
                 d1 = index["method"]["dayone"][0]
@@ -2326,7 +2417,7 @@ def main():
                 ck.ok(not hit, f"390: the hero controls, CPU and column buttons, word chips and bar links answer a tap within 44 x 44 px ({hit[:4]})")
                 shot(page, saved, shots, "mobile-1-first-screen.png")
                 h = page.evaluate("document.documentElement.scrollHeight")
-                ck.ok(h < 20500, f"390: the main page with every section opened is {h} px long (the default, collapsed page is the one capped, above)")
+                ck.ok(h < 21000, f"390: the main page with every section opened is {h} px long (a backstop; the default, collapsed page is the one capped, above)")
                 # the '?' works on tap and closes on an outside tap and on Escape
                 tip = "getComputedStyle(document.getElementById('col-tip')).opacity"
                 away = lambda: page.mouse.move(380, 830)  # no hover left behind: the state comes from the tap alone

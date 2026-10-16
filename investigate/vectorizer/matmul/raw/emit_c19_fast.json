@@ -1,0 +1,1303 @@
+{
+ "compiler_id": "clang1910",
+ "fetched_at": "2026-10-16T00:03:35+00:00",
+ "name": "emit_c19_fast",
+ "request": {
+  "allowStoreCodeDebug": true,
+  "lang": "c++",
+  "options": {
+   "compilerOptions": {
+    "executorRequest": false,
+    "skipAsm": false
+   },
+   "filters": {
+    "binary": false,
+    "binaryObject": false,
+    "commentOnly": true,
+    "debugCalls": false,
+    "demangle": true,
+    "directives": true,
+    "execute": false,
+    "intel": true,
+    "labels": true,
+    "libraryCode": true,
+    "trim": false
+   },
+   "libraries": [],
+   "tools": [],
+   "userArguments": "-O2 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -emit-llvm"
+  },
+  "source": "// kern_k08_matmul from kernels/k08_matmul.cpp, copied verbatim (the function only, no main).\n#include <cstddef>\n#include <cstdint>\n#include <vector>\n\n__attribute__((noinline)) void kern_k08_matmul(std::vector<int32_t>& c, const std::vector<int32_t>& a,\n                                               const std::vector<int32_t>& b, size_t d) {\n  for (size_t i = 0; i < d; ++i)\n    for (size_t k = 0; k < d; ++k) {\n      int32_t aik = a[i * d + k];\n      for (size_t j = 0; j < d; ++j) c[i * d + j] += aik * b[k * d + j];  // LOOP\n    }\n}\n"
+ },
+ "request_sha256": "1eb0bde25a6953e06e57cb0ea605d44ed3749e427c5577317f0961a47d3c5d22",
+ "response": {
+  "asm": [
+   {
+    "scope": "!1429",
+    "source": {
+     "file": null,
+     "line": 6
+    },
+    "text": "define dso_local void @kern_k08_matmul(std::__1::vector<int, std::__1::allocator<int>>&, std::__1::vector<int, std::__1::allocator<int>> const&, std::__1::vector<int, std::__1::allocator<int>> const&, unsigned long)(ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %0, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %1, ptr nocapture noundef nonnull readonly align 8 dereferenceable(24) %2, i64 noundef %3) local_unnamed_addr #0 !dbg !1429 {"
+   },
+   {
+    "text": "    #dbg_value(ptr %0, !1436, !DIExpression(), !1450)"
+   },
+   {
+    "text": "    #dbg_value(ptr %1, !1437, !DIExpression(), !1450)"
+   },
+   {
+    "text": "    #dbg_value(ptr %2, !1438, !DIExpression(), !1450)"
+   },
+   {
+    "text": "    #dbg_value(i64 %3, !1439, !DIExpression(), !1450)"
+   },
+   {
+    "text": "    #dbg_value(i64 0, !1440, !DIExpression(), !1451)"
+   },
+   {
+    "scope": "!1452",
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 8
+    },
+    "text": "  %5 = icmp eq i64 %3, 0, !dbg !1452"
+   },
+   {
+    "scope": "!1453",
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "  br i1 %5, label %34, label %6, !dbg !1453"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "6:"
+   },
+   {
+    "text": "  %7 = getelementptr inbounds i8, ptr %1, i64 8"
+   },
+   {
+    "text": "  %8 = load ptr, ptr %7, align 8"
+   },
+   {
+    "text": "  %9 = load ptr, ptr %1, align 8"
+   },
+   {
+    "text": "  %10 = ptrtoint ptr %8 to i64"
+   },
+   {
+    "text": "  %11 = ptrtoint ptr %9 to i64"
+   },
+   {
+    "text": "  %12 = sub i64 %10, %11"
+   },
+   {
+    "text": "  %13 = ashr exact i64 %12, 2"
+   },
+   {
+    "text": "  %14 = getelementptr inbounds i8, ptr %2, i64 8"
+   },
+   {
+    "text": "  %15 = getelementptr inbounds i8, ptr %0, i64 8"
+   },
+   {
+    "text": "  %16 = shl i64 %3, 2"
+   },
+   {
+    "scope": "!1453",
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "  %17 = add i64 %3, -1, !dbg !1453"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %18 = shl i64 %3, 2, !dbg !1462"
+   },
+   {
+    "scope": "!1453",
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "  br label %19, !dbg !1453"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "19:"
+   },
+   {
+    "text": "  %20 = phi i64 [ 0, %6 ], [ %36, %35 ]"
+   },
+   {
+    "text": "  %21 = mul i64 %20, %3"
+   },
+   {
+    "text": "  %22 = mul i64 %20, %3"
+   },
+   {
+    "text": "  %23 = mul i64 %16, %20"
+   },
+   {
+    "text": "    #dbg_value(i64 %20, !1440, !DIExpression(), !1451)"
+   },
+   {
+    "text": "  %24 = mul i64 %20, %3"
+   },
+   {
+    "text": "  %25 = mul i64 %20, %3"
+   },
+   {
+    "text": "  %26 = mul i64 %20, %3"
+   },
+   {
+    "text": "    #dbg_value(i64 0, !1442, !DIExpression(), !1463)"
+   },
+   {
+    "text": "  %27 = load ptr, ptr %14, align 8"
+   },
+   {
+    "text": "  %28 = load ptr, ptr %2, align 8"
+   },
+   {
+    "text": "  %29 = ptrtoint ptr %27 to i64"
+   },
+   {
+    "text": "  %30 = ptrtoint ptr %28 to i64"
+   },
+   {
+    "text": "  %31 = sub i64 %29, %30"
+   },
+   {
+    "text": "  %32 = ashr exact i64 %31, 2"
+   },
+   {
+    "scope": "!1464",
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "  %33 = getelementptr i8, ptr %28, i64 4, !dbg !1464"
+   },
+   {
+    "scope": "!1464",
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "  br label %38, !dbg !1464"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "34:"
+   },
+   {
+    "scope": "!1465",
+    "source": {
+     "column": 1,
+     "file": null,
+     "line": 13
+    },
+    "text": "  ret void, !dbg !1465"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "35:"
+   },
+   {
+    "scope": "!1466",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 8
+    },
+    "text": "  %36 = add nuw i64 %20, 1, !dbg !1466"
+   },
+   {
+    "text": "    #dbg_value(i64 %36, !1440, !DIExpression(), !1451)"
+   },
+   {
+    "scope": "!1452",
+    "source": {
+     "column": 24,
+     "file": null,
+     "line": 8
+    },
+    "text": "  %37 = icmp eq i64 %36, %3, !dbg !1452"
+   },
+   {
+    "scope": "!1453",
+    "source": {
+     "column": 3,
+     "file": null,
+     "line": 8
+    },
+    "text": "  br i1 %37, label %34, label %19, !dbg !1453"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "38:"
+   },
+   {
+    "text": "  %39 = phi i64 [ 0, %19 ], [ %114, %113 ]"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %40 = mul i64 %39, %3, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %41 = tail call i64 @llvm.umax.i64(i64 %32, i64 %40), !dbg !1462"
+   },
+   {
+    "text": "    #dbg_value(i64 %39, !1442, !DIExpression(), !1463)"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %42 = mul i64 %39, %3, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %43 = sub i64 %41, %42, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %44 = mul i64 %18, %39, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %45 = getelementptr i8, ptr %28, i64 %44, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %46 = getelementptr i8, ptr %33, i64 %44, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %47 = add nuw i64 %39, %26, !dbg !1462"
+   },
+   {
+    "text": "    #dbg_value(ptr %1, !1470, !DIExpression(), !1483)"
+   },
+   {
+    "text": "    #dbg_value(i64 %47, !1481, !DIExpression(), !1483)"
+   },
+   {
+    "scope": "!1485",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  %48 = icmp ugt i64 %13, %47, !dbg !1485"
+   },
+   {
+    "scope": "!1485",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  br i1 %48, label %50, label %49, !dbg !1485"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "49:"
+   },
+   {
+    "scope": "!1487",
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "  tail call void @llvm.trap(), !dbg !1487"
+   },
+   {
+    "scope": "!1485",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  unreachable, !dbg !1485"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "50:"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %51 = mul i64 %39, %3, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %52 = tail call i64 @llvm.umax.i64(i64 %32, i64 %51), !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %53 = mul i64 %39, %3, !dbg !1462"
+   },
+   {
+    "scope": "!1462",
+    "source": {
+     "column": 29,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %54 = sub i64 %52, %53, !dbg !1462"
+   },
+   {
+    "scope": "!1491",
+    "source": {
+     "column": 10,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1444
+    },
+    "text": "  %55 = getelementptr inbounds i32, ptr %9, i64 %47, !dbg !1491"
+   },
+   {
+    "scope": "!1492",
+    "source": {
+     "column": 21,
+     "file": null,
+     "line": 10
+    },
+    "text": "  %56 = load i32, ptr %55, align 4, !dbg !1492"
+   },
+   {
+    "text": "    #dbg_value(i32 %56, !1445, !DIExpression(), !1495)"
+   },
+   {
+    "text": "    #dbg_value(i64 0, !1448, !DIExpression(), !1496)"
+   },
+   {
+    "text": "  %57 = mul i64 %39, %3"
+   },
+   {
+    "text": "  %58 = load ptr, ptr %15, align 8"
+   },
+   {
+    "text": "  %59 = load ptr, ptr %0, align 8"
+   },
+   {
+    "text": "  %60 = ptrtoint ptr %58 to i64"
+   },
+   {
+    "text": "  %61 = ptrtoint ptr %59 to i64"
+   },
+   {
+    "text": "  %62 = sub i64 %60, %61"
+   },
+   {
+    "text": "  %63 = ashr exact i64 %62, 2"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %64 = tail call i64 @llvm.umax.i64(i64 %63, i64 %22), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %65 = sub i64 %64, %21, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %66 = freeze i64 %65, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %67 = tail call i64 @llvm.umin.i64(i64 %66, i64 %17), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %68 = tail call i64 @llvm.umin.i64(i64 %67, i64 %54), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %69 = add i64 %68, 1, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %70 = icmp ult i64 %69, 9, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br i1 %70, label %71, label %73, !dbg !1497"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "71:"
+   },
+   {
+    "text": "  %72 = phi i64 [ 0, %73 ], [ 0, %50 ], [ %92, %97 ]"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br label %116, !dbg !1497"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "73:"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %74 = getelementptr i8, ptr %59, i64 %23, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %75 = getelementptr i8, ptr %59, i64 %23, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %76 = getelementptr i8, ptr %75, i64 4, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %77 = tail call i64 @llvm.umax.i64(i64 %63, i64 %25), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %78 = sub i64 %77, %24, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %79 = freeze i64 %78, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %80 = tail call i64 @llvm.umin.i64(i64 %79, i64 %17), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %81 = tail call i64 @llvm.umin.i64(i64 %80, i64 %43), !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %82 = shl i64 %81, 2, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %83 = getelementptr i8, ptr %76, i64 %82, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %84 = getelementptr i8, ptr %46, i64 %82, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %85 = icmp ult ptr %74, %84, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %86 = icmp ult ptr %45, %83, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %87 = and i1 %85, %86, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br i1 %87, label %71, label %88, !dbg !1497"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "88:"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %89 = and i64 %69, 7, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %90 = icmp eq i64 %89, 0, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %91 = select i1 %90, i64 8, i64 %89, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %92 = sub i64 %69, %91, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %93 = insertelement <4 x i32> poison, i32 %56, i64 0, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %94 = shufflevector <4 x i32> %93, <4 x i32> poison, <4 x i32> zeroinitializer, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %95 = getelementptr i32, ptr %28, i64 %57, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %96 = getelementptr i32, ptr %59, i64 %26, !dbg !1497"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br label %97, !dbg !1497"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "97:"
+   },
+   {
+    "scope": "!1498",
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %98 = phi i64 [ 0, %88 ], [ %111, %97 ], !dbg !1498"
+   },
+   {
+    "scope": "!1500",
+    "source": {
+     "column": 10,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1444
+    },
+    "text": "  %99 = getelementptr i32, ptr %95, i64 %98, !dbg !1500"
+   },
+   {
+    "scope": "!1502",
+    "source": {
+     "column": 60,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %100 = getelementptr inbounds i8, ptr %99, i64 16, !dbg !1502"
+   },
+   {
+    "scope": "!1502",
+    "source": {
+     "column": 60,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %101 = load <4 x i32>, ptr %99, align 4, !dbg !1502"
+   },
+   {
+    "scope": "!1502",
+    "source": {
+     "column": 60,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %102 = load <4 x i32>, ptr %100, align 4, !dbg !1502"
+   },
+   {
+    "scope": "!1506",
+    "source": {
+     "column": 58,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %103 = mul nsw <4 x i32> %101, %94, !dbg !1506"
+   },
+   {
+    "scope": "!1506",
+    "source": {
+     "column": 58,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %104 = mul nsw <4 x i32> %102, %94, !dbg !1506"
+   },
+   {
+    "scope": "!1507",
+    "source": {
+     "column": 10,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1437
+    },
+    "text": "  %105 = getelementptr i32, ptr %96, i64 %98, !dbg !1507"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %106 = getelementptr inbounds i8, ptr %105, i64 16, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %107 = load <4 x i32>, ptr %105, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %108 = load <4 x i32>, ptr %106, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %109 = add nsw <4 x i32> %107, %103, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %110 = add nsw <4 x i32> %108, %104, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  store <4 x i32> %109, ptr %105, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  store <4 x i32> %110, ptr %106, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1498",
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %111 = add nuw i64 %98, 8, !dbg !1498"
+   },
+   {
+    "scope": "!1498",
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %112 = icmp eq i64 %111, %92, !dbg !1498"
+   },
+   {
+    "scope": "!1498",
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br i1 %112, label %71, label %97, !dbg !1498"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "113:"
+   },
+   {
+    "scope": "!1527",
+    "source": {
+     "column": 31,
+     "file": null,
+     "line": 9
+    },
+    "text": "  %114 = add nuw i64 %39, 1, !dbg !1527"
+   },
+   {
+    "text": "    #dbg_value(i64 %114, !1442, !DIExpression(), !1463)"
+   },
+   {
+    "scope": "!1528",
+    "source": {
+     "column": 26,
+     "file": null,
+     "line": 9
+    },
+    "text": "  %115 = icmp eq i64 %114, %3, !dbg !1528"
+   },
+   {
+    "scope": "!1464",
+    "source": {
+     "column": 5,
+     "file": null,
+     "line": 9
+    },
+    "text": "  br i1 %115, label %35, label %38, !dbg !1464"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "116:"
+   },
+   {
+    "text": "  %117 = phi i64 [ %132, %125 ], [ %72, %71 ]"
+   },
+   {
+    "text": "    #dbg_value(i64 %117, !1448, !DIExpression(), !1496)"
+   },
+   {
+    "scope": "!1531",
+    "source": {
+     "column": 68,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %118 = add nuw i64 %117, %57, !dbg !1531"
+   },
+   {
+    "text": "    #dbg_value(ptr %2, !1470, !DIExpression(), !1532)"
+   },
+   {
+    "text": "    #dbg_value(i64 %118, !1481, !DIExpression(), !1532)"
+   },
+   {
+    "scope": "!1533",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  %119 = icmp ugt i64 %32, %118, !dbg !1533"
+   },
+   {
+    "scope": "!1533",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  br i1 %119, label %121, label %120, !dbg !1533"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "120:"
+   },
+   {
+    "scope": "!1534",
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "  tail call void @llvm.trap(), !dbg !1534"
+   },
+   {
+    "scope": "!1533",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1443
+    },
+    "text": "  unreachable, !dbg !1533"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "121:"
+   },
+   {
+    "scope": "!1536",
+    "source": {
+     "column": 46,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %122 = add nuw i64 %117, %26, !dbg !1536"
+   },
+   {
+    "text": "    #dbg_value(ptr %0, !1516, !DIExpression(), !1537)"
+   },
+   {
+    "text": "    #dbg_value(i64 %122, !1518, !DIExpression(), !1537)"
+   },
+   {
+    "scope": "!1538",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1436
+    },
+    "text": "  %123 = icmp ugt i64 %63, %122, !dbg !1538"
+   },
+   {
+    "scope": "!1538",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1436
+    },
+    "text": "  br i1 %123, label %125, label %124, !dbg !1538"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "124:"
+   },
+   {
+    "scope": "!1539",
+    "source": {
+     "file": null,
+     "line": 0
+    },
+    "text": "  tail call void @llvm.trap(), !dbg !1539"
+   },
+   {
+    "scope": "!1538",
+    "source": {
+     "column": 3,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1436
+    },
+    "text": "  unreachable, !dbg !1538"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "125:"
+   },
+   {
+    "scope": "!1500",
+    "source": {
+     "column": 10,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1444
+    },
+    "text": "  %126 = getelementptr inbounds i32, ptr %28, i64 %118, !dbg !1500"
+   },
+   {
+    "scope": "!1502",
+    "source": {
+     "column": 60,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %127 = load i32, ptr %126, align 4, !dbg !1502"
+   },
+   {
+    "scope": "!1506",
+    "source": {
+     "column": 58,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %128 = mul nsw i32 %127, %56, !dbg !1506"
+   },
+   {
+    "scope": "!1507",
+    "source": {
+     "column": 10,
+     "file": "/cefs/d2/d2e6ebb9fe16525f6e7eb0c3_consolidated/compilers_c++_clang_19.1.0/bin/../include/c++/v1/vector",
+     "line": 1437
+    },
+    "text": "  %129 = getelementptr inbounds i32, ptr %59, i64 %122, !dbg !1507"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %130 = load i32, ptr %129, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %131 = add nsw i32 %130, %128, !dbg !1520"
+   },
+   {
+    "scope": "!1520",
+    "source": {
+     "column": 51,
+     "file": null,
+     "line": 11
+    },
+    "text": "  store i32 %131, ptr %129, align 4, !dbg !1520"
+   },
+   {
+    "scope": "!1498",
+    "source": {
+     "column": 33,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %132 = add nuw i64 %117, 1, !dbg !1498"
+   },
+   {
+    "text": "    #dbg_value(i64 %132, !1448, !DIExpression(), !1496)"
+   },
+   {
+    "scope": "!1542",
+    "source": {
+     "column": 28,
+     "file": null,
+     "line": 11
+    },
+    "text": "  %133 = icmp eq i64 %132, %3, !dbg !1542"
+   },
+   {
+    "scope": "!1497",
+    "source": {
+     "column": 7,
+     "file": null,
+     "line": 11
+    },
+    "text": "  br i1 %133, label %113, label %116, !dbg !1497"
+   },
+   {
+    "text": "}"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare void @llvm.trap() #1"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umax.i64(i64, i64) #2"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "declare i64 @llvm.umin.i64(i64, i64) #2"
+   },
+   {
+    "text": ""
+   },
+   {
+    "text": "attributes #0 = { mustprogress noinline nounwind memory(readwrite, inaccessiblemem: write) uwtable \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" }"
+   },
+   {
+    "text": "attributes #1 = { cold noreturn nounwind memory(inaccessiblemem: write) }"
+   },
+   {
+    "text": "attributes #2 = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }"
+   },
+   {
+    "text": ""
+   }
+  ],
+  "asmSize": 162182,
+  "code": 0,
+  "compilationOptions": [
+   "-g",
+   "-o",
+   "/app/output.s",
+   "-mllvm",
+   "--x86-asm-syntax=intel",
+   "-fno-verbose-asm",
+   "-S",
+   "--gcc-toolchain=/opt/compiler-explorer/gcc-14.2.0",
+   "-fcolor-diagnostics",
+   "-fno-crash-diagnostics",
+   "-O2",
+   "-march=x86-64",
+   "-stdlib=libc++",
+   "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST",
+   "-emit-llvm",
+   "/app/example.cpp"
+  ],
+  "downloads": [],
+  "execTime": 687,
+  "inputFilename": "example.cpp",
+  "instructionSet": "amd64",
+  "languageId": "llvm-ir",
+  "okToCache": true,
+  "optOutput": [],
+  "popularArguments": {},
+  "processExecutionResultTime": 0.0017959997057914734,
+  "queueTime": 6,
+  "stderr": [],
+  "stdout": [],
+  "timedOut": false,
+  "tools": [],
+  "truncated": false
+ },
+ "source_file": "src/k08_matmul.cpp",
+ "url": "https://godbolt.org/api/compiler/clang1910/compile"
+}
