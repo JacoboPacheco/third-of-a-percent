@@ -33,13 +33,18 @@ on:
       jobs:
         description: "matrix job numbers as a JSON list; criteria-v3 full runs use all ten (fewer only for a smoke test, never pooled)"
         default: "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+      runner:
+        description: "GitHub-hosted runner label: ubuntu-24.04 (x86-64, the default) or ubuntu-24.04-arm (AArch64, Neoverse-N2). One label per run; results are pooled per CPU model afterwards"
+        type: choice
+        options: ["ubuntu-24.04", "ubuntu-24.04-arm"]
+        default: "ubuntu-24.04"
 
 permissions:
   contents: read
 
 jobs:
   measure:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.runner }}
     # The timing steps take about 10 minutes. On Oct 15 the job also ran the whole-repository check (scripts/check.py)
     # before uploading; that took 12 to 19 minutes or more, and 55 of 100 jobs in ten runs were cancelled at the
     # old 22-minute limit before they uploaded. The job now uploads first and checks only its own file.
@@ -54,6 +59,8 @@ jobs:
         id: cpu
         run: |
           CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          # AArch64 /proc/cpuinfo has no "model name" line; lscpu names the core (the harness reads lscpu too)
+          [ -n "$CPU" ] || CPU="$(lscpu | sed -n 's/^Model name: *//p' | head -1)"
           SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
           echo "CPU model: $CPU"
           echo "cores: $(nproc)"
