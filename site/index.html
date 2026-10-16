@@ -76,7 +76,7 @@
           <div class="race-axis" id="race-axis" aria-hidden="true"></div>
           <div class="race-cv"><canvas id="race-cv" height="150" role="img" aria-label="Illustration: a row of array elements processed with the check on or off"></canvas></div>
           <div class="race-read" aria-live="polite">
-            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">20</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">Clang 18 could not vectorize it with the check inside. Switching SIMD off by hand costs 3.3× (about a third of the as-compiled extra); the rest is the compare and jump (inferred).</span></span></div>
+            <div class="rr-main"><output class="rr-big lost" id="race-ratio"><span data-v="heroRatio">8.0</span>&times;</output><span class="rr-sub" id="race-sub"><span class="rr-head"><b class="rr-nm">Reverse: </b><span class="rr-meta"><span data-v="heroRatio">8.0</span>&times; as long as with the check off, <span data-v="heroCpu">EPYC 7763</span>, <span data-v="heroJobs">29</span> jobs. </span></span><span data-v="heroWhat" class="rr-what">Clang 18 could not vectorize it with the check inside. Switching SIMD off by hand costs 3.3× (about a third of the as-compiled extra); the rest is the compare and jump (inferred).</span></span></div>
             <div class="rr-side"><button type="button" class="rr-name" id="race-name" aria-haspopup="dialog">Reverse loop: read the machine code</button><code class="rr-src" id="race-src"></code></div>
           </div>
           <figcaption id="race-cap">Illustration: each bar is as long as the measured pooled ratio on one shared axis; only the speed of the run is for show. The number is the measurement.</figcaption>
@@ -183,7 +183,7 @@
           <li>Your production average: these are single loops, not services.</li>
           <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
           <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), the other setups on few jobs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
-          <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the 75-job pool leaves the verdicts of the three AMD models unchanged, but the two Xeon models (6 jobs each, inconclusive) change form with the interval method (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
+          <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the <span data-v="nJobs"></span>-job pool leaves the verdict of every CPU model unchanged (<a data-href="robustnessUrl" href="#">robustness report</a>). <span data-v="narrowShort"></span></li>
           <li id="lost-li"><span data-v="lostShort"></span></li>
         </ul>
         <p class="cannot-more"><a href="details.html#limits-full">Every limit, in full &rarr;</a></p>
@@ -204,7 +204,7 @@
           <tbody></tbody>
         </table>
       </div>
-      <p class="tnote" id="cpu-note">Jobs: the pooled runs, <span data-v="nJobs"></span> jobs, sizes L1 and L2, column as named. Every model with a verdict is AMD; on <span data-v="intelCounts"></span>, the forward add at L1 cost <span data-v="intelRange"></span>&times; aligned in every job.</p>
+      <p class="tnote" id="cpu-note">Jobs: the pooled runs, <span data-v="nJobs"></span> jobs, sizes L1 and L2, column as named. <span data-v="verdictModels"></span>; on <span data-v="intelCounts"></span>, the forward add at L1 cost <span data-v="intelRange"></span>&times; aligned in every job.</p>
       <p class="more-link"><a href="details.html#holdout-full"><span data-v="holdoutShort"></span>; run-to-run movement, instruction counts &rarr;</a></p>
     </section>
 

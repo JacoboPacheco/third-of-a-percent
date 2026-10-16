@@ -84,15 +84,23 @@ function joinAnd(xs) {
   if (xs.length <= 1) return xs.join('');
   return xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
 }
-// Jobs started against jobs that returned results, from the pooled run list alone: a "full" run returned every job it started, a short one fewer.
+// Jobs started against jobs that returned results, from the pooled run list alone. Three groups of runs: the original
+// ones (the first pooled runs, flagged in the data; every job returned), the cut ones (a later run that returned fewer
+// jobs than it started) and the whole ones (a later run that returned every job again).
 function runLedger(ix) {
   const per = ix.criteria.jobs_per_run, runs = ix.pooled.runs;
-  const full = runs.filter((r) => r.jobs >= per), part = runs.filter((r) => r.jobs < per), fullIds = new Set(full.map((r) => r.run_id));
+  const orig = runs.filter((r) => r.original), later = runs.filter((r) => !r.original);
+  const cut = later.filter((r) => r.jobs < per), whole = later.filter((r) => r.jobs >= per);
   const sum = (rs) => rs.reduce((a, r) => a + r.jobs, 0);
+  const ids = (rs) => new Set(rs.map((r) => r.run_id));
+  const oId = ids(orig), cId = ids(cut), wId = ids(whole);
+  const inRuns = (c, s) => sum(c.per_run.filter((r) => s.has(r.run_id)));
   const started = runs.length * per;
   return { per, runs: runs.length, started, returned: ix.pooled.jobs, lost: started - ix.pooled.jobs,
-    full: full.length, fullJobs: sum(full), part: part.length, partStarted: part.length * per, partJobs: sum(part), fullIds,
-    byCpu: ix.cpus.filter((c) => c.enough).map((c) => ({ cpu: c.cpu_short, inFull: sum(c.per_run.filter((r) => fullIds.has(r.run_id))), inShort: sum(c.per_run.filter((r) => !fullIds.has(r.run_id))) })) };
+    orig: orig.length, origJobs: sum(orig), origStarted: orig.length * per,
+    cut: cut.length, cutStarted: cut.length * per, cutJobs: sum(cut),
+    whole: whole.length, wholeStarted: whole.length * per, wholeJobs: sum(whole), oId,
+    byCpu: ix.cpus.filter((c) => c.enough).map((c) => ({ cpu: c.cpu_short, inOrig: inRuns(c, oId), inCut: inRuns(c, cId), inWhole: inRuns(c, wId) })) };
 }
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const cpuShortOf = (m) => { const e = S.ix.cpus.find((c) => c.cpu_model === m); return e ? e.cpu_short : m; };
@@ -245,15 +253,27 @@ function fillStatic() {
   if (pg.cpus_few.length) fewBits.push(`${pg.cpus_few.length === 1 ? 'the one other model' : 'the other models'} drawn, ${joinAnd(pg.cpus_few.map((f) => f.cpu_short))}, came up in ${joinAnd(pg.cpus_few.map((f) => String(f.jobs)))} job${pg.cpus_few.every((f) => f.jobs === 1) ? '' : 's'}, too few to judge`);
   if (inc.length) fewBits.push(`${joinAnd(inc.map((c) => c.cpu_short))} (${jobsEach(inc)}) ${inc.length === 1 ? 'is inconclusive and carries' : 'are inconclusive and carry'} no headline number`);
   v.fewText = fewBits.length ? `${fewBits.join('; ')}.` : 'every model drawn had enough jobs.';
+  const withV = good.filter((c) => c.form !== 'inconclusive');
+  const isIntel = (c) => !!(ix.intel_forward && ix.intel_forward.cpus.includes(c.cpu_short));
+  const nIntelV = withV.filter(isIntel).length;
+  v.verdictModels = `${capFirst(numWord(withV.length))} CPU model${withV.length === 1 ? ' has a verdict' : 's have a verdict'}: ${numWord(withV.length - nIntelV)} AMD and ${numWord(nIntelV)} Intel`;
+  v.verdictNames = `${capFirst(numWord(withV.length))} CPU model${withV.length === 1 ? ' has a verdict' : 's have a verdict'} (${joinAnd(withV.map((c) => c.cpu_short))})`;
+  const narrowM = good.filter((c) => closeCalls(c).length);
+  const narrowBits = (c) => joinAnd(closeCalls(c).map((q) => `${q.left ? 'left-out ' : ''}${shortCell(q.id)} ${q.left ? 'would end' : 'ends'} at ${q.hi.toFixed(3)}× against ${limitWords(c)}${q.left ? ' if it were counted' : ''}`));
+  v.narrowShort = narrowM.length ? `${joinAnd(narrowM.map((c) => c.cpu_short))} ${narrowM.length === 1 ? 'passes' : 'pass'} narrowly (Table 1); a narrow pass can change with the jobs drawn.` : '';
+  v.narrowLong = narrowM.length ? `${narrowM.map((c) => `${c.cpu_short} passes the forward rule by a narrow margin (${narrowBits(c)})`).join('; ')}; a narrow pass can change with the jobs drawn.` : '';
   const thin = good.filter((c) => c.form === 'inconclusive' || c.stability !== 'stable');
   const thinInc = inc.length ? `${joinAnd(inc.map((c) => c.cpu_short))} ${inc.length === 1 ? 'has' : 'have'} ${[...new Set(inc.map((c) => c.jobs))].join(' or ')} jobs, in runs of at most ${Math.max(...inc.flatMap(perRun))}` : '';
   const thinMap = naMap.map((c) => `${c.cpu_short}’s ${c.jobs} jobs came in runs of ${Math.min(...perRun(c))} to ${Math.max(...perRun(c))}, so ${runsJudged(c) ? `only ${runsJudged(c)} of its ${c.per_run.length} runs` : 'none of its runs'} can be judged alone`);
-  v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. The job-level resampling understates the spread between machines when jobs are few, and these verdicts cannot be checked run against run.`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
+  v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. The job-level resampling understates the spread between machines when jobs are few, and these verdicts cannot be checked run against run.${v.narrowLong ? ` ${v.narrowLong}` : ''}`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
   // jobs that never returned, and which CPU models the returned ones are
-  const L = runLedger(ix), topCpu = L.byCpu.reduce((a, c) => (!a || c.inFull > a.inFull ? c : a), null);
+  const L = runLedger(ix), topCpu = L.byCpu.reduce((a, c) => (!a || c.inOrig > a.inOrig ? c : a), null);
   const jobsS = (n) => `${n} job${n === 1 ? '' : 's'}`;
-  v.lostShort = L.lost && topCpu ? `${L.lost} of the ${L.started} jobs started returned nothing, so the pool is uneven across CPU models (${topCpu.cpu}: ${topCpu.inFull} of the first ${L.fullJobs} jobs, then ${topCpu.inShort} of the next ${L.partJobs}); the effect on the ratios was not tested.` : '';
-  v.lostLong = L.lost && topCpu ? `${L.runs} runs started ${L.started} jobs and ${L.returned} returned results. ${L.full} runs returned all ${L.per}; the other ${L.part} started ${L.partStarted} and returned ${L.partJobs}. Each of the ${L.lost} jobs that returned nothing had finished its timing step and was cancelled in the next one, a check of the whole repository that the job ran on the machine before uploading its results, when the job time limit of that time (22 minutes) ran out (read from the workflow’s run records on GitHub). The workflow now uploads first and runs no such check. The cut does not touch the timing of the jobs that returned; it changes which CPU models are represented, and the ones that returned are not an even draw: jobs by model, in the ${L.full} full runs and in the other ${L.part}, ${L.byCpu.map((c) => `${c.cpu} ${c.inFull} and ${c.inShort}`).join('; ')}. The other ${L.part} runs therefore added ${jobsS(topCpu.inShort)} to ${topCpu.cpu}, which supplied ${topCpu.inFull} of the ${L.fullJobs} in the full runs, and ${jobsS(L.partJobs - topCpu.inShort)} to the other models. Whether the lost jobs would have given different ratios was not tested.` : 'Every job started returned results.';
+  const runsS = (n) => `${n} run${n === 1 ? '' : 's'}`;
+  const shortBits = [`${topCpu ? topCpu.inOrig : 0} of the first ${L.origJobs}`, L.cut ? `${topCpu.inCut} of the next ${L.cutJobs}` : '', L.whole ? `${topCpu.inWhole} of the last ${L.wholeJobs}` : ''].filter(Boolean);
+  v.lostShort = L.lost && topCpu ? `${L.lost} of the ${L.started} jobs started returned nothing, so the pool is uneven across CPU models (${topCpu.cpu}: ${shortBits.join(', ')}); the effect on the ratios was not tested.` : '';
+  const groups = [`the ${L.orig} original runs`, L.cut ? `the ${L.cut} cut runs` : '', L.whole ? `the last ${L.whole}` : ''].filter(Boolean);
+  v.lostLong = L.lost && topCpu ? `${L.runs} runs started ${L.started} jobs and ${L.returned} returned results. The ${runsS(L.orig)} that pooled first (the original runs) returned all ${L.per}.${L.cut ? ` The next ${L.cut} started ${L.cutStarted} and returned ${L.cutJobs}: each of the ${L.lost} jobs that returned nothing had finished its timing step and was cancelled in the next one, a check of the whole repository that the job ran on the machine before uploading its results, when the job time limit of that time (22 minutes) ran out (read from the workflow’s run records on GitHub).` : ''}${L.whole ? ` The last ${L.whole} were started after that limit was raised to 45 minutes, to see whether jobs return again, and were not chosen on their results; the check still ran before the upload in them, and all their jobs returned.` : ''} The workflow now uploads first and runs no such check. The cut does not touch the timing of the jobs that returned; it changes which CPU models are represented, and the ones that returned are not an even draw: jobs by model, in ${joinAnd(groups)}, ${L.byCpu.map((c) => `${c.cpu} ${joinAnd([c.inOrig, L.cut ? c.inCut : null, L.whole ? c.inWhole : null].filter((x) => x != null).map(String))}`).join('; ')}. The ${L.cut} cut runs therefore added ${jobsS(topCpu.inCut)} to ${topCpu.cpu}, which supplied ${topCpu.inOrig} of the ${L.origJobs} in the original runs, and ${jobsS(L.cutJobs - topCpu.inCut)} to the other models${L.whole ? `; the last ${L.whole} added ${topCpu.inWhole} and ${L.wholeJobs - topCpu.inWhole}` : ''}. Whether the lost jobs would have given different ratios was not tested.` : 'Every job started returned results.';
   v.lostPoolNote = L.lost ? ` (${L.lost} more were started and returned nothing; see the limits below)` : '';
   v.pooledPath = ix.pooled.source;
   // the day-one record and the criteria history
@@ -410,6 +430,52 @@ function missShort(c) {
   const m = missedForward(c);
   return m.length ? joinAnd(m.map((x) => { const [k, sz] = x.cell_id.split('.'); return `${SHORT_NAMES[k] || k} ${sz} up to ${fx(x.aligned.ci95[1])}×`; })) : '';
 }
+/* A map that stands by a narrow margin: a model whose verdict is a map, but whose counted forward cell nearest the limit
+   ends within NEAR of it (aligned, interval included), or whose left-out placement-sensitive forward cell would miss the
+   limit by less than NEAR if it were counted. Each call carries the number, so the page can print it with three decimals. */
+const NEAR = 0.005;
+function closeCalls(c) {
+  if (!c.enough || c.form !== 'map') return [];
+  const pc = pooledOf(c.cpu_model);
+  if (!pc || !pc.verdict) return [];
+  const lim = 1 + (pc.verdict.forward_limit_pct != null ? pc.verdict.forward_limit_pct : 2) / 100;
+  const ps = new Set(c.placement_sensitive.map((q) => q.cell_id));
+  const out = [];
+  for (const x of pc.cells) {
+    if (x.class !== 'kept' || !IN_CACHE.includes(x.size_class) || !x.aligned) continue;
+    const hi = x.aligned.ci95[1];
+    if (!ps.has(x.cell_id) && hi <= lim && lim - hi < NEAR) out.push({ id: x.cell_id, hi, left: false });
+    else if (ps.has(x.cell_id) && x.aligned.ratio <= lim && hi > lim && hi - lim < NEAR) out.push({ id: x.cell_id, hi, left: true });
+  }
+  return out;
+}
+// the placement-sensitive forward cells a model leaves out of its forward test and that stay above the limit aligned
+function leftOutAbove(c) {
+  const pc = pooledOf(c.cpu_model);
+  if (!pc || !pc.verdict) return [];
+  const lim = 1 + (pc.verdict.forward_limit_pct != null ? pc.verdict.forward_limit_pct : 2) / 100;
+  const ps = new Set(c.placement_sensitive.map((q) => q.cell_id));
+  return pc.cells.filter((x) => ps.has(x.cell_id) && x.class === 'kept' && IN_CACHE.includes(x.size_class) && x.aligned && x.aligned.ratio > lim);
+}
+const shortCell = (id) => { const [k, sz] = id.split('.'); return `${SHORT_NAMES[k] || k} ${sz}`; }; // 'k03_stencil.L2' -> 'stencil L2'
+const limitX = (c) => `${(1 + parseFloat(limitWords(c)) / 100).toFixed(2)}×`; // '2%' -> '1.02×'
+function nearestCall(c) { // the close call with the smallest margin to the limit, or null
+  const lim = 1 + parseFloat(limitWords(c)) / 100;
+  const cc = closeCalls(c).map((q) => ({ ...q, margin: Math.abs(q.hi - lim) })).sort((a, b) => a.margin - b.margin);
+  return cc[0] || null;
+}
+function closeWords(c) { // '' when the map is not a close call
+  const cc = closeCalls(c);
+  if (!cc.length) return '';
+  const lim = limitWords(c), ab = leftOutAbove(c);
+  const counted = cc.filter((q) => !q.left), left = cc.filter((q) => q.left);
+  const bits = [
+    counted.length ? `${shortCell(counted[0].id)} ends at ${counted[0].hi.toFixed(3)}×${counted.slice(1).map((q) => ` and ${shortCell(q.id)} at ${q.hi.toFixed(3)}×`).join('')}, against the ${lim} limit` : '',
+    ...left.map((q) => `left-out ${shortCell(q.id)} would end at ${q.hi.toFixed(3)}× against the ${lim} limit if it were counted`),
+  ].filter(Boolean);
+  const out = ab.length ? ` ${capFirst(joinAnd(ab.map((x) => `${shortCell(x.cell_id)} (${fx(x.aligned.ratio)}× aligned)`)))} ${ab.length === 1 ? 'is' : 'are'} left out as placement-sensitive (‡) and stay${ab.length === 1 ? 's' : ''} above the ${lim} limit aligned.` : '';
+  return `the pattern held, by a narrow margin: ${bits.join('; ')}.${out}`;
+}
 
 /* ---------- section 1 and 3 tables ---------- */
 function patternWords(c) {
@@ -417,9 +483,12 @@ function patternWords(c) {
   const held = c.form === 'map' ? 'held' : c.form === 'holds_everywhere' ? 'small cost everywhere' : 'inconclusive';
   const j = runsJudged(c), n = c.per_run.length;
   if (c.form === 'inconclusive') { const ms = missShort(c); return `${held}${ms ? `: ${ms}, over the ${limitWords(c)} limit` : ''}`; } // the reason, not the run count: no run of such a model was judged alone
-  if (c.stability === 'stable') return `${held}, the same in every run judged alone (${j} of ${n})`;
+  const nearest = nearestCall(c); // the one closest to the limit; Figure 1's note and the details name every one
+  // a counted cell sets the verdict, so its number is printed (the row stays short); a left-out cell only needs the word, Figure 1's note and the details carry its number
+  const narrow = nearest ? (nearest.left ? ', narrowly' : `, narrowly (${shortCell(nearest.id)} ends at ${nearest.hi.toFixed(3)}×, limit ${limitX(c)})`) : '';
+  if (c.stability === 'stable') return `${held}${narrow}, the same in every run judged alone (${j} of ${n})`;
   const alone = [...new Set(c.per_run.filter((r) => r.form && r.form !== c.form).map((r) => formWords(r.form)))];
-  return `${held}; its runs cannot be compared (${j} of ${n} judged${alone.length ? `; ${j === 1 ? 'that one' : 'those'} alone ${j === 1 ? 'was' : 'were'} ${joinAnd(alone)}` : ''})`;
+  return `${held}${narrow}; its runs cannot be compared (${j} of ${n} judged${alone.length ? `; ${j === 1 ? 'that one' : 'those'} alone ${j === 1 ? 'was' : 'were'} ${joinAnd(alone)}` : ''})`;
 }
 function renderCpuTable() {
   const tb = $('cpu-table').querySelector('tbody');
@@ -511,7 +580,7 @@ function renderAppB() {
     const rule = !c.enough
       ? `Fewer than ${minJ} jobs pooled, so no verdict is drawn.`
       : c.form === 'map'
-        ? `Every judged forward loop sits at most ${lim}% above 1× (aligned, interval included), and every loop that loses SIMD has its whole interval above ${lo}× in both columns.${c.placement_sensitive.length ? ` ${c.placement_sensitive.length} placement-sensitive cell${c.placement_sensitive.length > 1 ? 's' : ''} listed, not judged.` : ''}`
+        ? `Every judged forward loop sits at most ${lim}% above 1× (aligned, interval included), and every loop that loses SIMD has its whole interval above ${lo}× in both columns.${c.placement_sensitive.length ? ` ${c.placement_sensitive.length} placement-sensitive cell${c.placement_sensitive.length > 1 ? 's' : ''} listed, not judged.` : ''}${closeWords(c) ? ` ${capFirst(closeWords(c))}` : ''}`
         : `${c.form === 'inconclusive' ? `Neither the pattern nor a small cost everywhere: ${missWords(c) ? `the ${limitWords(c)} rule is missed by ${missWords(c)}. ` : 'a condition failed (see the pooled file). '}` : 'At least one condition of the pattern failed; see the pooled file. '}The pattern needs every judged forward loop at most ${lim}% above 1× (aligned, interval included) and every loop that loses SIMD with its whole interval above ${lo}× in both columns${c.lost_ci_lo_min != null ? ` (here the smallest interval start is ${fx(c.lost_ci_lo_min)}×)` : ''}.${c.placement_sensitive.length ? ` ${c.placement_sensitive.length} placement-sensitive cell${c.placement_sensitive.length > 1 ? 's' : ''} listed, not judged.` : ''}`;
     tc.append(el('tr', { class: c.enough ? null : 'muted-row' },
       el('th', { scope: 'row' }, c.cpu_short), el('td', { class: 'num' }, String(c.jobs)), el('td', null, form),
@@ -732,7 +801,7 @@ function renderFig1() {
       'the thin lines are 95% intervals that include the spread between jobs, often narrower than the mark. ',
       el('span', { class: 'key key-jt', 'aria-hidden': 'true' }), ' Tiny ticks above the L1 dot and below the L2 ring: each job’s own ratio. ',
       ...(aaHalfWidth() != null ? [el('span', { class: 'key key-aa', 'aria-hidden': 'true' }), ` Faint band at 1×: this model’s A/A half-width (±${aaHalfWidth().toFixed(2)}%, a binary timed against a byte-identical copy), drawn at least 5 px wide. `] : []),
-      '‡ and a dashed ring mark a placement-sensitive cell, where code placement and not the check moves the ratio (section 3). ',
+      '‡ and a dashed ring mark a placement-sensitive cell: moving the loop’s code changes its ratio by more than noise (section 3), so the forward test leaves it out. It can still sit above 1× when aligned. ',
       el('span', { class: 'tnote-i' }, `Jobs: the pooled runs, ${S.ix.pooled.jobs} jobs, sizes L1 and L2.`)));
 }
 function markSelected() {
@@ -1070,8 +1139,14 @@ async function renderFig2() {
   const wAny = widthOff || widthOn;
   const nWord = wAny ? `${wAny} numbers` : 'several numbers';
   const onRemarks = (bOn && bOn.remarks) || [];
+  const alHi = Math.max(0, ...IN_CACHE.map((sz) => { const q = cellOf(pc, `${r.k}.${sz}`); return q && q.aligned ? q.aligned.ratio : 0; })); // the same loop aligned: does alignment take the cost away?
   const asCompiledNote = !aligned && r.role === 'kept' && r.hi > 1.1
-    ? [' As compiled, this loop looks expensive; switch to aligned loops and most of it goes away: ', el('a', { href: '#placement' }, 'section 3'), ' explains why.'] : null;
+    ? (alHi > 0 && alHi - 1 > 0.5 * (r.hi - 1)
+      ? [` As compiled, this loop looks expensive, and aligning the loops does not take it away on ${cpu.cpu_short} (${fx(alHi)}× aligned). `, el('a', { href: '#placement' }, 'Section 3'), ' explains the effect on the AMD models; no cause is given for this one.']
+      : [' As compiled, this loop looks expensive; switch to aligned loops and most of it goes away: ', el('a', { href: '#placement' }, 'section 3'), ' explains why.']) : null;
+  const limPct = (pc && pc.verdict && pc.verdict.forward_limit_pct) || 2;
+  const leftOutNote = r.role === 'kept' && r.ps.length && r.hi > 1 + limPct / 100 && !identical
+    ? ' Left out of the forward rule: code placement moves it (‡).' : '';
   // the plain sentence follows the compiler's own remark, as the full listing's sentence does: reverse and stride-2 could not count the iterations; matrix multiply (clang 18) was judged not worth it
   const lostSentence = onRemarks.some((x) => x.includes('could not determine number of loop iterations'))
     ? `With the check on, the compiler can no longer work on ${nWord} at a time, so the loop runs one number at a time.`
@@ -1098,7 +1173,7 @@ async function renderFig2() {
   det.addEventListener('toggle', () => { S.fullOpen = det.open; });
   const sameBlock = identical && !anOn.traps.size; // identical code: one wide block, not a column of code beside an empty one
   body.replaceChildren(...top,
-    el('p', { class: 'f2-plain' }, plain, asCompiledNote),
+    el('p', { class: 'f2-plain' }, plain, leftOutNote, asCompiledNote),
     sameBlock
       ? el('div', { class: 'f2-cols f2-lite f2-same' }, liteCol('Checks off and on', anOff, widthOff, `Identical code with and without the check${hotSimd(anOff) ? `; ${pace(anOff, widthOff).toLowerCase()}` : ''}`, false, true))
       : el('div', { class: 'f2-cols f2-lite' },
@@ -1373,17 +1448,24 @@ function renderSiblings() {
   setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs included)` : '');
   const IF = S.ix.intel_forward;
   // the Intel models with enough pooled jobs have a row in Table 1; what the written rules said about each, and why
-  const incl = S.ix.cpus.filter((c) => c.enough && c.form === 'inconclusive');
+  const incl = S.ix.cpus.filter((c) => c.enough && IF && IF.cpus.includes(c.cpu_short));
   const xLo = incl.length ? Math.min(...incl.map((c) => c.lost_aligned.min)) : null, xHi = incl.length ? Math.max(...incl.map((c) => c.lost_aligned.max)) : null;
   const noPooled = IF ? IF.cpus.filter((m) => !S.ix.cpus.some((c) => c.enough && c.cpu_short === m)) : [];
+  const pooledN = (m) => { const c = S.ix.cpus.find((x) => x.cpu_short === m); return c ? c.jobs : 0; };
   const intelModel = (c) => {
     const add = cellOf(pooledOf(c.cpu_model), 'k02_add_fwd.L1'), ps = c.placement_sensitive.some((q) => q.cell_id === 'k02_add_fwd.L1');
-    const miss = missWords(c), missAdd = missedForward(c).some((x) => x.cell_id === 'k02_add_fwd.L1');
     const mx = Math.max(...c.per_run.map((r) => r.jobs));
-    return `On the ${c.cpu_short} (${c.jobs} jobs in ${c.runs} runs, at most ${mx} in one run) ${miss ? `the ${limitWords(c)} rule is missed by ${miss}${missAdd ? ', which is not flagged placement-sensitive' : ''}` : 'no judged forward loop misses the rule, yet the verdict is inconclusive (see the pooled file)'}${!missAdd && add && add.aligned ? `; the forward add at the L1 size costs ${fx(add.aligned.ratio)}× aligned${ps ? ' but is flagged placement-sensitive, so the rule leaves it out' : ''}` : ''}`;
+    const head = `On the ${c.cpu_short} (${c.jobs} jobs in ${c.runs} runs, at most ${mx} in one run) `;
+    if (c.form !== 'inconclusive') { // a verdict: say so, and say how narrow it is and what the rule leaves out
+      const cw = closeWords(c), ab = leftOutAbove(c);
+      return `${head}${cw || 'the pattern held'}${!cw && ab.length ? `; ${joinAnd(ab.map((x) => `${cellName(x.cell_id)} costs ${fx(x.aligned.ratio)}× aligned`))} but ${ab.length === 1 ? 'is' : 'are'} flagged placement-sensitive, so the rule leaves ${ab.length === 1 ? 'it' : 'them'} out` : ''}`.replace(/\.$/, '');
+    }
+    const miss = missWords(c), missAdd = missedForward(c).some((x) => x.cell_id === 'k02_add_fwd.L1');
+    return `${head}${miss ? `the ${limitWords(c)} rule is missed by ${miss}${missAdd ? ', which is not flagged placement-sensitive' : ''}` : 'no judged forward loop misses the rule, yet the verdict is inconclusive (see the pooled file)'}${!missAdd && add && add.aligned ? `; the forward add at the L1 size costs ${fx(add.aligned.ratio)}× aligned${ps ? ' but is flagged placement-sensitive, so the rule leaves it out' : ''}` : ''}`;
   };
+  const intelStatus = (c) => (c.form === 'inconclusive' ? 'came out inconclusive under the written rules, so no headline number is printed' : 'has a verdict');
   setV('intelText', IF && IF.jobs.length
-    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1 and came out inconclusive under the written rules, so no headline number is printed. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : 'both'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${joinAnd(noPooled)} came up in no pooled job.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
+    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1693,11 +1775,12 @@ function renderVersions() {
       el('p', { class: 'small' }, `${jobsOf(t.jobs)} on ${t.cpus.length} CPU models; ${probe}; the compiler’s remarks say ${joinAnd(t.lost_by_remarks)} lose${t.lost_by_remarks.length === 1 ? 's' : ''} SIMD under the checks${t.matmul_vectorized_both ? ' and matrix multiply keeps it' : ''}.`));
     t.cpus.forEach((c, i) => {
       const kv = c.kernels.map((k) => `${k.name} ${k.holds ? 'holds' : 'does not hold'}`).join('; ');
-      const hasBase = c.cells.some((x) => x.clang18 != null), og = LG.byCpu.find((x) => x.cpu === c.cpu_short);
+      const hasBase = c.cells.some((x) => x.clang18 != null), og = S.ix.cpus.find((x) => x.cpu_short === c.cpu_short);
+      const ogJobs = og ? og.per_run.filter((r) => LG.oId.has(r.run_id)).reduce((a, r) => a + r.jobs, 0) : 0;
       const head = ['Loop', 'Size', 'Remarks say', 'As compiled', 'Aligned'].concat(hasBase ? ['clang 18, as compiled', 'Remarks under clang 18'] : []);
       const det = el('details', { class: 'more ver-cpu' },
         el('summary', null, `${c.cpu_short}, ${jobsOf(c.jobs)}: ${c.form}${c.why ? `, ${c.why}` : ''}`),
-        el('p', { class: 'tcap' }, el('b', null, `Table V${t.version}.${i + 1}.`), ` ${c.cpu_short}, clang and libc++ ${t.clang}: ${kv}. A/A half-width ${pctS(c.aa_half_width_pct)}. FAST ÷ NONE per loop and size with the pooled 95% interval beneath; ${hasBase ? `the clang 18 column is this CPU model’s pooled result in the original ${LG.fullJobs}-job pool${og ? ` (${jobsOf(og.inFull)} of this model)` : ''}, the baseline the rules named before the run, not in the ${S.ix.pooled.jobs}-job pool used elsewhere on this page, so a figure can differ slightly` : `the original ${LG.fullJobs}-job pool has no jobs on this CPU model, so it has no clang 18 column`}.`),
+        el('p', { class: 'tcap' }, el('b', null, `Table V${t.version}.${i + 1}.`), ` ${c.cpu_short}, clang and libc++ ${t.clang}: ${kv}. A/A half-width ${pctS(c.aa_half_width_pct)}. FAST ÷ NONE per loop and size with the pooled 95% interval beneath; ${hasBase ? `the clang 18 column is this CPU model’s pooled result in the original ${LG.origJobs}-job pool${og ? ` (${jobsOf(ogJobs)} of this model)` : ''}, the baseline the rules named before the run, not in the ${S.ix.pooled.jobs}-job pool used elsewhere on this page, so a figure can differ slightly` : `the original ${LG.origJobs}-job pool has no jobs on this CPU model, so it has no clang 18 column`}.`),
         el('div', { class: 'tablewrap boxed', tabindex: '0', role: 'region', 'aria-label': `Table V${t.version}.${i + 1}, scrolls sideways on a narrow screen` },
           el('table', { class: 'tbl dense' },
             el('thead', null, el('tr', null, ...head.map((h, j) => el('th', { scope: 'col', class: j >= 3 && j <= 5 ? 'num' : null }, h)))),
@@ -1989,10 +2072,11 @@ function renderControls() {
     b.disabled = b.dataset.col === 'aligned' && !hasAligned;
   }
 }
-function renderVerdictNote() { // Figure 1 draws the measured bars for every model with enough jobs; a model the written rules left inconclusive says so beside the switcher
+function renderVerdictNote() { // Figure 1 draws the measured bars for every model with enough jobs; a model the written rules left inconclusive, or passed by a narrow margin, says so beside the switcher
   const n = document.getElementById('cpu-verdict');
   if (!n) return;
   const c = currentCpu();
+  if (!S.fixture && c.form === 'map' && closeCalls(c).length) { n.textContent = `${c.cpu_short}: ${closeWords(c)} More in Table 1 and the details.`; return; }
   if (S.fixture || c.form !== 'inconclusive') { n.textContent = ''; return; }
   const ms = missWords(c);
   n.textContent = `No verdict for ${c.cpu_short}: inconclusive under the written rules${ms ? `, because the ${limitWords(c)} rule is missed by ${ms}` : ''}. The bars are measured values; Table 1 has the reason.`;

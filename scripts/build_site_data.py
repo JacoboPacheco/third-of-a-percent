@@ -5,9 +5,10 @@
     python scripts/build_site_data.py --check   rebuild in memory and fail if site/data/ differs
 
 Copied unchanged:
-  pooled.json        results/s6-pooled/pooled.json (criteria-v3: every job of a CPU model pooled across
+  pooled.json        results/s7-pooled/pooled.json (criteria-v3: every job of a CPU model pooled across
                      jobs and runs, two-level bootstrap intervals, both columns, instruction counts;
-                     the jobs of results/s4-pooled plus those of the later runs of the same workflow)
+                     the jobs of results/s4-pooled plus those of the later runs of the same workflow;
+                     results/s6-pooled is the 75-job intermediate pool, kept and not read here)
   asm/<cpu>/         for each CPU model with enough jobs, the machine code of ONE of its jobs (the
                      none, fast, none_a64 and fast_a64 listings; the binaries are byte-identical across
                      jobs, which the pooled build control checks), plus builds.json extracted from that
@@ -37,7 +38,7 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "site", "data")
 
-POOLED = "results/s6-pooled/pooled.json"
+POOLED = "results/s7-pooled/pooled.json"
 # The first pooled measurement (3 runs, 30 jobs). The holdout (results/s5-holdout) was judged against this file,
 # so the holdout comparison keeps reading it; everything else on the page reads POOLED.
 POOLED_ORIGINAL = "results/s4-pooled/pooled.json"
@@ -804,28 +805,45 @@ def build(out_dir):
                                       "libcxx_package": doc["run"]["toolchain"]["libcxx_package"],
                                       "os": doc["run"]["runner"]["os"], "common_flags": doc["run"]["flags"]["common"]}
         index["cpus"].append(e)
+    # `original` marks the runs of the first pooled measurement (results/s4-pooled): "returned every job" is not the same
+    # thing, since the two newest runs also returned all of theirs.
+    original_runs = set(load(os.path.join(REPO, POOLED_ORIGINAL))["runs"])
     for rid in pooled["runs"]:
         url = run_urls.get(rid)
         if url is None:
             first = next(i for i in pooled["inputs"] if i["run_id"] == rid)
             url = load(os.path.normpath(os.path.join(REPO, os.path.dirname(POOLED), first["path"])))["run"]["workflow_run_url"]
         index["pooled"]["runs"].append({"run_id": rid, "workflow_run_url": url,
-                                        "jobs": sum(1 for i in pooled["inputs"] if i["run_id"] == rid)})
+                                        "jobs": sum(1 for i in pooled["inputs"] if i["run_id"] == rid),
+                                        "original": rid in original_runs})
+    index["pooled"]["original"] = {"source": POOLED_ORIGINAL, "runs": len(original_runs),
+                                   "jobs": sum(r["jobs"] for r in index["pooled"]["runs"] if r["original"])}
     good = [c for c in index["cpus"] if c["enough"]]
     # The page-level ranges (the lost-loop range, the forward range) describe the CPU models whose pooled verdict
     # reached a form (map or holds-everywhere). A model with enough jobs and an inconclusive verdict is listed in
     # cpus[] with its own numbers but is not folded into these ranges, since its forward cells are the ones that
     # missed the written rule.
     judged = [c for c in good if c["form"] != "inconclusive"] or good
+    # `forward` is the forward-loop range on the judged AMD models: the page and the README state it for the AMD models
+    # and give the Intel forward add separately (intel_forward), because it costs clearly more there. An Intel model with
+    # a MAP verdict (the Xeon 6973P-C in the 95-job pool) is in `judged_cpus` and so in `lost`, but its forward add at
+    # L1 (placement-sensitive, left out of the verdict's forward test) would set the top of this range;
+    # `forward_all_judged` keeps the range over every judged model.
+    forward_cpus = [c for c in judged if c["cpu_model"].upper().startswith("AMD")] or judged
+
+    def forward_range(cs):
+        return {"aligned": minmax([v for c in cs for v in (c["forward_aligned"]["min"], c["forward_aligned"]["max"])]),
+                "compiled": minmax([v for c in cs for v in (c["forward_compiled"]["min"], c["forward_compiled"]["max"])]),
+                "compiled_max_cell": max((c["forward_compiled_max_cell"] for c in cs), key=lambda x: x["ratio"])}
     index["page"] = {
         "cpus_enough": len(good), "jobs_enough": sum(c["jobs"] for c in good),
         "cpus_few": [{"cpu_short": c["cpu_short"], "jobs": c["jobs"], "form": c["form"]} for c in index["cpus"] if not c["enough"]],
         "judged_cpus": [c["cpu_short"] for c in judged],
         "lost": minmax([v for c in judged for v in (c["lost"]["min"], c["lost"]["max"])]),
         "lost_instr": minmax([v for c in judged for v in (c["lost_instr"]["min"], c["lost_instr"]["max"])]),
-        "forward": {"aligned": minmax([v for c in judged for v in (c["forward_aligned"]["min"], c["forward_aligned"]["max"])]),
-                    "compiled": minmax([v for c in judged for v in (c["forward_compiled"]["min"], c["forward_compiled"]["max"])]),
-                    "compiled_max_cell": max((c["forward_compiled_max_cell"] for c in judged), key=lambda x: x["ratio"])},
+        "forward_cpus": [c["cpu_short"] for c in forward_cpus],
+        "forward": forward_range(forward_cpus),
+        "forward_all_judged": forward_range(judged),
         "forms": sorted({c["form"] for c in good}),
     }
     index["page"]["lost_all_above_min"] = all(c["lost_ci_lo_min"] >= crit["verdict"]["lost_ci_lo_min_ratio"] for c in good)

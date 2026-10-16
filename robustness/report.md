@@ -1,16 +1,18 @@
 # Do the intervals survive autocorrelated repetitions? (exploratory)
 
-Tue Oct 13 2026 (s4 and s5); the s6 dataset was added Thu Oct 15 2026. Method and pre-announced consequences: `PLAN.md`.
+Tue Oct 13 2026 (s4 and s5); the s6 dataset was added Thu Oct 15 2026 and the s7 dataset Fri Oct 16 2026. Method and pre-announced consequences: `PLAN.md`.
 This is a sensitivity analysis from the stored raw samples only; the harness verdicts stay the reading of record, it is
 not a rule change, and nothing in harness/, site/ or the criteria was touched.
 Datasets, each analysed on its own: the 30 jobs of results/s4-pooled (the original pool), the 30 jobs of
-results/s5-holdout, and the 75 jobs of results/s6-pooled (the 30 jobs of s4 plus 45 jobs of ten later runs, pooled under
-the same harness/criteria-v3.json; s5 is not part of it). CPU models with at least 3 jobs: in s4 and s5 EPYC 7763: 19 jobs;
+results/s5-holdout, the 75 jobs of results/s6-pooled (the 30 jobs of s4 plus 45 jobs of ten later runs, pooled under
+the same harness/criteria-v3.json; s5 is not part of it) and the 95 jobs of results/s7-pooled (the 75 jobs of s6 plus 20 jobs
+of two further runs). CPU models with at least 3 jobs: in s4 and s5 EPYC 7763: 19 jobs;
 9V45: 5 and 3; 9V74: 5 and 6 (the one or two Xeon jobs are too few); in s6 EPYC 7763: 20 jobs, 9V45: 20, 9V74: 23, Xeon
-Platinum 8573C: 6, Xeon 6973P-C: 6. Methods: (a) the harness bootstrap, (b) block bootstrap over ABBA quartets (b2, b5:
+Platinum 8573C: 6, Xeon 6973P-C: 6; in s7 EPYC 7763: 29 jobs, 9V45: 23, 9V74: 28, Xeon Platinum 8573C: 7, Xeon 6973P-C: 7
+(the Xeon 8370C has 1 job, too few). Methods: (a) the harness bootstrap, (b) block bootstrap over ABBA quartets (b2, b5:
 longer blocks), (c) jobs only (bootstrap, and t), (d) lag-1 n_eff correction (d0 is its first form, kept; see the change
-log in PLAN.md). The sections "In plain words (s4 and s5)" and "Conclusion (s4 and s5)" are the original text; the s6
-sections follow them.
+log in PLAN.md). The sections "In plain words (s4 and s5)" and "Conclusion (s4 and s5)" are the original text; the s6 and
+s7 sections follow them.
 
 ## In plain words (s4 and s5)
 - The repetitions are barely autocorrelated. The median lag-1 autocorrelation of the per-repetition log ratio is between
@@ -101,6 +103,72 @@ and under (c-t) (from INCONCLUSIVE to MAP), which meets the condition of the sec
 one it was written for. The harness readings stay the readings of record; this section is exploratory and changes no
 threshold, no criteria file and no verdict. Not shown: independence at other time scales than the 40-repetition window,
 anything about runs not stored, and an interval for 6 jobs better than the coarse percentiles and t values used here.
+
+## In plain words (s7: 95 jobs, five CPU models with at least three jobs)
+- Method (a) reproduces all 594 stored numbers of the 95-job pool to within 1e-12 relative (self-test passed), and the
+  stored verdict form of all five CPU models: MAP on EPYC 7763 (29 jobs), 9V45 (23), 9V74 (28) and the Xeon 6973P-C (7 jobs);
+  INCONCLUSIVE on the Xeon Platinum 8573C (7 jobs). The Xeon 8370C (1 job) is below the minimum of 3 and is not analysed.
+- The repetitions are again barely autocorrelated. The median lag-1 autocorrelation of the per-repetition log ratio is
+  between -0.009 and +0.065 on every CPU model; 14 to 21 % of the series have rho above 0.2; the median effective sample
+  size is 88 to 100 % of the nominal one. The NONE-time series alone is more autocorrelated on EPYC 9V45 (0.162), the Xeon
+  8573C (0.169) and the Xeon 6973P-C (0.371), while the ratio series on the same models stays at 0.051, 0.056 and 0.065,
+  which is what a drift shared by both sides of a repetition would give.
+- Block bootstrap (b): median interval width 0.75 to 0.99 times the harness's (0.87 to 0.99 on the three AMD models), maximum
+  1.03 to 1.18. Longer blocks (b2, b5) reach at most 1.60 on single cells of the AMD models and 1.08 on the Xeon 8573C, and
+  2.57 (b2) and 3.75 (b5) on single cells of the Xeon 6973P-C. The Xeon 6973P-C median is below 1 because (b) keeps both
+  sides of a repetition together, while the harness resamples each side separately; the A/A half-width of the Xeon 6973P-C
+  falls from 0.543 % under (a) to 0.515 % under (b).
+- Lag-1 correction (d), the lower bound on trust: median width 1.02 to 1.10, maximum 1.21 to 1.43. Its first form (d0) shows
+  maximum widths of 5.93 to 10.80 on four of the five models (1.89 on 9V45) and A/A half-widths of 2.58 % (Xeon 8573C) and
+  4.54 % (Xeon 6973P-C); as in s4 to s6 that is the mean-versus-median artefact of the formula (see PLAN.md), listed so the
+  first number is not hidden.
+- Jobs only (c, c-t): median width 0.36 to 0.90 (c) and 0.52 to 0.97 (c-t); the largest single-cell widths are 1.46
+  (c-t, Xeon 8573C) and 1.23 (c-t, Xeon 6973P-C).
+- The lost-loop minimum is not close: the smallest lost-cell ci95_lo is 2.80 to 4.05 under every method and model, against
+  the rule of 1.5. The largest counted forward ci95_hi on the three AMD models is 1.001 to 1.007 under every method (limit
+  1.02).
+- Classification changes against (a), in-cache cells (6 forward, 6 lost, 6 placement flags per model): no lost cell changes
+  under any method on any model, and no cell of any kind changes under (b), (b2), (b5) or (d). Forward changes: EPYC 9V45
+  1 of 6 under (c) and (c-t) (the left-out stencil L1 cell, below); none on the other four models under any method.
+  Placement-flag changes: Xeon 8573C 1 of 6 under (c) and (c-t) (the stencil at L1, a cell that passes the forward rule
+  anyway); Xeon 6973P-C 2 of 6 under (d0); EPYC 9V74 1 of 6 under (d0).
+- Where verdict forms move, with the reason:
+  - EPYC 7763, 9V45 and 9V74: MAP under all eight methods (a, b, b2, b5, c, c-t, d, d0). The same three cells (forward add at
+    L1 and L2, stencil at L1) are placement-sensitive and left out of the forward rule on the three models under every
+    method. On 9V45 the left-out stencil L1 cell (aligned ratio 1.0160) has an aligned ci95_hi of 1.0204 under (a), 1.0209
+    under (b), 1.0228 under (b2), 1.0236 under (b5), 1.0210 under (d), 1.0180 under (c) and 1.0182 under (c-t), against the
+    limit of 1.02; under (c) and (c-t) the cell would pass if it were counted, under the others it would not; it does not
+    enter the verdict under any of them.
+  - Xeon Platinum 8573C (7 jobs): INCONCLUSIVE under all eight methods. The forward rule fails under (a) on the forward add
+    at L1, whose pooled aligned ratio is 1.0583 (as compiled 1.0572) with an aligned ci95_hi of 1.0635; the ratios are the
+    same under every method, the upper end is 1.0620 to 1.0641 under (b), (b2), (b5), (c), (c-t) and (d) and 1.0894 under
+    (d0). The cell is not flagged placement-sensitive under any method, including (c) and (c-t), where it was flagged in s6
+    (6 jobs) and the form was MAP.
+  - Xeon 6973P-C (7 jobs): MAP under (a), (b), (b2), (b5), (c), (c-t) and (d) (7 of the 7 methods other than d0, 7 of 8 with
+    it); INCONCLUSIVE under (d0) only, where its A/A half-width is 4.54 % and the forward add at L1 is no longer flagged
+    placement-sensitive and fails the forward rule (aligned ci95_hi 1.2394). The tightest cell in the forward rule is the
+    stencil at L2: pooled aligned ratio 0.9960, aligned ci95_hi 1.0184 under (a) against the limit of 1.02, a margin of
+    0.0016 (in s6, with 6 jobs, 1.0258 and INCONCLUSIVE); under the other methods 1.0100 (b), 1.0089 (b2), 1.0078 (b5),
+    1.0043 (c), 1.0083 (c-t) and 1.0177 (d). The forward add at L1 (aligned 1.1985, as compiled 1.2309) and the stencil at L1
+    are placement-sensitive and left out of the forward rule under every method except (d0).
+
+## Conclusion (s7)
+Autocorrelation is again close to nil in the ratio series, the block bootstrap gives intervals of the same width or
+narrower than the harness's (median 0.75 to 0.99), and every classification of the lost loops (smallest ci95_lo 2.80) and
+of the counted forward loops on the three AMD models survives all methods. EPYC 7763, 9V45 and 9V74 keep the form MAP under
+all eight methods. The two Xeon models (7 jobs each) no longer depend on the interval method the way the 6-job pools did:
+the Xeon 8573C is INCONCLUSIVE under all eight, resting on a forward add that costs 1.058x aligned under every method, and
+the Xeon 6973P-C is MAP under seven of the eight (all but d0, whose first form widens intervals through the
+mean-versus-median artefact). The interval method is therefore not what limits the Xeon 6973P-C verdict. The margin is: its
+MAP rests on the stencil at L2, whose aligned upper end is 1.0184 against 1.02 as pooled, and the same model with its 6
+earlier jobs gave 1.0258 and INCONCLUSIVE; one further job moved it under the limit. This report does not test how the
+verdict changes with the set of jobs.
+Under the rule fixed in PLAN.md: the median (b) width is below 1.5 times the harness's on every model, so the limits box
+gets no added sentence; every model keeps its form under (b) and under (c-t), so no model meets the condition of the second
+rule. The s6 finding that the form of both Xeon models depended on the interval method does not hold for s7 under (b) or
+(c-t). The harness readings stay the readings of record; this section is exploratory and changes no
+threshold, no criteria file and no verdict. Not shown: independence at other time scales than the 40-repetition window,
+anything about runs not stored, and an interval for 7 jobs better than the coarse percentiles and t values used here.
 
 ## Conclusion (s4 and s5)
 The harness intervals are not visibly too narrow because of autocorrelation: its size is close to nil in these data, the
@@ -358,5 +426,109 @@ Margins under each method: smallest lost-cell ci95_lo (rule: at least 1.5) and l
 | Intel Xeon 6973P-C | (c-t) jobs only, t | 3.271 | 1.009 | 1.0200 |
 | Intel Xeon 6973P-C | (d) lag-1 n_eff | 3.223 | 1.025 | 1.0200 |
 | Intel Xeon 6973P-C | (d0) first form of (d) | 3.223 | 1.247 | 1.1018 |
+
+### Dataset s7
+
+Self-test of (a) against the stored pooled.json: 594 of 594 stored numbers reproduced to within 1e-12 relative, largest relative difference below 1e-12, verdict forms equal.
+
+Lag-1 autocorrelation of the per-repetition log ratio (every in-cache as-compiled series, 40 points; an independent series would average about -0.025):
+
+| CPU model | jobs | series | median rho (ratio) | mean rho (ratio) | median rho (NONE time) | share rho>0.2 | median n_eff/n |
+|---|---|---|---|---|---|---|---|
+| AMD EPYC 7763 | 29 | 464 | -0.009 | 0.002 | -0.009 | 0.14 | 1.00 |
+| AMD EPYC 9V45 | 23 | 368 | 0.051 | 0.074 | 0.162 | 0.21 | 0.90 |
+| AMD EPYC 9V74 | 28 | 448 | 0.011 | 0.035 | 0.043 | 0.15 | 0.98 |
+| Intel Xeon Platinum 8573C | 7 | 112 | 0.056 | 0.065 | 0.169 | 0.17 | 0.89 |
+| Intel Xeon 6973P-C | 7 | 112 | 0.065 | 0.066 | 0.371 | 0.21 | 0.88 |
+
+Changes against (a), in-cache cells. fwd = forward cells passing the forward rule (aligned column), lost = lost cells with ci95_lo >= 1.5 in both columns, ps = placement-sensitive flag; each shows flips/cells. Width = interval width over the width of (a), median and max over cells and both columns.
+
+| CPU model | method | verdict form | fwd flips | lost flips | ps flips | width median | width max | A/A half-width % |
+|---|---|---|---|---|---|---|---|---|
+| AMD EPYC 7763 | (a) harness | map | 0/6 | 0/6 | 0/6 | 1.00 | 1.00 | 0.07 |
+| AMD EPYC 7763 | (b) block, 1 ABBA | map | 0/6 | 0/6 | 0/6 | 0.97 | 1.04 | 0.07 |
+| AMD EPYC 7763 | (b2) block, 2 ABBA | map | 0/6 | 0/6 | 0/6 | 0.98 | 1.09 | 0.07 |
+| AMD EPYC 7763 | (b5) block, 5 ABBA | map | 0/6 | 0/6 | 0/6 | 0.97 | 1.33 | 0.06 |
+| AMD EPYC 7763 | (c) jobs only, bootstrap | map | 0/6 | 0/6 | 0/6 | 0.90 | 1.03 | 0.05 |
+| AMD EPYC 7763 | (c-t) jobs only, t | map | 0/6 | 0/6 | 0/6 | 0.97 | 1.13 | 0.05 |
+| AMD EPYC 7763 | (d) lag-1 n_eff | map | 0/6 | 0/6 | 0/6 | 1.03 | 1.35 | 0.07 |
+| AMD EPYC 7763 | (d0) first form of (d) | map | 0/6 | 0/6 | 0/6 | 1.03 | 7.84 | 0.22 |
+| AMD EPYC 9V45 | (a) harness | map | 0/6 | 0/6 | 0/6 | 1.00 | 1.00 | 0.20 |
+| AMD EPYC 9V45 | (b) block, 1 ABBA | map | 0/6 | 0/6 | 0/6 | 0.87 | 1.04 | 0.16 |
+| AMD EPYC 9V45 | (b2) block, 2 ABBA | map | 0/6 | 0/6 | 0/6 | 0.90 | 1.37 | 0.17 |
+| AMD EPYC 9V45 | (b5) block, 5 ABBA | map | 0/6 | 0/6 | 0/6 | 0.91 | 1.60 | 0.16 |
+| AMD EPYC 9V45 | (c) jobs only, bootstrap | map | 1/6 | 0/6 | 0/6 | 0.63 | 0.96 | 0.10 |
+| AMD EPYC 9V45 | (c-t) jobs only, t | map | 1/6 | 0/6 | 0/6 | 0.67 | 1.06 | 0.11 |
+| AMD EPYC 9V45 | (d) lag-1 n_eff | map | 0/6 | 0/6 | 0/6 | 1.10 | 1.43 | 0.24 |
+| AMD EPYC 9V45 | (d0) first form of (d) | map | 0/6 | 0/6 | 0/6 | 1.15 | 1.89 | 0.40 |
+| AMD EPYC 9V74 | (a) harness | map | 0/6 | 0/6 | 0/6 | 1.00 | 1.00 | 0.05 |
+| AMD EPYC 9V74 | (b) block, 1 ABBA | map | 0/6 | 0/6 | 0/6 | 0.99 | 1.03 | 0.05 |
+| AMD EPYC 9V74 | (b2) block, 2 ABBA | map | 0/6 | 0/6 | 0/6 | 1.01 | 1.11 | 0.06 |
+| AMD EPYC 9V74 | (b5) block, 5 ABBA | map | 0/6 | 0/6 | 0/6 | 0.98 | 1.11 | 0.05 |
+| AMD EPYC 9V74 | (c) jobs only, bootstrap | map | 0/6 | 0/6 | 0/6 | 0.77 | 1.02 | 0.03 |
+| AMD EPYC 9V74 | (c-t) jobs only, t | map | 0/6 | 0/6 | 0/6 | 0.84 | 1.07 | 0.03 |
+| AMD EPYC 9V74 | (d) lag-1 n_eff | map | 0/6 | 0/6 | 0/6 | 1.05 | 1.23 | 0.06 |
+| AMD EPYC 9V74 | (d0) first form of (d) | map | 0/6 | 0/6 | 1/6 | 2.05 | 5.98 | 0.15 |
+| Intel Xeon Platinum 8573C | (a) harness | inconclusive | 0/6 | 0/6 | 0/6 | 1.00 | 1.00 | 0.69 |
+| Intel Xeon Platinum 8573C | (b) block, 1 ABBA | inconclusive | 0/6 | 0/6 | 0/6 | 0.93 | 1.07 | 0.61 |
+| Intel Xeon Platinum 8573C | (b2) block, 2 ABBA | inconclusive | 0/6 | 0/6 | 0/6 | 0.91 | 1.08 | 0.58 |
+| Intel Xeon Platinum 8573C | (b5) block, 5 ABBA | inconclusive | 0/6 | 0/6 | 0/6 | 0.89 | 1.07 | 0.59 |
+| Intel Xeon Platinum 8573C | (c) jobs only, bootstrap | inconclusive | 0/6 | 0/6 | 1/6 | 0.62 | 1.04 | 0.34 |
+| Intel Xeon Platinum 8573C | (c-t) jobs only, t | inconclusive | 0/6 | 0/6 | 1/6 | 0.87 | 1.46 | 0.47 |
+| Intel Xeon Platinum 8573C | (d) lag-1 n_eff | inconclusive | 0/6 | 0/6 | 0/6 | 1.02 | 1.21 | 0.70 |
+| Intel Xeon Platinum 8573C | (d0) first form of (d) | inconclusive | 0/6 | 0/6 | 0/6 | 1.03 | 5.93 | 2.58 |
+| Intel Xeon 6973P-C | (a) harness | map | 0/6 | 0/6 | 0/6 | 1.00 | 1.00 | 0.54 |
+| Intel Xeon 6973P-C | (b) block, 1 ABBA | map | 0/6 | 0/6 | 0/6 | 0.75 | 1.18 | 0.52 |
+| Intel Xeon 6973P-C | (b2) block, 2 ABBA | map | 0/6 | 0/6 | 0/6 | 0.75 | 2.57 | 0.54 |
+| Intel Xeon 6973P-C | (b5) block, 5 ABBA | map | 0/6 | 0/6 | 0/6 | 0.72 | 3.75 | 0.52 |
+| Intel Xeon 6973P-C | (c) jobs only, bootstrap | map | 0/6 | 0/6 | 0/6 | 0.36 | 0.95 | 0.25 |
+| Intel Xeon 6973P-C | (c-t) jobs only, t | map | 0/6 | 0/6 | 0/6 | 0.52 | 1.23 | 0.34 |
+| Intel Xeon 6973P-C | (d) lag-1 n_eff | map | 0/6 | 0/6 | 0/6 | 1.02 | 1.30 | 0.72 |
+| Intel Xeon 6973P-C | (d0) first form of (d) | inconclusive | 0/6 | 0/6 | 2/6 | 1.03 | 10.80 | 4.54 |
+
+Margins under each method: smallest lost-cell ci95_lo (rule: at least 1.5) and largest counted forward aligned ci95_hi (rule: at most the forward limit, 1 + max(2 %, 2 x A/A half-width)).
+
+| CPU model | method | min lost ci95_lo | max forward ci95_hi | forward limit (x) |
+|---|---|---|---|---|
+| AMD EPYC 7763 | (a) harness | 3.176 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (b) block, 1 ABBA | 3.176 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (b2) block, 2 ABBA | 3.176 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (b5) block, 5 ABBA | 3.176 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (c) jobs only, bootstrap | 3.177 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (c-t) jobs only, t | 3.174 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (d) lag-1 n_eff | 3.175 | 1.002 | 1.0200 |
+| AMD EPYC 7763 | (d0) first form of (d) | 3.175 | 1.002 | 1.0200 |
+| AMD EPYC 9V45 | (a) harness | 2.799 | 1.005 | 1.0200 |
+| AMD EPYC 9V45 | (b) block, 1 ABBA | 2.800 | 1.004 | 1.0200 |
+| AMD EPYC 9V45 | (b2) block, 2 ABBA | 2.801 | 1.004 | 1.0200 |
+| AMD EPYC 9V45 | (b5) block, 5 ABBA | 2.799 | 1.004 | 1.0200 |
+| AMD EPYC 9V45 | (c) jobs only, bootstrap | 2.802 | 1.003 | 1.0200 |
+| AMD EPYC 9V45 | (c-t) jobs only, t | 2.801 | 1.003 | 1.0200 |
+| AMD EPYC 9V45 | (d) lag-1 n_eff | 2.798 | 1.005 | 1.0200 |
+| AMD EPYC 9V45 | (d0) first form of (d) | 2.798 | 1.006 | 1.0200 |
+| AMD EPYC 9V74 | (a) harness | 4.051 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (b) block, 1 ABBA | 4.051 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (b2) block, 2 ABBA | 4.051 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (b5) block, 5 ABBA | 4.052 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (c) jobs only, bootstrap | 4.052 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (c-t) jobs only, t | 4.052 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (d) lag-1 n_eff | 4.051 | 1.001 | 1.0200 |
+| AMD EPYC 9V74 | (d0) first form of (d) | 4.049 | 1.007 | 1.0200 |
+| Intel Xeon Platinum 8573C | (a) harness | 3.118 | 1.064 | 1.0200 |
+| Intel Xeon Platinum 8573C | (b) block, 1 ABBA | 3.119 | 1.063 | 1.0200 |
+| Intel Xeon Platinum 8573C | (b2) block, 2 ABBA | 3.119 | 1.063 | 1.0200 |
+| Intel Xeon Platinum 8573C | (b5) block, 5 ABBA | 3.122 | 1.064 | 1.0200 |
+| Intel Xeon Platinum 8573C | (c) jobs only, bootstrap | 3.124 | 1.062 | 1.0200 |
+| Intel Xeon Platinum 8573C | (c-t) jobs only, t | 3.113 | 1.063 | 1.0200 |
+| Intel Xeon Platinum 8573C | (d) lag-1 n_eff | 3.114 | 1.064 | 1.0200 |
+| Intel Xeon Platinum 8573C | (d0) first form of (d) | 3.114 | 1.089 | 1.0517 |
+| Intel Xeon 6973P-C | (a) harness | 3.245 | 1.018 | 1.0200 |
+| Intel Xeon 6973P-C | (b) block, 1 ABBA | 3.272 | 1.015 | 1.0200 |
+| Intel Xeon 6973P-C | (b2) block, 2 ABBA | 3.266 | 1.013 | 1.0200 |
+| Intel Xeon 6973P-C | (b5) block, 5 ABBA | 3.270 | 1.012 | 1.0200 |
+| Intel Xeon 6973P-C | (c) jobs only, bootstrap | 3.275 | 1.004 | 1.0200 |
+| Intel Xeon 6973P-C | (c-t) jobs only, t | 3.272 | 1.008 | 1.0200 |
+| Intel Xeon 6973P-C | (d) lag-1 n_eff | 3.236 | 1.018 | 1.0200 |
+| Intel Xeon 6973P-C | (d0) first form of (d) | 3.236 | 1.239 | 1.0908 |
 
 <!-- tables:end -->

@@ -4,8 +4,8 @@ Written Tue Oct 13 2026 about 15:06 EDT (the first commit message said 15:20 in 
 
 ## Status of this analysis
 Exploratory sensitivity analysis. NOT a rule change. The verdicts in `results/s4-pooled/pooled.json`,
-`results/s5-holdout/pooled.json` and `results/s6-pooled/pooled.json` (harness/criteria-v3.json, harness/pool.py) stay the
-reading of record. Nothing in harness/, the criteria files, site/, README or scripts/check.py is edited by this folder. No
+`results/s5-holdout/pooled.json`, `results/s6-pooled/pooled.json` and `results/s7-pooled/pooled.json` (harness/criteria-v3.json,
+harness/pool.py) stay the reading of record. Nothing in harness/, the criteria files, site/, README or scripts/check.py is edited by this folder. No
 new runs: only the stored raw samples are used.
 
 ## The objection (a limitation noted before this column, H1)
@@ -14,9 +14,10 @@ in ABBA order, so drift and noisy neighbours make them autocorrelated; the inter
 
 ## Data
 Every job `results.json` named in the `inputs` of results/s4-pooled/pooled.json (30 jobs),
-results/s5-holdout/pooled.json (30 jobs) and results/s6-pooled/pooled.json (75 jobs: the 30 jobs of s4 plus 45 jobs of ten
-later runs; s5 is not part of it). The datasets are analysed separately, as the harness pools them. s6 was added on
-Thu Oct 15 2026 (see the change log).
+results/s5-holdout/pooled.json (30 jobs), results/s6-pooled/pooled.json (75 jobs: the 30 jobs of s4 plus 45 jobs of ten
+later runs; s5 is not part of it) and results/s7-pooled/pooled.json (95 jobs: the 75 jobs of s6 plus the 20 jobs of two
+further runs). The datasets are analysed separately, as the harness pools them. s6 was added on Thu Oct 15 2026 and s7 on
+Fri Oct 16 2026 (see the change log).
 CPU models with at least 3 jobs in a dataset are analysed. Cells: every in-cache (L1, L2) cell, both columns (as compiled,
 aligned), plus the controls the verdict reads (byte-identical A/A, layout A/A, NOVEC/NONE) and the placement statistic D.
 
@@ -77,3 +78,11 @@ change that status.
   not written before every number of s6 existed. No method, threshold, comparison or pre-announced page-text rule
   above was changed; the rules under "What would change the page text" apply to s6 as written. The only other code change is
   the display name of the two Xeon models in the report tables (`short()`); s4 and s5 output is unchanged.
+
+## Change log (Fri Oct 16 2026)
+- The dataset s7 (results/s7-pooled/pooled.json, 95 jobs: the 75 jobs of s6 plus the 20 jobs of two further runs; five CPU
+  models with at least 3 jobs, the sixth, the Xeon 8370C, has 1 job and is not analysed) was added to `analyze.py` after its
+  harness verdicts were stored. So, unlike s4 and s5, this plan was not written before every number of s7 existed; the code was
+  run once on s7 and the stored run is that run. No method, threshold, comparison or pre-announced page-text rule above was
+  changed, and no code other than the dataset list; the rules under "What would change the page text" apply to s7 as written.
+  The s4, s5 and s6 output is unchanged.

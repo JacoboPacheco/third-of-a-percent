@@ -219,6 +219,44 @@ def _fx(v):
     return f"{v:.1f}" if v >= 2 else f"{v:.2f}"
 
 
+NEAR = 0.005  # a map is "narrow" when a forward cell's aligned interval end is within this of the limit (twin of NEAR in site/app.js)
+
+
+def close_calls(c, pooled):
+    """The Python twin of closeCalls() in site/app.js, derived from pooled.json and index.json, not copied from the page: a CPU
+    model whose verdict is a map but whose counted forward cell nearest the limit ends within NEAR of it, or whose left-out
+    placement-sensitive cell would miss the limit by less than NEAR if it were counted. [(cell id, aligned interval end, left out)]."""
+    if not c["enough"] or c["form"] != "map":
+        return []
+    pc = next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])
+    lim = 1 + pc["verdict"]["forward_limit_pct"] / 100
+    ps = {q["cell_id"] for q in c["placement_sensitive"]}
+    out = []
+    for x in pc["cells"]:
+        if x["class"] != "kept" or x["size_class"] not in ("L1", "L2") or not x["aligned"]:
+            continue
+        hi = x["aligned"]["ci95"][1]
+        if x["cell_id"] not in ps and hi <= lim and lim - hi < NEAR:
+            out.append((x["cell_id"], hi, False))
+        elif x["cell_id"] in ps and x["aligned"]["ratio"] <= lim and hi > lim and hi - lim < NEAR:
+            out.append((x["cell_id"], hi, True))
+    return out
+
+
+def lim_of(c, pooled):
+    """1 + the forward limit the model's verdict used (1.02 for a 2% limit)."""
+    return 1 + next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])["verdict"]["forward_limit_pct"] / 100
+
+
+def left_out_above(c, pooled):
+    """The placement-sensitive forward cells a model leaves out of its forward test that stay above the limit when aligned: [(cell id, ratio)]."""
+    pc = next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])
+    lim = 1 + pc["verdict"]["forward_limit_pct"] / 100
+    ps = {q["cell_id"] for q in c["placement_sensitive"]}
+    return [(x["cell_id"], x["aligned"]["ratio"]) for x in pc["cells"]
+            if x["cell_id"] in ps and x["class"] == "kept" and x["size_class"] in ("L1", "L2") and x["aligned"] and x["aligned"]["ratio"] > lim]
+
+
 def main_versions(abstract, cbox, ck):
     """Main page: the newer timed toolchains are named in the abstract and the limits box, and say what held."""
     with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f:
@@ -1235,13 +1273,67 @@ def check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec):
               f"{c['cpu_short']}: Table 1 and section 1 give the judged forward loops that miss the written rule, with their interval, as the harness's own reason says ({[x['cell_id'] for x in miss]})")
     ck.ok(not re.search(r"\buses\s*[,.]", other) and not other.lstrip().startswith(",") and "Table 8" in other and other.count("Xeon 8370C") >= 1,
           "the note beside Table 1 about models without a row reads as a sentence (no empty list)")
-    # Figure 1: a model with no verdict says so beside the switcher; the others show nothing there
+    # every Xeon model with a row is named in section 1 with what the rules said (a verdict or none); a model drawn too rarely is named with its pooled job count;
+    # no sentence says every model with a verdict is AMD
+    xe = [c for c in cpus if "Xeon" in c["cpu_short"]]
+    note1 = page.text_content("#cpu-note")
+    words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+    withv = [c for c in cpus if c["form"] != "inconclusive"]
+    n_intel_v = sum(1 for c in withv if c["cpu_short"] in index["intel_forward"]["cpus"])
+    few_ok = all(f"{f['cpu_short']} came up in {f['jobs']} pooled job" in intel_p and "too few to judge" in intel_p for f in index["page"]["cpus_few"])
+    ck.ok(bool(xe) and all(c["cpu_short"] in intel_p for c in xe)
+          and all((f"{c['cpu_short']} has a verdict" in intel_p) == (c["form"] != "inconclusive") for c in xe)
+          and few_ok and "Every CPU model with a verdict is AMD" not in limits and "Every model with a verdict is AMD" not in note1
+          and f"{words[len(withv)].capitalize()} CPU models have a verdict: {words[len(withv) - n_intel_v]} AMD and {words[n_intel_v]} Intel" in note1
+          and all(c["cpu_short"] in limits for c in withv),
+          f"section 1 and the note beside Table 1 name every Xeon model with a row ({[c['cpu_short'] for c in xe]}) with what the rules said, name the models drawn too rarely ({[f['cpu_short'] for f in index['page']['cpus_few']]}), and no longer say every model with a verdict is AMD")
+    # a map by a narrow margin: Table 1, section 1, the Limits and the main page's limits box give the cell and its interval end (three decimals), and only for those models
+    narrow = [(c, close_calls(c, pooled)) for c in cpus]
+    nm = [c for c, cc in narrow if cc]
+    cannot = page.text_content("#cannot")
+    ck.ok(bool(nm)
+          and all(("narrowly" in pat[c["cpu_short"]]) == bool(cc) for c, cc in narrow)
+          and all((lambda n_: (f"{n_[1]:.3f}×" in pat[c["cpu_short"]]) if not n_[2] else ("×" not in pat[c["cpu_short"]].split(";")[0]))(min(cc, key=lambda q: abs(q[1] - lim_of(c, pooled))))
+                  for c, cc in narrow if cc)  # the nearest call: a counted cell sets the verdict and its number is in the row; a left-out cell only gets the word there
+          and all(f"{c['cpu_short']} passes the forward rule by a narrow margin" in limits for c in nm)
+          and all(f"{hi:.3f}×" in limits for c, cc in narrow for _, hi, _ in cc)
+          and all(f"{c['cpu_short']}" in cannot for c in nm) and "narrowly (Table 1)" in cannot
+          and all(f"{hi:.3f}×" in intel_p for c, cc in narrow if "Xeon" in c["cpu_short"] for _, hi, _ in cc),
+          f"narrow passes ({[(c['cpu_short'], [(i_, round(h_, 4)) for i_, h_, _ in cc]) for c, cc in narrow if cc]}): Table 1, section 1, the Limits and the main page's limits box say so with the interval ends, and no other model is called narrow")
+    # what the narrow pass stands on is in the repository: the same model with its earlier, smaller pool, and the block bootstrap
+    with open(os.path.join(REPO, "robustness", "results.json"), encoding="utf-8") as f_:
+        rb = json.load(f_)["datasets"]["s7"]["cpus"]
+    with open(os.path.join(REPO, "results", "s6-pooled", "pooled.json"), encoding="utf-8") as f_:
+        s6 = json.load(f_)
+    x6 = next((q for q in s6["cpus"] if "6973P" in q["cpu_model"]), None)
+    c69 = next((c for c in cpus if "6973P" in c["cpu_short"]), None)
+    cell6 = next((x for x in x6["cells"] if x["cell_id"] == "k03_stencil.L2"), None) if x6 else None
+    lim6 = 1 + x6["verdict"]["forward_limit_pct"] / 100 if x6 else None
+    grew = dp.text_content("#pool-grew")
+    ck.ok(x6 is not None and c69 is not None and x6["jobs"] == 6 and x6["verdict"]["form"] == "inconclusive" and c69["jobs"] == 7 and c69["form"] == "map"
+          and cell6 is not None and cell6["aligned"]["ci95"][1] > lim6
+          and all(rb[c["cpu_model"]]["methods"]["b"]["form"] == c["form"] and rb[c["cpu_model"]]["jobs"] == c["jobs"] for c in cpus)
+          and "With six pooled jobs the Xeon 6973P-C was inconclusive" in grew and "Its seventh job moved that cell under the limit" in grew
+          and "A block bootstrap leaves its form as pooled" in grew
+          and f"a block bootstrap on the {index['pooled']['jobs']}-job pool leaves the verdict of every CPU model unchanged" in " ".join(cannot.split()),
+          "the narrow pass's history is in the repository: the Xeon 6973P-C had 6 jobs and was inconclusive in results/s6-pooled (its stencil at L2 ended above the limit), has 7 and a map now; "
+          "the block bootstrap (robustness/results.json, s7) gives every model's pooled form")
+    # Figure 1: a model with no verdict says so beside the switcher, and so does a map that stands by a narrow margin (it names the
+    # cells and their interval ends and says what the rule leaves out); the others show nothing there
     for c in cpus:
         page.click(f'#cpu-seg [data-cpu="{c["slug"]}"]')
         page.wait_for_timeout(120)
         vt = page.inner_text("#cpu-verdict").strip()
-        ck.ok((f"No verdict for {c['cpu_short']}" in vt and "inconclusive" in vt and "Table 1" in vt) if c["form"] == "inconclusive" else vt == "",
-              f"Figure 1, {c['cpu_short']}: {'the no-verdict note names it' if c['form'] == 'inconclusive' else 'no verdict note'}")
+        cc = close_calls(c, pooled)
+        if c["form"] == "inconclusive":
+            ck.ok(f"No verdict for {c['cpu_short']}" in vt and "inconclusive" in vt and "Table 1" in vt, f"Figure 1, {c['cpu_short']}: the no-verdict note names it")
+        elif cc:
+            above = left_out_above(c, pooled)
+            ck.ok(vt.startswith(f"{c['cpu_short']}: the pattern held, by a narrow margin") and "More in Table 1 and the details" in vt
+                  and all(f"{hi:.3f}×" in vt for _, hi, _ in cc) and all(f"{fx(r_)}× aligned" in vt for _, r_ in above) and (not above or "left out as placement-sensitive" in vt),
+                  f"Figure 1, {c['cpu_short']}: a map by a narrow margin says so, with the interval ends {[(i_, round(h_, 4)) for i_, h_, _ in cc]} and the left-out cells above the limit {above}")
+        else:
+            ck.ok(vt == "", f"Figure 1, {c['cpu_short']}: no verdict note")
     page.click(f'#cpu-seg [data-cpu="{index["default_cpu"]}"]')
     page.wait_for_timeout(120)
     # pass-level wording: observed or inferred on every statement, linked to the saved notes
@@ -1324,6 +1416,8 @@ def phone_checks(browser, base, ck, index):
     # an Intel model with no verdict: the note beside Figure 1's switcher is visible on a phone, after tapping the hero's tab
     pg.set_viewport_size({"width": 390, "height": 844})
     pg.wait_for_timeout(150)
+    with open(os.path.join(DATA, "pooled.json"), encoding="utf-8") as f:
+        pooled_ = json.load(f)
     for c in index["cpus"]:
         if not c["enough"]:
             continue
@@ -1331,11 +1425,18 @@ def phone_checks(browser, base, ck, index):
         pg.wait_for_timeout(150)
         box = pg.evaluate("(() => { const e = document.getElementById('cpu-verdict'), r = e.getBoundingClientRect(); return [e.textContent.trim(), r.width, r.height]; })()")
         ctl = pg.evaluate("(() => { const c = document.querySelector('#controls .ctl'); return [getComputedStyle(c).display, c.getBoundingClientRect().height]; })()")
+        few = pg.evaluate("(() => { const e = document.getElementById('cpu-few'), r = e.getBoundingClientRect(); return [e.textContent.trim().length, getComputedStyle(e).display, r.height]; })()")
         if c["form"] == "inconclusive":
             ck.ok(box[0].startswith(f"No verdict for {c['cpu_short']}") and box[1] > 100 and box[2] > 20 and ctl[0] != "none",
                   f"390: with {c['cpu_short']} chosen (no verdict) the note is on screen beside Figure 1 ({box[0][:40]!r}, {round(box[1])} x {round(box[2])} px)")
+        elif close_calls(c, pooled_):
+            ck.ok(box[0].startswith(f"{c['cpu_short']}: the pattern held, by a narrow margin") and box[1] > 100 and box[2] > 20 and ctl[0] != "none",
+                  f"390: with {c['cpu_short']} chosen (a map by a narrow margin) the note is on screen beside Figure 1 ({box[0][:40]!r}, {round(box[1])} x {round(box[2])} px)")
         else:
             ck.ok(box[0] == "" and ctl[0] == "none", f"390: with {c['cpu_short']} chosen (a verdict) the CPU row is not shown and leaves no gap ({ctl})")
+        # the note about the models drawn too rarely is for the desktop; on a phone it is hidden (Table 1 and the limits name them), and it never makes a gap
+        if index["page"]["cpus_few"]:
+            ck.ok(few[0] > 0 and few[1] == "none" and few[2] == 0, f"390: with {c['cpu_short']} chosen the 'not shown' note about the models drawn too rarely is hidden and takes no room ({few})")
     pg.close()
     # the details page: no sideways scroll at phone widths, with every fold open
     dp = browser.new_page_plain(viewport={"width": 390, "height": 800})
@@ -1403,10 +1504,14 @@ def wording_checks(browser, base, ck, index):
         counts[r["run_id"]] = len(got)
         for x in got:
             by_cpu.setdefault(r["run_id"], []).append(re.match(r"results-(.*)-j\d+$", os.path.basename(x)).group(1))
-    full = {i for i, n in counts.items() if n >= per}
-    short = [i for i in counts if i not in full]
+    # three groups of runs: the original ones (flagged in the data: the first pooled runs), the cut ones (a later run that returned fewer
+    # jobs than it started) and the whole ones (a later run that returned every job again)
+    orig = {r["run_id"] for r in index["pooled"]["runs"] if r["original"]}
+    later = [i for i in counts if i not in orig]
+    cut = [i for i in later if counts[i] < per]
+    whole = [i for i in later if counts[i] >= per]
     started, returned = len(counts) * per, sum(counts.values())
-    short_back = sum(counts[i] for i in short)
+    orig_back, cut_back, whole_back = (sum(counts[i] for i in g) for g in (orig, cut, whole))
     ck.ok(returned == index["pooled"]["jobs"] and all(counts[r["run_id"]] == r["jobs"] for r in index["pooled"]["runs"]),
           f"results folders: {returned} jobs returned in {len(counts)} runs, as site/data says ({index['pooled']['jobs']})")
     page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
@@ -1420,23 +1525,33 @@ def wording_checks(browser, base, ck, index):
     for c in index["cpus"]:
         if not c["enough"]:
             continue
-        a = sum(1 for i in full for s in by_cpu.get(i, []) if s == norm(c["cpu_model"]))
-        b = sum(1 for i in short for s in by_cpu.get(i, []) if s == norm(c["cpu_model"]))
-        cpu_bits.append(f"{c['cpu_short']} {a} and {b}")
-        ab[c["cpu_short"]] = (a, b)
+        mine = norm(c["cpu_model"])
+        a, b, w = (sum(1 for i in g for s in by_cpu.get(i, []) if s == mine) for g in (orig, cut, whole))
+        cpu_bits.append(f"{c['cpu_short']} {a}, {b} and {w}")
+        ab[c["cpu_short"]] = (a, b, w)
     top = max(ab, key=lambda k: ab[k][0])
     ids = [r["run_id"] for r in index["pooled"]["runs"]]
-    ck.ok(full and short and max(ids.index(i) for i in full) < min(ids.index(i) for i in short),
-          "the runs that returned every job come first in the run list, so 'the first 30 jobs, then the next 45' is in run order")
+    ck.ok(orig and cut and whole and max(ids.index(i) for i in orig) < min(ids.index(i) for i in cut) and max(ids.index(i) for i in cut) < min(ids.index(i) for i in whole),
+          "the original runs come first in the run list, then the cut runs, then the runs that returned every job again, so 'the first 30 jobs, the next 45, the last 20' is in run order")
     with open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8") as f:
         wf = f.read()
+    # the last runs: the Actions step records say every job finished its check step and uploaded, and the workflow's limit is the 45 minutes the page names
+    with open(os.path.join(REPO, "tests", "data", "s7_job_steps.json"), encoding="utf-8") as f:
+        steps = json.load(f)
+    step_jobs = [j for r in steps["runs"] for j in r["jobs"]]
+    ck.ok({str(r["run"]) for r in steps["runs"]} == set(whole) and len(step_jobs) == whole_back == len(whole) * per
+          and all(j["conclusion"] == "success" and j["timing"] == "success" and j["check"] == "success" and j["upload"] == "success" for j in step_jobs),
+          f"tests/data/s7_job_steps.json: the {len(whole)} last runs, {len(step_jobs)} jobs, every one succeeded in its timing, check and upload steps (the check step ran before the upload)")
     ck.ok(started > returned and f"{len(counts)} runs started {started} jobs and {returned} returned results" in lost_full
-          and f"{len(full)} runs returned all {per}; the other {len(short)} started {len(short) * per} and returned {short_back}" in lost_full
+          and f"The {len(orig)} runs that pooled first (the original runs) returned all {per}." in lost_full
+          and f"The next {len(cut)} started {len(cut) * per} and returned {cut_back}" in lost_full
+          and f"The last {len(whole)} were started after that limit was raised to 45 minutes" in lost_full and "and all their jobs returned" in lost_full
+          and f"jobs by model, in the {len(orig)} original runs, the {len(cut)} cut runs and the last {len(whole)}, " in lost_full
           and all(b in lost_full for b in cpu_bits) and "was not tested" in lost_full and "cancelled in the next one" in lost_full
-          and "22 minutes" in lost_full and "22-minute" in wf,
-          f"details, Limits: the jobs that never returned ({started - returned} of {started}) are counted from the results folders, with the jobs per CPU model ({cpu_bits}) and the cause the workflow records")
+          and "22 minutes" in lost_full and "22-minute" in wf and "timeout-minutes: 45" in wf and orig_back == index["pooled"]["original"]["jobs"],
+          f"details, Limits: the jobs that never returned ({started - returned} of {started}) are counted from the results folders, in three groups of runs ({len(orig)} original, {len(cut)} cut, {len(whole)} last), with the jobs per CPU model ({cpu_bits}) and the cause the workflow records")
     ck.ok(f"{started - returned} of the {started} jobs started returned nothing" in lost_short and "the pool is uneven across CPU models" in lost_short
-          and f"({top}: {ab[top][0]} of the first {sum(counts[i] for i in full)} jobs, then {ab[top][1]} of the next {short_back})" in lost_short
+          and f"({top}: {ab[top][0]} of the first {orig_back}, {ab[top][1]} of the next {cut_back}, {ab[top][2]} of the last {whole_back})" in lost_short
           and "effect on the ratios was not tested" in lost_short and page.locator("#lost-li").is_visible(),
           "main page, Limits box: the same count, short, with the effect on the ratios marked untested")
     pool_dd = dp.inner_text("#method-full")
@@ -1474,8 +1589,9 @@ def wording_checks(browser, base, ck, index):
     with open(os.path.join(REPO, "results", "s4-pooled", "pooled.json"), encoding="utf-8") as f:
         s4 = json.load(f)
     n_orig = sum(c["jobs"] for c in s4["cpus"])
-    ck.ok(set(s4["runs"]) == full and n_orig == sum(counts[i] for i in full),
-          f"results/s4-pooled is the pool of the runs that returned every job ({len(full)} runs, {n_orig} jobs)")
+    ck.ok(set(s4["runs"]) == orig and n_orig == orig_back == index["pooled"]["original"]["jobs"] and len(orig) == index["pooled"]["original"]["runs"]
+          and index["pooled"]["original"]["source"] == "results/s4-pooled/pooled.json",
+          f"results/s4-pooled is the pool of the original runs, the ones the page's data flags as original ({len(orig)} runs, {n_orig} jobs)")
     with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f:
         ver = json.load(f)
     caps = dp.evaluate("[...document.querySelectorAll('#ver-tables .tcap')].map(p => p.textContent)")

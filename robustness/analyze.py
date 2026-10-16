@@ -25,7 +25,7 @@ import pool  # noqa: E402
 import stats  # noqa: E402
 
 DATASETS = {"s4": "results/s4-pooled/pooled.json", "s5": "results/s5-holdout/pooled.json",
-            "s6": "results/s6-pooled/pooled.json"}
+            "s6": "results/s6-pooled/pooled.json", "s7": "results/s7-pooled/pooled.json"}
 METHODS = ["a", "b", "b2", "b5", "c", "ct", "d", "d0"]
 MIN_JOBS = 3
 B = pool.RESAMPLES

@@ -227,7 +227,10 @@ function infoFor(k) {
   const pc = pooledOf(currentCpu().cpu_model);
   const cell = cellOf(pc, `${k}.L1`);
   const col = column(cell) || (cell && cell.as_compiled) || null;
-  return { cell, col, cls: cell ? role(cell) : 'none', ratio: col ? col.ratio : null, jobs: col ? col.jobs : null };
+  const limPct = (pc && pc.verdict && pc.verdict.forward_limit_pct) || 2;
+  const ps = !!(cell && pc && pc.verdict && (pc.verdict.placement_sensitive || []).some((p) => p.cell_id === cell.cell_id));
+  // a forward loop the written rule leaves out because code placement moves it, and that sits above the limit: its number needs saying so
+  return { cell, col, cls: cell ? role(cell) : 'none', ratio: col ? col.ratio : null, jobs: col ? col.jobs : null, limPct, left: ps && !!col && col.ratio > 1 + limPct / 100 };
 }
 function plansFor() {
   const i = R.info, rc = i.ratio == null ? 1 : clamp(i.ratio, RMIN, RMAX);
@@ -288,7 +291,8 @@ const CAP = {
 function capFor(k, i, plain) { // plain: the sentence without the no-vectorize clause (the mechanism demo's caption stays short; the hero and the drawer carry the clause)
   const c = CAP[k] || {};
   const t = c[i.cls] || WHAT[i.cls] || WHAT.none;
-  return t + (!plain && i.cls === 'lost' && c.novec ? novecClause(k, pooledOf(currentCpu().cpu_model), true) : '') + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '');
+  return t + (!plain && i.cls === 'lost' && c.novec ? novecClause(k, pooledOf(currentCpu().cpu_model), true) : '') + (c.keptBelow && i.cls === 'kept' && i.ratio != null && i.ratio < 0.95 ? c.keptBelow : '')
+    + (!plain && i.cls === 'kept' && i.left ? ` Left out of the ${+i.limPct.toFixed(1)}% rule (‡).` : '');
 }
 function gaugeSvg() {
   const pos = (v) => (Math.log(clamp(v, 0.5, 10)) - Math.log(0.5)) / (Math.log(10) - Math.log(0.5));
@@ -353,7 +357,9 @@ function paintText(k) { // the name, the big ratio and the sentence for loop k: 
   else if (!R.on) { big.textContent = 'Baseline'; sub.replaceChildren(head('the check is off. Switch it on to see what it costs.')); }
   else {
     big.textContent = `${fx(i.ratio)}×`;
-    sub.replaceChildren(head(`${fx(i.ratio)}× as long as with the check off, ${cpu.cpu_short}, ${i.jobs} jobs. `), mk('rr-what', capFor(k, i)));
+    const what = mk('rr-what', capFor(k, i));
+    if (i.left) what.title = '‡ placement-sensitive: moving the loop’s code changes its ratio by more than noise, so the forward test leaves it out (section 3). It can still sit above 1× when aligned.';
+    sub.replaceChildren(head(`${fx(i.ratio)}× as long as with the check off, ${cpu.cpu_short}, ${i.jobs} jobs. `), what);
   }
   if (R.shown !== big.textContent && R.shown != null && !RM() && big.animate) big.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'cubic-bezier(.25,1,.5,1)' }); // a swap, never a count-up
   R.shown = big.textContent;

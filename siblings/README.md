@@ -245,7 +245,7 @@ Read each cell the same way as in the L1 table.
 
 ## Surprises worth a second look
 
-- **The forward kernel k02_add_fwd at L1 is not about 1.00x on Intel**, even with loops aligned. Under clang18-fast it is 1.20x on the Xeon 6973P-C (1 job) and 1.06x on the Xeon Platinum 8573C (1 job). On every AMD model it is 0.83x to 0.84x. clang 20 shows 1.03x on the Xeon 6973P-C. These are single jobs on CPU models the main runs have not drawn (6973P-C) or have drawn rarely.
+- **The forward kernel k02_add_fwd at L1 is not about 1.00x on Intel**, even with loops aligned. Under clang18-fast it is 1.20x on the Xeon 6973P-C (1 job) and 1.06x on the Xeon Platinum 8573C (1 job). On every AMD model it is 0.83x to 0.84x. clang 20 shows 1.03x on the Xeon 6973P-C. These are single jobs, from runs made before the main runs had drawn the 6973P-C; the main 95-job pool has since drawn it and the 8573C, 7 jobs each, with the same forward add at 1.19x to 1.20x and 1.05x to 1.07x aligned (see the [details](../readme-parts/DETAILS.md)).
 - **EPYC 9V45 makes stride-2 cheap:** 2.9x to 3.1x under every clang variant, against about 5x on the other CPU models.
 - **GCC's `-O2` vectorizes none of the kernel loops** (`unsupported data-type`, with the "very cheap" cost model GCC uses at `-O2`). A GCC user at `-O2` therefore never sees the vectorization loss. But the scalar checks are not free there, unlike under clang.
 
