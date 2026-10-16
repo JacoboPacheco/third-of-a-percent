@@ -483,6 +483,7 @@ details.more > p, details.more > div { font-size: 0.92rem; }
 @media (max-width: 640px) { .jump { display: block; } }
 .few { display: block; margin-top: 4px; font-size: 0.78rem; font-style: normal; color: var(--ink-3); }
 #cpu-verdict:empty { display: none; }
+.body p, .body li, .body dd { overflow-wrap: break-word; }  /* a long repository path wraps instead of widening the page on a phone */
 .c-row.c-click { cursor: pointer; }
 .c-row.c-click:hover, .c-row.c-click.on { background: var(--hover); }
 .c-row.c-click:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
@@ -856,7 +857,7 @@ button, .seg button, a { transition: background-color .12s cubic-bezier(.25,.46,
 .bar-wip { font-size: .75rem; line-height: 1; color: var(--ink-2); white-space: nowrap; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 9px; background: #fff8e6; border-color: #e5cf8a; }
 .bar-wip .wip-short { display: none; }
 @media (max-width: 520px) { .bar-wip .wip-long { display: none; } .bar-wip .wip-short { display: inline; } .bar-wip { padding: 3px 7px; } }
-@media (max-width: 380px) { .bar-wip { display: none; } }
+@media (max-width: 387px) { .bar-wip { display: none; } } /* no room beside the title and both buttons: the hero's dateline carries the marking instead */
 .bar-title { font-weight: 700; text-decoration: none; letter-spacing: -0.01em; font-size: 1rem; white-space: nowrap; }
 .bar-sec { color: var(--ink-3); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: 0; transition: opacity .2s; }
 .bar.on .bar-sec { opacity: 1; }
@@ -965,8 +966,8 @@ body.panel-open { overflow: hidden; }
   .wd[open] > summary::after { content: "  \2212"; }
   .wd[open] > summary { margin-bottom: 10px; }
 }
+@media (min-width: 388px) and (max-width: 640px) { .hero .dateline { display: none; } } /* the bar's chip carries the marking there; below 388 px the dateline does */
 @media (max-width: 640px) {
-  .hero .dateline { display: none; }
   .hero h1 { margin-bottom: .5rem; }
   .mit-toggle { padding: 10px 12px; margin: .8rem 0; }
   .rw-note { display: none; }
@@ -1027,7 +1028,8 @@ body.panel-open { overflow: hidden; }
 .w-def { margin: 2px 0 0; font-size: .84rem; color: var(--ink-2); }
 .w-ns { font-size: .84rem; }
 @media (max-width: 640px) {
-  #controls .ctl:has(#cpu-seg) { display: none; }
+  #controls #cpu-label, #controls #cpu-seg, #controls #cpu-few:empty { display: none; } /* the hero's CPU buttons switch the model; the no-verdict note stays */
+  #controls .ctl:has(#cpu-seg):has(#cpu-few:empty):has(#cpu-verdict:empty) { display: none; }
   .wd .w-lede, #mit-toggle-box { display: none; }
   .abstract ul.findings { font-size: .9rem; line-height: 1.36; padding-left: 1.1em; margin: .3rem 0 .4rem; }
   .abstract ul.findings li { margin: .18rem 0; }

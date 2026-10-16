@@ -49,10 +49,11 @@
             <p class="dateline">Work in progress, October 2026. <a href="details.html">Full details</a></p>
             <h1 id="hero-h">Third of a Percent</h1>
             <div class="hero-actions">
-              <button type="button" class="repro-btn" id="repro-btn" aria-expanded="false" aria-controls="repro-box">Reproduce in one command</button>
-              <div class="repro-box" id="repro-box" hidden role="region" aria-label="Reproduce every number">
+              <button type="button" class="repro-btn" id="repro-btn" aria-expanded="false" aria-controls="repro-box">Check every number in one command</button>
+              <div class="repro-box" id="repro-box" hidden role="region" aria-label="Check every number">
                 <p>Check every number on a laptop, no compiler needed: the tests, every interval and verdict recomputed from the raw samples, and this page against its data.</p>
                 <div class="cmdline"><pre><code id="repro-cmd">python scripts/check.py</code></pre><button type="button" class="copy" data-copy="repro-cmd">Copy</button></div>
+                <p class="repro-note">Run it inside a clone of the repository. It needs Python 3 and numpy (the page check also needs Playwright, and is skipped without it) and takes about an hour on a laptop. It re-checks the stored results; it does not measure anything new.</p>
                 <p class="repro-more"><a href="#reproduce">Run the measurement itself on GitHub &darr;</a></p>
               </div>
             </div>
@@ -104,7 +105,7 @@
         <div class="mech-head">
           <h2 id="mech-h">Why does the check slow it down?</h2>
           <p class="mech-gist">SIMD: one instruction, four elements. A check before every element can stop the compiler from grouping them.</p>
-          <p class="mech-note">Steps are not time; the speeds are measured above. That the check is a loop exit clang cannot count is observed (<a href="details.html#passlevel">pass-level evidence</a>); that this stops SIMD is inferred.</p>
+          <p class="mech-note">Steps are not time; the speeds are measured above. In the reverse and stride-2 loops the check is an exit clang cannot count (observed; <a href="details.html#passlevel">pass-level evidence</a>); in the forward loops it can. Matrix multiply is rejected on cost. That a missing count stops SIMD is inferred.</p>
         </div>
         <div class="mech-card" id="mech-card">
           <div class="mech-tiles" id="mech-tiles" role="radiogroup" aria-label="Loop shape for the demo"></div>
@@ -181,8 +182,9 @@
         <ul>
           <li>Your production average: these are single loops, not services.</li>
           <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
-          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), few-job runs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
+          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), the other setups on few jobs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
           <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the 75-job pool leaves the verdicts of the three AMD models unchanged, but the two Xeon models (6 jobs each, inconclusive) change form with the interval method (<a data-href="robustnessUrl" href="#">robustness report</a>).</li>
+          <li id="lost-li"><span data-v="lostShort"></span></li>
         </ul>
         <p class="cannot-more"><a href="details.html#limits-full">Every limit, in full &rarr;</a></p>
       </aside>
@@ -194,7 +196,7 @@
       <h2><span class="secno">1</span>Result</h2>
       <p class="gist">Loops that lose SIMD under the check take <span data-v="lostMin">2.8</span> to <span data-v="lostMax">8.0</span>&times; as long in cache; forward loops that keep it stay at about 1&times; (0.82 to 1.06&times;) on the AMD models when aligned (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;).</p>
       <p>Every ratio is the time a loop takes with the checks on divided by its time with them off (1&times; is free, 2&times; twice as long), at two working-set sizes that fit the fastest cache (L1) and the second (L2).</p>
-      <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged, and so does one run judged alone.</p>
+      <p id="terms">A <em>run</em> is one start of the measuring workflow on GitHub; each machine&rsquo;s share of it is a <em>job</em>, and GitHub picks its CPU model; a model&rsquo;s <em>pooled</em> ratio is the geometric mean (an average taken on a log scale, suited to ratios) over every returned job that drew it, in all <span data-v="nRuns"></span> runs, and its <em>interval</em> resamples whole jobs, then repetitions. A model needs <span data-v="minJobs"></span> jobs to be judged, and so does one run judged alone.</p>
       <p class="tcap" id="cpu-cap"><b>Table 1.</b> Per CPU model, pooled over every job that drew it. &ldquo;Pattern&rdquo; asks whether every judged forward loop stayed at most 2% above 1&times; (aligned, interval included) and every loop that loses SIMD stayed far above it (interval above 1.5&times; in both columns), by rules written before these runs. Placement-sensitive cells are left out of the 2% test and shown in their own column (section 3).</p>
       <div class="tablewrap">
         <table class="tbl" id="cpu-table">
@@ -331,7 +333,7 @@
       <p class="gist">Two commands: run the measurement on GitHub, and check every number on a laptop.</p>
       <p>In a checkout of the repository (or your own fork), with the GitHub CLI. Each run starts <span data-v="jobsPerRun"></span> runners, and each writes one results file named after the CPU model it drew; the pooled file is then recomputed from them.</p>
       <div class="cmdline"><pre><code id="cmd-measure"></code></pre><button type="button" class="copy" data-copy="cmd-measure">Copy</button></div>
-      <p>To check every number on a laptop, no compiler needed (tests, every interval and verdict recomputed from the raw samples, this page against its data):</p>
+      <p>To check every number on a laptop, run this in a clone of the repository (Python 3 and numpy, about an hour; it measures nothing new): the tests, and every interval and verdict recomputed from the raw samples.</p>
       <div class="cmdline"><pre><code id="cmd-check"></code></pre><button type="button" class="copy" data-copy="cmd-check">Copy</button></div>
     </section>
 

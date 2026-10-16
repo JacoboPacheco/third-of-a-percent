@@ -5,7 +5,9 @@ Compile-only. No timing was done. Nothing here says anything about speed; it say
 Reproduce: `python variants/run.py` (Python stdlib only; reads `cache/` when its request hash matches,
 otherwise calls the Compiler Explorer public API; `--refresh` re-fetches). Sources: `source.cpp`.
 It reuses `ce-sweep/cesweep.py` for the request body, the remark parser and the asm counters.
-Setup: Compiler Explorer id `clang1810` (the only 18.x release it lists), x86-64 baseline (SSE2),
+Setup: Compiler Explorer id `clang1810` (the only 18.x release it lists; the studies in
+`investigate/vectorizer/` saved its version line, `clang version 18.1.0rc`: a release candidate, not the
+Ubuntu 18.1.3 that was timed), x86-64 baseline (SSE2),
 `-O2 -std=c++20 -stdlib=libc++`, `_LIBCPP_HARDENING_MODE` NONE vs FAST, loop-vectorize remarks on.
 "Packed SSE" counts paddd, pmulld, pshufd, movdqu, punpck and similar in the whole function; the
 three `same_scope` rows also include their initialisation loop, so for those the remark decides,
@@ -37,9 +39,15 @@ Pipeline control: each `*_ctrl` row is the project's kernel verbatim and reprodu
   the FAST reverse and stride-2 iterator functions have 0 traps. Matmul iterator forms have one trap,
   outside the inner loop (the scalar `a[i*d+k]`). So (b) shows that the loss comes with the
   `operator[]` check on an index that is not tied to the loop bound, not with the loop shape alone.
-- Net reading: the loss needs a check inside the loop whose bound the compiler cannot connect to the
-  trip count. Two vectors is one way to get that; a single vector with an index that is not the
-  loop variable of its own size (matmul) is another; same-size vectors in one scope do not help.
+- Net reading for reverse and stride-2: the loss needs a check inside the loop whose bound the compiler
+  cannot connect to the trip count (the remark is "could not determine number of loop iterations").
+  Two vectors is one way to get that; same-size vectors in one scope do not help.
+- Matmul on clang 18 is a different case. The vectorizer's plan already has the trip count with both
+  size checks folded in as a clamp, and the loop is rejected on cost (the cost-model remark above; each
+  of the two compares is priced at 14 units), as the later compile-only study finds
+  ([investigate/vectorizer/matmul](../investigate/vectorizer/matmul/README.md), finding F2 and short
+  answer 2). A single vector with an index that is not the loop variable of its own size loses it as well
+  (`matmul_inplace`, `matmul_onevec_regions`).
 
 ## What is NOT shown
 

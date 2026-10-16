@@ -84,6 +84,16 @@ function joinAnd(xs) {
   if (xs.length <= 1) return xs.join('');
   return xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
 }
+// Jobs started against jobs that returned results, from the pooled run list alone: a "full" run returned every job it started, a short one fewer.
+function runLedger(ix) {
+  const per = ix.criteria.jobs_per_run, runs = ix.pooled.runs;
+  const full = runs.filter((r) => r.jobs >= per), part = runs.filter((r) => r.jobs < per), fullIds = new Set(full.map((r) => r.run_id));
+  const sum = (rs) => rs.reduce((a, r) => a + r.jobs, 0);
+  const started = runs.length * per;
+  return { per, runs: runs.length, started, returned: ix.pooled.jobs, lost: started - ix.pooled.jobs,
+    full: full.length, fullJobs: sum(full), part: part.length, partStarted: part.length * per, partJobs: sum(part), fullIds,
+    byCpu: ix.cpus.filter((c) => c.enough).map((c) => ({ cpu: c.cpu_short, inFull: sum(c.per_run.filter((r) => fullIds.has(r.run_id))), inShort: sum(c.per_run.filter((r) => !fullIds.has(r.run_id))) })) };
+}
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const cpuShortOf = (m) => { const e = S.ix.cpus.find((c) => c.cpu_model === m); return e ? e.cpu_short : m; };
 
@@ -239,6 +249,12 @@ function fillStatic() {
   const thinInc = inc.length ? `${joinAnd(inc.map((c) => c.cpu_short))} ${inc.length === 1 ? 'has' : 'have'} ${[...new Set(inc.map((c) => c.jobs))].join(' or ')} jobs, in runs of at most ${Math.max(...inc.flatMap(perRun))}` : '';
   const thinMap = naMap.map((c) => `${c.cpu_short}’s ${c.jobs} jobs came in runs of ${Math.min(...perRun(c))} to ${Math.max(...perRun(c))}, so ${runsJudged(c) ? `only ${runsJudged(c)} of its ${c.per_run.length} runs` : 'none of its runs'} can be judged alone`);
   v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. The job-level resampling understates the spread between machines when jobs are few, and these verdicts cannot be checked run against run.`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
+  // jobs that never returned, and which CPU models the returned ones are
+  const L = runLedger(ix), topCpu = L.byCpu.reduce((a, c) => (!a || c.inFull > a.inFull ? c : a), null);
+  const jobsS = (n) => `${n} job${n === 1 ? '' : 's'}`;
+  v.lostShort = L.lost && topCpu ? `${L.lost} of the ${L.started} jobs started returned nothing, so the pool is uneven across CPU models (${topCpu.cpu}: ${topCpu.inFull} of the first ${L.fullJobs} jobs, then ${topCpu.inShort} of the next ${L.partJobs}); the effect on the ratios was not tested.` : '';
+  v.lostLong = L.lost && topCpu ? `${L.runs} runs started ${L.started} jobs and ${L.returned} returned results. ${L.full} runs returned all ${L.per}; the other ${L.part} started ${L.partStarted} and returned ${L.partJobs}. Each of the ${L.lost} jobs that returned nothing had finished its timing step and was cancelled in the next one, a check of the whole repository that the job ran on the machine before uploading its results, when the job time limit of that time (22 minutes) ran out (read from the workflow’s run records on GitHub). The workflow now uploads first and runs no such check. The cut does not touch the timing of the jobs that returned; it changes which CPU models are represented, and the ones that returned are not an even draw: jobs by model, in the ${L.full} full runs and in the other ${L.part}, ${L.byCpu.map((c) => `${c.cpu} ${c.inFull} and ${c.inShort}`).join('; ')}. The other ${L.part} runs therefore added ${jobsS(topCpu.inShort)} to ${topCpu.cpu}, which supplied ${topCpu.inFull} of the ${L.fullJobs} in the full runs, and ${jobsS(L.partJobs - topCpu.inShort)} to the other models. Whether the lost jobs would have given different ratios was not tested.` : 'Every job started returned results.';
+  v.lostPoolNote = L.lost ? ` (${L.lost} more were started and returned nothing; see the limits below)` : '';
   v.pooledPath = ix.pooled.source;
   // the day-one record and the criteria history
   const d1 = ix.method.dayone[0], d2 = ix.method.dayone[1];
@@ -325,7 +341,7 @@ function fillStatic() {
   v.intelRange = IF && IF.jobs.length ? rangeX(IF.aligned.min, IF.aligned.max).replace('×', '') : 'n/a';
 
   for (const [k, val] of Object.entries(v)) setV(k, val);
-  for (const id of ['fwd-low']) { const p = document.getElementById(id); if (p) p.hidden = !p.textContent.trim(); } // no note, no empty paragraph
+  for (const id of ['fwd-low', 'lost-li']) { const p = document.getElementById(id); if (p) p.hidden = !p.textContent.trim(); } // no note, no empty paragraph
   // the commits, as code
   const rc = $('rule-commits');
   const item = (label, f, extra) => (f && f.added_commit ? [label, ' ', code(f.added_commit), ...(extra || [])] : [label]);
@@ -885,7 +901,7 @@ function whyLine(r, anOn, identical, bOn, width) {
         : r.k === 'k05_stride2'
           ? ' Here the two checks test twice the counter, and twice the counter plus one, against the vector’s size (observed). In hand-written code, a bound with a known upper limit gives both a count and a vectorized loop (observed); why the size has no such limit is inferred.'
           : '';
-      return [`With the check inside, this loop has a second way out, and clang’s analysis found no iteration count for it (observed), so it did not vectorize the loop: the ${many} loop on the left becomes the one-at-a-time loop on the right.${detail} In every loop tried, clang vectorized exactly when every exit had a count (observed); that the count is what it needs is inferred. See the `, more, `.${nv}`];
+      return [`With the check inside, this loop has a second way out, and clang’s analysis found no iteration count for it (observed), so it did not vectorize the loop: the ${many} loop on the left becomes the one-at-a-time loop on the right.${detail} In the 29 loops compiled for the pass-level study (5 of this project’s loops and 24 hand-written test variants), clang vectorized exactly when every exit had a count (observed); that the count is what it needs is inferred. See the `, more, `.${nv}`];
     }
     if (rs.some((x) => x.includes('vectorization is not beneficial')))
       return [`Clang 18’s cost estimate for the ${many} loop, with the two bounds-check compares inside it, came out no better than the one-at-a-time loop, so it kept the one-at-a-time loop on the right, with a compare and a jump for every index it uses (observed in the compiler’s log, compile-only). Clang 19 to 21 price those compares at almost nothing and vectorize the loop (observed); that a change in clang 19 is the reason is inferred. See the `, more, `.${nv}`];
@@ -1634,7 +1650,7 @@ function verSpanOnCpu(V, cpu, kernel, size) { // the same cell on every toolchai
 function renderVersions() {
   const V = S.ver;
   if (!V || !V.toolchains || !V.toolchains.length) { $('ver-intro').replaceChildren('No timed result for the newer toolchains is stored yet.'); return; }
-  const T = V.toolchains, sm = V.summary, reps = S.ix.criteria.reps_per_side;
+  const T = V.toolchains, sm = V.summary, reps = S.ix.criteria.reps_per_side, LG = runLedger(S.ix);
   const jobsOf = (n) => `${n} job${n === 1 ? '' : 's'}`;
   const enough = sm.enough;
   const mainCpu = enough.length ? enough[0].cpu_short : null;
@@ -1677,11 +1693,11 @@ function renderVersions() {
       el('p', { class: 'small' }, `${jobsOf(t.jobs)} on ${t.cpus.length} CPU models; ${probe}; the compiler’s remarks say ${joinAnd(t.lost_by_remarks)} lose${t.lost_by_remarks.length === 1 ? 's' : ''} SIMD under the checks${t.matmul_vectorized_both ? ' and matrix multiply keeps it' : ''}.`));
     t.cpus.forEach((c, i) => {
       const kv = c.kernels.map((k) => `${k.name} ${k.holds ? 'holds' : 'does not hold'}`).join('; ');
-      const hasBase = c.cells.some((x) => x.clang18 != null);
+      const hasBase = c.cells.some((x) => x.clang18 != null), og = LG.byCpu.find((x) => x.cpu === c.cpu_short);
       const head = ['Loop', 'Size', 'Remarks say', 'As compiled', 'Aligned'].concat(hasBase ? ['clang 18, as compiled', 'Remarks under clang 18'] : []);
       const det = el('details', { class: 'more ver-cpu' },
         el('summary', null, `${c.cpu_short}, ${jobsOf(c.jobs)}: ${c.form}${c.why ? `, ${c.why}` : ''}`),
-        el('p', { class: 'tcap' }, el('b', null, `Table V${t.version}.${i + 1}.`), ` ${c.cpu_short}, clang and libc++ ${t.clang}: ${kv}. A/A half-width ${pctS(c.aa_half_width_pct)}. FAST ÷ NONE per loop and size with the pooled 95% interval beneath; ${hasBase ? 'the clang 18 column is the same CPU model’s pooled result from the main study' : 'no clang 18 pool exists for this CPU model'}.`),
+        el('p', { class: 'tcap' }, el('b', null, `Table V${t.version}.${i + 1}.`), ` ${c.cpu_short}, clang and libc++ ${t.clang}: ${kv}. A/A half-width ${pctS(c.aa_half_width_pct)}. FAST ÷ NONE per loop and size with the pooled 95% interval beneath; ${hasBase ? `the clang 18 column is this CPU model’s pooled result in the original ${LG.fullJobs}-job pool${og ? ` (${jobsOf(og.inFull)} of this model)` : ''}, the baseline the rules named before the run, not in the ${S.ix.pooled.jobs}-job pool used elsewhere on this page, so a figure can differ slightly` : `the original ${LG.fullJobs}-job pool has no jobs on this CPU model, so it has no clang 18 column`}.`),
         el('div', { class: 'tablewrap boxed', tabindex: '0', role: 'region', 'aria-label': `Table V${t.version}.${i + 1}, scrolls sideways on a narrow screen` },
           el('table', { class: 'tbl dense' },
             el('thead', null, el('tr', null, ...head.map((h, j) => el('th', { scope: 'col', class: j >= 3 && j <= 5 ? 'num' : null }, h)))),

@@ -40,8 +40,9 @@ permissions:
 jobs:
   measure:
     runs-on: ubuntu-24.04
-    # A full job takes about 21 minutes; at 22, 33 of 60 jobs in six runs on Oct 15 were cancelled at the
-    # limit and returned nothing. 45 leaves room for slow runners.
+    # The timing steps take about 10 minutes. On Oct 15 the job also ran the whole-repository check (scripts/check.py)
+    # before uploading; that took 12 to 19 minutes or more, and 55 of 100 jobs in ten runs were cancelled at the
+    # old 22-minute limit before they uploaded. The job now uploads first and checks only its own file.
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -90,12 +91,19 @@ jobs:
           CRITERIA: ${{ inputs.criteria }}
         run: python3 harness/run.py --kernels "$KERNELS" --sizes "$SIZES" --programs "$PROGRAMS" --criteria "$CRITERIA" --deps build/deps --out out
 
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn
+
       - name: Check the results without a compiler (as on the laptop)
         if: always()
         run: |
           python3 harness/schema.py out/results.json
           python3 harness/verdict.py out/results.json
-          python3 scripts/check.py out/results.json
 
       - name: Summary
         if: always()
@@ -122,14 +130,6 @@ jobs:
               print(f"| {p['name']} | {p['ratio']:.4f} | {p['ci95'][0]:.4f} to {p['ci95'][1]:.4f} | "
                     f"{p['aligned']['ratio']:.4f} | {p['aa_half_width_pct']:.2f}% | {p['consistent_with_at_most_pct']:.2f}% |")
           EOF
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
-          path: out/
-          if-no-files-found: warn
 
   combine:
     needs: measure

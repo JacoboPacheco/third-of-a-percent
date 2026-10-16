@@ -20,12 +20,19 @@ tampered copy).
 
 Under pytest every row is its own test. Without pytest (scripts/check.py's built-in runner) one
 plain test goes through all rows.
+
+The sentences about the jobs of the ten later runs that returned nothing rest on tests/data/s6_job_steps.json,
+a copy of the Actions step records of those runs (the run pages are public; the file says how it was read).
+test_cited_paths_exist checks that every repository path named in backticks, and every relative Markdown link, in
+README.md, readme-parts/DETAILS.md, siblings/README.md and variants/RESULTS.md exists.
 """
 
 import glob
+import gzip
 import json
 import os
 import re
+import statistics
 from functools import lru_cache
 
 try:
@@ -215,6 +222,7 @@ def exp_lost_range():
 def exp_forward_sentence():
     index = J("site/data/index.json")
     aligned = index["page"]["forward"]["aligned"]
+    assert aligned["min"] < 1, "the README says that below 1x the checked loop runs faster; no aligned forward cell is below 1x"
     two_of_three = [c for c in amd_cpus() if c["forward_compiled_max_cell"]["ratio"] >= 1.5]
     # the AVX2 exception: the largest forward-kernel cell on the AMD models in the AVX2 setup
     avx2 = max(v for k in ("k01_sum_fwd", "k02_add_fwd", "k03_stencil")
@@ -237,10 +245,27 @@ def exp_intel_sentence():
     assert len(jobs) == 1, f"the README says '6 jobs each'; the two models have {sorted(jobs)}"
     amd = [cell_of(cpu_like(c["cpu_short"].split()[1]), "k02_add_fwd.L1")["aligned"]["ratio"] for c in amd_cpus()]
     by = {c["cpu_short"]: cell_of(cpu_like(c["cpu_short"].split()[1]), "k02_add_fwd.L1")["aligned"]["ratio"] for c in pooled}
+    # which Intel jobs are in the kernel pool, and which are earlier jobs of a model that is not pooled
+    names = {c["cpu_short"] for c in pooled}
+    pooled_jobs_n = sum(c["jobs"] for c in pooled)
+    third = [r for r in rows if r["cpu_short"] not in names]
+    assert {r["cpu_short"] for r in third} == {"Xeon 8370C"}, f"Intel jobs of a model that is not pooled: {sorted({r['cpu_short'] for r in third})}"
+    # why the two pooled models have no verdict, as the README gives it
+    a, b = cpu_like("8573C"), cpu_like("6973P-C")
+    limit = a["verdict"]["forward_limit_pct"]
+    assert limit == b["verdict"]["forward_limit_pct"] and limit == int(limit), f"forward limit {limit}"
+    first = cell_of(a, "k02_add_fwd.L1")
+    assert "missed by k02_add_fwd.L1" in a["verdict"]["why"] and not first["placement"]["sensitive"] and first["aligned"]["ci95"][0] > 1 + limit / 100, \
+        "the Xeon 8573C's forward add no longer sits wholly over the forward limit"
+    stencil = cell_of(b, "k03_stencil.L2")["aligned"]
+    assert "missed by k03_stencil.L2" in b["verdict"]["why"] and stencil["ci95"][1] > 1 + limit / 100 and cell_of(b, "k02_add_fwd.L1")["placement"]["sensitive"], \
+        "the Xeon 6973P-C no longer fails on its stencil at L2 with the forward add left out as placement-sensitive"
     return {"jobs": str(len(rows)), "n": word(len(intel["cpus"])),
+            "pool": str(pooled_jobs_n), "pooljobs": str(pooled_jobs()), "other": str(len(rows) - pooled_jobs_n), "third": str(len(third)),
             "lo": f2(intel["aligned"]["min"]), "hi": f2(intel["aligned"]["max"]),
             "alo": f2(min(amd)), "ahi": f2(max(amd)),
-            "j": str(jobs.pop()), "x8573": f2(by["Xeon 8573C"]), "x6973": f2(by["Xeon 6973P-C"])}
+            "j": str(jobs.pop()), "lim": str(int(limit)), "x8573": f2(by["Xeon 8573C"]), "x6973": f2(by["Xeon 6973P-C"]),
+            "end": f3(stencil["ci95"][1])}
 
 
 def exp_lost_bullet():
@@ -324,7 +349,15 @@ def exp_mitigation():
 
 def exp_gcc():
     values = [v for v, _, _, _ in sibling_values("gcc14-O3-assert", "k02_add_fwd")]
-    return {"lo": f1(min(values)), "hi": f1(max(values))}
+    row = sibling_row("gcc14-O3-assert")
+    assert "libstdc++ _GLIBCXX_ASSERTIONS" in row["note"], f"the GCC row no longer says it is libstdc++'s assertions: {row['note']!r}"
+    cell = row["cells"]["k02_add_fwd"]
+    per_cpu = cell["per_cpu"]
+    # "the low end is one job": the lowest value comes from a CPU model that has a single job
+    low_cpu = next(cpu for v, cpu, _, _ in sibling_values("gcc14-O3-assert", "k02_add_fwd") if v == min(values))
+    assert per_cpu[low_cpu]["jobs"] == 1 and low_cpu in cell["single_job_cpus"], f"the lowest value is from {low_cpu}, {per_cpu[low_cpu]['jobs']} jobs"
+    return {"lo": f1(min(values)), "hi": f1(max(values)),
+            "jobs": str(sum(p["jobs"] for p in per_cpu.values())), "n": str(len(per_cpu))}
 
 
 def exp_why_1_6():
@@ -359,7 +392,56 @@ def exp_cesweep():
     trunk = [r for r in rows if not r["major"]]
     assert trunk and all("k08_matmul" in r["lost"] for r in trunk), "trunk no longer loses matrix multiply"
     return {"a": str(lost_before[0]), "b": str(lost_before[-1]), "c": str(kept[0]), "d": str(kept[-1]),
-            "e": ".".join(lost_after[0]["version"].split(".")[:2])}
+            "e": ".".join(lost_after[0]["version"].split(".")[:2]), "date": cesweep_trunk_date()}
+
+
+def cesweep_trunk_date():
+    """The one day on which the sweep's cached x86-64 trunk answers were fetched (trunk moves daily)."""
+    days = set()
+    for path in glob.glob(os.path.join(REPO, "ce-sweep", "cache", "clang_trunk__x86-64__*.json.gz")):
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            days.add(json.load(f)["fetched_at"][:10])
+    assert len(days) == 1, f"the cached trunk answers of the sweep were fetched on {sorted(days)}"
+    return days.pop()
+
+
+def vectorizer_trunk_days():
+    """The days on which the reverse and stride-2 study sent its requests to Compiler Explorer's trunk compilers."""
+    with open(os.path.join(REPO, "investigate", "vectorizer", "reverse-stride2", "extracted", "trunk-versions.txt"), encoding="utf-8") as f:
+        text = f.read()
+    part = text.split("requests to trunk compilers, by time (UTC):")[1]
+    return set(re.findall(r"^\s+(\d{4}-\d{2}-\d{2})T", part, flags=re.M))
+
+
+def matmul_revision(build):
+    """The first ten characters of the LLVM revision in the `-v` version line saved for one compiler build."""
+    with open(os.path.join(REPO, "investigate", "vectorizer", "matmul", "derived", "revisions.txt"), encoding="utf-8") as f:
+        text = f.read()
+    m = re.search(rf"^{build}\s.*\n\s+clang version ([^\n]*?) \(https://github\.com/llvm/llvm-project\.git ([0-9a-f]{{40}})\)", text, flags=re.M)
+    assert m, f"no version line for {build} in investigate/vectorizer/matmul/derived/revisions.txt"
+    return m.group(1), m.group(2)[:10]
+
+
+def timed_clang():
+    """The one Ubuntu clang version the timed runs of the kernel pool recorded."""
+    versions = set()
+    for path in glob.glob(os.path.join(REPO, "results", "s4-run-*", "results-*", "results.json")) + \
+            glob.glob(os.path.join(REPO, "results", "s6-run-*", "results-*", "results.json")):
+        m = re.search(r"Ubuntu clang version ([\d.]+)", J(os.path.relpath(path, REPO).replace("\\", "/"))["run"]["toolchain"]["clang"])
+        versions.add(m.group(1))
+    assert len(versions) == 1, f"the timed runs recorded clang {sorted(versions)}"
+    return versions.pop()
+
+
+def exp_rc_and_same_remark():
+    """Compiler Explorer's clang 18.1.0 is a release candidate; the timed Ubuntu build gave the same remark for the two loops."""
+    version, _ = matmul_revision("paths_c18")
+    assert version.endswith("rc"), f"Compiler Explorer's clang1810 now reports clang version {version}"
+    for kernel in ("k04_rev", "k05_stride2"):
+        path = os.path.join(REPO, "dayone", "results", "run-38116223923", f"remarks.{kernel}.fast.txt")
+        with open(path, encoding="utf-8") as f:
+            assert "loop not vectorized: could not determine number of loop iterations" in f.read(), f"{path}: the remark is not there"
+    return {"ce": version[:-2], "timed": timed_clang()}
 
 
 def exp_ubuntu_clang_20():
@@ -436,13 +518,97 @@ def later_runs():
     with open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8") as f:
         wf = f.read()
     per_run = len(json.loads(re.search(r'jobs:\s*\n\s*description:[^\n]*\n\s*default: "(\[[^"]*\])"', wf).group(1)))
-    note = re.search(r"at (\d+), (\d+) of (\d+) jobs in (\w+) runs", wf)  # the comment on timeout-minutes
+    # the comment on timeout-minutes wraps over several lines: join them before reading it
+    flat = re.sub(r"\s*\n\s*#\s*", " ", wf)
+    note = re.search(r"(\d+) of (\d+) jobs in (\w+) runs were cancelled at the old (\d+)-minute limit before they uploaded", flat)
     now = re.search(r"measure:\s*\n\s*runs-on:[^\n]*\n(?:\s*#[^\n]*\n)*\s*timeout-minutes: (\d+)", wf)
-    assert note and now, "measure.yml no longer says why timeout-minutes was raised"
+    assert note and now, "measure.yml no longer says how many jobs were cancelled at the old limit"
+    dispatched = len(dirs) * per_run
     assert pooled_jobs() - pooled_jobs(original=True) == returned, \
         f"the 75-job pool has {pooled_jobs()} jobs, the original {pooled_jobs(original=True)}, the later result folders {returned}"
-    return {"runs": len(dirs), "returned": returned, "dispatched": len(dirs) * per_run,
-            "limit": int(note.group(1)), "now": int(now.group(1))}
+    assert (int(note.group(1)), int(note.group(2)), note.group(3)) == (dispatched - returned, dispatched, word(len(dirs))), (
+        f"measure.yml says {note.group(1)} of {note.group(2)} jobs in {note.group(3)} runs were cancelled; the result folders give "
+        f"{dispatched - returned} of {dispatched} in {word(len(dirs))} runs")
+    return {"runs": len(dirs), "returned": returned, "dispatched": dispatched,
+            "limit": int(note.group(4)), "now": int(now.group(1))}
+
+
+STEP_RECORDS = "tests/data/s6_job_steps.json"
+PUBLIC_RUN_PREFIX = "https://github.com/JacoboPacheco/third-of-a-percent/actions/runs/"
+
+
+def later_job_records():
+    """The 100 measure jobs of the ten later runs: their stored step records, and the CPU model of each one that returned results.
+
+    The step records are a copy of what the Actions API gave for the ten runs (tests/data/s6_job_steps.json). A job
+    has a result folder in results/s6-run-<id>/ exactly when its upload step succeeded; that is checked here.
+    """
+    out = []
+    for run in J(STEP_RECORDS)["runs"]:
+        for job in run["jobs"]:
+            hits = glob.glob(os.path.join(REPO, "results", f"s6-run-{run['run']}", f"results-*-j{job['job']}", "results.json"))
+            assert len(hits) <= 1, f"run {run['run']} job {job['job']}: {len(hits)} result folders"
+            cpu = None
+            if hits:
+                record = J(os.path.relpath(hits[0], REPO).replace("\\", "/"))
+                cpu = record["run"]["runner"]["cpu_model"]
+                assert record["run"]["workflow_run_url"] == PUBLIC_RUN_PREFIX + str(run["run"]), \
+                    f"run {run['run']} job {job['job']}: the record links to {record['run']['workflow_run_url']}"
+            assert (cpu is not None) == (job["upload"] == "success"), \
+                f"run {run['run']} job {job['job']}: upload step {job['upload']!r} but a result folder {'exists' if hits else 'is missing'}"
+            out.append(dict(job, run=run["run"], cpu=cpu))
+    return out
+
+
+def later_losses():
+    """What the stored step records say about the 100 jobs of the ten later runs, as the README and DETAILS.md type it."""
+    jobs = later_job_records()
+    lr = later_runs()
+    assert len(jobs) == lr["dispatched"], f"{len(jobs)} step records, {lr['dispatched']} jobs dispatched"
+    returned = [j for j in jobs if j["cpu"] is not None]
+    lost = [j for j in jobs if j["cpu"] is None]
+    assert len(returned) == lr["returned"]
+    assert all(j["timing"] == "success" for j in jobs), "a job did not finish its timing step"
+    assert all(j["check"] != "success" and j["upload"] != "success" for j in lost), "a lost job finished the check step or uploaded"
+    in_progress = [j for j in lost if j["check"] == "in_progress"]
+    failed = [j for j in lost if j["check"] == "failure"]
+    assert len(in_progress) + len(failed) == len(lost), f"lost jobs by check step: {sorted({j['check'] for j in lost})}"
+    models = {}
+    for j in returned:
+        models[j["cpu"]] = models.get(j["cpu"], 0) + 1
+    # the returned jobs per CPU model must agree with what the pooled files add
+    pooled = {c["cpu_model"]: c["jobs"] for c in J(POOLED)["cpus"]}
+    original = {c["cpu_model"]: c["jobs"] for c in J(POOLED_ORIGINAL)["cpus"]}
+    for model, n in pooled.items():
+        assert models.get(model, 0) == n - original.get(model, 0), f"{model}: {models.get(model, 0)} returned jobs, the pools differ by {n - original.get(model, 0)}"
+    only_7763 = [j for j in returned if "7763" in j["cpu"]]
+    others = [j for j in returned if "7763" not in j["cpu"]]
+    assert len(only_7763) == 1, f"the sentence names one returned EPYC 7763 job; there are {len(only_7763)}"
+    by_model = {key: sum(n for model, n in models.items() if key in model)
+                for key in ("9V74", "9V45", "6973P-C", "8573C", "7763")}
+    assert sum(by_model.values()) == len(returned), f"returned jobs by CPU model: {models}"
+    return {
+        "jobs": jobs, "returned": returned, "lost": lost,
+        "finished": len(jobs),
+        "t_lo": f1(min(j["timing_min"] for j in jobs)), "t_hi": f1(max(j["timing_min"] for j in jobs)),
+        "t_lost": f1(statistics.mean(j["timing_min"] for j in lost)),
+        "t_ret": f1(statistics.mean(j["timing_min"] for j in returned)),
+        "in_progress": len(in_progress), "failed": len(failed),
+        "f_lo": f1(min(j["check_min"] for j in failed)), "f_hi": f1(max(j["check_min"] for j in failed)),
+        "r_lo": f1(min(j["check_min"] for j in others)), "r_hi": f1(max(j["check_min"] for j in others)),
+        "r7763": f1(only_7763[0]["check_min"]),
+        "cancelled_back": len([j for j in returned if j["conclusion"] == "cancelled"]),
+        "by_model": by_model,
+    }
+
+
+def upload_comes_first():
+    """True when measure.yml uploads the results before its check step."""
+    with open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8") as f:
+        wf = f.read()
+    job = wf.split("\n  combine:")[0]
+    up, check = job.find("- name: Upload results"), job.find("- name: Check the results without a compiler")
+    return 0 <= up < check
 
 
 def scev_tally():
@@ -511,9 +677,16 @@ def exp_shared_machines():
     xeon = {c["jobs"] for c in intel_pooled()}
     assert len(xeon) == 1, f"the README says '6 each' for the two Xeon models; they have {sorted(xeon)}"
     lr = later_runs()
+    ll = later_losses()
+    assert upload_comes_first(), "the README says the workflow now uploads first; measure.yml still checks before it uploads"
+    by = ll["by_model"]
+    old_7763 = cpu_like("7763", original=True)["jobs"]
     return {"jobs": str(pooled_jobs()), "runs": str(len(pooled["runs"])), "lo": str(min(amd)), "hi": str(max(amd)),
             "x": str(xeon.pop()), "new": str(pooled_jobs() - pooled_jobs(original=True)),
-            "ten": word(lr["runs"]), "ret": str(lr["returned"]), "disp": str(lr["dispatched"]), "limit": str(lr["limit"])}
+            "ten": word(lr["runs"]), "ret": str(lr["returned"]), "disp": str(lr["dispatched"]),
+            "fin": str(ll["finished"]), "lost": str(len(ll["lost"])), "limit": str(lr["limit"]), "ret2": str(lr["returned"]),
+            "a": str(by["9V74"]), "b": str(by["9V45"]), "c": str(by["6973P-C"]), "d": str(by["8573C"]), "e": str(by["7763"]),
+            "f": str(old_7763), "g": str(pooled_jobs(original=True)), "h": word(by["7763"])}
 
 
 def exp_compile_only_counts():
@@ -562,13 +735,18 @@ ROWS = [
     ("sentence 3: forward range, AVX2 exception, as-compiled forward add",
      "site/data/index.json page.forward and cpus; site/data/siblings.json clang18v3-fast",
      exp_forward_sentence,
-     r"\((?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, one AVX2 exception, (?P<avx>[\d.]+)x\)\. "
+     r"\((?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, one AVX2 exception, (?P<avx>[\d.]+)x\); "
+     r"below 1x the checked loop ran faster \(cause inferred: loop layout\)\. "
      r"As compiled, the forward add cost about (?P<x>[\d.]+)x on (?P<n>\w+) of the (?P<of>\w+) AMD models"),
-    ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s6-pooled/pooled.json k02_add_fwd.L1 aligned",
+    ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s6-pooled/pooled.json Xeon k02_add_fwd.L1 and k03_stencil.L2 aligned",
      exp_intel_sentence,
-     r"In each of (?P<jobs>\d+) Intel jobs of the main runs \((?P<n>\w+) models\) the forward add at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
-     r"against (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on the AMD models; the two Intel models pooled over (?P<j>\d+) jobs each "
-     r"\(Xeon 8573C (?P<x8573>[\d.]+)x, Xeon 6973P-C (?P<x6973>[\d.]+)x\) are INCONCLUSIVE"),
+     r"Intel: in all (?P<jobs>\d+) Intel jobs seen \((?P<n>\w+) models; (?P<pool>\d+) are in the (?P<pooljobs>\d+)-job pool, "
+     r"(?P<third>\d+) of the other (?P<other>\d+) are on a third model, Xeon 8370C\) "
+     r"the forward add at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
+     r"against (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on the AMD models\. The two pooled Intel models \((?P<j>\d+) jobs each\) "
+     r"have no verdict \(INCONCLUSIVE under the written rules\): "
+     r"the Xeon 8573C's forward add costs a measured (?P<x8573>[\d.]+)x, over the (?P<lim>\d+)% forward limit; "
+     r"the Xeon 6973P-C's (?P<x6973>[\d.]+)x is left out as placement-sensitive, and its stencil at L2 ends at (?P<end>[\d.]+), over the same limit\."),
     ("found: lost-loop range, models, siblings, no-vectorize controls",
      "site/data/index.json page.lost and cpus; site/data/siblings.json; results/s6-pooled/pooled.json EPYC 7763 positive and cells",
      exp_lost_bullet,
@@ -599,7 +777,10 @@ ROWS = [
     ("found: one added size check", "site/data/mitigate.json reverse shape, variant pre",
      exp_mitigation, r"\*\*(?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x\*\* for the reverse loop after one added size check"),
     ("found: GCC", "site/data/siblings.json gcc14-O3-assert k02_add_fwd",
-     exp_gcc, r"even the forward add loses SIMD and runs (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x slower"),
+     exp_gcc,
+     r"GCC 14 and libstdc\+\+'s own `_GLIBCXX_ASSERTIONS` \(a different library, different checks\) at `-O3`, "
+     r"even the forward add loses SIMD and runs (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x slower "
+     r"\((?P<jobs>\d+) jobs on (?P<n>\d+) CPU models; the low end is one job\)"),
     ("folders: why the forward add cost", "site/data/index.json page.forward.compiled",
      exp_why_1_6, r"why the forward add cost (?P<v>[\d.]+)x"),
     ("trust: newer clang timed", "site/data/versions.json; results/s6-pooled/pooled.json EPYC 7763 positive",
@@ -609,7 +790,7 @@ ROWS = [
     ("trust: matrix multiply lost per clang version", "site/data/cesweep.json rows (clang, x86-64, -O2, hardening macro in effect)",
      exp_cesweep,
      r"finds matrix multiply lost on clang (?P<a>\d+) to (?P<b>\d+) at baseline x86-64, kept on (?P<c>\d+) to (?P<d>\d+) "
-     r"\(.*?\), and lost again on clang (?P<e>[\d.]+) and trunk"),
+     r"\(.*?\), and lost again on clang (?P<e>[\d.]+) and trunk \(as served on (?P<date>[\d-]+)\)"),
     ("trust: Ubuntu's clang 20", "results/siblings-run-*/*/siblings.json version string",
      exp_ubuntu_clang_20, r"Ubuntu's own clang (?P<v>[\d.]+) and libc\+\+ 20"),
     ("trust: machine state", "site/data/environment.json summary",
@@ -639,14 +820,22 @@ ROWS = [
      exp_compile_only_counts,
      r"of (?P<n>\d+) loops compiled with FAST, all (?P<yes>\d+) with an iteration count for every exit in the compiler's analysis "
      r"were vectorized and none of the (?P<no>\d+) with an uncounted exit"),
+    ("found: compile-only tests, Compiler Explorer's release candidate and the timed build",
+     "investigate/vectorizer/matmul/derived/revisions.txt; dayone/results/run-38116223923/remarks.*.fast.txt; results/s4-run-*/ and s6-run-*/ toolchain",
+     exp_rc_and_same_remark,
+     r"run on Compiler Explorer's clang (?P<ce>[\d.]+) release candidate, not the timed Ubuntu (?P<timed>[\d.]+)\)"),
     ("found: matrix multiply, the price of the checks", "investigate/vectorizer/matmul/raw/dbg_a18_fast.json; derived/cost-table.md",
      exp_matmul_units_readme,
      r"prices each of the two checks at (?P<u>\d+) units, so a width-4 vector iteration costs (?P<v>\d+) against (?P<s>\d+) for four scalar ones"),
-    ("trust: shared machines", "results/s6-pooled/pooled.json; results/s6-run-*/; .github/workflows/measure.yml",
+    ("trust: shared machines", "results/s6-pooled/pooled.json and s4-pooled; results/s6-run-*/; tests/data/s6_job_steps.json; .github/workflows/measure.yml",
      exp_shared_machines,
      r"The kernel pool is (?P<jobs>\d+) jobs in (?P<runs>\d+) runs \((?P<lo>\d+) to (?P<hi>\d+) jobs for each AMD model, (?P<x>\d+) for each "
      r"Xeon model\); (?P<new>\d+) of them come from (?P<ten>\w+) later runs in which (?P<ret>\d+) of (?P<disp>\d+) dispatched jobs returned "
-     r"results and the rest hit the (?P<limit>\d+)-minute limit"),
+     r"results\. All (?P<fin>\d+) finished their timing step; the other (?P<lost>\d+) were cancelled at the (?P<limit>\d+)-minute limit "
+     r"during the whole-repository check the workflow then ran, before the upload, and returned nothing \(the workflow now uploads first\)\. "
+     r"The cut fell unevenly by CPU model: the (?P<ret2>\d+) that returned are EPYC 9V74 (?P<a>\d+), EPYC 9V45 (?P<b>\d+), "
+     r"Xeon 6973P-C (?P<c>\d+), Xeon 8573C (?P<d>\d+) and EPYC 7763 (?P<e>\d+) \((?P<f>\d+) of the first (?P<g>\d+) jobs were EPYC 7763\), "
+     r"so the later runs add (?P<h>\w+) jobs? to the 7763 pool\."),
     ("trust: the price of the checks by clang version", "investigate/vectorizer/matmul/raw/dbg_a18_fast.json, dbg_a19..21_fast.json",
      exp_cost_units_across_versions,
      r"clang 19 to 21 price each of the two checks at (?P<new>\d+) cost unit where clang 18 prices them at (?P<old>\d+)"),
@@ -753,7 +942,8 @@ def exp_details_forward():
     a = cell_of(cpu_like("8573C"), "k02_add_fwd.L1")["aligned"]
     b = cell_of(cpu_like("6973P-C"), "k02_add_fwd.L1")["aligned"]
     return {"lo": f2(aligned["min"]), "hi": f2(aligned["max"]), "jlo": f3(min(judged)), "jhi": f3(max(judged)),
-            "n": str(len(rows)), "m": word(len(intel["cpus"])), "ilo": f2(intel["aligned"]["min"]), "ihi": f2(intel["aligned"]["max"]),
+            "n": str(len(rows)), "m": word(len(intel["cpus"])), "pj": str(sum(c["jobs"] for c in intel_pooled())),
+            "ilo": f2(intel["aligned"]["min"]), "ihi": f2(intel["aligned"]["max"]),
             "a1": f2(min(x8370)), "a2": f2(max(x8370)), "an": str(len(x8370)),
             "b1": f2(min(x8573)), "b2": f2(max(x8573)), "bn": str(len(x8573)), "bp": str(len(pooled_8573)),
             "bp1": f3(min(pooled_8573)), "bp2": f3(max(pooled_8573)),
@@ -841,9 +1031,18 @@ def exp_details_later_runs():
     bound = int(shift * 100) / 100 + 0.01  # the next hundredth above the largest shift
     assert 0 < bound - shift <= 0.01
     page = J("site/data/index.json")["page"]["lost"]
-    return {"disp": str(lr["dispatched"]), "ret": str(lr["returned"]), "miss": str(lr["dispatched"] - lr["returned"]),
-            "lim": str(lr["limit"]), "now": str(lr["now"]), "o": str(pooled_jobs(original=True)), "mv": f2(bound),
+    ll = later_losses()
+    by = ll["by_model"]
+    ret, miss = str(lr["returned"]), str(lr["dispatched"] - lr["returned"])
+    return {"disp": str(lr["dispatched"]), "ret": ret, "miss": miss, "miss2": miss, "miss3": miss, "ret2": ret, "ret3": ret, "ret4": ret, "ret5": ret,
+            "fin": str(ll["finished"]), "tlo": ll["t_lo"], "thi": ll["t_hi"], "tl": ll["t_lost"], "tr": ll["t_ret"],
+            "lim": str(lr["limit"]), "inp": str(ll["in_progress"]), "failed": str(ll["failed"]), "flo": ll["f_lo"], "fhi": ll["f_hi"],
+            "rlo": ll["r_lo"], "rhi": ll["r_hi"], "r7": ll["r7763"], "canc": str(ll["cancelled_back"]),
+            "now": str(lr["now"]), "a": str(by["9V74"]), "b": str(by["9V45"]), "c": str(by["6973P-C"]), "d": str(by["8573C"]), "e": str(by["7763"]),
+            "f": str(cpu_like("7763", original=True)["jobs"]), "g": str(pooled_jobs(original=True)),
+            "o": str(pooled_jobs(original=True)), "mv": f2(bound),
             "lo": f3(page["min"]), "hi": f3(page["max"]), "olo": f3(min(lost_cells(original))), "ohi": f3(max(lost_cells(original))),
+            "g7763": word(by["7763"]),
             "w": str(cpu_like("8573C", original=True)["jobs"]), "x": str(cpu_like("8573C")["jobs"]), "y": str(cpu_like("6973P-C")["jobs"])}
 
 
@@ -892,6 +1091,44 @@ def exp_details_matmul():
             "vec": str(vector), "sc": str(4 * scalar), "c19": str(new.pop())}
 
 
+def exp_details_layout():
+    layout = J("site/data/layout.json")
+
+    def row(short):
+        c = next(c for c in layout["cpus"] if c["cpu_short"] == short)
+        return next(r for r in c["rows"] if r["kernel"] == "k02_add_fwd" and r["size"] == "L1")
+
+    a, b, c = row("EPYC 7763"), row("EPYC 9V74"), row("EPYC 9V45")
+    assert a["verdict"] == b["verdict"] == "MIXED" and c["verdict"] == "ROBUST", (a["verdict"], b["verdict"], c["verdict"])
+    assert a["as_compiled"] > 1.5 and b["as_compiled"] > 1.5, "the as-compiled placement is no longer the slow one on 7763 and 9V74"
+    return {"lo7": f3(a["min"]), "hi7": f3(a["max"]), "lo74": f3(b["min"]), "hi74": f3(b["max"]),
+            "a7": f3(a["aligned"]), "a74": f3(b["aligned"]), "m45": f3(c["median"]), "p45": str(c["n_pass"]), "n45": str(c["n_placements"])}
+
+
+def exp_details_links():
+    later_job_records()  # asserts that every returned record of the ten runs links to this repository's run pages
+    return {"ten": word(len(glob.glob(os.path.join(REPO, "results", "s6-run-*"))))}
+
+
+def exp_details_trunk_vectorizer():
+    days = vectorizer_trunk_days()
+    assert len(days) == 1, f"the reverse and stride-2 study sent its trunk requests on {sorted(days)}"
+    return {"d": days.pop()}
+
+
+def exp_details_trunk_sweep():
+    return {"d": cesweep_trunk_date()}
+
+
+def exp_details_trunk_revision():
+    version, sha = matmul_revision("pipe_ctrunk_fast")
+    return {"sha": sha}
+
+
+def exp_details_same_remark():
+    return {"timed": exp_rc_and_same_remark()["timed"]}
+
+
 def exp_details_commit():
     sha, tags = llvm_commit()
     assert tags["llvmorg-19.1.0"] == "ahead"
@@ -926,7 +1163,7 @@ DETAILS_ROWS = [
     ("details: forward loops, AMD and Intel", "site/data/index.json page.forward and intel_forward; results/s6-pooled/pooled.json",
      exp_details_forward,
      r"forward loops ran (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x of the unchecked time there; .*?judges ran (?P<jlo>[\d.]+)x to (?P<jhi>[\d.]+)x\. "
-     r"The Intel models differ\. In each of (?P<n>\d+) Intel jobs of the main runs \((?P<m>\w+) models\) the forward add at L1, aligned, cost "
+     r"The Intel models differ\. In each of (?P<n>\d+) Intel jobs seen \((?P<m>\w+) models, (?P<pj>\d+) of them in the kernel pool\) the forward add at L1, aligned, cost "
      r"(?P<ilo>[\d.]+)x to (?P<ihi>[\d.]+)x: Xeon 8370C (?P<a1>[\d.]+)x to (?P<a2>[\d.]+)x \((?P<an>\d+) early jobs, not in the kernel pool\), "
      r"Xeon 8573C (?P<b1>[\d.]+)x to (?P<b2>[\d.]+)x \((?P<bn>\d+) jobs; the (?P<bp>\d+) pooled ones (?P<bp1>[\d.]+) to (?P<bp2>[\d.]+), "
      r"pooled (?P<bpool>[\d.]+) \[(?P<bl>[\d.]+), (?P<bh>[\d.]+)\]\) and Xeon 6973P-C (?P<c1>[\d.]+)x \((?P<cn>\d+) jobs, "
@@ -950,11 +1187,22 @@ DETAILS_ROWS = [
      r"\((?P<br>\d+)\), EPYC 9V74 (?P<c>\d+) \((?P<cr>\d+)\), Xeon Platinum 8573C (?P<d>\d+) \((?P<dr>\d+)\) and Xeon 6973P-C (?P<e>\d+) "
      r"\((?P<er>\d+)\)\. A run needs (?P<need>\d+) jobs .*?only EPYC 7763 \((?P<s1>\d+) of its (?P<s1n>\d+) runs\) and EPYC 9V74 "
      r"\((?P<s2>\d+) of (?P<s2n>\d+)\) could be tested.*?EPYC 9V45 has one run with (?P<n45>\d+) jobs"),
-    ("details: the ten later runs", "results/s6-run-*/; .github/workflows/measure.yml; results/s4-pooled and s6-pooled", exp_details_later_runs,
-     r"added jobs: (?P<disp>\d+) dispatched, (?P<ret>\d+) returned results, and the other (?P<miss>\d+) ran past the workflow's (?P<lim>\d+)-minute "
-     r"job limit .*?\(the limit is (?P<now>\d+) minutes now\)\..*?Pooled with the original (?P<o>\d+) jobs, no lost-loop cell on an AMD model "
+    ("details: the ten later runs", "tests/data/s6_job_steps.json; results/s6-run-*/; .github/workflows/measure.yml; results/s4-pooled and s6-pooled", exp_details_later_runs,
+     r"added jobs: (?P<disp>\d+) dispatched, (?P<ret>\d+) returned results, and the other (?P<miss>\d+) returned nothing\. "
+     r"The step records of the runs .*? show where they were lost\. "
+     r"All (?P<fin>\d+) jobs finished the timing step, in (?P<tlo>[\d.]+) to (?P<thi>[\d.]+) minutes "
+     r"\((?P<tl>[\d.]+) minutes on average in the (?P<miss2>\d+) lost jobs, (?P<tr>[\d.]+) in the (?P<ret2>\d+) that returned\)\. "
+     r"The (?P<miss3>\d+) were cancelled at the workflow's (?P<lim>\d+)-minute job limit during the next step, which ran the whole-repository check "
+     r"\(`scripts/check\.py`\) before the upload: (?P<inp>\d+) were still in that step and (?P<failed>\d+) had it recorded as failed, "
+     r"after (?P<flo>[\d.]+) to (?P<fhi>[\d.]+) minutes\. In the (?P<ret3>\d+) that returned, that step took (?P<rlo>[\d.]+) to (?P<rhi>[\d.]+) minutes, "
+     r"except in the one EPYC 7763 job, which took (?P<r7>[\d.]+)\. (?P<canc>\d+) of the (?P<ret4>\d+) are also marked cancelled on the run pages: "
+     r".*?The limit is (?P<now>\d+) minutes now, the upload comes first and the job checks only its own file\. "
+     r"The cut fell unevenly by CPU model: the (?P<ret5>\d+) returned jobs are EPYC 9V74 (?P<a>\d+), EPYC 9V45 (?P<b>\d+), Xeon 6973P-C (?P<c>\d+), "
+     r"Xeon 8573C (?P<d>\d+) and EPYC 7763 (?P<e>\d+), against (?P<f>\d+) of the first (?P<g>\d+) jobs on EPYC 7763\. "
+     r".*?Pooled with the original (?P<o>\d+) jobs, no lost-loop cell on an AMD model "
      r"moved by more than (?P<mv>[\d.]+) \(the lowest and highest cells are (?P<lo>[\d.]+) and (?P<hi>[\d.]+) against (?P<olo>[\d.]+) and "
-     r"(?P<ohi>[\d.]+) in the original pool\); the Xeon 8573C went from (?P<w>\d+) job to (?P<x>\d+), and the Xeon 6973P-C, absent "
+     r"(?P<ohi>[\d.]+) in the original pool; EPYC 7763 gained (?P<g7763>\w+) jobs?, so for it this comparison says almost nothing\); "
+     r"the Xeon 8573C went from (?P<w>\d+) job to (?P<x>\d+), and the Xeon 6973P-C, absent "
      r"before, has (?P<y>\d+)\."),
     ("details: EPYC 9V45 borderline call", "results/s6-pooled/pooled.json and results/s4-pooled/pooled.json EPYC 9V45 k03_stencil.L1",
      exp_details_9v45_call,
@@ -978,6 +1226,29 @@ DETAILS_ROWS = [
      r"legality passes, and the cost model prices each of the two bounds-check compares at (?P<c18>\d+) units at width 4 "
      r"\((?P<c42>\d+) on SSE4\.2, (?P<c3>\d+) on AVX2, where clang 18 vectorizes the loop\), so the width-4 loop sums to (?P<vec>\d+) against "
      r"(?P<sc>\d+) for four scalar iterations.*?Clang 19 to 21 find the two compares uniform and price them at (?P<c19>\d+) each"),
+    ("details: layout sweep, the forward add at L1", "site/data/layout.json rows k02_add_fwd L1 (min, max, aligned, median, n_pass)",
+     exp_details_layout,
+     r"The forward add is MIXED on 7763 and 9V74: (?P<lo7>[\d.]+) to (?P<hi7>[\d.]+) on 7763 and (?P<lo74>[\d.]+) to (?P<hi74>[\d.]+) on 9V74 at L1, "
+     r"where the as-compiled placement is the slow one and the aligned build is (?P<a7>[\d.]+) and (?P<a74>[\d.]+); "
+     r"on 9V45 it is ROBUST at L1 \(median (?P<m45>[\d.]+), (?P<p45>\d+) of (?P<n45>\d+) placements pass\)"),
+    ("details: links to the ten later runs", "results/s6-run-*/*/results.json run.workflow_run_url",
+     exp_details_links,
+     r"The exception is the (?P<ten>\w+) `results/s6-run-\*/` records: they link to runs of this repository"),
+    ("details: Compiler Explorer's clang 18.1.0 is a release candidate", "investigate/vectorizer/matmul/derived/revisions.txt; results/s4-run-*/ and s6-run-*/ toolchain",
+     exp_rc_and_same_remark,
+     r"its clang (?P<ce>[\d.]+) is a release-candidate build, not the Ubuntu (?P<timed>[\d.]+) that was timed"),
+    ("details: the timed build gave the same remark", "dayone/results/run-38116223923/remarks.*.fast.txt; results/s4-run-*/ toolchain",
+     exp_details_same_remark,
+     r"The timed Ubuntu (?P<timed>[\d.]+) printed the same \"could not determine number of loop iterations\" remark for both loops"),
+    ("details: trunk date, reverse and stride-2 study", "investigate/vectorizer/reverse-stride2/extracted/trunk-versions.txt",
+     exp_details_trunk_vectorizer,
+     r"clang 20, 21 and trunk \(as served on (?P<d>[\d-]+)\) print early-exit wording"),
+    ("details: trunk date, compile-only sweep", "ce-sweep/cache/clang_trunk__x86-64__*.json.gz fetched_at",
+     exp_details_trunk_sweep,
+     r"and lost again on clang 23\.1 and trunk \(as served on (?P<d>[\d-]+); clang 22, 23\.1 and trunk were not timed\)"),
+    ("details: trunk revision, matrix multiply study", "investigate/vectorizer/matmul/derived/revisions.txt pipe_ctrunk_fast",
+     exp_details_trunk_revision,
+     r"clang 23\.1 and trunk \(revision `(?P<sha>[0-9a-f]{10})`\) reject the loop again"),
     ("details: the LLVM commit and the tags", "investigate/vectorizer/matmul/llvm-src/commit_b6a8f5486b.json and commit_in_tag.json",
      exp_details_commit,
      r"LLVM commit `(?P<sha>[0-9a-f]{10})` .*? is in `llvmorg-(?P<in>[\d.]+)` and not in `llvmorg-(?P<n1>[\d.]+)`, `(?P<n2>[\d.]+)` or `(?P<n3>[\d.]+)`"),
@@ -1093,3 +1364,40 @@ def test_every_intel_model_loses_the_same_loops():
     for c in index["cpus"]:
         if c["cpu_short"].startswith("Xeon"):
             assert c["lost"]["min"] >= floor, f"{c['cpu_short']}: a lost loop costs only {c['lost']['min']:.2f}x"
+
+
+# ---- every repository path the prose cites must exist -----------------------------------------------
+
+CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md")
+# Planning documents that are not published. The note appended to DETAILS.md in the public export names them on purpose,
+# saying that they do not exist in the repository, so they are not counted as broken citations.
+UNPUBLISHED = {"docs/PLAN.md", "docs/SPEC.md", "docs/skeptic.md"}
+CITED_ROOTS = ("results/", "dayone/", "investigate/", "tests/", "harness/", "siblings/", "variants/", "ce-sweep/", "layout-sweep/",
+               "pgo/", "versions/", "environment/", "robustness/", "mitigate/", "corpus/", "realworld/", "audit/", "kernels/",
+               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/")
+
+
+def cited_paths(doc):
+    """Repository-relative paths a document names in backticks, and the files its Markdown links point at (relative to the document)."""
+    with open(os.path.join(REPO, doc), encoding="utf-8") as f:
+        text = f.read()
+    out = []
+    for span in re.findall(r"`([^`\n]+)`", text):
+        span = span.strip().rstrip(".,;:")
+        if span.startswith(CITED_ROOTS) and span not in UNPUBLISHED and not re.search(r"[\s*<>{}|$=]", span):
+            out.append((span, span))
+    for target in re.findall(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)", text):
+        if not re.match(r"[a-z]+:", target):
+            out.append((target, os.path.normpath(os.path.join(os.path.dirname(doc), target)).replace("\\", "/")))
+    return out
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("doc", CITING)
+    def test_cited_paths_exist(doc):
+        missing = [shown for shown, rel in cited_paths(doc) if not os.path.exists(os.path.join(REPO, rel))]
+        assert not missing, f"{doc} names paths that do not exist in the repository: {sorted(set(missing))}"
+else:
+    def test_cited_paths_exist_all():
+        missing = {doc: sorted({shown for shown, rel in cited_paths(doc) if not os.path.exists(os.path.join(REPO, rel))}) for doc in CITING}
+        assert not any(missing.values()), f"documents name paths that do not exist: { {d: m for d, m in missing.items() if m} }"

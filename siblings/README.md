@@ -84,7 +84,7 @@ Where the set differs, in the compiler's own words:
 - **gcc14-O3-assert, k02_add_fwd and k03_stencil.**
   - Unhardened: `loop vectorized using 16 byte vectors`, `loop versioned for vectorization because of possible aliasing`.
   - Hardened: `couldn't vectorize loop`. The reason GCC gives is `not vectorized: no vectype for stmt: _20 = MEM[(int * *)c_15(D)]` for k02 (the same message names `c` for k04 and k08) and `unsupported data-type long unsigned int` for k03.
-  - The `-O2` assembly shows the same pattern: the hardened loop reloads `c`'s data pointer and end pointer on every iteration (`results/siblings-run-38256975670/siblings-B-amd-epyc-9v74-80-core-processor-j1/asm/k02_add_fwd.gcc14-O2-assert_a64.diff`).
+  - The `-O2` assembly shows the same pattern: the hardened loop reloads `c`'s data pointer and end pointer on every iteration (`results/siblings-run-38256975670/siblings-B-amd-epyc-9v45-96-core-processor-j3/asm/k02_add_fwd.gcc14-O2-assert_a64.diff`).
 - **gcc14-O2-assert, every kernel.** Unhardened: `couldn't vectorize loop` / `not vectorized: unsupported data-type`. With nothing vectorized in either build, there is nothing to lose. The three "differs" lines for k04, k05 and k08 in `summarize.py`'s output mean exactly this.
 
 ### Aligned hardened/unhardened ratio, L1 size

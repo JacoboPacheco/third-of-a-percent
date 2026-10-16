@@ -29,6 +29,12 @@
      panel with every variant and the code, states the 'better' rule with the usable-job count and warns
      that std::transform over reverse iterators is unsafe; section 6 (toolchains) has one row per setup
      and states the thin coverage; placement-sensitive cells are listed with the pooled column ratio;
+   - docs/hero.png and site/og.png (pictures of the first screen) are the size they claim, and docs/hero.json (what
+     they were taken from, written by scripts/capture_hero.py) equals what the first screen shows and what site/data
+     says; the work-in-progress marking shows at every phone width from 320 px; neither page scrolls sideways from
+     320 px; an Intel model's no-verdict note shows on a phone; the hero's lane names are never cut; the hint pill
+     never sits on other parts; the page's counts of lost jobs, the 29-loop tally and the newer-toolchain baseline
+     are tied to the files they come from;
    - every number printed on the page is in the data files: a printed number must equal, at its
      printed precision, a number in site/data/ (or a numeric token in one of its strings) directly or
      through a unit change (ratio to percent, bytes to KiB or MiB, ns to us or ms). Exempt, by design:
@@ -57,12 +63,14 @@ Exit code 0 only if every check passed. Needs the Python playwright package and 
 """
 import argparse
 import functools
+import glob
 import http.server
 import hashlib
 import html
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -1250,6 +1258,251 @@ def check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec):
           "main page: the mechanism sentences say what is observed and what is inferred and link to the pass-level evidence (section 2 and the demo's note)")
 
 
+def png_size(path):
+    """[width, height] from a PNG header, or None when the file is not a PNG."""
+    with open(path, "rb") as f:
+        head = f.read(24)
+    return list(struct.unpack(">II", head[16:24])) if head[:8] == b"\x89PNG\r\n\x1a\n" else None
+
+
+def hero_image_checks(browser, base, ck, index):
+    """docs/hero.png (the README image) and site/og.png (the share card) are pictures of the first screen. docs/hero.json
+    lists what that screen showed when they were taken (scripts/capture_hero.py writes it); it must equal what the page
+    shows now and what site/data says, so a first screen or a job count that changed after the capture fails here."""
+    print("== the pictures of the first screen: docs/hero.png, site/og.png")
+    from capture_hero import facts
+    with open(os.path.join(REPO, "docs", "hero.json"), encoding="utf-8") as f:
+        side = json.load(f)
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    pg.wait_for_timeout(1200)
+    live = facts(pg)
+    pg.close()
+    again = ": run python scripts/capture_hero.py, look at docs/hero.png and site/og.png, then commit them with docs/hero.json"
+    diff = {k: (side.get(k), v) for k, v in live.items() if side.get(k) != v}
+    ck.ok(not diff, "docs/hero.json (what the README image and the share card were taken from) equals what the first screen shows now"
+          + ("" if not diff else f" {diff}{again}"))
+    dflt = next(c for c in index["cpus"] if c["slug"] == index["default_cpu"])
+    tabs = [c["cpu_short"] for c in index["cpus"] if c["enough"]]
+    ck.ok(side["cpu_tabs"] == tabs and side["selected_cpu"] == dflt["cpu_short"] and side["jobs"] == dflt["jobs"],
+          f"the pictures show every CPU model with enough jobs ({tabs}) and the default model's job count ({dflt['jobs']}) from site/data; docs/hero.json has {side['cpu_tabs']} and {side['jobs']}"
+          + ("" if side["cpu_tabs"] == tabs and side["jobs"] == dflt["jobs"] else again))
+    sizes = {rel: png_size(os.path.join(REPO, *rel.split("/"))) for rel in side["images"]}
+    ck.ok(sizes == {"docs/hero.png": [1440, 900], "site/og.png": [1200, 630]} and side["images"] == sizes,
+          f"docs/hero.png is 1440 x 900 and site/og.png 1200 x 630, as docs/hero.json says ({sizes})")
+    with open(os.path.join(SITE, "index.html"), encoding="utf-8") as f:
+        src = f.read()
+    alt = re.search(r'og:image:alt" content="([^"]*)"', src)
+    ck.ok('og:image:width" content="1200"' in src and 'og:image:height" content="630"' in src and alt and "work in progress" in alt.group(1).lower(),
+          "the share card's declared size is 1200 x 630 and its alt text says the work is in progress")
+
+
+def phone_checks(browser, base, ck, index):
+    """Narrow screens and the hero's small layouts: a work-in-progress marking at every phone width and no sideways
+    scroll on either page from 320 px, an Intel model's no-verdict note on a phone, lane names never cut at tablet
+    widths, and the hint pill clear of other parts in every hero variant."""
+    print("== narrow screens: the marking, sideways scroll, the no-verdict note, lane names, the hint pill")
+    pg = browser.new_page_plain(viewport={"width": 390, "height": 800})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    no_mark, wide = [], []
+    for w in (320, 340, 360, 375, 380, 381, 384, 387, 388, 390, 414, 480, 520, 521, 600, 640):
+        pg.set_viewport_size({"width": w, "height": 800})
+        pg.wait_for_timeout(120)
+        shown = pg.evaluate("""() => [...document.querySelectorAll('.bar-wip .wip-long, .bar-wip .wip-short, .hero .dateline')].filter(e => {
+            const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+            return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && /in progress/i.test(e.textContent); }).length""")
+        if not shown:
+            no_mark.append(w)
+        if not no_hscroll(pg):
+            wide.append(w)
+    ck.ok(not no_mark, f"main page: a work-in-progress marking is visible at every phone width from 320 to 640 px (none at: {no_mark})")
+    ck.ok(not wide, f"main page: no sideways scroll at any width from 320 to 640 px (scrolls at: {wide})")
+    # an Intel model with no verdict: the note beside Figure 1's switcher is visible on a phone, after tapping the hero's tab
+    pg.set_viewport_size({"width": 390, "height": 844})
+    pg.wait_for_timeout(150)
+    for c in index["cpus"]:
+        if not c["enough"]:
+            continue
+        pg.click(f'#race-cpu [data-cpu="{c["slug"]}"]')
+        pg.wait_for_timeout(150)
+        box = pg.evaluate("(() => { const e = document.getElementById('cpu-verdict'), r = e.getBoundingClientRect(); return [e.textContent.trim(), r.width, r.height]; })()")
+        ctl = pg.evaluate("(() => { const c = document.querySelector('#controls .ctl'); return [getComputedStyle(c).display, c.getBoundingClientRect().height]; })()")
+        if c["form"] == "inconclusive":
+            ck.ok(box[0].startswith(f"No verdict for {c['cpu_short']}") and box[1] > 100 and box[2] > 20 and ctl[0] != "none",
+                  f"390: with {c['cpu_short']} chosen (no verdict) the note is on screen beside Figure 1 ({box[0][:40]!r}, {round(box[1])} x {round(box[2])} px)")
+        else:
+            ck.ok(box[0] == "" and ctl[0] == "none", f"390: with {c['cpu_short']} chosen (a verdict) the CPU row is not shown and leaves no gap ({ctl})")
+    pg.close()
+    # the details page: no sideways scroll at phone widths, with every fold open
+    dp = browser.new_page_plain(viewport={"width": 390, "height": 800})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    dp.evaluate("document.querySelectorAll('details').forEach(d => { d.open = true; })")
+    wide = []
+    for w in (320, 340, 360, 375, 390):
+        dp.set_viewport_size({"width": w, "height": 800})
+        dp.wait_for_timeout(150)
+        if not no_hscroll(dp):
+            wide.append((w, dp.evaluate("document.documentElement.scrollWidth")))
+    ck.ok(not wide, f"details page: no sideways scroll from 320 to 390 px with every fold open (scrolls at: {wide})")
+    dp.close()
+    # lane names in the default hero: never cut, at any width from a small tablet up
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+    cut = []
+    for w in (641, 700, 768, 900, 1000, 1040, 1041, 1100, 1260, 1440):
+        pg.set_viewport_size({"width": w, "height": 900})
+        pg.wait_for_timeout(120)
+        cut += [(w, t) for t in pg.evaluate("""() => [...document.querySelectorAll('#race-loops button')].filter(b => {
+            const t = b.querySelector('.tl'), r = t.getBoundingClientRect(), br = b.getBoundingClientRect();
+            return t.scrollWidth > t.clientWidth + 1 || r.top < br.top - 1 || r.bottom > br.bottom + 1; }).map(b => b.querySelector('.tl').textContent)""")]
+    ck.ok(not cut, f"hero: every lane name fits its column, on one line or wrapped to two inside its lane, from 641 to 1440 px ({cut[:3]})")
+    pg.close()
+    # the one-time hint pill ("flip the check") never sits on the Replay button, the CPU buttons, the caption or the readout
+    clash = []
+    for v in (1, 2, 3, 4):
+        for w, h in ((1440, 900), (1024, 768), (800, 900), (390, 844)):
+            pg = browser.new_page_plain(viewport={"width": w, "height": h})
+            pg.goto(f"{base}#hero={v}", wait_until="networkidle")
+            wait_ready(pg)
+            pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+            seen = False
+            for _ in range(8):  # the hint appears about 1.7 s after the page starts and stays for 9 s
+                pg.wait_for_timeout(500)
+                hit = pg.evaluate("""() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h);
+                    if (h.hidden || cs.display === 'none' || +cs.opacity < 0.5) return null;
+                    const a = h.getBoundingClientRect();
+                    return ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
+                      const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; }); }""")
+                if hit is not None:
+                    seen = True
+                    if hit:
+                        clash.append((v, w, hit))
+                    break
+            pg.close()
+    ck.ok(not clash, f"the 'flip the check' hint never overlaps the Replay button, the CPU buttons, the caption or the readout in any hero variant at 1440, 1024, 800 or 390 px ({clash[:3]})")
+
+
+def wording_checks(browser, base, ck, index):
+    """Sentences typed into the page that state a count, tied to the files the count comes from: the jobs that never
+    returned (counted from the results folders), the 29-loop tally (from the saved compiler output), the baseline of
+    the newer-toolchain tables (results/s4-pooled), and the Reproduce text."""
+    print("== wording tied to data: lost jobs, the 29-loop tally, newer-toolchain captions, the Reproduce text")
+    per = index["criteria"]["jobs_per_run"]
+    norm = lambda s: re.sub(r"^-|-$", "", re.sub(r"[^a-z0-9]+", "-", s.replace("(R)", "").lower()))
+    counts, by_cpu = {}, {}
+    for r in index["pooled"]["runs"]:
+        d = glob.glob(os.path.join(REPO, "results", f"*-run-{r['run_id']}"))
+        got = [x for x in glob.glob(os.path.join(d[0], "results-*")) if os.path.exists(os.path.join(x, "results.json"))] if d else []
+        counts[r["run_id"]] = len(got)
+        for x in got:
+            by_cpu.setdefault(r["run_id"], []).append(re.match(r"results-(.*)-j\d+$", os.path.basename(x)).group(1))
+    full = {i for i, n in counts.items() if n >= per}
+    short = [i for i in counts if i not in full]
+    started, returned = len(counts) * per, sum(counts.values())
+    short_back = sum(counts[i] for i in short)
+    ck.ok(returned == index["pooled"]["jobs"] and all(counts[r["run_id"]] == r["jobs"] for r in index["pooled"]["runs"]),
+          f"results folders: {returned} jobs returned in {len(counts)} runs, as site/data says ({index['pooled']['jobs']})")
+    page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    page.goto(base, wait_until="networkidle")
+    wait_ready(page)
+    dp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    lost_full, lost_short = dp.text_content("#lost-full").replace(" ", " "), page.text_content("#lost-li").replace(" ", " ")
+    cpu_bits, ab = [], {}
+    for c in index["cpus"]:
+        if not c["enough"]:
+            continue
+        a = sum(1 for i in full for s in by_cpu.get(i, []) if s == norm(c["cpu_model"]))
+        b = sum(1 for i in short for s in by_cpu.get(i, []) if s == norm(c["cpu_model"]))
+        cpu_bits.append(f"{c['cpu_short']} {a} and {b}")
+        ab[c["cpu_short"]] = (a, b)
+    top = max(ab, key=lambda k: ab[k][0])
+    ids = [r["run_id"] for r in index["pooled"]["runs"]]
+    ck.ok(full and short and max(ids.index(i) for i in full) < min(ids.index(i) for i in short),
+          "the runs that returned every job come first in the run list, so 'the first 30 jobs, then the next 45' is in run order")
+    with open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8") as f:
+        wf = f.read()
+    ck.ok(started > returned and f"{len(counts)} runs started {started} jobs and {returned} returned results" in lost_full
+          and f"{len(full)} runs returned all {per}; the other {len(short)} started {len(short) * per} and returned {short_back}" in lost_full
+          and all(b in lost_full for b in cpu_bits) and "was not tested" in lost_full and "cancelled in the next one" in lost_full
+          and "22 minutes" in lost_full and "22-minute" in wf,
+          f"details, Limits: the jobs that never returned ({started - returned} of {started}) are counted from the results folders, with the jobs per CPU model ({cpu_bits}) and the cause the workflow records")
+    ck.ok(f"{started - returned} of the {started} jobs started returned nothing" in lost_short and "the pool is uneven across CPU models" in lost_short
+          and f"({top}: {ab[top][0]} of the first {sum(counts[i] for i in full)} jobs, then {ab[top][1]} of the next {short_back})" in lost_short
+          and "effect on the ratios was not tested" in lost_short and page.locator("#lost-li").is_visible(),
+          "main page, Limits box: the same count, short, with the effect on the ratios marked untested")
+    pool_dd = dp.inner_text("#method-full")
+    ck.ok(f"All {index['pooled']['jobs']} jobs that returned results" in pool_dd and f"{started - returned} more were started and returned nothing" in pool_dd
+          and "every returned job that drew it" in dp.inner_text("#terms-full") and "every returned job that drew it" in page.inner_text("#terms"),
+          "details Method, Pooling, and the definition of 'pooled' on both pages: the pool is the jobs that returned results, and the jobs that did not are counted")
+    # the 29-loop tally, from the saved compiler output
+    with open(os.path.join(REPO, "investigate", "vectorizer", "reverse-stride2", "extracted", "scalar-evolution.txt"), encoding="utf-8") as f:
+        scev = f.read()
+    yes = no = proj = 0
+    for sec in re.split(r"^## ", scev, flags=re.M)[1:]:
+        head = sec.split("\n", 1)[0]
+        if head.startswith("c18,") and "hardening FAST" in head:
+            m = re.search(r"tally: computable and vectorized (\d+), not computable and not vectorized (\d+), mismatch (\d+)", sec)
+            yes, no = yes + int(m.group(1)), no + int(m.group(2))
+            if head.startswith("c18, kernels,"):
+                proj = int(m.group(1)) + int(m.group(2))
+    total = yes + no
+    pl = dp.text_content("#pl-list").replace(" ", " ")
+    ck.ok(total > proj > 0 and f"In these {total} loops, vectorized exactly when every exit has a count." in pl
+          and f"Of {total} loops compiled with the checks on ({proj} of this project’s loops and {total - proj} hand-written test variants), all {yes} with a count for every exit were vectorized and none of the {no} with an uncounted exit was" in pl
+          and "a count does not guarantee vectorization" in pl and "not a general rule" in pl,
+          f"details, pass-level evidence: the count rule is scoped to the {total} loops of the saved tally ({proj} project loops, {total - proj} test variants; {yes} counted and vectorized, {no} not) and says a count does not guarantee vectorization")
+    page.click('#rows .row[data-k="k04_rev"]')
+    open_full(page)
+    why = page.inner_text("#fig2 .f2-why").replace(" ", " ")
+    ck.ok(f"In the {total} loops compiled for the pass-level study ({proj} of this project’s loops and {total - proj} hand-written test variants), clang vectorized exactly when every exit had a count (observed)" in why
+          and "In every loop tried" not in why,
+          "Figure 2, reverse loop: the count rule names its 29-loop set (and no longer says every loop tried)")
+    note = page.text_content(".mech-note").replace(" ", " ")
+    ck.ok("In the reverse and stride-2 loops the check is an exit clang cannot count (observed" in note and "in the forward loops it can" in note
+          and "Matrix multiply is rejected on cost" in note and "inferred" in note,
+          "section 2, the demo's note: the uncounted exit is scoped to the reverse and stride-2 loops; the forward loops and matrix multiply are named as different")
+    # the newer-toolchain tables: the clang 18 column comes from the original pool the rules named
+    with open(os.path.join(REPO, "results", "s4-pooled", "pooled.json"), encoding="utf-8") as f:
+        s4 = json.load(f)
+    n_orig = sum(c["jobs"] for c in s4["cpus"])
+    ck.ok(set(s4["runs"]) == full and n_orig == sum(counts[i] for i in full),
+          f"results/s4-pooled is the pool of the runs that returned every job ({len(full)} runs, {n_orig} jobs)")
+    with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f:
+        ver = json.load(f)
+    caps = dp.evaluate("[...document.querySelectorAll('#ver-tables .tcap')].map(p => p.textContent)")
+    tables = [(t, i, c) for t in ver["toolchains"] for i, c in enumerate(t["cpus"])]
+    good_caps = 0
+    for (t, i, c), cap in zip(tables, caps):
+        jobs = next((x["jobs"] for x in s4["cpus"] if x["cpu_model"] == c["cpu_model"]), 0)
+        if c["in_clang18_pool"]:
+            says = (f"in the original {n_orig}-job pool ({jobs} job{'' if jobs == 1 else 's'} of this model)" in cap
+                    and f"not in the {index['pooled']['jobs']}-job pool used elsewhere on this page" in cap)
+        else:
+            says = f"the original {n_orig}-job pool has no jobs on this CPU model" in cap
+        good_caps += (f"Table V{t['version']}.{i + 1}." in cap and says
+                      and "same CPU model’s pooled result from the main study" not in cap and "no clang 18 pool exists" not in cap)
+    ck.ok(len(caps) == len(tables) > 0 and good_caps == len(tables),
+          f"details 6b: every table caption names the clang 18 column's pool (the original {n_orig}-job pool, with this model's jobs in it) or says the model is not in it ({good_caps} of {len(tables)})")
+    # the Reproduce text says what the command does
+    box = page.text_content("#repro-box").replace(" ", " ")
+    sec = page.text_content("#reproduce").replace(" ", " ")
+    ck.ok("Check every number" in page.text_content("#repro-btn") and "clone of the repository" in box and "Python 3 and numpy" in box and "about an hour" in box
+          and "does not measure anything new" in box and "Playwright" in box
+          and "clone of the repository" in sec and "Python 3 and numpy" in sec and "about an hour" in sec and "it measures nothing new" in sec,
+          "the Reproduce button and section 11 say the command re-checks the stored results, in a clone, with Python 3 and numpy, in about an hour, and measures nothing new")
+    page.close()
+    dp.close()
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # messages may quote page text
@@ -1572,7 +1825,7 @@ def main():
                       and f"from {ce['counts']['builds']} builds" in note_ce and "compilers," not in note_ce.replace("compiler versions,", ""),
                       f"details, Table 4b note: {CE_VER} compiler versions are told apart from the {ce['counts']['compilers']} Compiler Explorer ids ({note_ce[:120]!r})")
                 cbox = page.inner_text("#cannot")
-                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
+                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "the other setups on few jobs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
                       "abstract and box: the wider toolchain coverage is compile-only; timing rests on clang 18 plus a few GCC and clang 20 jobs")
                 main_versions(abstract, cbox, ck)
                 st = page.inner_text("#siblings") + dp.inner_text("#siblings-full")
@@ -2015,7 +2268,7 @@ def main():
                       and f"from {ce['counts']['builds']} builds" in note_ce and "compilers," not in note_ce.replace("compiler versions,", ""),
                       f"details, Table 4b note: {CE_VER} compiler versions are told apart from the {ce['counts']['compilers']} Compiler Explorer ids ({note_ce[:120]!r})")
                 cbox = page.inner_text("#cannot")
-                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "few-job runs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
+                ck.ok(f"Compiled only: the {CE_VER} compiler versions ({ce['counts']['compilers']} Compiler Explorer compiler ids) in section 6" in cbox and "the other setups on few jobs" in cbox and "Other compilers" in abstract and "compiled only" in abstract,
                       "abstract and box: the wider toolchain coverage is compile-only; timing rests on clang 18 plus a few GCC and clang 20 jobs")
                 main_versions(abstract, cbox, ck)
                 st = page.inner_text("#siblings") + dp.inner_text("#siblings-full")
@@ -2248,7 +2501,7 @@ def main():
                       and f"{IFd['aligned']['min']:.2f}–{IFd['aligned']['max']:.2f}× on Intel (forward add)" in hl and "near 1× on the AMD models" in hl and all(hb),
                       f"one headline line sits directly above Figure 1 (the hero holds the first screen), from index.json, with the AMD and Intel qualifier ({hb})")
                 cb = page.evaluate("[...document.querySelectorAll('#cannot li')].map(l => l.innerText)")
-                ck.ok(len(cb) == 4 and "robustness report" in cb[3] and "production average" in cb[0] and "picked for their lost loops" in cb[1] and "profile-guided optimization" in cb[1] and "not time" in cb[1]
+                ck.ok(len(cb) == 5 and "robustness report" in cb[3] and "jobs started returned nothing" in cb[4] and "production average" in cb[0] and "picked for their lost loops" in cb[1] and "profile-guided optimization" in cb[1] and "not time" in cb[1]
                       and "one main toolchain" in cb[2] and "SSE2" in cb[2] and "section 6" in cb[2]
                       and page.evaluate("document.getElementById('cannot').closest('.abstract') !== null"),
                       "a box 'What this cannot tell you' sits with the abstract: production average, real programs picked for their lost loops and without PGO, counts are not time, one main toolchain at baseline SSE2")
@@ -2376,6 +2629,9 @@ def main():
                 story_checks(browser, base, ck, index, pooled)
                 collapsed_checks(browser, base, ck, index, saved, shots)
                 navigation_checks(browser, base, ck, index, pooled)
+                hero_image_checks(browser, base, ck, index)
+                phone_checks(browser, base, ck, index)
+                wording_checks(browser, base, ck, index)
                 print("== 390 wide")
                 errors = []
                 page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)

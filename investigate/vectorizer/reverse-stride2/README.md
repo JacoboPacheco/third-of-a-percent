@@ -75,7 +75,7 @@ hold the evidence.
 
 | item | value |
 |---|---|
-| compilers (Compiler Explorer ids) | `clang1810` 18.1.0, `clang1910` 19.1.0, `clang2010` 20.1.0, `clang2110` 21.1.0, `clang_trunk`; assertion builds `clang181assert` (18.1.0) and `clang201assert` (20.1.0); `opt1810`, `opt1910`, `opt2010`, `opttrunk` |
+| compilers (Compiler Explorer ids) | `clang1810` 18.1.0 (an 18.1.0 release candidate, see Not established), `clang1910` 19.1.0, `clang2010` 20.1.0, `clang2110` 21.1.0, `clang_trunk`; assertion builds `clang181assert` (18.1.0) and `clang201assert` (20.1.0); `opt1810`, `opt1910`, `opt2010`, `opttrunk` |
 | flags | `-O2 -std=c++20 -march=x86-64 -stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST` (or `..._NONE`), `-Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize` |
 | debug info | Compiler Explorer adds `-g`. Runs that print IR add `-g0` after it. The remarks of the 11 pairs of runs with and without `-g0` are identical |
 | sources | `sources/kernels.cpp`: the project's `k01` to `k05` loop functions, copied verbatim (`make_sources.py --check`). `sources/variants.cpp`, `sources/variants2.cpp`, `sources/variants3.cpp`: the variants of F7, F8 and F10. `sources/handwritten/s2-bound.ll`: hand-written IR (F7) |
@@ -364,6 +364,12 @@ For clang 18.1.0, `-O2`, x86-64 baseline:
 - **Whether a newer clang will vectorize these loops.** Trunk (see the Setup table for its build) does not. Its
   wording ("Early exit loop with store but no supported condition load") suggests that some early-exit loops with
   stores are handled and these are not (an inference from the wording). No LLVM commit was identified.
+- **Whether the timed compiler gives the same output.** The saved answers come from Compiler Explorer's
+  `clang1810`, which prints `clang version 18.1.0rc` at revision `461274b81d` (`raw/G-c18-kernels-fast-frontend-ir.json`,
+  `../matmul/derived/revisions.txt`): a release candidate, not the final 18.1.0 and not the Ubuntu 18.1.3 that the
+  timed runs used. The timed build gave the same remark, "could not determine number of loop iterations", for the
+  reverse and stride-2 loops (`dayone/results/run-38116223923/remarks.k04_rev.fast.txt` and `remarks.k05_stride2.fast.txt`).
+  Its IR and the other output quoted in this folder were not compared with the timed build.
 - **Other settings.** Not tested here: `-O3`, AVX2, AArch64, GCC, other element types, other libc++ versions
   than the ones Compiler Explorer ships. (`ce-sweep/` has the compile-only sweep over these; it does not
   look at passes.) The matrix-multiply loop is not covered here.
