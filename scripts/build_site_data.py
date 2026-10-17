@@ -23,6 +23,11 @@ Derived, never invented (every number is computed here from the files named, and
   siblings.json      siblings/summary.json reduced to toolchain x loop: lost or not, ratio ranges
   corpus.json        the two censuses: per category, per project, shapes, controls, example loops
   fixture/pooled.json  results/fixture.json (SAMPLE, made up) in the pooled shape, for ?data=fixture
+  arm64.json         the Arm column (arm64/PLAN.md): results/s8-arm-pooled/pooled.json (one CPU model, an AArch64
+                     runner) and the per-job files of results/s8-arm-run-*: cells, verdict, controls, the
+                     compiler remarks, check traps and NEON instruction counts of each kernel, and a short
+                     x86-64 comparison read from the pool above. Additive: nothing else in this folder reads it
+                     or changes because of it (tests/test_arm64_data.py builds without it and compares)
 scripts/check_site.py checks that every number printed on the page is in these files.
 """
 import argparse
@@ -868,6 +873,9 @@ def build(out_dir):
     dump(mitigate_data(), os.path.join(out_dir, "mitigate.json"))
     dump(siblings_data(), os.path.join(out_dir, "siblings.json"))
     dump(corpus_data(), os.path.join(out_dir, "corpus.json"))
+    if os.path.exists(os.path.join(REPO, ARM_POOLED)):  # the Arm column: its own file, read from nothing above except the x86 numbers it sets beside
+        dump(arm64_data(index, pooled), os.path.join(out_dir, "arm64.json"))
+        index["sections"]["arm64"] = "data/arm64.json"
     fx = os.path.join(REPO, "results", "fixture.json")
     dump(fixture_pooled(fx), os.path.join(out_dir, "fixture", "pooled.json"))
     index["fixture"] = {"path": "data/fixture/pooled.json", "source": rel(fx), "source_sha256": sha(fx),
@@ -1277,6 +1285,669 @@ def environment_data():
     return {"source": rel(path), "source_sha256": sha(path), "run_id": run_id, "report": rel(os.path.join(os.path.dirname(path), "report.txt")),
             "plan": d["plan"], "steal_large_pct": th["steal_large_share"] * 100, "drift_large_pct": th["drift_large_pct"],
             "min_left_per_side": th["min_left_per_side"], "models": models, "summary": summary}
+
+
+# ---------------------------------------------------------------- the Arm column (arm64/, results/s8-arm-*)
+ARM_POOLED = "results/s8-arm-pooled/pooled.json"
+ARM_PLAN = "arm64/PLAN.md"
+ARM_BUILDS = ("none", "fast", "novec", "none_a64", "fast_a64")
+ARM_DIFFS = (("L1", "L1.diff"), ("L1_aligned", "L1.aligned.diff"), ("L2", "L2.diff"), ("L2_aligned", "L2.aligned.diff"))
+# arm64/PLAN.md, "Written before the full results": the class each kernel was predicted to have under FAST on this runner
+# ("lost" or "kept" SIMD), None where the plan wrote no prediction. tests/test_arm64_data.py checks the plan's own words.
+ARM_PREDICTED = {"k01_sum_fwd": "kept", "k02_add_fwd": "kept", "k03_stencil": "kept", "k04_rev": "lost",
+                 "k05_stride2": "lost", "k06_gather": None, "k07_hist": None, "k08_matmul": "kept"}
+# the plan's "Forward loops (sum, add, stencil)"; the same section says "No placement effect is predicted" for them
+ARM_FORWARD = ("k01_sum_fwd", "k02_add_fwd", "k03_stencil")
+
+
+def _harness_module(name):
+    """harness/<name>.py loaded by path (no change to sys.path): the Arm listings are read with the harness's own code."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("harness_" + name, os.path.join(REPO, "harness", name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _lscpu_field(text, key):
+    m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), text or "", re.M)
+    return m.group(1).strip() if m else None
+
+
+def _arm_stat(p, spread=False):
+    """A pooled statistic as pooled.json stores it (ratio, 95% interval, half-width, jobs, between-job SD); with `spread`,
+    also the smallest and largest of the per-job ratios it was pooled from (the 30 values stay in pooled.json)."""
+    out = {k: p[k] for k in ("ratio", "ci95", "half_width_pct", "jobs", "between_job_sd_pct")}
+    if spread:
+        out["per_job_range"] = [min(p["per_job"]), max(p["per_job"])]
+    return out
+
+
+def _arm_listing(job_dir, name):
+    with open(os.path.join(job_dir, "asm", name), encoding="utf-8") as f:
+        return f.read().splitlines()
+
+
+def _arm_simd_mnemonics(lines, hp):
+    """The opcode sequence of the first (lowest-address) innermost loop with a NEON operand; None when the function has none."""
+    insns = hp.instructions(lines)
+    for lp in sorted(hp.hot(hp.loops(lines)), key=lambda x: int(x["start"], 16)):
+        if lp["simd"]:
+            lo, hi = int(lp["start"], 16), int(lp["end"], 16)
+            return [t.split()[0] for a, t in insns if lo <= a < hi]
+    return None
+
+
+def _arm_build(job_dir, kernel, build, bd, hp, template):
+    """One build of one kernel: the run's own record (traps, compiler remarks, loop count) and what the listing shows (NEON
+    instructions). The compile command is the build's template with the kernel's id filled in; a kernel whose recorded command
+    is not that carries its own in `command`."""
+    insns = hp.instructions(_arm_listing(job_dir, f"{kernel}.{build}.s"))
+    vec = bd.get("vectorization") or {}
+    remarks = vec.get("remarks") or []
+    interleave = None
+    for r in remarks:
+        m = re.search(r"interleaved count: (\d+)", r)
+        if m:
+            interleave = int(m.group(1))
+            break
+    why_not = next((re.sub(r"\s*\[-R[^\]]*\]$", "", r) for r in remarks if r.startswith("loop not vectorized:")), None)
+    out = {"sha256": bd["sha256"], "traps": bd["traps"], "asm_lines": bd["asm_lines"],
+           "neon_instructions": sum(1 for _, t in insns if hp._NEON.search(t)),
+           "vectorized": vec.get("vectorized"), "width": vec.get("width"), "interleave": interleave,
+           "remarks": remarks, "why_not_vectorized": why_not,
+           "hot_loops": sum(1 for lp in bd["loops"] if lp["innermost"]),
+           "hot_simd_loops": sum(1 for lp in bd["loops"] if lp["innermost"] and lp["simd"])}
+    if bd["command"] != template.replace("{kernel}", kernel):
+        out["command"] = bd["command"]
+    return out
+
+
+def _arm_diff(job_dir, kernel, suffix):
+    name = f"{kernel}.{suffix}"
+    lines = _arm_listing(job_dir, name)
+    return {"file": name, "added": sum(1 for x in lines if x.startswith("+") and not x.startswith("+++")),
+            "removed": sum(1 for x in lines if x.startswith("-") and not x.startswith("---"))}
+
+
+def _arm_agreement(job_dirs, det_docs, res_docs, kernels):
+    """In how many jobs each kernel's record (all five builds: the run's own facts, the listings, the four diffs, the
+    compiler-remark files) and the machine facts equal those of the first job. The binaries are expected to be the same
+    in every job (one image, one toolchain); this counts it."""
+    def read(path):
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+
+    def kernel_sig(job_dir, det, k):
+        kd = det["kernels"][k]
+        parts = [kd.get("loop_line")]
+        for b in ARM_BUILDS:
+            parts += [kd[b], read(os.path.join(job_dir, "asm", f"{k}.{b}.s")), read(os.path.join(job_dir, "remarks", f"{k}.{b}.txt"))]
+        parts += [read(os.path.join(job_dir, "asm", f"{k}.{s}")) for _, s in ARM_DIFFS]
+        return json.dumps(parts, sort_keys=True)
+
+    def machine_sig(det, res):
+        ls = det["lscpu"]
+        return json.dumps([res["run"]["runner"], res["run"]["toolchain"], res["run"]["flags"], det["cache_bytes"],
+                           det["size_targets_bytes"], det["pinned_cpu"], det["reps_per_side"],
+                           [_lscpu_field(ls, k) for k in ("Model name", "Vendor ID", "Stepping", "CPU(s)", "Thread(s) per core", "Flags")]],
+                          sort_keys=True)
+    sigs = [{k: kernel_sig(d, det, k) for k in kernels} for d, det in zip(job_dirs, det_docs)]
+    msig = [machine_sig(det, res) for det, res in zip(det_docs, res_docs)]
+    per_kernel = {k: sum(1 for s in sigs if s[k] == sigs[0][k]) for k in kernels}
+    return per_kernel, sum(1 for s in msig if s == msig[0])
+
+
+def _arm_x86(index, x86):
+    """The x86-64 numbers the Arm column is set beside, read from the pool the page is built on (nothing recomputed):
+    the model the page opens on (the one with the most jobs), the page-level ranges, the judged models' ranges per lost kernel."""
+    model = next(e for e in index["cpus"] if e["slug"] == index["default_cpu"])
+    block = next(b for b in x86["cpus"] if b["cpu_model"] == model["cpu_model"])
+    cells = {}
+    for x in block["cells"]:
+        cell = {"class": x["class"], "as_compiled": {k: x["as_compiled"][k] for k in ("ratio", "ci95", "jobs")},
+                "aligned": {k: x["aligned"][k] for k in ("ratio", "ci95", "jobs")}}
+        pos = (block.get("positive") or {}).get(x["cell_id"])
+        cell["positive"] = {k: pos[k] for k in ("ratio", "ci95", "jobs")} if pos else None
+        cells[x["cell_id"]] = cell
+    judged = index["page"]["judged_cpus"]
+    by_kernel = {}
+    for e in index["cpus"]:
+        if e["cpu_short"] in judged:
+            for k, r in (e.get("lost_by_kernel") or {}).items():
+                a = by_kernel.setdefault(k, {"min": r["min"], "max": r["max"]})
+                a["min"], a["max"] = min(a["min"], r["min"]), max(a["max"], r["max"])
+    return {"source": index["pooled"]["source"], "source_sha256": index["pooled"]["source_sha256"],
+            "jobs": index["pooled"]["jobs"], "runs": len(index["pooled"]["runs"]),
+            "criteria_sha256": x86["criteria_sha256"],
+            "model": {k: model[k] for k in ("cpu_model", "cpu_short", "slug", "jobs", "form", "aa_half_width_pct", "lost_by_kernel",
+                                            "forward_aligned", "forward_compiled")},
+            "cells": cells,
+            "page": {"lost": index["page"]["lost"], "forward_aligned": index["page"]["forward"]["aligned"],
+                     "forward_compiled": index["page"]["forward"]["compiled"], "forward_cpus": index["page"]["forward_cpus"],
+                     "judged_cpus": judged, "cpus_enough": index["page"]["cpus_enough"], "jobs_enough": index["page"]["jobs_enough"]},
+            "lost_by_kernel_judged": by_kernel}
+
+
+ARM_SEEDS = "arm64/seed-sensitivity.json"
+ARM_ROBUSTNESS = "robustness/results-arm.json"
+ARM_SLOW_SHARE = 0.05          # a process is "slow" when it runs more than 5% above the fastest process of its series in its job
+ARM_AA_L2_CELL = "k02_add_fwd.L2"   # the one cell whose identical-binary A/A each job also stored (details.json, aa_extra)
+ARM_AA_L1_CELL = "k02_add_fwd.L1"   # the cell of the A/A control the written rules read (controls.aa)
+ARM_METHOD_NAMES = {"a": "harness bootstrap", "b": "block bootstrap, 1 ABBA quartet", "b2": "block bootstrap, 2 ABBA quartets",
+                    "b5": "block bootstrap, 5 ABBA quartets", "c": "jobs-only bootstrap", "ct": "jobs-only t interval",
+                    "d": "lag-1 effective sample size", "d0": "first form of the lag-1 correction"}
+
+
+def _pool_module():
+    """harness/pool.py loaded by path, for the bootstrap statistics that pooled.json does not hold. It puts harness/ on
+    sys.path to import placement, stats and verdict; the path is restored afterwards."""
+    import importlib.util
+    saved = sys.path[:]
+    try:
+        spec = importlib.util.spec_from_file_location("harness_pool", os.path.join(REPO, "harness", "pool.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    finally:
+        sys.path[:] = saved
+    return mod
+
+
+def _geomean(vals):
+    import math
+    return math.exp(math.fsum(math.log(v) for v in vals) / len(vals))
+
+
+def _series_mixture(series_per_job):
+    """Descriptive statistics of the processes that run more than ARM_SLOW_SHARE above the fastest process of their own
+    series in their own job (one list of timings per job). Not a model: it says how many processes are slow, by how much,
+    and whether a slow process tends to follow a slow one (the previous repetition of the same side)."""
+    import numpy as np
+    total = slow = jobs_with = 0
+    job_share, excess, job_cv = [], [], []
+    after_slow = after_slow_n = after_ok = after_ok_n = 0
+    for x in series_per_job:
+        a = np.asarray(x, dtype=np.float64)
+        e = a / a.min() - 1.0
+        s = e > ARM_SLOW_SHARE
+        job_cv.append(100.0 * float(a.std(ddof=1) / a.mean()))
+        total += len(a)
+        n_slow = int(s.sum())
+        slow += n_slow
+        jobs_with += 1 if n_slow else 0
+        job_share.append(n_slow / len(a))
+        excess += [float(v) for v in e[s]]
+        prev, cur = s[:-1], s[1:]
+        after_slow_n += int(prev.sum())
+        after_slow += int((prev & cur).sum())
+        after_ok_n += int((~prev).sum())
+        after_ok += int((~prev & cur).sum())
+    q = [float(v) for v in np.percentile(excess, [10, 50, 90])] if excess else None
+    return {"processes": total, "slow": slow, "share_slow": slow / total, "jobs": len(series_per_job), "jobs_with_slow": jobs_with,
+            "job_share_min": min(job_share), "job_share_max": max(job_share),
+            "cv_pct": {"median": float(np.median(job_cv)), "min": min(job_cv), "max": max(job_cv)},
+            "excess_pct": {"q10": 100.0 * q[0], "median": 100.0 * q[1], "q90": 100.0 * q[2]} if q else None,
+            "pairs_after_slow": after_slow_n, "p_slow_after_slow": after_slow / after_slow_n if after_slow_n else None,
+            "pairs_after_ok": after_ok_n, "p_slow_after_ok": after_ok / after_ok_n if after_ok_n else None}
+
+
+def _floor_ratio(none_per_job, fast_per_job):
+    """FAST over NONE at the fast end of the timings instead of the middle: the geometric mean over jobs of the ratio of the
+    10th percentiles (linear interpolation) and of the ratio of the fastest processes. Descriptive; the written rules use medians."""
+    import numpy as np
+    p10 = [float(np.percentile(f, 10) / np.percentile(n, 10)) for n, f in zip(none_per_job, fast_per_job)]
+    mn = [min(f) / min(n) for n, f in zip(none_per_job, fast_per_job)]
+    return {"p10_ratio": _geomean(p10), "p10_job_range": [min(p10), max(p10)], "min_ratio": _geomean(mn), "min_job_range": [min(mn), max(mn)]}
+
+
+def _arm_aa_row(pooled_stat, ratios, job_hw, mixture, rule_max):
+    return {"pooled": {k: pooled_stat[k] for k in ("ratio", "ci95", "half_width_pct", "between_job_sd_pct")},
+            "jobs": len(ratios), "job_ratio_range": [min(ratios), max(ratios)],
+            "job_half_width_pct": {"min": min(job_hw), "max": max(job_hw)},
+            "per_job": {"ratio": list(ratios), "half_width_pct": list(job_hw)},
+            "jobs_above_rule_max": sum(1 for h in job_hw if h > rule_max),
+            "above_rule_max": pooled_stat["half_width_pct"] > rule_max, "mixture": mixture}
+
+
+def _arm_noise(pool, c, res, det, cells, rule_max):
+    """The L2 noise facts: the identical-binary A/A at L1 and L2, the same cell's other controls, and how the processes of
+    each series are spread (a fast floor and a share of slower processes), from the stored per-job samples."""
+    import statistics
+    aa1 = [(r["controls"]["aa"]["a_ns"], r["controls"]["aa"]["b_ns"]) for r in res]
+    aa2 = [(d["aa_extra"][ARM_AA_L2_CELL]["a_ns"], d["aa_extra"][ARM_AA_L2_CELL]["b_ns"]) for d in det]
+    aa = {}
+    for size, cell, pairs, pooled_stat, job_hw, source in (
+            ("L1", ARM_AA_L1_CELL, aa1, c["aa"], [r["controls"]["aa"]["half_width_pct"] for r in res],
+             "controls.aa of each job's results.json, pooled in pooled.json"),
+            ("L2", ARM_AA_L2_CELL, aa2, pool.pair_stat(c["cpu_model"], "aa_extra|" + ARM_AA_L2_CELL, aa2),
+             [d["aa_extra"][ARM_AA_L2_CELL]["half_width_pct"] for d in det],
+             "aa_extra of each job's details.json, pooled here with harness/pool.py pair_stat under the stat id "
+             "'aa_extra|" + ARM_AA_L2_CELL + "' (a statistic pooled.json does not hold)")):
+        ratios = [statistics.median(b) / statistics.median(a) for a, b in pairs]
+        aa[size] = {"cell_id": cell, "source": source,
+                    **_arm_aa_row(pooled_stat, ratios, job_hw,
+                                  {"a": _series_mixture([p[0] for p in pairs]), "b": _series_mixture([p[1] for p in pairs])}, rule_max)}
+    same = next(x for x in cells if x["cell_id"] == ARM_AA_L2_CELL)
+    same_cell = {"cell_id": ARM_AA_L2_CELL,
+                 "identical_binary_aa": {k: aa["L2"]["pooled"][k] for k in ("half_width_pct", "between_job_sd_pct")},
+                 "layout_aa": {k: same["layout_aa"][k] for k in ("half_width_pct", "between_job_sd_pct")},
+                 "as_compiled": {k: same["as_compiled"][k] for k in ("half_width_pct", "between_job_sd_pct")},
+                 "aligned": {k: same["aligned"][k] for k in ("half_width_pct", "between_job_sd_pct")}}
+    by_id = [{x["cell_id"]: x for x in r["cells"]} for r in res]
+    rows = []
+    for x in cells:
+        cid = x["cell_id"]
+        cs = [b[cid] for b in by_id]
+        none = [c_["none_ns"] for c_ in cs]
+        fast = [c_["fast_ns"] for c_ in cs]
+        rows.append({"cell_id": cid, "size_class": x["size_class"], "class": x["class"],
+                     "none": _series_mixture(none), "fast": _series_mixture(fast),
+                     "floor_ratio": {"as_compiled": _floor_ratio(none, fast),
+                                     "aligned": _floor_ratio([c_["aligned"]["none_ns"] for c_ in cs], [c_["aligned"]["fast_ns"] for c_ in cs])}})
+    by_size = {}
+    for size in sorted({r["size_class"] for r in rows}):
+        sel = [r for r in rows if r["size_class"] == size]
+        entry = {"cells": len(sel)}
+        for side in ("none", "fast"):
+            tot, sl = sum(r[side]["processes"] for r in sel), sum(r[side]["slow"] for r in sel)
+            shares = [r[side]["share_slow"] for r in sel]
+            entry[side] = {"processes": tot, "slow": sl, "share_slow": sl / tot, "cell_share_min": min(shares), "cell_share_max": max(shares)}
+        by_size[size] = entry
+    return {"slow_share": ARM_SLOW_SHARE,
+            "definition": "a process is slow when it takes more than 5% longer than the fastest process of the same series "
+                          "(one side of one cell, in one job); the excess is that process's time over the fastest, in percent; "
+                          "p_slow_after_slow is the share of slow processes among those whose previous repetition on the same side "
+                          "was slow. Descriptive only: no cause is established and no hardware counter was read.",
+            "rule_aa_half_width_max_pct": rule_max, "identical_binary_aa": aa, "same_cell_l2": same_cell,
+            "mixture": {"cells": rows, "by_size": by_size}}
+
+
+def _arm_layout_vs_placement(pool, c, res, cells):
+    """The layout A/A (NONE against NONE built with -falign-loops=64) beside the placement statistic D of the main pair
+    (FAST over NONE as compiled, over the same ratio with loops aligned) for all 16 cells. D is in pooled.json for the
+    kept-SIMD in-cache cells and is computed here with the same function for the others."""
+    by_id = [{x["cell_id"]: x for x in r["cells"]} for r in res]
+    builds = {tuple((p["a_build"], p["b_build"]) for p in r["controls"]["layout_aa"] if p["id"] == cells[0]["cell_id"])[0] for r in res}
+    assert builds == {("none", "none_a64")}, builds
+    rows = []
+    for x in cells:
+        cid = x["cell_id"]
+        stored = next(q for q in c["cells"] if q["cell_id"] == cid).get("placement")
+        if stored:
+            d, src = stored["d"], "pooled.json"
+        else:
+            d = pool.placement_stat(c["cpu_model"], f"{cid}|placement",
+                                    [(b[cid]["none_ns"], b[cid]["fast_ns"], b[cid]["aligned"]["none_ns"], b[cid]["aligned"]["fast_ns"]) for b in by_id])
+            src = "computed here with harness/pool.py placement_stat (not stored in pooled.json)"
+        lay = x["layout_aa"]
+        rows.append({"cell_id": cid, "class": x["class"], "size_class": x["size_class"],
+                     "layout_aa": {k: lay[k] for k in ("ratio", "ci95", "half_width_pct")},
+                     "d": {k: d[k] for k in ("ratio", "ci95", "half_width_pct")}, "d_source": src,
+                     "as_compiled_over_aligned": x["as_compiled"]["ratio"] / x["aligned"]["ratio"],
+                     "d_excludes_1": d["ci95"][0] > 1.0 or d["ci95"][1] < 1.0,
+                     "layout_aa_excludes_1": lay["ci95"][0] > 1.0 or lay["ci95"][1] < 1.0,
+                     "d_shift_pct": 100.0 * (d["ratio"] - 1.0), "layout_aa_shift_pct": 100.0 * (lay["ratio"] - 1.0),
+                     "implied_fast_side_ratio": d["ratio"] / lay["ratio"]})
+    blind = [r["cell_id"] for r in rows if r["d_excludes_1"] and not r["layout_aa_excludes_1"]]
+    top = max(rows, key=lambda r: abs(r["d_shift_pct"]))
+    top_l1 = max((r for r in rows if r["size_class"] == "L1"), key=lambda r: abs(r["d_shift_pct"]))
+    return {"note": "D = (FAST/NONE as compiled) / (FAST/NONE aligned), the pooled geometric mean over jobs. The layout A/A moves only "
+                    "NONE's loops (NONE against NONE aligned); D moves both builds' loops, so D / layout A/A ratio is what the pooled "
+                    "numbers imply for FAST's own placement shift (arithmetic on two pooled ratios from separate timings of the same "
+                    "binaries; implied_fast_side_ratio).",
+            "layout_aa_builds": ["none", "none_a64"], "rows": rows,
+            "d_excludes_1_layout_aa_includes_1": blind, "largest_d_shift": {"cell_id": top["cell_id"], "d_shift_pct": top["d_shift_pct"]},
+            "largest_d_shift_l1": {"cell_id": top_l1["cell_id"], "d_shift_pct": top_l1["d_shift_pct"]},
+            "largest_layout_aa_shift_l1_pct": max(abs(r["layout_aa_shift_pct"]) for r in rows if r["size_class"] == "L1")}
+
+
+def _arm_matmul_cost(cells, ks, res):
+    """Matrix multiply at the two sizes: the time ratio against Cachegrind's instruction ratio, and what differs between
+    the two cells (cache level, d, the elements left after whole vector passes)."""
+    import math
+    k = next(x for x in ks if x["kernel"] == "k08_matmul")
+    width, interleave = k["builds"]["fast"]["width"], k["builds"]["fast"]["interleave"]
+    out = {"vector_pass_elements": width * interleave, "width": width, "interleave": interleave, "sizes": {}}
+    for size in ("L1", "L2"):
+        x = next(q for q in cells if q["cell_id"] == f"k08_matmul.{size}")
+        cmd = res[0]["cells"][[q["cell_id"] for q in res[0]["cells"]].index(x["cell_id"])]["command"].splitlines()[-1]
+        d = int(cmd.split()[-2])
+        row = {"d": d, "d_mod_pass": d % (width * interleave), "whole_passes": d // (width * interleave),
+               "working_set_bytes": res[0]["cells"][[q["cell_id"] for q in res[0]["cells"]].index(x["cell_id"])]["working_set_bytes"]}
+        for col in ("as_compiled", "aligned"):
+            t, i = x[col]["ratio"], x["instr_ratio"][col]
+            row[col] = {"time_ratio": t, "instr_ratio": i, "log_time_over_log_instr": math.log(t) / math.log(i)}
+        out["sizes"][size] = row
+    return out
+
+
+def _arm_forward_instr(cells_in, res):
+    """The three forward loops: Cachegrind's instruction counts of the two builds at both sizes, as compiled and aligned, beside
+    the time ratio. The instructions the check adds are the same number at both sizes (a constant per call), so the share they
+    make of a call depends on the array length chosen for the size."""
+    rows = []
+    for x in cells_in:
+        if x["kernel"] not in ARM_FORWARD:
+            continue
+        rc = next(q for q in res[0]["cells"] if q["cell_id"] == x["cell_id"])
+        row = {"cell_id": x["cell_id"], "kernel": x["kernel"], "size_class": x["size_class"],
+               "elements": int(rc["command"].splitlines()[-1].split()[-2])}
+        for col, ik in (("as_compiled", "instr"), ("aligned", "aligned_instr")):
+            i = x[ik]
+            row[col] = {"none": i["none"], "fast": i["fast"], "added": i["fast"] - i["none"], "instr_ratio": i["ratio"],
+                        "time_ratio": x[col]["ratio"]}
+        rows.append(row)
+    same = {}
+    for k in ARM_FORWARD:
+        sel = [r for r in rows if r["kernel"] == k]
+        same[k] = {col: len({r[col]["added"] for r in sel}) == 1 for col in ("as_compiled", "aligned")}
+    return {"cells": rows, "added_same_at_both_sizes": same}
+
+
+def _arm_interval_methods(c, rob, rob_sha):
+    """The eight interval methods of robustness/analyze.py on the Arm pool, read from robustness/results-arm.json: per method
+    the verdict form, which counted forward cells miss the rule, and the interval of the deciding cell."""
+    import statistics
+    ds = rob["datasets"]["s8arm"]
+    r = ds["cpus"][c["cpu_model"]]
+    a = r["methods"]["a"]
+    methods = []
+    for m in rob["methods"]:
+        x = r["methods"][m]
+        cells = x["cells"]
+        flips = {"fwd_pass": [], "lost_ok": [], "placement_sensitive": []}
+        widths = []
+        for cid, ca in a["cells"].items():
+            cx = cells[cid]
+            for key, fk in (("fwd_pass", "fwd_pass"), ("lost_ok", "lost_ok"), ("ps", "placement_sensitive")):
+                if key in ca and ca[key] != cx[key]:
+                    flips[fk].append(cid)
+            for col in ("ac", "al"):
+                widths.append((cx[col][2] - cx[col][1]) / (ca[col][2] - ca[col][1]))
+        lost = [min(q["ac"][1], q["al"][1]) for q in cells.values() if q["class"] == "lost"]
+        fwd = [q["al"][2] for q in cells.values() if q["class"] == "kept" and not q.get("ps")]
+        dec = cells[ARM_AA_L2_CELL]["al"]
+        methods.append({"id": m, "name": ARM_METHOD_NAMES[m], "form": x["form"], "aa_half_width_pct": x["aa_hw_pct"],
+                        "forward_limit": 1.0 + x["limit_pct"] / 100.0,
+                        "forward_misses": sorted(cid for cid, q in cells.items() if q["class"] == "kept" and not q.get("ps") and not q["fwd_pass"]),
+                        "placement_sensitive": sorted(cid for cid, q in cells.items() if q.get("ps")),
+                        "deciding_cell": {"cell_id": ARM_AA_L2_CELL, "column": "aligned", "ratio": dec[0], "ci95": [dec[1], dec[2]]},
+                        "flips": {k: len(v) for k, v in flips.items()},
+                        "width_ratio_median": statistics.median(widths), "width_ratio_max": max(widths),
+                        "min_lost_ci95_lo": min(lost), "max_forward_ci95_hi": max(fwd)})
+    forms = {}
+    for m in methods:
+        forms[m["form"]] = forms.get(m["form"], 0) + 1
+    return {"source": ARM_ROBUSTNESS, "source_sha256": rob_sha, "plan": "robustness/PLAN.md", "report": "robustness/report.md",
+            "pool_form_of_record": c["verdict"]["form"], "self_test": ds["self_test"], "autocorr": r["autocorr"], "jobs": r["jobs"],
+            "methods": methods, "forms": forms, "map_methods": [m["id"] for m in methods if m["form"] == "map"],
+            "inconclusive_methods": [m["id"] for m in methods if m["form"] == "inconclusive"]}
+
+
+def _arm_seed_sensitivity(seeds, seeds_sha, pooled_sha):
+    """The compact form of arm64/seed-sensitivity.json (arm64/seeds.py): what the page and the README quote."""
+    assert seeds["pool"]["sha256"] == pooled_sha, "arm64/seed-sensitivity.json was made from another version of the pool; run python arm64/seeds.py"
+    rows = []
+    for r in seeds["rows"]:
+        e = {"id": r["id"], "kind": r["kind"], "cell_id": r["cell_id"], "column": r["column"], "stored": r["stored"]}
+        if r["kind"] == "forward":
+            e.update({"judged": r["judged"], "limit": r["limit"], "alt_hi": r["alt"]["hi"], "alt_at_or_above_limit": r["alt"]["at_or_above_limit"],
+                      "alt_above_limit": r["alt"]["above_limit"], "alt_above_stored": r["alt"]["above_stored"],
+                      "converged_hi": r["converged"]["hi"], "converged_above_limit": r["converged"]["above_limit"]})
+        elif r["kind"] == "lost":
+            e.update({"limit": r["limit"], "alt_lo": r["alt"]["lo"], "alt_below_limit": r["alt"]["below_limit"]})
+        elif r["kind"] == "placement":
+            e.update({"mechanical": r["mechanical"], "stored_excludes_1": r["stored_excludes_1"], "stored_sensitive": r["stored_sensitive"],
+                      "alt_excludes_1": r["alt"]["excludes_1"], "alt_sensitive": r["alt"]["sensitive"]})
+        elif r["kind"] == "positive":
+            e.update({"alt_lo": r["alt"]["lo"], "alt_seen": r["alt"]["seen"]})
+        else:
+            e.update({"limit": r["limit"], "alt_half_width_pct": r["alt"]["half_width_pct"], "alt_above_limit": r["alt"]["above_limit"],
+                      "alt_forward_limit_above_floor": r["alt"]["forward_limit_above_floor"]})
+        e["draws"] = r["alt"]["draws"]
+        rows.append(e)
+    d = seeds["deciding_cell"]
+    full = seeds["full"]
+    derived = seeds["derived"]
+    return {"source": ARM_SEEDS, "source_sha256": seeds_sha, "script": "arm64/seeds.py", "pool_sha256": pooled_sha,
+            "stored_seed": {k: seeds["stored_seed"][k] for k in ("prefix", "resamples", "fixed_on", "fixed_in")},
+            "alt_seeds": {k: seeds["alt_seeds"][k] for k in ("pattern", "count", "resamples")},
+            "converged_resamples": seeds["converged"]["resamples"],
+            "deciding_cell": {k: d[k] for k in d if k not in ("upper_ends", "seeds_at_or_above_limit")},
+            "rows": rows,
+            "full": {k: full[k] for k in ("count", "forms", "forward_missed_counts", "lost_missed_any", "placement_sets", "aa_half_width_pct",
+                                          "forward_limit_pct", "deciding_hi")},
+            "derived": {k: derived[k] for k in ("basis", "seeds", "equals_analyse_cpu_on_first", "forms", "forward_missed_counts",
+                                                "lost_missed_any", "placement_sets", "positive_seen_in_all", "not_map_seeds")}}
+
+
+def _arm_stored_diffs(ks, job_dirs):
+    """The stored Arm .diff files were written when harness/asm.py normalised branch targets of four or more hex digits only,
+    so a branch that moved between NONE and FAST with a three-digit target shows as one removed and one added line. Per kernel
+    and diff: the stored counts of added and removed lines, and the counts of the diff the fixed normalize() makes of the same
+    two saved listings (the stored files themselves are not regenerated)."""
+    asm_mod = _harness_module("asm")
+    builds = {"L1": ("none", "fast"), "L2": ("none", "fast"), "L1_aligned": ("none_a64", "fast_a64"), "L2_aligned": ("none_a64", "fast_a64")}
+
+    def counts(lines):
+        return (sum(1 for x in lines if x.startswith("+") and not x.startswith("+++")),
+                sum(1 for x in lines if x.startswith("-") and not x.startswith("---")))
+
+    out = []
+    for kr in ks:
+        k = kr["kernel"]
+        row = {"kernel": k}
+        for name, suffix in ARM_DIFFS:
+            a, r = counts(_arm_listing(job_dirs[0], f"{k}.{suffix}"))
+            nb, fb = builds[name]
+            a2, r2 = counts(asm_mod.unified_diff(_arm_listing(job_dirs[0], f"{k}.{nb}.s"), _arm_listing(job_dirs[0], f"{k}.{fb}.s"),
+                                                 f"{k}.{nb}.s", f"{k}.{fb}.s").splitlines())
+            row[name] = {"added": a, "removed": r, "added_after_fix": a2, "removed_after_fix": r2}
+        out.append(row)
+    return {"normalize_fixed_in": "harness/asm.py normalize(): targets of three or more hex digits (was four); applies to future runs",
+            "stored_diffs_predate_fix": True,
+            "note": "The .diff files of results/s8-arm-run-* were written before the fix and are not regenerated. A branch whose "
+                    "three-digit target moved between the builds appears in them as one removed and one added line; the "
+                    "after_fix counts are those of the diff the fixed normalize() makes of the same saved listings.",
+            "kernels": out}
+
+
+def arm64_data(index, x86):
+    """site/data/arm64.json: the Arm column. Everything is read from results/s8-arm-pooled/pooled.json and the per-job
+    files of the runs it names (nothing is recomputed by hand and nothing is typed in, except ARM_PREDICTED, which copies
+    the plan's own words); the x86-64 numbers come from `index` and `x86` (the pool the page is built on), read-only."""
+    import statistics
+    path = os.path.join(REPO, ARM_POOLED)
+    pooled = load(path)
+    crit = load(os.path.join(REPO, CRITERIA_FILE))
+    assert pooled["criteria_file"] == CRITERIA_FILE and len(pooled["cpus"]) == 1, "the Arm pool is one CPU model under criteria-v3"
+    c = pooled["cpus"][0]
+    v, vc = c["verdict"], crit["verdict"]
+    min_jobs = crit["v3"]["pooling"]["minimum_jobs"]
+    base = os.path.dirname(path)
+    job_dirs = [os.path.normpath(os.path.join(base, os.path.dirname(i["path"]))) for i in pooled["inputs"]]
+    res = [load(os.path.join(d, "results.json")) for d in job_dirs]
+    det = [load(os.path.join(d, "details.json")) for d in job_dirs]
+    hp = _harness_module("placement")
+    cells_in = c["cells"]
+    kernels = sorted({x["kernel"] for x in cells_in})
+    sizes = sorted({x["size_class"] for x in cells_in})
+    ps_ids = [p["cell_id"] for p in v["placement_sensitive"]]
+    limit = 1.0 + v["forward_limit_pct"] / 100.0
+
+    # runs
+    runs = []
+    for rid in pooled["runs"]:
+        rd = [r for r in res if r["run"]["id"] == rid]
+        pr = next(x for x in c["per_run"] if x["run_id"] == rid)
+        runs.append({"run_id": rid, "workflow_run_url": rd[0]["run"]["workflow_run_url"], "commit": rd[0]["run"]["commit"],
+                     "started_at": min(r["run"]["started_at"] for r in rd), "jobs": len(rd), "form": pr["form"], "line": pr["line"]})
+
+    # machine and toolchain (the first job's record; the agreement count says how many jobs report the same)
+    per_kernel_agree, machine_agree = _arm_agreement(job_dirs, det, res, kernels)
+    r0, d0 = res[0], det[0]
+    ls = d0["lscpu"]
+    flag_set = set((_lscpu_field(ls, "Flags") or "").split())
+    commands = [bd["command"] for kd in d0["kernels"].values() for bd in kd.values() if isinstance(bd, dict) and "command" in bd]
+    templates = {b: d0["kernels"][kernels[0]][b]["command"].replace(kernels[0], "{kernel}") for b in ARM_BUILDS}
+    runner = r0["run"]["runner"]
+    machine = {"os": runner["os"], "kernel": runner["kernel"], "arch": runner["arch"], "cpu_model": runner["cpu_model"],
+               "vendor_id": _lscpu_field(ls, "Vendor ID"), "stepping": _lscpu_field(ls, "Stepping"), "vcpus": runner["cores"],
+               "threads_per_core": int(_lscpu_field(ls, "Thread(s) per core")),
+               "l1d_kib": runner["l1d_kib"], "l2_kib": runner["l2_kib"], "l3_kib": runner["l3_kib"],
+               "cache_bytes": d0["cache_bytes"], "size_targets_bytes": d0["size_targets_bytes"],
+               "pinned_cpu": d0["pinned_cpu"], "reps_per_side": d0["reps_per_side"],
+               "isa_flags": {f: f in flag_set for f in ("asimd", "sve", "sve2")},
+               "march_flag_in_builds": any(re.search(r"-m(?:arch|cpu)=", x) for x in commands),
+               "toolchain": r0["run"]["toolchain"], "flags": r0["run"]["flags"], "commands": templates,
+               "jobs": len(res), "jobs_agreeing": machine_agree}
+
+    # cells
+    run_cells = [r.get("cells") for r in c["per_run"]]
+    cells = []
+    for x in cells_in:
+        cid = x["cell_id"]
+        pl = x.get("placement")
+        pos = c["positive"].get(cid)
+        cells.append({
+            "cell_id": cid, "kernel": x["kernel"], "size_class": x["size_class"], "class": x["class"],
+            "as_compiled": _arm_stat(x["as_compiled"], True), "aligned": _arm_stat(x["aligned"], True),
+            "instr_ratio": {"as_compiled": x["instr"]["ratio"], "aligned": x["aligned_instr"]["ratio"]}, "instr_agree": x["instr_agree"],
+            "layout_aa": _arm_stat(c["layout_aa"][cid]),
+            "positive": _arm_stat(pos) if pos else None,
+            "placement": ({k: pl[k] for k in ("statistical", "mechanical", "sensitive", "hot_none", "hot_fast")}
+                          | {"d": _arm_stat(pl["d"])}) if pl else None,
+            "placement_sensitive": cid in ps_ids,
+            "per_run": {col: [rc[cid][col][0] if rc else None for rc in run_cells] for col in ("as_compiled", "aligned")},
+        })
+    by_id = {x["cell_id"]: x for x in cells}
+    sd = [(x[col]["between_job_sd_pct"], x["cell_id"], col) for x in cells for col in ("as_compiled", "aligned")]
+    sd_l1 = max(s for s in sd if s[1].endswith(".L1"))
+    sd_l2 = max(s for s in sd if s[1].endswith(".L2"))
+
+    # kernels
+    src = kernel_sources(kernels)
+    ks = []
+    for k in kernels:
+        job_dir = job_dirs[0]
+        builds = {b: _arm_build(job_dir, k, b, d0["kernels"][k][b], hp, templates[b]) for b in ARM_BUILDS}
+        vn, vf = builds["none"]["vectorized"], builds["fast"]["vectorized"]
+        remark_class = "off_axis" if not vn else "kept" if vf else "lost"
+        classes = {by_id[f"{k}.{s}"]["class"] for s in sizes}
+        flagged = [cid for cid in ps_ids if cid.startswith(k + ".")]
+        pred = ARM_PREDICTED[k]
+        simd = {}
+        for col, (nb, fb) in (("as_compiled", ("none", "fast")), ("aligned", ("none_a64", "fast_a64"))):
+            mn = _arm_simd_mnemonics(_arm_listing(job_dir, f"{k}.{nb}.s"), hp)
+            mf = _arm_simd_mnemonics(_arm_listing(job_dir, f"{k}.{fb}.s"), hp)
+            simd[col] = {"none_instructions": len(mn) if mn is not None else None, "fast_instructions": len(mf) if mf is not None else None,
+                         "same_opcodes": (mn == mf) if mn is not None and mf is not None else None}
+        ks.append({
+            "kernel": k, "name": VERSIONS_KERNELS[k], "source": src[k], "class": classes.pop() if len(classes) == 1 else None,
+            "class_from_remarks": remark_class,
+            "prediction": {"class": pred, "class_held": (pred == remark_class) if pred else None,
+                           "placement_effect": "none" if k in ARM_FORWARD else None,
+                           "placement_held": (not flagged) if k in ARM_FORWARD else None},
+            "placement_sensitive_cells": flagged,
+            "builds": builds, "simd_loop": simd,
+            "asm_lines_delta": builds["fast"]["asm_lines"] - builds["none"]["asm_lines"],
+            "neon_removed": builds["none"]["neon_instructions"] - builds["fast"]["neon_instructions"],
+            "diffs": {name: _arm_diff(job_dir, k, suffix) for name, suffix in ARM_DIFFS},
+            "source_job": rel(job_dir), "jobs_agreeing": per_kernel_agree[k],
+        })
+
+    # verdict
+    kept_rows, lost_rows, above = [], [], []
+    for x in cells:
+        a = x["aligned"]
+        if x["class"] == "kept":
+            judged = x["cell_id"] not in ps_ids
+            kept_rows.append({"cell_id": x["cell_id"], "kernel": x["kernel"], "size_class": x["size_class"], "judged": judged,
+                              "as_compiled_ratio": x["as_compiled"]["ratio"], "aligned_ratio": a["ratio"], "aligned_ci_hi": a["ci95"][1],
+                              "passes": (a["ratio"] <= vc["forward_point_max_ratio"] and a["ci95"][1] <= limit) if judged else None})
+        if x["class"] == "lost":
+            lo = {col: x[col]["ci95"][0] for col in ("as_compiled", "aligned")}
+            lost_rows.append({"cell_id": x["cell_id"], "kernel": x["kernel"], "size_class": x["size_class"],
+                              "as_compiled_ci_lo": lo["as_compiled"], "aligned_ci_lo": lo["aligned"],
+                              "passes": all(q >= vc["lost_ci_lo_min_ratio"] for q in lo.values())})
+        if x["class"] in ("kept", "lost") and x["cell_id"] not in ps_ids:
+            for col in ("as_compiled", "aligned"):
+                if x[col]["ci95"][0] > limit:
+                    above.append({"cell_id": x["cell_id"], "column": col, "ci_lo": x[col]["ci95"][0]})
+    verdict = {"form": v["form"], "line": v["line"], "why": v["why"], "stability": c["stability"], "page_line": pooled["page"]["line"],
+               "forward_limit_pct": v["forward_limit_pct"], "limit": limit, "forward_point_max_ratio": vc["forward_point_max_ratio"],
+               "lost_ci_lo_min_ratio": vc["lost_ci_lo_min_ratio"], "aa_half_width_max_pct": vc["aa_half_width_max_pct"],
+               "aa_half_width_pct": v["aa_half_width_pct"], "minimum_jobs": min_jobs,
+               "n": v["n"], "n_as_compiled": v["n_as_compiled"], "x_pct": v["x_pct"],
+               "forward_rule_cells": kept_rows, "forward_missed": [r["cell_id"] for r in kept_rows if r["judged"] and not r["passes"]],
+               "lost_rule_cells": lost_rows, "above_forward_limit": above,
+               "placement_sensitive": v["placement_sensitive"], "off_axis": v["off_axis"]}
+
+    # cpu_summary() names the cells of kernels that keep SIMD "forward"; here that group also holds matrix multiply, so the
+    # keys say "kept", and the three forward loops of the plan get their own ranges
+    summary = cpu_summary(c, min_jobs)
+    for k in ("forward_aligned", "forward_compiled", "forward_compiled_max_cell", "forward_judged_aligned"):
+        if k in summary:
+            summary["kept" + k[len("forward"):]] = summary.pop(k)
+    forward_loops = {"kernels": list(ARM_FORWARD)}
+    for s in sizes:
+        fc = [x for x in cells if x["kernel"] in ARM_FORWARD and x["size_class"] == s]
+        forward_loops[s] = {col: minmax([x[col]["ratio"] for x in fc]) for col in ("as_compiled", "aligned")}
+
+    aa = c["aa"]
+    layout_hw = [x["layout_aa"]["half_width_pct"] for x in cells]
+    job_hw = [r["controls"]["aa"]["half_width_pct"] for r in res]
+    rep = c["reproduction"]
+
+    # sensitivity readings beside the stored verdict (they change nothing in it): the other seeds (arm64/seeds.py, stored in
+    # arm64/seed-sensitivity.json), the other interval methods (robustness/analyze.py --arm, stored in robustness/results-arm.json),
+    # the noise of the L2 timings, the layout A/A against D, the matrix multiply cost against its instruction count
+    seeds_path, rob_path = os.path.join(REPO, ARM_SEEDS), os.path.join(REPO, ARM_ROBUSTNESS)
+    seeds, rob = load(seeds_path), load(rob_path)
+    dec_cell = ARM_AA_L2_CELL
+    dec = by_id[dec_cell]["aligned"]
+    sdc = seeds["deciding_cell"]
+    assert (sdc["cell_id"], sdc["column"]) == (dec_cell, "aligned") and sdc["stored_hi"] == dec["ci95"][1], "the seed file is not about this pool"
+    ra = rob["datasets"]["s8arm"]["cpus"][c["cpu_model"]]["methods"]["a"]
+    import math
+    assert ra["form"] == v["form"] and all(math.isclose(p, q, rel_tol=1e-9) for p, q in zip(ra["cells"][dec_cell]["al"], [dec["ratio"], *dec["ci95"]])), \
+        "results-arm.json is not about this pool"
+    pool_mod = _pool_module()
+    noise = _arm_noise(pool_mod, c, res, det, cells, vc["aa_half_width_max_pct"])
+    return {
+        "note": "derived by scripts/build_site_data.py from " + ARM_POOLED + " and the per-job files of the runs it names; "
+                "an additive column: it changes no x86-64 file or number, and its x86 block only repeats numbers read from the "
+                "pool the page is built on",
+        "plan": ARM_PLAN, "source": ARM_POOLED, "source_sha256": sha(path), "arch": machine["arch"],
+        "cpu_model": c["cpu_model"], "cpu_short": cpu_short(c["cpu_model"]), "slug": slug(cpu_short(c["cpu_model"])),
+        "criteria": {"file": CRITERIA_FILE, "sha256": pooled["criteria_sha256"],
+                     "same_as_x86_pool": pooled["criteria_sha256"] == x86["criteria_sha256"],
+                     "resamples": pooled["resamples"], "minimum_jobs": min_jobs, "jobs_per_run": crit["v3"]["matrix"]["jobs_per_run"],
+                     "reps_per_side": crit["v3"]["timing"]["reps_per_side"]},
+        "jobs": len(res), "runs": runs, "machine": machine,
+        "summary": summary, "forward_loops": forward_loops,
+        "aa": {"ratio": aa["ratio"], "ci95": aa["ci95"], "half_width_pct": aa["half_width_pct"], "jobs": aa["jobs"],
+               "between_job_sd_pct": aa["between_job_sd_pct"], "per_job": aa["per_job"],
+               "job_half_width_pct": {"min": min(job_hw), "median": statistics.median(job_hw), "max": max(job_hw)},
+               "layout_half_width_pct": {"min": min(layout_hw), "max": max(layout_hw)}},
+        "between_job_sd": {"l1_max_pct": sd_l1[0], "l1_max_cell": sd_l1[1], "l1_max_column": sd_l1[2],
+                           "l2_max_pct": sd_l2[0], "l2_max_cell": sd_l2[1], "l2_max_column": sd_l2[2]},
+        "reproduction": {"checked": rep["checked"], "outside": rep["outside"],
+                         "max_gap_pct": max([m["gap_pct"] for m in rep["misses"]], default=None), "misses": rep["misses"]},
+        "verdict": verdict, "cells": cells, "kernels": ks,
+        "instr_label": cells_in[0]["instr_label"],
+        "build_facts": {"jobs": len(res), "kernels": len(kernels), "builds_per_kernel": len(ARM_BUILDS),
+                        "files_per_kernel": len(ARM_BUILDS) * 2 + len(ARM_DIFFS), "machine_jobs_agreeing": machine_agree,
+                        "all_agree": machine_agree == len(res) and all(n == len(res) for n in per_kernel_agree.values())},
+        "x86": _arm_x86(index, x86),
+        "seed_sensitivity": _arm_seed_sensitivity(seeds, sha(seeds_path), sha(path)),
+        "interval_methods": _arm_interval_methods(c, rob, sha(rob_path)),
+        "noise": noise,
+        "layout_vs_placement": _arm_layout_vs_placement(pool_mod, c, res, cells),
+        "matmul_cost": _arm_matmul_cost(cells, ks, res),
+        "forward_instr": _arm_forward_instr(cells_in, res),
+        "stored_diffs": _arm_stored_diffs(ks, job_dirs),
+    }
 
 
 def tree(root):

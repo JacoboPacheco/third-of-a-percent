@@ -182,7 +182,7 @@
         <ul>
           <li>Your production average: these are single loops, not services.</li>
           <li><span data-v="rwWorkloadsCap">Six</span> real-program workloads (<span data-v="rwProjects">four</span> projects) timed, picked for their lost loops, no profile-guided optimization in the main timing; counts are not time.</li>
-          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), the other setups on few jobs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span></li>
+          <li>Timed: one main toolchain (<span data-v="clang">clang 18.1.3</span>, libc++, SSE2), the other setups on few jobs. Compiled only: the <span data-v="ceCompilers">14 compiler versions (28 Compiler Explorer compiler ids)</span> in <a href="#siblings">section 6</a>. <span data-v="verCannot"></span> <span data-v="armLimit">Arm: one core type, clang 18 only; no real programs or other compilers were timed there (section 6a).</span></li>
           <li>Repetitions that are not independent would narrow the intervals; a block bootstrap on the <span data-v="nJobs"></span>-job pool leaves the verdict of every CPU model unchanged (<a data-href="robustnessUrl" href="#">robustness report</a>). <span data-v="narrowShort"></span></li>
           <li id="lost-li"><span data-v="lostShort"></span></li>
         </ul>
@@ -211,7 +211,7 @@
     <section id="why">
       <h2><span class="secno">2</span>Why the cost is so uneven</h2>
       <p class="gist">SIMD does several array elements per instruction. A check inside the loop can stop the compiler from using it.</p>
-      <p>SIMD (single instruction, multiple data) handles several array elements with one instruction: here one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once. A compiler uses it only when it can prove that safe, and the bounds check makes the proof harder, because it can stop the loop at any element.</p>
+      <p>SIMD (single instruction, multiple data) handles several array elements with one instruction: on x86-64 one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once (the Arm core in section 6a uses NEON, Arm&rsquo;s version of the same idea). A compiler uses it only when it can prove that safe, and the bounds check makes the proof harder, because it can stop the loop at any element.</p>
       <p>The machine-code view of each loop shows both outcomes. Each check is another way out of the loop, and clang vectorized a loop only when it could count the iterations to every exit (observed; that the count is the cause is inferred). In the forward loops it can: the sizes are tested once, before the loop, and the check runs only on the leftover elements. In the reverse loop the check no longer depends on the loop counter, its branch stays inside the loop with no count (<q>could not determine number of loop iterations</q>), so the four-at-a-time loop is replaced by one element per pass plus a compare and a jump to the trap. <a href="details.html#passlevel">Pass-level evidence</a>.<a class="fnref" href="details.html#fn-novec" id="fnref-novec">1</a></p>
     </section>
 
@@ -279,6 +279,31 @@
       <p class="more-link"><a href="details.html#siblings-full">Every compiler row and the timed toolchain table &rarr;</a></p>
     </section>
 
+    <section id="arm">
+      <h2><span class="secno">6a</span>Does an Arm core pay the same?</h2>
+      <p class="gist"><span data-v="armGist">The same eight loops were also timed on an Arm core; the numbers load from the data files.</span></p>
+      <p id="arm-what"><span data-v="armWhat">The same loops, sizes, repetitions and written rules ran unchanged on GitHub&rsquo;s Arm runner.</span></p>
+      <figure class="fig arm-fig" id="fig-arm">
+        <div class="fig-title" id="arm-fig-title">Eight loops on an Arm core, beside an x86-64 model</div>
+        <div class="controls">
+          <div class="ctl">
+            <span class="ctl-label" id="arm-col-label">Loops</span>
+            <div class="seg" id="arm-col-seg" role="radiogroup" aria-labelledby="arm-col-label">
+              <button type="button" role="radio" data-col="aligned" aria-checked="true">aligned</button>
+              <button type="button" role="radio" data-col="compiled" aria-checked="false">as compiled</button>
+            </div>
+          </div>
+        </div>
+        <div class="axis top" id="arm-axis" aria-hidden="true"></div>
+        <div class="rows arm-rows" id="arm-rows" role="listbox" aria-label="Loop shapes on the Arm core, in Figure 1&rsquo;s order. Use the arrow keys to select one." tabindex="-1"></div>
+        <div class="arm-read" id="arm-read" aria-live="polite"></div>
+        <figcaption id="arm-cap"><b>Figure 7.</b> &hellip;</figcaption>
+      </figure>
+      <p id="arm-why"><span data-v="armWhy"></span></p>
+      <p id="arm-mm"><span data-v="armMm"></span></p>
+      <p class="more-link"><a href="details.html#arm-full">Details, section 6d: every cell, what the compiler did to each loop, the noise at the larger size, the matrix-multiply listing, the plan and the limits &rarr;</a></p>
+    </section>
+
     <section id="realworld">
       <h2><span class="secno">7</span>Real programs</h2>
       <p class="gist"><span data-v="rwWorkloadsCap">Six</span> real-program workloads from <span data-v="rwProjects">four</span> projects timed whole; where the slowdown is detectable it is <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% with checks on, on the model with the most jobs.</p>
@@ -326,13 +351,16 @@
       <p><b>What Google reported.</b> An average cost of 0.30% across its services after hardened libc++ became the default in server-side production (<a href="https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html">Google Security Blog, Nov 15 2024</a>). The post credits the compiler removing redundant checks and the design of the checks, adds that profile-guided optimization helps, and says the cost stays small without it. It also describes one fix to an unneeded check that moved the figure from 0.35% to 0.30%.</p>
       <p><b>Why it can sit beside an 8&times; loop.</b> An average over whole services can sit beside a slow loop if few services spend much time in such loops (an inference, not something this study tested). The post itself says a handful of performance-critical code paths still use explicitly unsafe accesses. In the programs timed here, the loops that lose SIMD hold about 0 to 6% of the instructions, yet where the cost is detectable it was <span data-v="rwSlowMin">1.2</span> to <span data-v="rwSlowMax">7.5</span>% on EPYC 7763, the model with the most jobs, and the lost loops&rsquo; share of instructions did not predict it. Those programs were picked because they contain such loops, so that range is not an estimate for typical code. The two programs without such loops showed no detectable cost on that model; that is two programs, not a rule.</p>
       <p><b>What cannot be said.</b> How the 0.30% was computed (CPU time or latency, which services, which time window) is not stated in the post. No Google service was measured here. This study neither confirms nor refutes the average; it shows which loop shapes would push a program above it.</p>
+      <p id="arm-avg"><b>On an Arm core.</b> <span data-v="armAvg">The same loops were also timed on an Arm core (section 6a); that adds no measurement of Google&rsquo;s services.</span></p>
     </section>
 
     <section id="reproduce">
       <h2><span class="secno">11</span>Reproduce</h2>
-      <p class="gist">Two commands: run the measurement on GitHub, and check every number on a laptop.</p>
+      <p class="gist">Run the measurement on GitHub, on an x86-64 or an Arm runner, and check every number on a laptop with one command.</p>
       <p>In a checkout of the repository (or your own fork), with the GitHub CLI. Each run starts <span data-v="jobsPerRun"></span> runners, and each writes one results file named after the CPU model it drew; the pooled file is then recomputed from them.</p>
       <div class="cmdline"><pre><code id="cmd-measure"></code></pre><button type="button" class="copy" data-copy="cmd-measure">Copy</button></div>
+      <p>That starts the x86-64 runners, the default. The Arm column (section 6a) used the Arm runner; one label per run, and each CPU model is pooled on its own.</p>
+      <div class="cmdline"><pre><code id="cmd-measure-arm"></code></pre><button type="button" class="copy" data-copy="cmd-measure-arm">Copy</button></div>
       <p>To check every number on a laptop, run this in a clone of the repository (Python 3 and numpy, about an hour; it measures nothing new): the tests, and every interval and verdict recomputed from the raw samples.</p>
       <div class="cmdline"><pre><code id="cmd-check"></code></pre><button type="button" class="copy" data-copy="cmd-check">Copy</button></div>
     </section>

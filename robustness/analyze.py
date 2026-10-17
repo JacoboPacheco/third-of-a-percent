@@ -8,6 +8,10 @@ functions swapped in memory.
 
     python robustness/analyze.py [--report]  writes robustness/results.json, prints the tables
                                             (--report also rewrites the tables block of robustness/report.md)
+    python robustness/analyze.py --arm [--report]
+                                            the same eight methods on the Arm pool only (ARM_DATASETS): writes
+                                            robustness/results-arm.json (--report: the tables block of
+                                            robustness/report-arm.md). results.json and report.md are not touched.
 """
 import json
 import math
@@ -26,6 +30,12 @@ import stats  # noqa: E402
 
 DATASETS = {"s4": "results/s4-pooled/pooled.json", "s5": "results/s5-holdout/pooled.json",
             "s6": "results/s6-pooled/pooled.json", "s7": "results/s7-pooled/pooled.json"}
+# The Arm pool (arm64/README.md) is analysed on its own: the x86-64 README figures read results.json, whose datasets stay as they are.
+ARM_DATASETS = {"s8arm": "results/s8-arm-pooled/pooled.json"}
+ARM_RESULTS = "results-arm.json"
+# the Arm tables are a second generated block at the end of report.md; the first block (x86-64, s4 to s7) is untouched by --arm
+TABLE_MARKS = ("<!-- tables:begin -->", "<!-- tables:end -->")
+ARM_MARKS = ("<!-- arm-tables:begin -->", "<!-- arm-tables:end -->")
 METHODS = ["a", "b", "b2", "b5", "c", "ct", "d", "d0"]
 MIN_JOBS = 3
 B = pool.RESAMPLES
@@ -356,6 +366,34 @@ def margins(res, m):
     return (min(lost) if lost else None), (max(fwd) if fwd else None)
 
 
+def forward_misses(res, m):
+    """The cells that count in the forward rule under method m (kept SIMD, not placement-sensitive) and miss it."""
+    return sorted(cid for cid, c in res["methods"][m]["cells"].items()
+                  if c["class"] == "kept" and not c.get("ps") and not c["fwd_pass"])
+
+
+def forward_table_md(out, cell="k02_add_fwd.L2"):
+    """For the Arm report: under each method, the form, the counted forward cells that miss the rule, the placement-sensitive
+    cells and the aligned interval of one named cell against the method's own forward limit."""
+    L = ["Forward rule under each method (aligned column). Misses = counted forward cells (kept SIMD, not placement-sensitive) "
+         f"whose ratio is above 1.02 or whose ci95_hi is above the method's forward limit; the last columns show {cell}.", ""]
+    L.append(f"| CPU model | method | verdict form | forward misses | placement-sensitive | {cell} aligned ratio "
+             "| ci95_lo | ci95_hi | forward limit (x) |")
+    L.append("|---|---|---|---|---|---|---|---|---|")
+    for name, ds in out["datasets"].items():
+        for cpu, r in ds["cpus"].items():
+            for m in METHODS:
+                x = r["methods"][m]
+                c = x["cells"].get(cell)
+                ps = sorted(cid for cid, q in x["cells"].items() if q.get("ps"))
+                miss = forward_misses(r, m)
+                cells_txt = f"{c['al'][0]:.4f} | {c['al'][1]:.4f} | {c['al'][2]:.4f}" if c else "- | - | -"
+                L.append(f"| {short(cpu)} | {NAMES[m]} | {x['form']} | {', '.join(miss) or 'none'} | "
+                         f"{', '.join(ps) or 'none'} | {cells_txt} | {1.0 + x['limit_pct'] / 100.0:.4f} |")
+    L.append("")
+    return "\n".join(L)
+
+
 NAMES = {"a": "(a) harness", "b": "(b) block, 1 ABBA", "b2": "(b2) block, 2 ABBA", "b5": "(b5) block, 5 ABBA",
          "c": "(c) jobs only, bootstrap", "ct": "(c-t) jobs only, t", "d": "(d) lag-1 n_eff", "d0": "(d0) first form of (d)"}
 
@@ -421,24 +459,30 @@ def tables_md(out):
     return "\n".join(L)
 
 
+def arm_tables_md(out):
+    return tables_md(out) + "\n" + forward_table_md(out)
+
+
 def main():
-    out = run_all()
+    arm = "--arm" in sys.argv
+    out = run_all(ARM_DATASETS if arm else None)
     if not out["datasets"]:
         print("SKIP: no pooled inputs found")
         return 0
-    with open(os.path.join(HERE, "results.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(HERE, ARM_RESULTS if arm else "results.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
-    tables = tables_md(out)
+    tables = arm_tables_md(out) if arm else tables_md(out)
     print(tables)
     if "--report" in sys.argv:
         rp = os.path.join(HERE, "report.md")
+        begin, end = ARM_MARKS if arm else TABLE_MARKS
         with open(rp, encoding="utf-8") as f:
             text = f.read()
-        head, rest = text.split("<!-- tables:begin -->", 1)
-        tail = rest.split("<!-- tables:end -->", 1)[1]
+        head, rest = text.split(begin, 1)
+        tail = rest.split(end, 1)[1]
         nl = chr(10)
         with open(rp, "w", encoding="utf-8", newline=nl) as f:
-            f.write(head + "<!-- tables:begin -->" + nl + tables + nl + "<!-- tables:end -->" + tail)
+            f.write(head + begin + nl + tables + nl + end + tail)
     return 0
 
 

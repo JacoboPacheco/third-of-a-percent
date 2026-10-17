@@ -1,0 +1,45 @@
+--- k07_hist.none_a64.s
++++ k07_hist.fast_a64.s
+@@ -1,11 +1,13 @@
+ <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+ ldp	x8, x9, [x1]
+-subs	x9, x9, x8
+-b.eq	e9c <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
+-asr	x10, x9, #2
+-ldr	x9, [x0]
+-cmp	x10, #0x1
+-csinc	x10, x10, xzr, hi	// hi = pmore
++subs	x10, x9, x8
++b.eq	ea4 <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
++ldp	x9, x11, [x0]
++asr	x12, x10, #2
++cmp	x12, #0x1
++sub	x10, x11, x9
++csinc	x11, x12, xzr, hi	// hi = pmore
++asr	x10, x10, #2
+ nop
+ nop
+ nop
+@@ -13,13 +15,14 @@
+ nop
+ nop
+ nop
+-nop
+-nop
+-ldrb	w11, [x8], #4
+-subs	x10, x10, #0x1
+-lsl	x11, x11, #2
+-ldr	w12, [x9, x11]
+-add	w12, w12, #0x1
+-str	w12, [x9, x11]
++ldrb	w12, [x8], #4
++cmp	x10, x12
++b.ls	ea8 <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.plast
++lsl	x12, x12, #2
++subs	x11, x11, #0x1
++ldr	w13, [x9, x12]
++add	w13, w13, #0x1
++str	w13, [x9, x12]
+ b.ne	e80 <_Z13kern_k07_histRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
+ ret
++brk	#0x1

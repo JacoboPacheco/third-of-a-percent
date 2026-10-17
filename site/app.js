@@ -163,6 +163,9 @@ function axisInto(box, title) {
 function setV(key, val) {
   for (const n of document.querySelectorAll(`[data-v="${key}"]`)) n.textContent = val;
 }
+function setVNodes(key, kids) { // like setV for a sentence that holds an element (a flag that must not break across lines)
+  for (const n of document.querySelectorAll(`[data-v="${key}"]`)) n.replaceChildren(...kids.map((k) => (k && k.nodeType ? k.cloneNode(true) : document.createTextNode(String(k)))));
+}
 const NUM_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
 const numWord = (n) => NUM_WORDS[n] || String(n);
 const capFirst = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -389,6 +392,7 @@ function fillStatic() {
       pass.length ? `passes on ${joinAnd(pass.map((q) => `${q[0]} (${q[1].toFixed(3)})`))}` : '', '.'));
   }
   $('cmd-measure').textContent = ix.repo.measure_command;
+  $('cmd-measure-arm').textContent = `${ix.repo.measure_command} -f runner=${ARM_RUNNER}`;
   $('cmd-check').textContent = ix.repo.check_command;
   const few = pg.cpus_few;
   $('cpu-few').textContent = !S.fixture && few.length ? `Not shown: ${joinAnd(few.map((f) => `${f.cpu_short}, drawn in ${f.jobs} job${f.jobs > 1 ? 's' : ''}`))}, too few to judge.` : '';
@@ -1465,7 +1469,7 @@ function renderSiblings() {
   };
   const intelStatus = (c) => (c.form === 'inconclusive' ? 'came out inconclusive under the written rules, so no headline number is printed' : 'has a verdict');
   setV('intelText', IF && IF.jobs.length
-    ? `The forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
+    ? `Among the x86-64 models, the forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1821,6 +1825,331 @@ function renderEnvironment() {
             el('td', null, j.shares_core ? 'yes' : 'no'), el('td', null, j.driver_on_pinned ? 'yes' : 'no')))))));
   });
 }
+/* ---------- the Arm column: section 6a (main page) and 6d (details page), read from data/arm64.json ---------- */
+const ARM_RUNNER = 'ubuntu-24.04-arm'; // the runner label measure.yml offers beside its x86-64 default
+const ARM_SMOKE_SEEN = ['k04_rev', 'k02_add_fwd']; // the two kernels the plan's first paragraph says the smoke run had already timed (scripts/check_site.py ties this list to arm64/PLAN.md)
+const ARM_CLASS = { lost: 'lost', kept: 'kept', off_axis: 'none' }; // Figure 1's colour classes
+const ARM_WORDS = { lost: 'loses SIMD under the check', kept: 'keeps SIMD', off_axis: 'no SIMD in either build' };
+const ARM_VERB = { lost: 'loses SIMD under the check', kept: 'keeps SIMD', off_axis: 'is not vectorized in either build' };
+const ARM_SHORT = { lost: 'loses SIMD', kept: 'keeps SIMD', off_axis: 'off the axis' };
+const kibWords = (n) => (n >= 1024 ? `${+(n / 1024).toFixed(1)} MiB` : `${n} KiB`);
+const armVer = (s) => ((s || '').match(/\d+\.\d+\.\d+/) || [''])[0];
+function repoNode(path, text) { // a link into the public repository; plain code while the repository address is not set
+  const b = (S.ix.repo && S.ix.repo.base) || '';
+  return b ? el('a', { href: `${b}/blob/main/${path}` }, text || path) : el('code', null, path);
+}
+const armPick = (c, col) => (c ? (col === 'aligned' ? c.aligned : c.as_compiled) : null);
+function armIv(c) { // a ratio and, when its interval is wider than the printed digits, the 95% interval
+  const a = lr(c.ci95[0]), b = lr(c.ci95[1]);
+  return a === b ? `${lr(c.ratio)}×` : `${lr(c.ratio)}× (${a} to ${b})`;
+}
+function armData() {
+  const A = S.arm;
+  const cell = (id) => A.cells.find((c) => c.cell_id === id);
+  return { A, cell, x86: (id) => A.x86.cells[id], kern: (k) => A.kernels.find((x) => x.kernel === k),
+    lostK: A.kernels.filter((k) => k.class === 'lost').map((k) => k.kernel), missed: A.verdict.forward_missed.map(cell) };
+}
+function armOrder(A) { // Figure 1's row order: by the x86-64 default model's aligned ratio (median of the two sizes), largest first
+  const med = (k) => { const xs = IN_CACHE.map((sz) => A.x86.cells[`${k}.${sz}`]).filter(Boolean).map((c) => (c.aligned || c.as_compiled).ratio).sort((a, b) => a - b); return xs.length ? (xs.length % 2 ? xs[(xs.length - 1) / 2] : (xs[xs.length / 2 - 1] + xs[xs.length / 2]) / 2) : -1; };
+  return A.kernels.map((k) => k.kernel).sort((a, b) => med(b) - med(a));
+}
+function armTexts() { // the sentences filled into [data-v] spans on both pages
+  const D = armData(), A = D.A, V = A.verdict, M = A.machine, F1 = A.forward_loops.L1, SM = A.summary;
+  const names = (ks) => joinAnd(ks.map((k) => SHORT_NAMES[k]));
+  const clang = `clang ${armVer(M.toolchain.clang)}`, libcxx = `libc++ ${armVer(M.toolchain.libcxx_package)}`;
+  const form = formWords(V.form), g = S.ix.claim.google_pct.toFixed(2);
+  const opt = (M.flags.common.match(/-O\d/) || [''])[0];
+  const x86name = A.x86.model.cpu_short;
+  const SS = A.seed_sensitivity, DC = SS.deciding_cell, aaL2 = A.noise.identical_binary_aa.L2.pooled;
+  const reversed = DC.alt_draws - DC.alt_at_or_above_limit; // other seeds that put the interval's end under the limit
+  const sameAdd = Object.values(A.forward_instr.added_same_at_both_sizes).every((v) => v.as_compiled && v.aligned); // the added instruction count per call is the same at L1 and L2
+  setV('armCore', A.cpu_short);
+  const fwdL1 = `${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}×`;
+  setV('armGist', `On an Arm core (${A.cpu_short}, ${A.jobs} jobs) ${names(D.lostK)} lose SIMD and take ${fx(SM.lost.min)}× to ${fx(SM.lost.max)}× as long in cache; forward loops cost ${fwdL1} at L1, as compiled. The written rules call this core ${form}, by a margin of ${DC.margin_over_limit.toFixed(4)} that most other bootstrap seeds reverse.`);
+  setVNodes('armWhat', [`The same eight loops, repetitions and written rules ran unchanged on GitHub’s Arm runner (${A.runs.length} runs of ${A.criteria.jobs_per_run} jobs, ${M.jobs_agreeing === A.jobs ? 'every job' : `${M.jobs_agreeing} of ${A.jobs} jobs`} on a ${M.cpu_model} core, ${clang} and ${libcxx} in FAST mode at `, el('code', { class: 'nowrap' }, opt),
+    `). The data is sized by the same rule, half of each core’s L1 data cache and of its L2: ${kibWords(M.size_targets_bytes.L1 / 1024)} and ${kibWords(M.size_targets_bytes.L2 / 1024)} here, and other byte counts on the x86-64 models.`]);
+  setV('armWhy', D.missed.length
+    ? `The pooled data fit neither pattern the written rules recognise: the loops that lose SIMD sit far above the limit, so the cost is not small everywhere, and the forward side of a map is missed by ${joinAnd(D.missed.map((c) => `${cellName(c.cell_id)} (a ratio of ${lr(c.aligned.ratio)}× aligned, but an interval from ${lr(c.aligned.ci95[0])} to ${lr(c.aligned.ci95[1])}×, past the ${fx(V.limit)}× limit)`))}. That miss is ${DC.margin_over_limit.toFixed(4)}, less than the movement of the interval’s end under other bootstrap seeds (${reversed} of ${DC.alt_draws} put it under the limit, at a median of ${lr(DC.alt_hi.median)}), and at that size even an identical binary against itself spreads by ±${pctS(aaL2.half_width_pct)}, so these data cannot separate ${form} from a map at this cell (details page, section 6d).`
+    : `The written rules call this core ${form}; the reason is on the details page, section 6d.`);
+  const mm = D.cell('k08_matmul.L1'), mmx = D.x86('k08_matmul.L1'), mmk = D.kern('k08_matmul');
+  setV('armMm', mm && mmx && mmk && mmk.class === 'kept' && mmx.class === 'lost'
+    ? `Matrix multiply is where the two differ most: on this core clang keeps its SIMD loop (NEON, Arm’s version) with the checks on, yet the function costs ${fx(mm.as_compiled.ratio)}× at L1 (${fx(mm.aligned.ratio)}× aligned), against ${fx(mmx.as_compiled.ratio)}× on ${x86name}, where the same loop loses SIMD. Where the extra time goes is not shown.`
+    : `Matrix multiply costs ${fx(mm.as_compiled.ratio)}× at L1 on this core (${x86name}: ${fx(mmx.as_compiled.ratio)}×).`);
+  const wid = A.cells.filter((c) => A.forward_loops.kernels.includes(c.kernel) && c.size_class === 'L2')
+    .reduce((a, c) => (!a || c.aligned.half_width_pct > a.aligned.half_width_pct ? c : a), null);
+  const psFwd = SM.placement_sensitive.filter((q) => A.forward_loops.kernels.includes(q.cell_id.split('.')[0]) && q.cell_id.endsWith('.L1'));
+  setV('armAvg', `On the ${A.cpu_short} core the three forward loops cost ${fwdL1} at L1, as compiled, against an A/A floor of ±${pctS(A.aa.half_width_pct)} that belongs to the forward add at L1 alone (${psFwd.length} of the ${A.forward_loops.kernels.length} are placement-sensitive, so the rules do not judge them${sameAdd ? '; the instructions the checks add to a call are a fixed count, the same at both sizes, so their share of a call follows the array length' : ''}): three microbenchmarks, not Google’s services, so this neither confirms nor contradicts the ${g}% average. At L2 the widest forward interval (${cellName(wid.cell_id)}, ±${pctS(wid.aligned.half_width_pct)}) is too wide to resolve ${g}%, as is an identical binary against itself (±${pctS(aaL2.half_width_pct)}), and the pooled verdict under the written rules is ${form}, on a margin that ${reversed} of ${DC.alt_draws} other bootstrap seeds reverse (section 6a).`);
+  setV('armLimit', `Arm: one core type (${A.cpu_short}), ${A.jobs} jobs on shared machines, ${clang} only; no real programs, profile-guided builds or other compilers were timed there (section 6a).`);
+  setV('armLimFull', `Arm is one added column (section 6d): one core type, ${A.jobs} jobs in ${A.runs.length} runs, ${clang} only, no real programs.`);
+  setV('armJobsSet', `the ${A.jobs} jobs of the ${A.runs.length} Arm runs (a separate pool on one core type), as compiled and aligned`);
+}
+/* Figure 7 (main page): eight loops on the Arm core beside the x86-64 default model; a row opens its numbers underneath */
+function armRenderRows() {
+  const D = armData(), A = D.A, col = S.armCol, x86name = A.x86.model.cpu_short;
+  const colName = col === 'aligned' ? 'aligned' : 'as compiled';
+  const rows = S.armOrder.map((k) => {
+    const kern = D.kern(k);
+    const b = el('button', { type: 'button', class: `row arm-row c-${ARM_CLASS[kern.class]}`, role: 'option', 'data-k': k });
+    b.addEventListener('click', () => armSelect(k, false));
+    const track = el('div', { class: 'track' });
+    for (const t of TICKS) track.append(el('span', { class: t === 1 ? 'one' : 'gl', style: `left:${pos(t).p}%` }));
+    const ratios = [], xr = [], ps = [], xms = [];
+    for (const sz of IN_CACHE) {
+      const c = D.cell(`${k}.${sz}`), a = armPick(c, col), x = armPick(D.x86(`${k}.${sz}`), col);
+      const y = `calc(50% ${sz === 'L1' ? '-' : '+'} 5px)`;
+      if (x) { xr.push(x.ratio); xms.push(el('span', { class: `xm ${sz.toLowerCase()}`, style: `left:${pos(x.ratio).p}%;top:${y}` })); } // drawn after the Arm marks, so a close value cannot hide it
+      if (!a) continue;
+      ratios.push(a.ratio);
+      if (c.placement_sensitive) ps.push(sz);
+      const lo = pos(a.ci95[0]), hi = pos(a.ci95[1]), m = pos(a.ratio);
+      track.append(el('span', { class: `wh${lo.clipL ? ' clip-l' : ''}${hi.clipR ? ' clip-r' : ''}`, style: `left:${lo.p}%;width:${Math.max(0, hi.p - lo.p)}%;top:${y}` }),
+        el('span', { class: `mk ${sz.toLowerCase()}${c.placement_sensitive ? ' ps' : ''}`, style: `left:${m.p}%;top:${y}` }));
+    }
+    track.append(...xms);
+    const x1 = D.x86(`${k}.L1`);
+    const xSay = xr.length ? `${x86name} ${rangeX(Math.min(...xr), Math.max(...xr))}${x1 && x1.class !== kern.class ? `, ${ARM_WORDS[x1.class]} there` : ''}` : `${x86name} not timed`;
+    const psTxt = ps.length ? `placement-sensitive at ${joinAnd(ps)}` : '';
+    b.append(el('span', { class: 'lab' }, el('span', { class: 'name' }, el('i', { 'aria-hidden': 'true', title: ARM_WORDS[kern.class] }), KERNEL_NAMES[k],
+      ps.length ? el('span', { class: 'ps-mark', title: psTxt, 'aria-label': psTxt }, '‡') : null)),
+    track, el('span', { class: 'val' }, ratios.length ? rangeX(Math.min(...ratios), Math.max(...ratios)) : 'none'));
+    b.setAttribute('aria-label', `${KERNEL_NAMES[k]}, ${ARM_WORDS[kern.class]} on Arm, ${ratios.length ? rangeX(Math.min(...ratios), Math.max(...ratios)) : 'not measured'} as long with checks on, ${colName}${psTxt ? `, ${psTxt}` : ''}; ${xSay}`);
+    return b;
+  });
+  $('arm-rows').replaceChildren(...rows);
+  axisInto($('arm-axis'), 'time with checks on ÷ without, log scale');
+  armMark();
+}
+function armMark() {
+  for (const b of $('arm-rows').children) {
+    const on = b.dataset.k === S.armSel;
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on ? 0 : -1;
+  }
+}
+function armSelect(k, focus) {
+  S.armSel = k;
+  armMark();
+  armRead();
+  if (focus) { const b = $('arm-rows').querySelector(`[data-k="${k}"]`); if (b) b.focus(); }
+}
+function armSetCol(c) {
+  if (c === S.armCol) return;
+  S.armCol = c;
+  for (const b of $('arm-col-seg').querySelectorAll('button')) b.setAttribute('aria-checked', b.dataset.col === c ? 'true' : 'false');
+  armRenderRows();
+  armRead();
+  armCaption();
+}
+function armCaption() {
+  const A = S.arm, x86name = A.x86.model.cpu_short, aligned = S.armCol === 'aligned';
+  const key = (c) => el('span', { class: `key key-${c}`, 'aria-hidden': 'true' });
+  const open = $('arm-cap').querySelector('details') ? $('arm-cap').querySelector('details').open : false;
+  if (has('arm-fig-title')) $('arm-fig-title').textContent = `Eight loops on an Arm core, beside ${x86name}`; // the grey ticks are this model whatever Figure 1 shows
+  $('arm-cap').replaceChildren(el('b', null, 'Figure 7.'),
+    ` How much longer each loop takes with libc++’s checks on, on a ${A.cpu_short} Arm core (coloured marks) beside ${x86name} (`, key('xm'), key('xm-l2'), ` grey ticks), ${aligned ? 'every hot loop on a 64-byte boundary (aligned)' : 'the code as clang laid it out (as compiled)'}, data in cache. Colour and shape give the loop’s class on Arm: `,
+    key('lost'), ' diamond: loses SIMD, ', key('kept'), ' circle: keeps SIMD, ', key('none'), ' square: no SIMD in either build. Select a row for its numbers; all ', String(A.cells.length), ' cells are in ',
+    el('a', { href: 'details.html#arm-t1-cap' }, 'Table 12'), ` on the details page. The grey ticks are always ${x86name}, the page’s default model; they do not follow Figure 1’s CPU buttons.`,
+    el('details', { class: 'cap-more', open: open || null }, el('summary', null, 'How to read the marks'),
+      el('span', { class: 'key key-fill', 'aria-hidden': 'true' }), ' Filled dot: data sized to fit L1. ', el('span', { class: 'key key-open', 'aria-hidden': 'true' }), ` Hollow ring: sized to fit L2; timings at that size are noisier (an identical binary against itself spreads by ±${pctS(A.noise.identical_binary_aa.L2.pooled.half_width_pct)} there), so read a ring as rough. `,
+      `The thin line is the 95% interval over ${A.jobs} jobs in ${A.runs.length} runs. A grey tick is the same loop and size class on ${x86name} (${A.x86.model.jobs} jobs, pooled; the working sets have other byte sizes): a filled one for L1 sticks out above the L1 dot, a hollow one for L2 below the ring, so a close value cannot hide it. ‡ and a dashed ring mark a placement-sensitive cell: moving the loop’s code changes its ratio by more than noise (section 3), so the forward test leaves it out. `,
+      'Aligned: every hot loop starts on a 64-byte boundary in both builds, so where the code happens to land cannot sway the result. As compiled: the binaries exactly as clang emitted them. The switch moves the Arm marks and the grey ticks together and is separate from Figure 1’s. One core type: no claim about other Arm cores.'));
+}
+function armRead() {
+  if (!has('arm-read')) return;
+  const D = armData(), A = D.A, k = S.armSel, kern = D.kern(k), col = S.armCol, colName = col === 'aligned' ? 'aligned' : 'as compiled';
+  const x86name = A.x86.model.cpu_short, x1 = D.x86(`${k}.L1`);
+  const head = el('p', { class: 'ar-head' }, el('b', null, KERNEL_NAMES[k]), ' ',
+    x1 && x1.class !== kern.class ? `${ARM_VERB[kern.class]} on Arm; on ${x86name} it ${ARM_VERB[x1.class]}.` : `${ARM_VERB[kern.class]} on Arm${x1 ? ` and on ${x86name}` : ''}.`);
+  const get = (who, sz) => { const c = who === 'arm' ? armPick(D.cell(`${k}.${sz}`), col) : armPick(D.x86(`${k}.${sz}`), col); return c ? armIv(c) : 'none'; };
+  const tbl = el('table', { class: 'tbl dense ar-tbl' },
+    el('thead', null, el('tr', null, el('th', { scope: 'col' }, `Checks on ÷ off, ${colName}`), el('th', { scope: 'col', class: 'num' }, 'L1'), el('th', { scope: 'col', class: 'num' }, 'L2'))),
+    el('tbody', null, ...[['arm', A.cpu_short], ['x86', x86name]].map(([who, nm]) => el('tr', null, el('th', { scope: 'row' }, nm), el('td', { class: 'num' }, get(who, 'L1')), el('td', { class: 'num' }, get(who, 'L2'))))));
+  const n = kern.builds.none, f = kern.builds.fast, simd = kern.simd_loop.as_compiled;
+  const bits = [];
+  if (kern.class === 'lost') bits.push(`NEON instructions in the function: ${n.neon_instructions} without the checks, ${f.neon_instructions} with them. Clang’s remark with the checks on: “${f.why_not_vectorized}”.`);
+  else if (kern.class === 'kept') bits.push(kern.diffs.L1.added === 0 && kern.diffs.L1.removed === 0
+    ? `The two listings are identical (${n.asm_lines} lines, ${f.traps} check traps).`
+    : `The SIMD loop is the same ${simd.fast_instructions} instructions with the checks off and on${simd.same_opcodes ? ', with the same opcodes' : ''}; the listing grows from ${n.asm_lines} to ${f.asm_lines} lines.`);
+  else bits.push(`Not vectorized in either build. Clang’s remark with the checks on: “${f.why_not_vectorized}”; its reason with the checks off is not shown here. The listing grows from ${n.asm_lines} to ${f.asm_lines} lines.`);
+  const pss = IN_CACHE.map((sz) => D.cell(`${k}.${sz}`)).filter((c) => c && c.placement_sensitive);
+  if (pss.length) bits.push(`Placement-sensitive at ${joinAnd(pss.map((c) => c.size_class))} (compiled ÷ aligned ${joinAnd(pss.map((c) => c.placement.d.ratio.toFixed(3)))}): the written rule leaves ${pss.length === 1 ? 'that cell' : 'those cells'} out of the forward test.`);
+  bits.push('The L2 figure is the rougher of the two: timings at that size are noisier, even for an identical binary (details page, section 6d).');
+  $('arm-read').replaceChildren(head, tbl, el('p', { class: 'ar-note' }, bits.join(' ')), el('p', { class: 'ar-src' }, code(kern.source.text)));
+}
+function armFigure() {
+  if (!has('arm-rows')) return;
+  const A = S.arm;
+  S.armOrder = armOrder(A);
+  S.armCol = S.armCol || 'aligned';
+  if (!S.armSel || !S.armOrder.includes(S.armSel)) S.armSel = S.armOrder[0];
+  const seg = $('arm-col-seg');
+  for (const b of seg.querySelectorAll('button')) { b.setAttribute('aria-checked', b.dataset.col === S.armCol ? 'true' : 'false'); b.addEventListener('click', () => armSetCol(b.dataset.col)); }
+  radioKeys(seg, 'col', armSetCol);
+  $('arm-rows').addEventListener('keydown', (e) => {
+    const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+    if (!keys.includes(e.key) || !e.target.closest || !e.target.closest('.arm-row')) return;
+    e.preventDefault();
+    const order = S.armOrder;
+    let i = order.indexOf(S.armSel);
+    if (e.key === 'ArrowDown') i = Math.min(order.length - 1, i + 1);
+    if (e.key === 'ArrowUp') i = Math.max(0, i - 1);
+    if (e.key === 'Home') i = 0;
+    if (e.key === 'End') i = order.length - 1;
+    armSelect(order[i], true);
+  });
+  armRenderRows();
+  armRead();
+  armCaption();
+}
+/* Section 6d (details page): what ran, the verdict, every cell, what the compiler did, the floors, matrix multiply, the plan, the limits */
+function armDetails() {
+  if (!has('arm-full')) return;
+  const D = armData(), A = D.A, V = A.verdict, M = A.machine, SM = A.summary, F1 = A.forward_loops.L1, F2 = A.forward_loops.L2;
+  const names = (ks) => joinAnd(ks.map((k) => SHORT_NAMES[k]));
+  const clang = `clang ${armVer(M.toolchain.clang)}`, libcxx = `libc++ ${armVer(M.toolchain.libcxx_package)}`;
+  const form = formWords(V.form), x86name = A.x86.model.cpu_short;
+  const t = A.runs.map((r) => Date.parse(r.started_at)), spread = Math.round((Math.max(...t) - Math.min(...t)) / 60000);
+  const mcs = A.matmul_cost.sizes;
+  $('arm-intro').replaceChildren(el('b', null, 'What ran. '), 'This section is the full account behind section 6a of the main page. The study’s measuring workflow, unchanged apart from a runner input, ran on GitHub’s Arm runner (', code(ARM_RUNNER),
+    `): ${A.runs.length} runs of ${A.criteria.jobs_per_run} jobs (runs ${joinAnd(A.runs.map((r) => r.run_id))}, started within ${spread} minutes of each other), ${A.jobs} jobs in all. Every job drew the same core, ${M.cpu_model} (${M.vcpus} vCPUs, ${kibWords(M.l1d_kib)} L1 data cache, ${kibWords(M.l2_kib)} L2, ${M.os}, kernel ${M.kernel}).`);
+  $('arm-build').replaceChildren(el('b', null, 'Builds and sizes. '), `The eight kernels were built with ${clang} and ${libcxx}: `,
+    code(M.flags.common), ', no ', code('-march'), ' flag, libc++’s FAST mode (checks on) against NONE (checks off), each pair also built with every hot loop aligned to 64 bytes, plus a checks-off build with vectorization switched off as a control. ',
+    `The working sets follow the x86-64 study’s rule, half of the L1 data cache and half of L2, which gives ${kibWords(M.size_targets_bytes.L1 / 1024)} and ${kibWords(M.size_targets_bytes.L2 / 1024)} here and other byte counts on the x86-64 models; matrix multiply uses d = ${mcs.L1.d} and d = ${mcs.L2.d}. So an L1 or L2 cell is the same size class on both architectures, not the same number of bytes.`);
+  $('arm-basis').replaceChildren(el('b', null, 'What is shared with the x86-64 study. '), `The ${M.reps_per_side} repetitions a side in alternating order, the pinned CPU, the pooling and the written rules are the x86-64 study’s: `, code(A.criteria.file),
+    A.criteria.same_as_x86_pool && A.criteria.sha256 === A.x86.criteria_sha256 ? `, the same file as for the x86-64 pool (sha256 ${A.criteria.sha256.slice(0, 12)}…), unchanged. ` : '. ',
+    'The plan is ', repoNode(A.plan), '. It was committed after a two-kernel smoke run and after the three full runs were dispatched, and before any of their jobs finished; that commit time comes from the unpublished development history, which a reader of this repository cannot see, while the run times can be read from the Actions logs. This column is new and rests on three runs from one day; it may change.');
+  // the verdict, in words, then the harness's own line
+  const fr = V.forward_rule_cells, judged = fr.filter((c) => c.judged), passed = judged.filter((c) => c.passes);
+  const psAbove = SM.placement_sensitive.filter((q) => q.aligned_ratio > V.limit);
+  $('arm-verdict').replaceChildren(el('b', null, 'Verdict under the written rules: '), `${form}. `,
+    A.runs.every((r) => r.form === V.form) ? `Each of the ${A.runs.length} runs judged alone (${A.criteria.jobs_per_run} jobs each) is ${form} too. ` : '',
+    `The forward side of the rule is missed: of the ${fr.length} cells whose loop keeps SIMD, ${judged.length} are judged (aligned, interval included, at most ${V.forward_limit_pct}% above 1×) and ${passed.length} pass; ${joinAnd(D.missed.map((c) => `${cellName(c.cell_id)} does not (${lr(c.aligned.ratio)}× aligned, interval ${lr(c.aligned.ci95[0])} to ${lr(c.aligned.ci95[1])}×)`))}. `,
+    V.lost_rule_cells.every((c) => c.passes) ? `The other side is met: every loop that loses SIMD (${names(D.lostK)}) has its whole interval above ${fx(V.lost_ci_lo_min_ratio)}× in both columns at both sizes; the smallest interval start is ${lr(SM.lost_ci_lo_min)}×. ` : '',
+    `Placement-sensitive cells are listed separately and not judged: ${joinAnd(SM.placement_sensitive.map((q) => cellName(q.cell_id)))}.`,
+    psAbove.length ? ` Counted, ${joinAnd(psAbove.map((q) => `${cellName(q.cell_id)} (${lr(q.aligned_ratio)}× aligned)`))} would also miss the limit.` : '',
+    ` The rule file is the one the x86-64 pool used, byte for byte, so this core has neither a map nor a small cost everywhere under rules written before these runs.`);
+  $('arm-line').textContent = V.line;
+  // how firm the verdict is: the seed and interval-method readings, beside the stored verdict (which they do not replace)
+  const SS = A.seed_sensitivity, DC = SS.deciding_cell, IM = A.interval_methods, mc = D.missed[0];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const [fy, fm, fd] = SS.stored_seed.fixed_on.slice(0, 10).split('-').map(Number);
+  const daysBefore = Math.round((Math.min(...t) - Date.parse(SS.stored_seed.fixed_on)) / 86400000);
+  const mapOthers = IM.methods.filter((m) => m.form === 'map'), mapHi = mapOthers.map((m) => m.deciding_cell.ci95[1]);
+  const steady = SS.derived.placement_sets.length === 1 && !SS.derived.lost_missed_any && SS.derived.positive_seen_in_all;
+  const topWord = DC.stored_rank_from_top === 1 ? `the stored end is higher than all ${DC.alt_draws}` : `the stored end ranks ${DC.stored_rank_from_top} from the top of ${DC.alt_draws + 1}`;
+  $('arm-seed').replaceChildren(el('b', null, 'How firm that is. '),
+    `The form turns on one cell: ${cellName(mc.cell_id)}, aligned, ends at ${lr(DC.stored_hi)}× against the limit of ${fx(DC.limit)}×, a margin of ${DC.margin_over_limit.toFixed(4)}. That end is a bootstrap percentile and moves with the random seed. The pool’s seed (prefix ${SS.stored_seed.prefix}, ${num(SS.stored_seed.resamples)} resamples) was fixed on ${MONTHS[fm - 1]} ${fd}, about ${numWord(daysBefore)} days before the first Arm run, and the rule was applied as written, so the stored verdict stays ${form}. The date is in the unpublished development history, which the public repository cannot show. Three sensitivity readings sit beside it and replace nothing (seeds: `,
+    repoNode(SS.script), ' writing ', repoNode(SS.source), '; interval methods: ', repoNode(IM.report), ', planned in ', repoNode(IM.plan), '):');
+  $('arm-sens').replaceChildren(
+    el('li', null, `The same interval re-drawn under ${DC.alt_draws} other seeds (same data, ${num(SS.alt_seeds.resamples)} resamples each) ends at a median of ${lr(DC.alt_hi.median)} (5th to 95th percentile ${lr(DC.alt_hi.p05)} to ${lr(DC.alt_hi.p95)}); ${DC.alt_at_or_above_limit} of the ${DC.alt_draws} end at or above the limit, and ${topWord}. With ${num(SS.converged_resamples)} resamples it ends at ${lr(DC.converged.hi)}${DC.converged.above_limit ? ', above' : ', under'} the limit.`),
+    el('li', null, `The whole analysis re-run under ${SS.full.count} of those seeds gives a map in ${SS.full.forms.map || 0} of them; the verdict form derived from the re-drawn statistics for all ${SS.derived.seeds} is a map in ${SS.derived.forms.map || 0} and ${form} in ${SS.derived.forms.inconclusive || 0}${steady ? `, with the lost loops, the ${numWord(SS.derived.placement_sets[0].cells.length)} placement-sensitive cells and the positive control the same under every seed` : ''}.`),
+    el('li', null, `${capFirst(numWord(mapOthers.length))} other interval methods (${mapOthers.map((m, i) => `${i && i === mapOthers.length - 1 ? 'and ' : ''}${m.name}`).join('; ')}) all give a map, the deciding cell ending between ${lr(Math.min(...mapHi))} and ${lr(Math.max(...mapHi))}; only the pool’s own bootstrap gives ${form}. They are a check on the interval, not a replacement for the written rule.`));
+  $('arm-seed-end').textContent = `So these data cannot separate ${form} from a map at this cell. That is not evidence that the forward add costs more than ${V.forward_limit_pct}% at L2: its ratio is ${lr(mc.aligned.ratio)}× aligned, and an identical binary against itself spreads as widely at that size (below).`;
+  // Table 12: every cell
+  const ivc = (c) => (c ? el('td', { class: 'num' }, lr(c.ratio), el('span', { class: 'cell-iv' }, `${lr(c.ci95[0])} to ${lr(c.ci95[1])}`)) : el('td', { class: 'num' }, 'none'));
+  const head1 = ['Loop and size', 'On Arm', 'Arm, as compiled', 'Arm, aligned', 'Instructions, as compiled', 'No-vectorize build', 'Layout A/A half-width', `${x86name}: SIMD`, `${x86name}, as compiled`, `${x86name}, aligned`];
+  const numCol = new Set([2, 3, 4, 5, 6, 8, 9]);
+  $('arm-t1-wrap').replaceChildren(el('table', { class: 'tbl dense arm-tbl', id: 'arm-t1', 'aria-describedby': 'arm-t1-cap' },
+    el('thead', null, el('tr', null, ...head1.map((h, j) => el('th', { scope: 'col', class: numCol.has(j) ? 'num' : null }, h)))),
+    el('tbody', null, ...A.cells.map((c) => {
+      const x = D.x86(c.cell_id);
+      return el('tr', null, el('th', { scope: 'row' }, `${KERNEL_NAMES[c.kernel]}, ${c.size_class}`, c.placement_sensitive ? el('span', { class: 'ps-mark', title: 'placement-sensitive', 'aria-label': 'placement-sensitive' }, ' ‡') : null),
+        el('td', null, ARM_SHORT[c.class]), ivc(c.as_compiled), ivc(c.aligned), el('td', { class: 'num' }, lr(c.instr_ratio.as_compiled)), ivc(c.positive),
+        el('td', { class: 'num' }, pctS(c.layout_aa.half_width_pct)), el('td', null, x ? ARM_SHORT[x.class] : 'none'), ivc(x && x.as_compiled), ivc(x && x.aligned));
+    }))));
+  setV('armT1Cap', `${A.cpu_short} (${A.jobs} jobs, ${A.runs.length} runs) beside ${x86name} (${A.x86.model.jobs} jobs of the ${A.x86.jobs}-job x86-64 pool): checks on ÷ checks off per loop and size, the pooled ratio with its 95% interval beneath. “Instructions” is the ratio of instructions executed (Cachegrind): ${A.instr_label}. “No-vectorize build” is the same loop built with vectorization off and no checks, against the checks-off build. “Layout A/A” is the half-width of the unchecked binary against itself rebuilt at a different loop alignment. ‡ marks a placement-sensitive cell, which the forward test leaves out. The ${x86name} columns repeat the pooled numbers behind Figure 1; its working sets have other byte sizes than the Arm ones.`);
+  // forward loops
+  const fwdPs = SM.placement_sensitive.filter((q) => A.forward_loops.kernels.includes(q.cell_id.split('.')[0]));
+  const l2 = A.cells.filter((c) => A.forward_loops.kernels.includes(c.kernel) && c.size_class === 'L2');
+  const fwdPredMiss = fwdPs.length > 0 && fwdPs.every((q) => { const p = D.kern(q.cell_id.split('.')[0]).prediction; return p.placement_effect === 'none' && p.placement_held === false; });
+  const FI = A.forward_instr, fic = (id) => FI.cells.find((c) => c.cell_id === id);
+  const sameAdd = Object.values(FI.added_same_at_both_sizes).every((v) => v.as_compiled && v.aligned); // the added instruction count per call is the same at L1 and L2
+  const addA = fic('k02_add_fwd.L1'), addB = fic('k02_add_fwd.L2'), stenA = fic('k03_stencil.L1'), sumA = fic('k01_sum_fwd.L1');
+  const iaa = A.noise.identical_binary_aa, aaL2 = iaa.L2.pooled;
+  const flipSay = (c) => ((c.as_compiled.ratio - 1) * (c.aligned.ratio - 1) < 0 ? ' (it changes side of 1×, so no cost is claimed for it)' : '');
+  $('arm-forward').replaceChildren(el('b', null, 'Forward loops. '),
+    `At the L1 size the ${numWord(A.forward_loops.kernels.length)} forward loops cost ${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}× as compiled and ${lr(F1.aligned.min)}× to ${lr(F1.aligned.max)}× aligned (Table 12). `,
+    sameAdd ? `Cachegrind counts the instructions the checks add to one call: ${sumA.as_compiled.added} for the sum, ${addA.as_compiled.added} (aligned ${addA.aligned.added}) for the add and ${stenA.as_compiled.added} (aligned ${stenA.aligned.added}) for the stencil, the same count at the L2 size. For the add that is an instruction ratio of ${addA.as_compiled.instr_ratio.toFixed(4)} at L1 (${num(addA.elements)} elements) and ${addB.as_compiled.instr_ratio.toFixed(4)} at L2 (${num(addB.elements)} elements), so the share of a call the checks take follows the array length; that these instructions are the time cost fits the counts and was not tested. ` : '',
+    fwdPs.length ? `${capFirst(joinAnd(fwdPs.map((q) => `${cellName(q.cell_id)} (compiled ÷ aligned ${q.d.toFixed(3)})`)))} ${fwdPs.length === 1 ? 'is' : 'are'} placement-sensitive on this core${fwdPredMiss ? ', which the plan had predicted would not happen' : ''}; the rule leaves ${fwdPs.length === 1 ? 'that cell' : 'those cells'} out. The A/A floor of ${pctS(A.aa.half_width_pct)} is that of the forward add at L1 alone, and a byte-identical copy cannot see where a loop sits in memory, so for these the yardstick is the compiled ÷ aligned ratio: ${joinAnd(fwdPs.map((q) => { const c = D.cell(q.cell_id); return `${SHORT_NAMES[c.kernel]} ${lr(c.as_compiled.ratio)}× compiled and ${lr(c.aligned.ratio)}× aligned${flipSay(c)}`; }))}.` : '');
+  // noise at the L2 size: the identical-binary A/A at L2 and the per-process mixture (descriptive; no cause is claimed)
+  const NZ = A.noise, mix = NZ.mixture.by_size, sc = NZ.same_cell_l2, k4 = D.cell('k04_rev.L2'), k5 = D.cell('k05_stride2.L2');
+  const sh = (x) => `${(x * 100).toFixed(1)}%`;
+  $('arm-l2').replaceChildren(el('b', null, 'Noise at the L2 size. '),
+    `The A/A control above is timed at the L1 size. The same byte-identical pair is also timed at L2, on the forward add. Pooled over ${iaa.L2.jobs} jobs it has a ratio of ${lr(aaL2.ratio)} with an interval of ${lr(aaL2.ci95[0])} to ${lr(aaL2.ci95[1])} (a half-width of ${pctS(aaL2.half_width_pct)}; per job the ratio runs from ${lr(iaa.L2.job_ratio_range[0])} to ${lr(iaa.L2.job_ratio_range[1])}), and ${iaa.L2.jobs_above_rule_max} of the ${iaa.L2.jobs} jobs are above the ${NZ.rule_aa_half_width_max_pct}% that the written rules allow an A/A (at L1: ${iaa.L1.jobs_above_rule_max}). That is as wide as the checked cell it sits beside (${pctS(sc.aligned.half_width_pct)} aligned, ${pctS(sc.as_compiled.half_width_pct)} as compiled) and as wide as the unchecked binary against its own re-aligned copy (${pctS(sc.layout_aa.half_width_pct)}). The forward cells at L2 are noisier than at L1: aligned intervals of ${joinAnd(l2.map((c) => `${lr(c.aligned.ci95[0])} to ${lr(c.aligned.ci95[1])}× (${SHORT_NAMES[c.kernel]})`))}. Of the judged forward cells only ${joinAnd(D.missed.map((c) => cellName(c.cell_id)))} misses the ${fx(V.limit)}× limit; its jobs’ own ratios run from ${lr(D.missed[0].aligned.per_job_range[0])}× to ${lr(D.missed[0].aligned.per_job_range[1])}× (a between-job standard deviation of ${D.missed[0].aligned.between_job_sd_pct.toFixed(2)}%, aligned; ${aaL2.between_job_sd_pct.toFixed(2)}% for an identical binary at that size), where no cell at L1 spreads by more than ${A.between_job_sd.l1_max_pct.toFixed(2)}%. So the width of the cell that decides the verdict is the width of L2 timing on this core, not a property of the check.`);
+  $('arm-mix').replaceChildren(el('b', null, 'What the samples at L2 look like. '),
+    `The cause was not examined and no hardware counter was read. What the samples show is that the process times at L2 are a mixture: a fast floor, and a share of processes that took more than ${Math.round(NZ.slow_share * 100)}% longer than the fastest process of their series. At L2 that share is ${sh(mix.L2.none.share_slow)} of the unchecked build’s processes and ${sh(mix.L2.fast.share_slow)} of the checked build’s (${sh(mix.L1.none.share_slow)} and ${sh(mix.L1.fast.share_slow)} at L1), and in a single cell it reaches ${Math.round(mix.L2.none.cell_share_max * 100)}% and ${Math.round(mix.L2.fast.cell_share_max * 100)}%. The L2 medians, including the lost loops’ ${lr(k4.as_compiled.ratio)}× and ${lr(k5.as_compiled.ratio)}× at that size (${SHORT_NAMES.k04_rev} and ${SHORT_NAMES.k05_stride2}, as compiled), are therefore less stable estimates than the L1 ones.`);
+  // noise floors and run-to-run movement
+  const rep = A.reproduction, lay = A.aa.layout_half_width_pct, jh = A.aa.job_half_width_pct, sd = A.between_job_sd;
+  const layMax = A.cells.reduce((a, c) => (!a || c.layout_aa.half_width_pct > a.layout_aa.half_width_pct ? c : a), null);
+  const worstMiss = rep.misses.reduce((a, m) => (!a || m.gap_pct > a.gap_pct ? m : a), null);
+  const tiny = rep.misses.filter((m) => m.gap_pct < 0.01).length;
+  const widest = (sz) => { let best = null; for (const c of A.cells) if (c.size_class === sz) for (const col of ['as_compiled', 'aligned']) { const h = c[col].half_width_pct; if (!best || h > best.h) best = { h, id: c.cell_id, col }; } return best; };
+  const w1 = widest('L1'), w2 = widest('L2'), colSay = (c) => (c === 'aligned' ? 'aligned' : 'as compiled');
+  $('arm-floors').replaceChildren(el('b', null, 'Noise floors and movement. '),
+    `The A/A control (the unchecked binary against a byte-identical copy of itself) is timed on the forward add at the L1 size; pooled over ${A.aa.jobs} jobs, it has a half-width of ${pctS(A.aa.half_width_pct)}; per job it is ${pctS(jh.median)} at the median (${pctS(jh.min)} to ${pctS(jh.max)}). That is the floor of that one cell, not of the core: the widest interval of a measured cell is ±${pctS(w1.h)} at L1 (${cellName(w1.id)}, ${colSay(w1.col)}) and ±${pctS(w2.h)} at L2 (${cellName(w2.id)}, ${colSay(w2.col)}). The layout A/A (the unchecked binary against itself built at a different loop alignment) is less quiet: per cell its half-width runs from ${pctS(lay.min)} to ${pctS(lay.max)}, the largest at ${cellName(layMax.cell_id)}. `,
+    `Between jobs, a cell’s ratio spreads by at most ${sd.l1_max_pct.toFixed(2)}% at L1 (${cellName(sd.l1_max_cell)}, ${sd.l1_max_column === 'aligned' ? 'aligned' : 'as compiled'}) and ${sd.l2_max_pct.toFixed(1)}% at L2 (${cellName(sd.l2_max_cell)}, ${sd.l2_max_column === 'aligned' ? 'aligned' : 'as compiled'}), as a standard deviation. `,
+    `Run to run, ${rep.outside} of ${rep.checked} comparisons put one run’s pooled ratio outside another run’s interval, by at most ${rep.max_gap_pct.toFixed(1)}% (${cellName(worstMiss.cell_id)}); ${tiny} of them by less than 0.01%.`);
+  // placement: what the layout A/A can and cannot see
+  const LV = A.layout_vs_placement, lrow = (id) => LV.rows.find((r) => r.cell_id === id);
+  const lst = lrow('k03_stencil.L1'), lga = lrow('k06_gather.L1'), lmm = lrow('k08_matmul.L1');
+  const lside = (r) => `${lr(r.layout_aa.ratio)} against a D of ${lr(r.d.ratio)}${(r.layout_aa.ratio - 1) * (r.d.ratio - 1) < 0 ? ', which is on the other side of 1×' : ''}`;
+  $('arm-layout').replaceChildren(el('b', null, 'Placement, and what the layout A/A can see. '), 'The layout A/A times the unchecked build against itself built with ', code(M.flags.align),
+    `, so it moves only the unchecked build’s loops. The compiled ÷ aligned ratio (D in the data) moves both builds and is the placement control for the checked ÷ unchecked ratio. On this core the two disagree: at L1 the stencil has a layout A/A of ${lside(lst)}, gather ${lside(lga)}, and matrix multiply ${lside(lmm)}. At ${joinAnd(LV.d_excludes_1_layout_aa_includes_1.map(cellName))} the interval of D excludes 1 while that of the layout A/A does not. So a quiet layout A/A does not show that a cell is free of placement effects here. Whether 64-byte windows are the right unit on this core, and so whether the position of a loop against them explains the flagged cells, was not examined.`);
+  // Table 13: what the compiler and the listings show
+  const head2 = ['Loop', 'In the plan', 'Clang’s remark, checks on', 'NEON instructions, off → on', 'SIMD loop, off → on', 'Listing lines, off → on', 'Check traps, on'];
+  const planWords = (k) => {
+    const p = k.prediction;
+    if (!p.class && !p.placement_effect) return 'no prediction';
+    return [p.class ? `${p.class} (${p.class_held ? 'held' : 'did not hold'})` : '', p.placement_effect ? `${p.placement_effect === 'none' ? 'no placement effect' : p.placement_effect} (${p.placement_held ? 'held' : 'did not hold'})` : ''].filter(Boolean).join('; ');
+  };
+  $('arm-t2-wrap').replaceChildren(el('table', { class: 'tbl dense arm-tbl', id: 'arm-t2', 'aria-describedby': 'arm-t2-cap' },
+    el('thead', null, el('tr', null, ...head2.map((h, j) => el('th', { scope: 'col', class: j >= 3 ? 'num' : null }, h)))),
+    el('tbody', null, ...A.kernels.map((k) => {
+      const n = k.builds.none, f = k.builds.fast, s = k.simd_loop.as_compiled;
+      const remark = f.vectorized ? `vectorized, width ${f.width}, interleave ${f.interleave}` : (f.why_not_vectorized || 'not vectorized');
+      const simdTxt = s.none_instructions == null ? 'none' : `${s.none_instructions} → ${s.fast_instructions == null ? 'none' : s.fast_instructions}${s.same_opcodes ? ', same opcodes' : ''}`;
+      return el('tr', null, el('th', { scope: 'row' }, KERNEL_NAMES[k.kernel]), el('td', null, planWords(k)), el('td', null, remark),
+        el('td', { class: 'num' }, `${n.neon_instructions} → ${f.neon_instructions}`), el('td', { class: 'num' }, simdTxt),
+        el('td', { class: 'num' }, `${n.asm_lines} → ${f.asm_lines}`), el('td', { class: 'num' }, String(f.traps)));
+    }))));
+  setV('armT2Cap', `What the compiler and the listings show, per loop, as compiled. The counts come from the saved listings (the .s files) of one job; ${A.build_facts.all_agree ? `all ${A.build_facts.jobs} jobs produced identical hashes, listings, diffs and compiler remarks for every build` : 'the jobs do not all agree'}. “NEON instructions” counts them in the whole function; “SIMD loop” is the hot loop’s instruction count; a loop with no SIMD loop shows none. “Check traps” counts the trap instructions in the checked listing (a loop whose checks were proved away has none).`);
+  // matrix multiply
+  const mk = D.kern('k08_matmul'), m1 = D.cell('k08_matmul.L1'), m2 = D.cell('k08_matmul.L2'), x1 = D.x86('k08_matmul.L1'), x2 = D.x86('k08_matmul.L2');
+  const ms = mk.simd_loop.as_compiled, mb = mk.builds, mcL1 = mcs.L1, mcL2 = mcs.L2;
+  const diffPath = `${mk.source_job}/asm/${mk.diffs.L1.file}`, fastPath = `${mk.source_job}/asm/${mk.kernel}.fast.s`;
+  const gaL1 = D.cell('k06_gather.L1'), gaL2 = D.cell('k06_gather.L2');
+  $('arm-matmul').replaceChildren(el('b', null, 'Matrix multiply. '),
+    mk.class === 'kept' && x1 && x1.class === 'lost'
+      ? `Clang vectorized it in both builds on this core (its remark with the checks on: “${mb.fast.remarks[0].replace(/\s*\[-R[^\]]*\]$/, '')}”), and the SIMD loop in the listing is the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} with the checks off and on. The function still costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled (${lr(m1.aligned.ratio)}× aligned) and ${lr(m2.as_compiled.ratio)}× at L2 (${lr(m2.aligned.ratio)}× aligned), and both cells are placement-sensitive (compiled ÷ aligned ${m1.placement.d.ratio.toFixed(3)} and ${m2.placement.d.ratio.toFixed(3)}). On ${x86name} clang 18 loses SIMD on the same loop, at ${fx(x1.as_compiled.ratio)}× and ${fx(x2.as_compiled.ratio)}×. `
+      : `It costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled and ${lr(m2.as_compiled.ratio)}× at L2 on this core. `,
+    'Observed in the checked build’s full listing (', repoNode(fastPath, 'the .s file'), ') and its L1 diff (', repoNode(diffPath, 'the diff'), `): the checked function is ${mb.fast.asm_lines} lines against ${mb.none.asm_lines}; the SIMD loop has the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} in both builds; the extra lines are compare, select-minimum and branch instructions before the SIMD loop and, after it, a scalar loop with two compare-and-branch pairs per element. The conditional branches into the function’s one trap, `, code('brk #0x1'), `, sit before the SIMD loop and in the scalar loop, none inside the SIMD loop. The diff drops those jump targets, so they are read from the full listing. `,
+    `The checked build executes ${lr(m1.instr_ratio.as_compiled)}× the instructions at L1 (Cachegrind) for ${lr(m1.as_compiled.ratio)}× the time, and ${lr(m2.instr_ratio.as_compiled)}× the instructions at L2 for ${lr(m2.as_compiled.ratio)}× the time. That the extra time comes from this surrounding code and not from the SIMD loop fits the listing and the counts at L1; it was not tested. Between the two sizes three things change together: the cache level, the row length (d = ${mcL1.d} at L1 and d = ${mcL2.d} at L2, so the SIMD loop runs ${mcL1.whole_passes} and ${mcL2.whole_passes} passes of ${A.matmul_cost.vector_pass_elements} elements per row and the scalar loop is left ${mcL1.d_mod_pass} and ${mcL2.d_mod_pass}) and the instruction ratio. A change of cache level can move the time without moving the instruction ratio: the gather loop executes ${lr(gaL1.instr_ratio.as_compiled)}× and ${lr(gaL2.instr_ratio.as_compiled)}× the instructions at the two sizes but costs ${lr(gaL1.as_compiled.ratio)}× and ${lr(gaL2.as_compiled.ratio)}×. So these data do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; no other d was timed. Nothing here times the SIMD loop alone or profiles where the time goes, and these virtual machines expose no hardware counters. The plan expected matrix multiply not to be lost on this target, from the compile-only sweep; why the target matters is not established here.`);
+  // reverse loop: the no-vectorize control
+  const rv = D.cell('k04_rev.L1');
+  $('arm-novec').replaceChildren(el('b', null, 'The no-vectorize control. '),
+    `Switching vectorization off by hand, with no checks, costs ${lr(rv.positive.ratio)}× at the reverse loop’s L1 size, against ${lr(rv.as_compiled.ratio)}× with the checks on: about ${Math.round(SM.novec_rev_share_pct)}% of the checked build’s extra time is the lost SIMD, and the rest is the compare and branch on each element (inferred). `,
+    `The same control costs ${lr(Math.min(...A.cells.filter((c) => c.positive).map((c) => c.positive.ratio)))}× to ${lr(Math.max(...A.cells.filter((c) => c.positive).map((c) => c.positive.ratio)))}× across the ${A.cells.filter((c) => c.positive).length} cells of the loops that are vectorized without the checks (Table 12).`);
+  // against the plan
+  const pred = A.kernels.filter((k) => k.prediction.class), heldC = pred.filter((k) => k.prediction.class_held);
+  const plc = A.kernels.filter((k) => k.prediction.placement_effect), plHeld = plc.filter((k) => k.prediction.placement_held), plMiss = plc.filter((k) => !k.prediction.placement_held);
+  const noPred = A.kernels.filter((k) => !k.prediction.class), offc = (k) => D.cell(`${k.kernel}.L1`).as_compiled.ratio;
+  const seen = (k) => ARM_SMOKE_SEEN.includes(k.kernel), blindP = pred.filter((k) => !seen(k)), blindHeld = blindP.filter((k) => k.prediction.class_held);
+  $('arm-plan').replaceChildren(el('b', null, 'Against the plan. '), repoNode(A.plan),
+    ` was written after a two-kernel smoke run and before the full runs had finished. It named the class of ${pred.length} loops, and ${heldC.length} of ${pred.length} held (${names(pred.filter((k) => k.class === 'lost').map((k) => k.kernel))} lost; ${names(pred.filter((k) => k.class === 'kept').map((k) => k.kernel))} kept). Not all of those were blind: the smoke run had already timed ${names(ARM_SMOKE_SEEN)} on this core (the plan quotes both figures), so those ${numWord(pred.filter(seen).length)} predictions were made with the result in view, and ${blindHeld.length} of the ${blindP.length} others held. It predicted no placement effect for the forward loops: ${plHeld.length ? `${names(plHeld.map((k) => k.kernel))} held` : 'none held'}${plMiss.length ? `, ${names(plMiss.map((k) => k.kernel))} did not (flagged placement-sensitive at L1)` : ''}${plc.some(seen) ? `; ${names(plc.filter(seen).map((k) => k.kernel))} had been timed in the smoke run when that was written` : ''}. It made no prediction for ${names(noPred.map((k) => k.kernel))}, which cost ${joinAnd(noPred.map((k) => `${fx(offc(k))}×`))} at L1, as compiled.`);
+  // limits
+  const flags = Object.entries(M.isa_flags).filter(([, v]) => v).map(([f]) => f);
+  $('arm-limits').replaceChildren(el('b', null, 'Limits. '),
+    `One core type (${M.cpu_model}), one runner image (${M.os}, kernel ${M.kernel}), virtual machines whose neighbours are unknown, ${A.jobs} jobs in ${A.runs.length} runs from one day. ${capFirst(clang)} and ${libcxx} only${M.march_flag_in_builds ? '' : ', with no -march flag, so the builds target the compiler’s default Arm baseline'}${flags.includes('sve') ? ' (the cores also report SVE and SVE2, which these builds did not target)' : ''}. `,
+    'No real programs, no profile-guided builds and no other compilers or libc++ versions were timed on Arm, and no steal or frequency record was made for these runs. The placement fields in the data (64-byte windows) were defined for x86-64 fetch windows and are computed for Arm without a check of what an Arm core fetches, and the layout A/A moves only the unchecked build’s loops, so it did not see placement shifts that the compiled ÷ aligned ratio shows (above): neither is a verified placement control on this core. ',
+    'This says nothing about Apple, AWS or other Arm cores, about other Arm compilers, or about Google’s services.');
+}
+function renderArm() {
+  if (!S.arm || !S.arm.cells) return;
+  armTexts();
+  armFigure();
+  armDetails();
+  updateScrollHints();
+}
 function renderHoldout() {
   const H = S.ho;
   const judged = H.rows.filter((r) => r.reproduced != null);
@@ -2174,6 +2503,7 @@ async function start() {
       loadSection(S.ix.sections.pgo, 'pgo', renderPgo, 'pgo-full'),
       loadSection(S.ix.sections.versions, 'ver', renderVersions, 'versions-full'),
       loadSection(S.ix.sections.environment, 'env', renderEnvironment, 'environment-full'),
+      S.ix.sections.arm64 ? loadSection(S.ix.sections.arm64, 'arm', renderArm, has('arm') ? 'arm' : 'arm-full') : null,
     ]);
     renderMatmulVersions();
     renderRuleList();

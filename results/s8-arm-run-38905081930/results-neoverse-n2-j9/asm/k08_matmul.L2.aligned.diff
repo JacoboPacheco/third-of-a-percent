@@ -1,0 +1,253 @@
+--- k08_matmul.none_a64.s
++++ k08_matmul.fast_a64.s
+@@ -1,38 +1,118 @@
+ <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m>:
+-cbz	x3, fe4 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-stp	x22, x21, [sp, #-32]!
+-stp	x20, x19, [sp, #16]
+-mul	x13, x3, x3
+-ldr	x9, [x2]
+-ldr	x10, [x0]
+-lsl	x11, x3, #2
+-ldr	x12, [x1]
++sub	sp, sp, #0x70
++stp	x29, x30, [sp, #16]
++stp	x28, x27, [sp, #32]
++stp	x26, x25, [sp, #48]
++stp	x24, x23, [sp, #64]
++stp	x22, x21, [sp, #80]
++stp	x20, x19, [sp, #96]
++cbz	x3, <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++ldp	x11, x12, [x1]
++lsl	x13, x3, #2
+ mov	x8, xzr
+-and	x15, x3, #0xfffffffffffffff8
+-add	x16, x9, #0x10
+-add	x17, x10, #0x10
+-add	x14, x10, x11
+-mov	x18, x10
+-add	x13, x9, x13, lsl #2
+-b	e94 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-add	x8, x8, #0x1
+-add	x17, x17, x11
+-add	x18, x18, x11
+-cmp	x8, x3
+-b.eq	fdc <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.none
+-mul	x1, x11, x8
+-mov	x0, xzr
+-mov	x5, x16
+-mul	x2, x8, x3
+-add	x4, x10, x1
+-add	x1, x14, x1
+-cmp	x4, x13
+-mov	x4, x9
+-ccmp	x9, x1, #0x2, cc	// cc = lo, ul, last
+-add	x1, x12, x2, lsl #2
+-ccmp	x11, #0x0, #0x8, cs	// cs = hs, nlast
+-cset	w2, lt	// lt = tstop
+-b	f14 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++mov	x9, xzr
++mov	x10, xzr
++sub	x14, x3, #0x1
++mov	w15, #0x10                  	// #16
++str	x2, [sp, #8]
++sub	x12, x12, x11
++asr	x12, x12, #2
++ldp	x5, x7, [x2]
++mul	x4, x10, x3
++mov	x17, xzr
++mov	x18, xzr
++mov	x1, xzr
++mul	x6, x13, x10
++mov	x2, x10
++sub	x7, x7, x5
++add	x19, x5, #0x4
++add	x20, x5, #0x10
++asr	x7, x7, #2
++mov	x21, x5
++nop
++nop
++mul	x25, x1, x3
++cmp	x7, x18
++add	x23, x1, x4
++csel	x26, x7, x18, hi	// hi = pmore
++subs	x22, x7, x25
++csel	x29, xzr, x22, cc	// cc = lo, ul, last
++cmp	x12, x23
++b.ls	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.plast
++ldp	x24, x22, [x0]
++subs	x25, x7, x25
++csel	x25, xzr, x25, cc	// cc = lo, ul, last
++ldr	w23, [x11, x23, lsl #2]
++sub	x22, x22, x24
++asr	x22, x22, #2
++cmp	x22, x4
++csel	x27, x22, x4, hi	// hi = pmore
++sub	x27, x27, x4
++cmp	x27, x14
++csel	x28, x27, x14, cc	// cc = lo, ul, last
++cmp	x28, x25
++csel	x25, x28, x25, cc	// cc = lo, ul, last
++add	x28, x25, #0x1
++mov	x25, xzr
++cmp	x28, #0x8
++b.ls	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.plast
++cmp	x22, x4
++mul	x30, x13, x1
++add	x16, x24, x6
++csel	x25, x22, x4, hi	// hi = pmore
++sub	x25, x25, x4
++cmp	x25, x14
++csel	x25, x25, x14, cc	// cc = lo, ul, last
++cmp	x25, x29
++csel	x25, x25, x29, cc	// cc = lo, ul, last
++add	x29, x19, x30
++lsl	x25, x25, #2
++add	x10, x16, x25
++add	x25, x29, x25
++add	x29, x5, x30
++add	x10, x10, #0x4
++cmp	x16, x25
++ccmp	x29, x10, #0x2, cc	// cc = lo, ul, last
++b.cc	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.lo, b.ul, b.last
++add	x10, x26, x17
++ands	x16, x28, #0x7
++mov	w25, #0x8                   	// #8
++csel	x16, x25, x16, eq	// eq = none
++cmp	x27, x10
++dup	v0.4s, w23
++csel	x10, x27, x10, cc	// cc = lo, ul, last
++sub	x25, x28, x16
++add	x27, x24, x15
++cmp	x10, x14
++mov	x28, x20
++csel	x10, x10, x14, cc	// cc = lo, ul, last
++sub	x10, x10, x16
++add	x26, x10, #0x1
++nop
++nop
++nop
++nop
++nop
++nop
++nop
++ldp	q1, q4, [x27, #-16]
++subs	x26, x26, #0x8
++ldp	q2, q3, [x28, #-16]
++add	x28, x28, #0x20
++mla	v1.4s, v2.4s, v0.4s
++mla	v4.4s, v3.4s, v0.4s
++stp	q1, q4, [x27, #-16]
++add	x27, x27, #0x20
++b.ne	fc0 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
++b	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
++nop
++nop
++nop
++nop
++nop
++nop
++mov	x25, xzr
++add	x24, x24, x9
+ nop
+ nop
+ nop
+@@ -47,61 +127,41 @@
+ nop
+ nop
+ nop
+-add	x0, x0, #0x1
+-add	x5, x5, x11
+-add	x4, x4, x11
+-cmp	x0, x3
+-b.eq	e80 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.none
+-cmp	x3, #0x8
+-ldr	w6, [x1, x0, lsl #2]
+-csinc	w7, w2, wzr, cs	// cs = hs, nlast
+-tbz	w7, #0, f40 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-mov	x7, xzr
+-b	fb0 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-nop
+-nop
+-nop
+-nop
+-nop
+-dup	v0.4s, w6
+-mov	x7, x15
+-mov	x19, x17
+-mov	x20, x5
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-nop
+-ldp	q1, q4, [x19, #-16]
+-subs	x7, x7, #0x8
+-ldp	q2, q3, [x20, #-16]
+-add	x20, x20, #0x20
+-mla	v1.4s, v2.4s, v0.4s
+-mla	v4.4s, v3.4s, v0.4s
+-stp	q1, q4, [x19, #-16]
+-add	x19, x19, #0x20
+-b.ne	f80 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
+-cmp	x15, x3
+-mov	x7, x15
+-b.eq	f00 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.none
+-lsl	x20, x7, #2
+-sub	x7, x3, x7
+-add	x19, x4, x20
+-add	x20, x18, x20
+-ldr	w21, [x19], #4
+-ldr	w22, [x20]
+-subs	x7, x7, #0x1
+-madd	w21, w21, w6, w22
+-str	w21, [x20], #4
+-b.ne	fc0 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
+-b	f00 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>
+-ldp	x20, x19, [sp, #16]
+-ldp	x22, x21, [sp], #32
++add	x10, x18, x25
++cmp	x7, x10
++b.ls	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.plast
++add	x10, x8, x25
++cmp	x22, x10
++b.ls	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.plast
++lsl	x10, x25, #2
++add	x25, x25, #0x1
++cmp	x3, x25
++ldr	w16, [x21, x10]
++ldr	w26, [x24, x10]
++madd	w16, w16, w23, w26
++str	w16, [x24, x10]
++b.ne	<_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
++add	x1, x1, #0x1
++add	x18, x18, x3
++sub	x17, x17, x3
++cmp	x1, x3
++add	x20, x20, x13
++add	x21, x21, x13
++b.ne	ec0 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
++mov	x10, x2
++add	x15, x15, x13
++add	x9, x9, x13
++add	x10, x2, #0x1
++ldr	x2, [sp, #8]
++add	x8, x8, x3
++cmp	x10, x3
++b.ne	e88 <_Z15kern_k08_matmulRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_m+off>  // b.any
++ldp	x20, x19, [sp, #96]
++ldp	x22, x21, [sp, #80]
++ldp	x24, x23, [sp, #64]
++ldp	x26, x25, [sp, #48]
++ldp	x28, x27, [sp, #32]
++ldp	x29, x30, [sp, #16]
++add	sp, sp, #0x70
+ ret
++brk	#0x1

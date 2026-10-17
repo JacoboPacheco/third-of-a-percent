@@ -26,14 +26,14 @@
     <h1>Third of a Percent: details</h1>
     <p class="byline">The material behind <a href="index.html">the main page</a>, section by section. <a id="repo-link">Code and data</a>. Work in progress, October 2026: the results so far; they may still change.</p>
     <p class="callout" id="details-purpose">This page holds the full tables and the checking material behind the main paper; it is not needed to follow the result.</p>
-    <nav class="dnav" aria-label="Sections on this page"><a href="#result-full">Result</a> <a href="#why-full">Why</a> <a href="#placement-full">Placement</a> <a href="#layout-full">Layout sweep</a> <a href="#census-full">Census</a> <a href="#mitigate-full">Rewrites</a> <a href="#siblings-full">Toolchains</a> <a href="#realworld-full">Real programs</a> <a href="#pgo-full">PGO column</a> <a href="#programs-full">Earlier programs</a> <a href="#method-full">Method</a> <a href="#related-full">Related work</a> <a href="#appendix-a">A: every cell</a> <a href="#appendix-b">B: every run</a> <a href="#appendix-c">C: toolchains per CPU</a> <a href="#appendix-d">D: census 2 projects</a></nav>
+    <nav class="dnav" aria-label="Sections on this page"><a href="#result-full">Result</a> <a href="#why-full">Why</a> <a href="#placement-full">Placement</a> <a href="#layout-full">Layout sweep</a> <a href="#census-full">Census</a> <a href="#mitigate-full">Rewrites</a> <a href="#siblings-full">Toolchains</a> <a href="#arm-full">Arm</a> <a href="#realworld-full">Real programs</a> <a href="#pgo-full">PGO column</a> <a href="#programs-full">Earlier programs</a> <a href="#method-full">Method</a> <a href="#related-full">Related work</a> <a href="#appendix-a">A: every cell</a> <a href="#appendix-b">B: every run</a> <a href="#appendix-c">C: toolchains per CPU</a> <a href="#appendix-d">D: census 2 projects</a></nav>
   </header>
   <div class="col body">
     <section id="result-full">
       <h2><span class="secno">1</span>Result, in full</h2>
       <p id="terms-full">Four words used below. A <em>run</em> is one start of the measuring workflow on GitHub. Each run starts <span data-v="jobsPerRun"></span> machines at once, and each machine&rsquo;s share of the work is a <em>job</em>; GitHub decides which CPU model each job gets. The <em>pooled</em> ratio of a CPU model combines every returned job that drew it, in all <span data-v="nRuns"></span> runs: the geometric mean of the jobs&rsquo; own ratios. Its <em>interval</em> comes from resampling whole jobs and then the repetitions inside each job, so it includes the spread between machines, not only the noise inside one. A CPU model needs at least <span data-v="minJobs"></span> jobs to be judged.</p>
       <p id="intel-p"><span data-v="intelText"></span></p>
-      <p id="jobsets">Each part of the page uses its own set of jobs, so the same loop can show slightly different ranges in different places. Figures 1 and 3, Tables 1 and 2 and Appendix A: the pooled runs (<span data-v="nJobs"></span> jobs), sizes L1 and L2, the column named (aligned or as compiled). The machine-code view (its headline: the L1 size only; its full listing: both sizes). Section 5: the <span data-v="mitJobs"></span> jobs of the rewrite runs, aligned. Section 6: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, including CPU models drawn too rarely to judge here. Section 7: one Cachegrind profile per program (instructions, no timing); its Table 6, the earlier runs.</p>
+      <p id="jobsets">Each part of the page uses its own set of jobs, so the same loop can show slightly different ranges in different places. Figures 1 and 3, Tables 1 and 2 and Appendix A: the pooled runs (<span data-v="nJobs"></span> jobs), sizes L1 and L2, the column named (aligned or as compiled). The machine-code view (its headline: the L1 size only; its full listing: both sizes). Section 5: the <span data-v="mitJobs"></span> jobs of the rewrite runs, aligned. Section 6: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, including CPU models drawn too rarely to judge here. Section 6d: <span data-v="armJobsSet">the jobs of the Arm runs, a separate pool on one core type, as compiled and aligned</span>. Section 7: one Cachegrind profile per program (instructions, no timing); its Table 6, the earlier runs.</p>
       <p id="fwd-low"><span data-v="fwdLow"></span></p>
       <p id="reconcile">&ldquo;The same in every run&rdquo; means the verdict came out the same when each run was judged on its own. The pooled numbers still move from run to run: <span data-v="reproText"></span></p>
       <p id="otherdraws"><span data-v="otherDraws"></span></p>
@@ -47,7 +47,7 @@
 
     <section id="why-full">
       <h2><span class="secno">2</span>Why uneven, in full</h2>
-      <p>SIMD (single instruction, multiple data) is the processor&rsquo;s way of working on several array elements with one instruction: on the baseline x86-64 these binaries target, one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once. A compiler turns a loop into SIMD code only when it can prove the transformation is safe, and the bounds check makes that proof harder, because the check can stop the loop at any element.</p>
+      <p>SIMD (single instruction, multiple data) is the processor&rsquo;s way of working on several array elements with one instruction: on the baseline x86-64 of the main timing, one <code>xmm</code> register holds four 32-bit integers, so <code>paddd</code> adds four pairs at once (the Arm core in section 6d uses NEON, Arm&rsquo;s version of the same idea). A compiler turns a loop into SIMD code only when it can prove the transformation is safe, and the bounds check makes that proof harder, because the check can stop the loop at any element.</p>
       <h3 id="passlevel">Pass-level evidence (compile-only)</h3>
       <p class="small">Nothing here is timed. Each answer comes from Compiler Explorer, on clang 18 with libc++ in FAST mode, the x86-64 baseline and <code>-O2</code>, unless a line names another version. Every saved answer is in the repository and its quotations are re-checked offline. <em>Observed</em> means a line or a number in a saved answer; <em>inferred</em> means a reading that needs more than what was saved. Full notes: <a data-href="vecUrl" href="#">the reverse and stride-2 loops</a>, <a data-href="matmulVecUrl" href="#">matrix multiply</a>.</p>
       <ul class="limits" id="pl-list">
@@ -153,6 +153,34 @@
       <div id="env-tables"></div>
     </section>
 
+    <section id="arm-full">
+      <h2><span class="secno">6d</span>Arm: the same kernels on an Arm core (<span data-v="armCore">Neoverse-N2</span>)</h2>
+      <p id="arm-intro">The study&rsquo;s measuring workflow also ran on GitHub&rsquo;s Arm runner. The numbers load from <code>data/arm64.json</code>.</p>
+      <p id="arm-build"></p>
+      <p id="arm-basis"></p>
+      <p id="arm-verdict"></p>
+      <details class="more arm-line-box" id="arm-line-box">
+        <summary>The pool&rsquo;s own verdict line, verbatim</summary>
+        <pre class="arm-line"><code id="arm-line"></code></pre>
+      </details>
+      <p id="arm-seed"></p>
+      <ul class="arm-sens" id="arm-sens"></ul>
+      <p id="arm-seed-end"></p>
+      <p class="tcap" id="arm-t1-cap"><b>Table 12.</b> <span data-v="armT1Cap"></span></p>
+      <div class="tablewrap boxed arm-wrap" id="arm-t1-wrap" tabindex="0" role="region" aria-label="Table 12, every cell on the Arm core beside the x86-64 model; scrolls sideways on a narrow screen, loop and size stay in view"></div>
+      <p id="arm-forward"></p>
+      <p id="arm-floors"></p>
+      <p id="arm-l2"></p>
+      <p id="arm-mix"></p>
+      <p id="arm-layout"></p>
+      <p class="tcap" id="arm-t2-cap"><b>Table 13.</b> <span data-v="armT2Cap"></span></p>
+      <div class="tablewrap boxed arm-wrap" id="arm-t2-wrap" tabindex="0" role="region" aria-label="Table 13, what the compiler did to each loop; scrolls sideways on a narrow screen, the loop name stays in view"></div>
+      <p id="arm-matmul"></p>
+      <p id="arm-novec"></p>
+      <p id="arm-plan"></p>
+      <p class="small" id="arm-limits"></p>
+    </section>
+
     <section id="realworld-full">
       <h2><span class="secno">7a</span>Real programs, every count</h2>
       <p id="rw-other"><span data-v="rwOther"></span> <span data-v="rwOtherNote"></span></p>
@@ -223,7 +251,7 @@
         <dt>Verdict</dt>
         <dd>Computed by script per CPU model from the <a data-href="criteriaUrl" href="#" data-title="criteriaFile">written pass rules</a>; nobody edits the result by hand. Every number on this page is read from the data files the runs produced.</dd>
         <dt>Builds</dt>
-        <dd>Every loop is compiled with <code data-v="commonFlags"></code> on <span data-v="clang"></span> and <span data-v="libcxx"></span>, once with <code>_LIBCPP_HARDENING_MODE_NONE</code> (checks off) and once with <code>_LIBCPP_HARDENING_MODE_FAST</code> (checks on). FAST is libc++&rsquo;s cheapest hardening mode; among other things it checks <code>operator[]</code> and stops the program with a trap instruction, <code>ud2</code>, on an index out of range. A second pair adds <code>-falign-loops=64</code>.</dd>
+        <dd>Every loop is compiled with <code data-v="commonFlags"></code> on <span data-v="clang"></span> and <span data-v="libcxx"></span>, once with <code>_LIBCPP_HARDENING_MODE_NONE</code> (checks off) and once with <code>_LIBCPP_HARDENING_MODE_FAST</code> (checks on). FAST is libc++&rsquo;s cheapest hardening mode; among other things it checks <code>operator[]</code> and stops the program with a trap instruction on an index out of range (<code>ud2</code> on x86-64, <code>brk #0x1</code> on Arm). A second pair adds <code>-falign-loops=64</code>.</dd>
         <dt>Pooling</dt>
         <dd>All <span data-v="nJobs"></span> jobs that returned results, from <span data-v="nRuns"></span> runs<span data-v="lostPoolNote"></span>, grouped by CPU model; the pooled ratio is the geometric mean of the jobs&rsquo; ratios, and its 95% interval a two-level bootstrap with <span data-v="resamples"></span> resamples (jobs, then repetitions inside each job) and fixed random streams, so anyone can recompute it exactly. No job is left out for being noisy; a noisy job widens the interval.</dd>
         <dt>Layout A/A</dt>
@@ -249,7 +277,7 @@
         <li id="lost-full"><strong>Jobs that never returned.</strong> <span data-v="lostLong"></span></li>
         <li><strong>Shared runners and the luck of the CPU.</strong> <span data-v="verdictNames"></span>; <span data-v="fewText"></span></li>
         <li id="pool-grew"><strong>One verdict changed as jobs arrived.</strong> With six pooled jobs the Xeon 6973P-C was inconclusive: its stencil at the L2 size ended above the forward limit. Its seventh job moved that cell under the limit, and the pattern held. A block bootstrap leaves its form as pooled (<a data-href="robustnessUrl" href="#">robustness report</a>), so it was the jobs drawn that moved it, not the interval method.</li>
-        <li><strong>Baseline x86-64.</strong> No arm64; AVX2 only in section 6 and as a census sensitivity run.</li>
+        <li><strong>Baseline x86-64, plus one Arm column.</strong> The main timing, the census, the rewrites and the real programs are x86-64 only, with AVX2 only in section 6 and as a census sensitivity run. <span data-v="armLimFull">Arm is one added column (section 6d): one core type, clang 18 only, no real programs.</span></li>
         <li><strong>Thin coverage on some models.</strong> <span data-v="thinText"></span></li>
         <li><strong>RAM-sized data</strong> did not reproduce between the first runs and was not timed in the pooled runs.</li>
         <li><strong>Real programs:</strong> the main timing used no profile-guided optimization (the PGO column in section 7c trains on the timed input and did not make the cost vanish in most rows), shared virtual machines, one toolchain, three AMD CPU models (16, 5 and 3 jobs; the result differs by model), and programs chosen for their lost loops, so they are not a sample of anyone&rsquo;s production code.</li>

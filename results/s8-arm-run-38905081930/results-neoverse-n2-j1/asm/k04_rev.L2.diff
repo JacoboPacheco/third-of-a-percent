@@ -1,0 +1,60 @@
+--- k04_rev.none.s
++++ k04_rev.fast.s
+@@ -1,38 +1,21 @@
+ <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+-ldp	x9, x8, [x1]
+-subs	x12, x8, x9
+-b.eq	eb8 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
+-asr	x8, x12, #2
+-ldr	x10, [x0]
+-cmp	x8, #0x8
+-b.cc	e98 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.lo, b.ul, b.last
+-sub	x11, x9, x10
+-cmp	x11, #0x20
+-b.cc	e98 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.lo, b.ul, b.last
+-lsl	x13, x8, #2
+-and	x11, x8, #0xfffffffffffffff8
+-ubfx	x12, x12, #2, #3
+-mov	x15, x11
+-sub	x14, x13, #0x10
+-add	x13, x9, x14
+-add	x14, x10, x14
+-ldp	q1, q0, [x13, #-16]
+-sub	x15, x15, #0x8
+-sub	x13, x13, #0x20
+-add	v0.4s, v0.4s, v0.4s
+-add	v1.4s, v1.4s, v1.4s
+-stp	q1, q0, [x14, #-16]
+-sub	x14, x14, #0x20
+-cbnz	x15, e6c <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
+-cmp	x8, x11
+-mov	x8, x12
+-b.eq	eb8 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
+-sub	x10, x10, #0x4
+-sub	x9, x9, #0x4
+-lsl	x11, x8, #2
+-subs	x8, x8, #0x1
+-ldr	w12, [x9, x11]
+-lsl	w12, w12, #1
+-str	w12, [x10, x11]
+-b.ne	ea0 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
++ldp	x12, x8, [x1]
++subs	x8, x8, x12
++b.eq	e70 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
++ldp	x11, x9, [x0]
++asr	x10, x8, #2
++sub	x12, x12, #0x4
++sub	x8, x9, x11
++sub	x9, x10, #0x1
++sub	x11, x11, #0x4
++asr	x8, x8, #2
++cmp	x9, x8
++b.cs	e74 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.hs, b.nlast
++lsl	x13, x10, #2
++subs	x10, x10, #0x1
++ldr	w14, [x12, x13]
++lsl	w14, w14, #1
++str	w14, [x11, x13]
++b.ne	e50 <_Z12kern_k04_revRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
+ ret
++brk	#0x1

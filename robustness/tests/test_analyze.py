@@ -121,6 +121,22 @@ def test_quad_placement_statistic_runs_under_every_method():
         assert 0.99 < r["ratio"] < 1.02, m
 
 
+def test_arm_pool_is_a_separate_dataset_with_its_own_markers():
+    assert set(analyze.ARM_DATASETS).isdisjoint(analyze.DATASETS)
+    assert not set(analyze.ARM_DATASETS.values()) & set(analyze.DATASETS.values())
+    assert analyze.ARM_MARKS != analyze.TABLE_MARKS and analyze.ARM_MARKS[0] not in analyze.TABLE_MARKS[0]
+    assert analyze.TABLE_MARKS[0] not in analyze.ARM_MARKS[0]  # splitting on one block never lands in the other
+
+
+def test_forward_misses_counts_only_cells_the_rule_counts():
+    cells = {"a.L1": {"class": "kept", "fwd_pass": False, "ps": True},    # placement-sensitive: left out
+             "b.L2": {"class": "kept", "fwd_pass": False},                # counted, misses
+             "c.L2": {"class": "kept", "fwd_pass": True},                 # counted, passes
+             "d.L1": {"class": "lost", "lost_ok": True}}                  # not a forward cell
+    res = {"methods": {"a": {"cells": cells}}}
+    assert analyze.forward_misses(res, "a") == ["b.L2"]
+
+
 def test_compare_flags_a_flip():
     cell_a = {"class": "lost", "ac": [2.0, 1.6, 2.4], "al": [2.0, 1.6, 2.4], "lost_ok": True}
     cell_b = {"class": "lost", "ac": [2.0, 1.4, 2.6], "al": [2.0, 1.6, 2.4], "lost_ok": False}

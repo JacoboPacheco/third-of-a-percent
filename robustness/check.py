@@ -6,7 +6,8 @@
 1. robustness/tests (pytest when installed, otherwise a small built-in runner).
 2. Recomputes the whole analysis from the stored raw samples and demands: method (a) reproduces the stored pooled.json
    (self-test), results.json equals the recomputation, and the tables block of report.md equals the tables generated
-   from it. --quick skips step 2.
+   from it. --quick skips steps 2 and 3.
+3. The same for the Arm pool (analyze.py --arm): self-test, results-arm.json and the second tables block of report.md.
 Skips cleanly (exit 0, says SKIP) when the stored results are not present.
 """
 import importlib
@@ -119,8 +120,48 @@ def main(argv):
             else:
                 print("  FAIL report.md tables differ from the recomputed tables (run analyze.py --report)")
                 ok = False
+    ok &= check_arm()
     print("ROBUSTNESS CHECKS " + ("PASSED" if ok else "FAILED"))
     return 0 if ok else 1
+
+
+def check_arm():
+    """[3] The Arm pool (analyze.py --arm): self-test of method (a), results-arm.json and the second tables block of report.md
+    equal the recomputation. Skips when the Arm outputs or the Arm pool are not there."""
+    print("[3] the Arm pool (s8arm), recomputed from the stored raw samples")
+    rj = os.path.join(HERE, analyze.ARM_RESULTS)
+    if not os.path.exists(rj):
+        print("  SKIP: no robustness/" + analyze.ARM_RESULTS)
+        return True
+    out = analyze.run_all(analyze.ARM_DATASETS)
+    if not out["datasets"]:
+        print("  SKIP: the Arm pool or its job files are not present")
+        return True
+    ok = True
+    for name, ds in out["datasets"].items():
+        st = ds["self_test"]
+        good = st["forms_equal"] and st["max_rel_diff"] <= 1e-12
+        print(f"  self-test {name}: {st['exact']}/{st['numbers_checked']} exact, max rel diff {st['max_rel_diff']:.1e}, "
+              f"forms equal {st['forms_equal']} -> {'ok' if good else 'FAIL'}")
+        ok &= good
+    with open(rj, encoding="utf-8") as f:
+        stored = json.load(f)
+    d = same(stored, json.loads(json.dumps(out)))
+    print("  results-arm.json equals the recomputation" if d is None else f"  FAIL results-arm.json: {d}")
+    ok &= d is None
+    with open(os.path.join(HERE, "report.md"), encoding="utf-8") as f:
+        text = f.read()
+    b, e = analyze.ARM_MARKS
+    if b not in text or e not in text:
+        print("  FAIL report.md has no Arm tables block")
+        return False
+    block = text.split(b, 1)[1].split(e, 1)[0].strip()
+    if block == analyze.arm_tables_md(out).strip():
+        print("  report.md Arm tables equal the recomputed tables")
+    else:
+        print("  FAIL report.md Arm tables differ from the recomputed tables (run analyze.py --arm --report)")
+        ok = False
+    return ok
 
 
 if __name__ == "__main__":

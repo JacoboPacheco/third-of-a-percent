@@ -178,3 +178,37 @@
 @media (min-width: 641px) { #race:not([data-hv="4"]) .sw-hint { display: none !important; } } /* variants 1 to 3 have no free spot for the pill: it sat on the Replay button or the caption */
 /* footnotes sit inside their module card, not out in the margin */
 .sec-js .body .sidenote { position: static; width: auto; transform: none; margin: -.2rem 0 1rem; padding-left: 12px; border-left: 1px solid var(--rule); }
+
+/* ---------- the Arm column: Figure 7 on the main page, section 6d on the details page ---------- */
+.arm-fig { margin: 8px 0 14px; }
+.arm-fig .fig-title { margin-bottom: 8px; }
+.arm-fig .controls { margin-bottom: 4px; }
+.arm-rows .row { cursor: pointer; }
+/* the x86-64 comparison ticks: darker than the "no SIMD" grey (at least 3:1 on the selected row's tint), drawn above the Arm marks, and standing out
+   of the dot they belong to (the L1 tick above its dot, the L2 tick below its ring) so a close value cannot hide behind a dot */
+.arm-fig { --xm: #6f6f6a; }
+.xm { position: absolute; z-index: 1; width: 3px; height: 13px; border-radius: 1px; background: var(--xm); }
+.xm.l1 { margin: -11px 0 0 -1.5px; }
+.xm.l2 { margin: -2px 0 0 -3px; width: 6px; background: transparent; box-shadow: inset 0 0 0 1.5px var(--xm); }
+.key-xm { width: 3px; height: 10px; border-radius: 1px; background: var(--xm); vertical-align: -1px; }
+.key-xm-l2 { width: 6px; height: 10px; border-radius: 1px; box-shadow: inset 0 0 0 1.5px var(--xm); vertical-align: -1px; }
+/* the loop's class is also a shape, not only a colour: a diamond loses SIMD, a circle keeps it, a square has none in either build */
+.arm-fig .row.c-lost .name i, .arm-fig .key-lost { border-radius: 1px; transform: rotate(45deg) scale(.82); }
+.arm-fig .row.c-none .name i, .arm-fig .key-none { border-radius: 1px; }
+.arm-fig .row.c-lost .mk { border-radius: 1.5px; transform: rotate(45deg) scale(.82); }
+.arm-fig .row.c-none .mk { border-radius: 1.5px; }
+.arm-fig .arm-rows:hover .row:not(:hover) { opacity: 1; } /* a dimmed row would lower the contrast of its ticks */
+.arm-sens { margin: .2rem 0 .8rem; padding-left: 1.3em; }
+.arm-sens li { margin: 0 0 .35rem; }
+.arm-read { margin: 10px 0 4px; padding: 10px 12px 8px; border-radius: 12px; background: #f6f7fa; box-shadow: inset 0 0 0 1px rgb(15 23 42 / .08); font-size: .9rem; line-height: 1.45; color: var(--ink-2); }
+.arm-read .ar-head { margin: 0 0 6px; color: var(--ink); }
+.arm-read .ar-tbl { width: auto; max-width: 100%; margin: 2px 0 8px; font-size: .84rem; }
+.arm-read .ar-tbl th, .arm-read .ar-tbl td { padding-right: 16px; }
+.arm-read .ar-tbl tbody th { font-weight: 600; white-space: nowrap; }
+.arm-read .ar-note { margin: 0 0 4px; font-size: .86rem; }
+.arm-read .ar-src { margin: 0; font-size: .86rem; }
+.arm-read .ar-src code { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .arm-read { padding: 10px 10px 8px; }
+  .arm-rows .row { min-height: 44px; }
+}

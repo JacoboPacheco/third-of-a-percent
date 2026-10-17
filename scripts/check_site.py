@@ -10,7 +10,14 @@
    no speech), at 1280 and 390 px wide:
    - both pages: no console errors, every printed number in site/data, the Google-wording check, no
      horizontal scroll at 390, every link and button at least 32 px tall at 390; the main page under
-     13228 px long at 390 with every section opened, under 10500 by default (collapsed); links to the repository only to the public copy, no run links;
+     PHONE_DEFAULT_CAP px long at 390 by default (collapsed), and under PHONE_ALL_OPEN_BACKSTOP with every section opened (a backstop;
+     both constants and the lengths last measured are at the top of this file); links to the repository only to the public copy, no run links;
+   - the Arm column (arm_checks): section 6a (a gist, then Figure 7 and its readout behind the Details button) and section 6d with
+     Tables 12 and 13 (details) equal to site/data/arm64.json recomputed in Python at their printed precision; the verdict is
+     reported as INCONCLUSIVE with the missed cell named, never as a map; the matrix-multiply mechanism is labelled 'consistent with'
+     and 'not tested'; Figure 7's rows, marks, click, arrow keys, Home and End, and the aligned / as compiled switch; a text
+     equivalent; the stale 'No arm64' limit gone; the Reproduce command for the Arm runner; section 10's Arm addition is two
+     sentences; no number typed into the two new sections' HTML; no sideways scroll and finger-sized rows at 390 px; no console errors;
    - section 7 (real programs): the timed result (Table 9) with its limits and the expectations, Figure 6, the estimate table and
      Table 5 (details) equal to realworld.json, the Amdahl estimate collapsed and labelled an estimate
      (share x (r - 1)) with its assumption, LightGBM marked approximate, Table 6 (details) labelled as
@@ -80,6 +87,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(REPO, "site")
 DATA = os.path.join(SITE, "data")
 RW_NAMES_PY = {"lightgbm_default": "LightGBM (default)", "lightgbm_multiclass": "LightGBM (multiclass)", "lightgbm_linear": "LightGBM (linear)", "draco": "Draco", "tinydnn": "tiny-dnn", "spectra": "Spectra", "meshopt": "meshoptimizer (control)", "fmt": "{fmt} (control)"}
+# Phone page lengths at 390 px wide. The default (collapsed) page is the one that is capped: it is the page a reader meets.
+# The all-open length is a backstop only, so that the text behind the Details buttons cannot grow without anyone noticing.
+# Measured with the review fixes to section 6a (Arm): 7929 px by default, 23768 px with every section opened.
+# The backstop was 20632 + margin (21000) before the Arm column, 23750 for the column as first built (measured 23305),
+# and is 24200 now: 1.8% over the measurement, as before. The default cap has not moved.
+PHONE_DEFAULT_CAP = 10500
+PHONE_ALL_OPEN_BACKSTOP = 24200
 NUM_TOKEN = re.compile(r"(?<![A-Za-z0-9_.])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?![A-Za-z0-9_])")
 TRANSFORMS = (
     lambda v: v,
@@ -505,7 +519,7 @@ def story_checks(browser, base, ck, index, pooled):
 
 def collapsed_checks(browser, base, ck, index, saved, shots):
     print("== click-first, short: the default state")
-    for w, h, cap in ((1440, 900, None), (390, 844, 10500)):
+    for w, h, cap in ((1440, 900, None), (390, 844, PHONE_DEFAULT_CAP)):
         pg = browser.new_page_plain(viewport={"width": w, "height": h})
         pg.goto(base, wait_until="networkidle")
         wait_ready(pg)
@@ -520,7 +534,7 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         ck.ok(f1 < h * 3, f"{w}: the clickable heatmap is within three screens (the contrast band and the mechanism demo come first; Figure 1 starts at {f1:.0f} px)")
         if cap:
             hh = pg.evaluate("document.documentElement.scrollHeight")
-            ck.ok(hh < cap, f"{w}: the main page is {hh} px long by default (under {cap}; hard cap 13228)")
+            ck.ok(hh < cap, f"{w}: the main page is {hh} px long by default (under {cap})")
             shot(pg, saved, shots, "mobile-collapsed-top.png")
         pg.click("#sb-why", timeout=500) if False else None
         pg.click('#why .sec-more')
@@ -1621,6 +1635,598 @@ def wording_checks(browser, base, ck, index):
     dp.close()
 
 
+ARM_KERNEL_NAMES = {
+    "k01_sum_fwd": "Forward sum", "k02_add_fwd": "Forward add, two arrays", "k03_stencil": "Stencil, three neighbours",
+    "k04_rev": "Reverse loop", "k05_stride2": "Stride-2 loop", "k06_gather": "Gather through an index",
+    "k07_hist": "Histogram", "k08_matmul": "Matrix multiply, inner loop",
+}
+ARM_SHORT_NAMES = {
+    "k01_sum_fwd": "forward sum", "k02_add_fwd": "forward add", "k03_stencil": "stencil", "k04_rev": "reverse",
+    "k05_stride2": "stride-2", "k06_gather": "gather", "k07_hist": "histogram", "k08_matmul": "matrix multiply",
+}
+ARM_CLASS_WORDS = {"lost": "loses SIMD", "kept": "keeps SIMD", "off_axis": "off the axis"}
+ARM_VERBS = {"lost": "loses SIMD under the check", "kept": "keeps SIMD", "off_axis": "is not vectorized in either build"}
+
+
+def arm_checks(browser, base, ck, index, allowed, saved, shots):
+    """The Arm column, tied to site/data/arm64.json: section 6a and Figure 7 on the main page, section 6d with Tables 12 and 13 on the
+    details page. Every printed value is recomputed here from the data file (not read back from the page's own code): the verdict form
+    (INCONCLUSIVE, not a map, with the missed cell named), the 16-cell table, the compiler facts per loop, the floors, the matrix-multiply
+    reading (marked as consistent with, and not tested), the plan against the result, the limits, the Reproduce command, the figure's
+    rows, marks, readout, clicks and keys, a text equivalent, no sideways scroll at 390 px, no console errors, and no stale sentence."""
+    print("== the Arm column: section 6a and Figure 7 (main), section 6d and Tables 12 and 13 (details)")
+    with open(os.path.join(DATA, "arm64.json"), encoding="utf-8") as f:
+        arm = json.load(f)
+    lr_ = lambda v: f"{v:.2f}" if v >= 2 else f"{v:.3f}"  # noqa: E731
+    fx_ = lambda v: f"{v:.1f}" if v >= 2 else f"{v:.2f}"  # noqa: E731
+    norm = lambda s: " ".join(s.replace(" ", " ").split())  # noqa: E731
+
+    def pct_s(v):
+        return "0%" if v == 0 else f"{v:.4f}%" if v < 0.01 else f"{v:.3f}%" if v < 0.1 else f"{v:.2f}%" if v < 1 else f"{v:.1f}%"
+
+    def iv(c):
+        a, b = lr_(c["ci95"][0]), lr_(c["ci95"][1])
+        return f"{lr_(c['ratio'])}×" if a == b else f"{lr_(c['ratio'])}× ({a} to {b})"
+
+    def range_x(lo, hi):
+        a, b = fx_(lo), fx_(hi)
+        return f"{a}×" if a == b else f"{a}–{b}×"
+
+    def cell_name(cid):
+        k, sz = cid.split(".")
+        return f"the {ARM_SHORT_NAMES[k]} loop at the {sz} size"
+
+    def join_and(xs):
+        return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+    cells = {c["cell_id"]: c for c in arm["cells"]}
+    kern = {k["kernel"]: k for k in arm["kernels"]}
+    x86 = arm["x86"]["cells"]
+    x86name = arm["x86"]["model"]["cpu_short"]
+    V, M, SM = arm["verdict"], arm["machine"], arm["summary"]
+    ver = lambda s: re.search(r"\d+\.\d+\.\d+", s).group(0)  # noqa: E731
+    clang, libcxx = f"clang {ver(M['toolchain']['clang'])}", f"libc++ {ver(M['toolchain']['libcxx_package'])}"
+    missed = [cells[i] for i in V["forward_missed"]]
+
+    def med(k):
+        xs = sorted((x86[f"{k}.{sz}"].get("aligned") or x86[f"{k}.{sz}"]["as_compiled"])["ratio"] for sz in ("L1", "L2") if f"{k}.{sz}" in x86)
+        return (xs[len(xs) // 2] if len(xs) % 2 else (xs[len(xs) // 2 - 1] + xs[len(xs) // 2]) / 2) if xs else -1
+
+    order = sorted((k["kernel"] for k in arm["kernels"]), key=lambda k: -med(k))
+    ck.ok(index["sections"].get("arm64") == "data/arm64.json" and V["form"] == "inconclusive" and arm["criteria"]["same_as_x86_pool"],
+          f"the Arm file is registered in index.json and its pooled verdict form is {V['form']!r}, under the same rule file as the x86-64 pool")
+
+    # ---- the main page, every section open, 1280 wide
+    errors = []
+    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(pg, errors)
+    pg.goto(base, wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-rows .row').length === 8 && document.getElementById('arm-read').textContent.length > 0", timeout=20000)
+    pg.wait_for_timeout(300)
+    where = pg.evaluate("""() => { const s = [...document.querySelectorAll('.body section[id]')].map(x => x.id), i = s.indexOf('arm');
+        const h = document.querySelector('#arm > h2 .secno'); return [s[i - 1], s[i + 1], h && h.textContent.trim()]; }""")
+    ck.ok(where == ["siblings", "realworld", "6a"], f"main page: Arm is section 6a, between section 6 and the real programs ({where})")
+    gist = norm(pg.inner_text("#arm .gist"))
+    lost_rng = f"{fx_(SM['lost']['min'])}× to {fx_(SM['lost']['max'])}×"
+    f1 = arm["forward_loops"]["L1"]["as_compiled"]
+    SS_ = arm["seed_sensitivity"]
+    DC_ = SS_["deciding_cell"]
+    ck.ok(f"{arm['cpu_short']}, {arm['jobs']} jobs" in gist and lost_rng in gist and f"{lr_(f1['min'])}× to {lr_(f1['max'])}× at L1" in gist
+          and "inconclusive" in gist and "reverse and stride-2 lose SIMD" in gist and f"by a margin of {DC_['margin_over_limit']:.4f}" in gist
+          and "that most other bootstrap seeds reverse" in gist and DC_["alt_draws"] - DC_["alt_at_or_above_limit"] > DC_["alt_draws"] / 2 and len(gist.split()) <= 50,
+          f"6a gist: the core and job count, the lost-SIMD range ({lost_rng}), the forward range at L1, the verdict form 'inconclusive' with its margin and the statement that most other seeds reverse it (true in the data), in at most 50 words ({len(gist.split())})")
+    what = norm(pg.inner_text("#arm-what"))
+    ck.ok(f"{len(arm['runs'])} runs of {arm['criteria']['jobs_per_run']} jobs" in what and f"a {M['cpu_model']} core" in what and clang in what and libcxx in what and "FAST mode at -O2" in what
+          and "unchanged" in what and "other byte counts on the x86-64 models" in what and pg.evaluate("document.querySelectorAll('#arm-what code.nowrap').length") == 1
+          and pg.evaluate("getComputedStyle(document.querySelector('#arm-what code.nowrap')).whiteSpace") == "nowrap",
+          "6a: what ran (runs, jobs per run, the one core type, the toolchain, FAST mode in a non-breaking -O2, rules unchanged, and that the x86-64 working sets have other byte counts) from the data")
+    why = norm(pg.inner_text("#arm-why"))
+    mc = missed[0]
+    aa_l2 = arm["noise"]["identical_binary_aa"]["L2"]["pooled"]
+    ck.ok(len(missed) == 1 and cell_name(mc["cell_id"]) in why and f"a ratio of {lr_(mc['aligned']['ratio'])}× aligned" in why
+          and f"from {lr_(mc['aligned']['ci95'][0])} to {lr_(mc['aligned']['ci95'][1])}×, past the {fx_(V['limit'])}× limit" in why
+          and f"That miss is {DC_['margin_over_limit']:.4f}" in why
+          and f"({DC_['alt_draws'] - DC_['alt_at_or_above_limit']} of {DC_['alt_draws']} put it under the limit, at a median of {lr_(DC_['alt_hi']['median'])})" in why
+          and f"even an identical binary against itself spreads by ±{pct_s(aa_l2['half_width_pct'])}" in why
+          and "these data cannot separate inconclusive from a map at this cell" in why and "section 6d" in why
+          and "is a map" not in why and "holds" not in why and "the jobs disagree" not in why and "A/A floor" not in why,
+          f"6a: the reason for INCONCLUSIVE names the missed cell ({mc['cell_id']}) with its ratio and interval, says the margin is inside the bootstrap's seed noise and that an identical binary spreads as widely at L2, and does not blame the jobs or the L1 A/A floor")
+    mm = cells["k08_matmul.L1"]
+    mmx = x86["k08_matmul.L1"]
+    mtxt = norm(pg.inner_text("#arm-mm"))
+    ck.ok(kern["k08_matmul"]["class"] == "kept" and mmx["class"] == "lost" and f"costs {fx_(mm['as_compiled']['ratio'])}× at L1 ({fx_(mm['aligned']['ratio'])}× aligned)" in mtxt
+          and f"against {fx_(mmx['as_compiled']['ratio'])}× on {x86name}, where the same loop loses SIMD" in mtxt and "Where the extra time goes is not shown." in mtxt,
+          "6a: the matrix-multiply sentence gives the Arm and the x86-64 numbers from the data and says where the extra time goes is not shown")
+    # the more-link names section 6d, and the caption's Table 12 link goes to the table's own caption
+    ck.ok(pg.evaluate("document.querySelectorAll('#arm a[href=\"details.html#arm-full\"]').length") == 1 and pg.evaluate("document.querySelectorAll('#arm-cap a[href=\"details.html#arm-t1-cap\"]').length") == 1
+          and "section 6d" in pg.inner_text("#arm .more-link"), "6a: the more-link names section 6d of the details page, and the caption's 'Table 12' links to that table's caption")
+    bad = page_numbers(pg, allowed, "#arm") + page_numbers(pg, allowed, "#arm-avg")
+    ck.ok(not bad, "6a and the Arm paragraph of section 10: every number printed is in the data" + ("" if not bad else f": {bad[:4]}"))
+
+    # ---- Figure 7: rows, marks, text equivalent
+    rows = pg.evaluate("[...document.querySelectorAll('#arm-rows .row')].map(b => b.dataset.k)")
+    ck.ok(rows == order, f"Figure 7: eight rows in Figure 1's order (by the {x86name} aligned ratio): {rows}")
+    bad_rows = []
+    for k in order:
+        info = pg.evaluate("""(k) => { const r = document.querySelector('#arm-rows .row[data-k="' + k + '"]');
+            return [r.className, r.querySelectorAll('.mk').length, r.querySelectorAll('.mk.ps').length, r.querySelectorAll('.wh').length, r.querySelectorAll('.xm').length,
+                    r.querySelector('.val').textContent, r.getAttribute('aria-label'), r.getAttribute('role')]; }""", k)
+        rs = [cells[f"{k}.{sz}"]["aligned"]["ratio"] for sz in ("L1", "L2")]
+        nps = sum(1 for sz in ("L1", "L2") if cells[f"{k}.{sz}"]["placement_sensitive"])
+        cls = {"lost": "c-lost", "kept": "c-kept", "off_axis": "c-none"}[kern[k]["class"]]
+        ok_ = (cls in info[0].split() and info[1] == 2 and info[2] == nps and info[3] == 2 and info[4] == 2 and info[5] == range_x(min(rs), max(rs))
+               and {"lost": "loses SIMD", "kept": "keeps SIMD", "off_axis": "no SIMD in either build"}[kern[k]["class"]] in info[6]
+               and "on Arm" in info[6] and ARM_KERNEL_NAMES[k] in info[6] and x86name in info[6] and info[7] == "option")
+        if not ok_:
+            bad_rows.append((k, info))
+    ck.ok(not bad_rows, f"Figure 7: every row has its class colour, two Arm marks and two intervals, two {x86name} bars, the aligned range as its value, the placement-sensitive rings, and an aria-label that says the class and both machines ({bad_rows[:1]})")
+    # the figure names the model it is drawn against, defines both columns, and does not follow Figure 1's CPU buttons
+    cap7 = norm(pg.inner_text("#arm-cap"))
+    ticks_before = pg.evaluate("[...document.querySelectorAll('#arm-rows .xm')].map(e => Math.round(e.getBoundingClientRect().left))")
+    cpu_btns = pg.evaluate("[...document.querySelectorAll('#cpu-seg button')].map(b => [b.dataset.cpu, b.getAttribute('aria-checked') === 'true'])")
+    others = [b for b in cpu_btns if not b[1]]
+    cpu_now = next(b[0] for b in cpu_btns if b[1])
+    if others:
+        pg.evaluate("document.getElementById('fig1').scrollIntoView()")
+        pg.click(f'#cpu-seg button[data-cpu="{others[0][0]}"]')
+        pg.wait_for_timeout(300)
+    ticks_after = pg.evaluate("[...document.querySelectorAll('#arm-rows .xm')].map(e => Math.round(e.getBoundingClientRect().left))")
+    ck.ok(norm(pg.inner_text("#arm-fig-title")) == f"Eight loops on an Arm core, beside {x86name}" and "Figure 1" not in pg.inner_text("#arm-fig-title")
+          and "every hot loop on a 64-byte boundary (aligned)" in cap7 and "the code as clang laid it out (as compiled)" not in cap7
+          and "Aligned: every hot loop starts on a 64-byte boundary in both builds" in pg.evaluate("document.getElementById('arm-cap').textContent")
+          and "As compiled: the binaries exactly as clang emitted them" in pg.evaluate("document.getElementById('arm-cap').textContent")
+          and f"The grey ticks are always {x86name}, the page’s default model; they do not follow Figure 1’s CPU buttons" in cap7
+          and bool(others) and ticks_before == ticks_after and len(ticks_before) == 16,
+          f"Figure 7: the title and caption name {x86name} (the grey ticks' model), define aligned and as compiled, and the ticks do not move when Figure 1's CPU button changes ({len(others)} other models offered)")
+    if others:
+        pg.click(f'#cpu-seg button[data-cpu="{cpu_now}"]')
+        pg.wait_for_timeout(200)
+    shapes =pg.evaluate("""() => { const o = {}; for (const r of document.querySelectorAll('#arm-rows .row')) { const c = [...r.classList].find(x => x.startsWith('c-')), i = r.querySelector('.name i'), m = r.querySelector('.mk.l1'), s = getComputedStyle(i);
+        o[c] = [s.transform, s.borderRadius, getComputedStyle(m).transform, i.getAttribute('title'), i.getAttribute('aria-hidden')]; } return o; }""")
+    sig = {k: (v[0], v[1]) for k, v in shapes.items()}
+    ck.ok(len(sig) == 3 and len(set(sig.values())) == 3 and all(v[3] for v in shapes.values()) and shapes["c-lost"][0] != "none" and shapes["c-lost"][2] != "none" and shapes["c-kept"][2] == "none",
+          f"Figure 7: the loop's class is a shape as well as a colour (diamond, circle, square) on the name dot and on the marks, and the dot carries a title ({sig})")
+    geo = pg.evaluate("""() => { const sel = document.querySelector('#arm-rows .row[aria-selected=true]'), out = {};
+        const lum = (rgb) => { const v = rgb.match(/[\\d.]+/g).slice(0, 3).map(Number).map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+        const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        const tick = sel.querySelector('.xm.l1'), tl2 = sel.querySelector('.xm.l2');
+        out.contrastFill = cr(getComputedStyle(tick).backgroundColor, getComputedStyle(sel).backgroundColor);
+        out.contrastRing = cr(getComputedStyle(tl2).boxShadow.match(/rgb[^)]*\\)/)[0], getComputedStyle(sel).backgroundColor);
+        out.bad = [];
+        for (const r of document.querySelectorAll('#arm-rows .row')) { const a = r.querySelector('.xm.l1').getBoundingClientRect(), b = r.querySelector('.mk.l1').getBoundingClientRect(), c = r.querySelector('.xm.l2').getBoundingClientRect(), d = r.querySelector('.mk.l2').getBoundingClientRect();
+          if (!(a.top < b.top - 2 && a.bottom > b.top && c.bottom > d.bottom + 2 && c.top < d.bottom && getComputedStyle(r.querySelector('.xm.l1')).zIndex === '1')) out.bad.push(r.dataset.k); }
+        return out; }""")
+    ck.ok(geo["contrastFill"] >= 3 and geo["contrastRing"] >= 3 and not geo["bad"],
+          f"Figure 7: the grey ticks are at least 3:1 against the selected row ({geo['contrastFill']:.2f}, ring {geo['contrastRing']:.2f}) and stand out of their dots, drawn above them ({geo['bad']})")
+    ck.ok(pg.evaluate("(() => { const l = document.getElementById('arm-rows'); return l.getAttribute('role') === 'listbox' && /arrow keys/.test(l.getAttribute('aria-label')) && document.getElementById('arm-read').getAttribute('aria-live') === 'polite'; })()")
+          and pg.evaluate("document.querySelectorAll('#arm-rows .row[tabindex=\"0\"]').length") == 1 and "Figure 7." in pg.inner_text("#arm-cap") and "Select a row" in pg.inner_text("#arm-cap"),
+          "Figure 7: a listbox with one tab stop, a live readout and a caption that says how to select; the numbers are also in Table 12 (text equivalent)")
+    # the default selection and the readout
+    sel = pg.evaluate("document.querySelector('#arm-rows .row[aria-selected=true]').dataset.k")
+    ro = lambda: pg.evaluate("""() => [document.querySelector('#arm-read .ar-head').textContent, [...document.querySelectorAll('#arm-read .ar-tbl tbody tr')].map(r => [...r.children].map(c => c.textContent)),
+                                       document.querySelector('#arm-read .ar-note').textContent]""")  # noqa: E731
+    head, trs, note = ro()
+    c1, c2 = cells["k04_rev.L1"]["aligned"], cells["k04_rev.L2"]["aligned"]
+    ck.ok(sel == "k04_rev" and head.startswith("Reverse loop loses SIMD under the check on Arm and on " + x86name)
+          and trs[0] == [arm["cpu_short"], iv(c1), iv(c2)] and trs[1] == [x86name, iv(x86["k04_rev.L1"]["aligned"]), iv(x86["k04_rev.L2"]["aligned"])]
+          and f"{kern['k04_rev']['builds']['none']['neon_instructions']} without the checks, {kern['k04_rev']['builds']['fast']['neon_instructions']} with them" in note
+          and kern["k04_rev"]["builds"]["fast"]["why_not_vectorized"] in note,
+          f"Figure 7: the reverse loop is selected first and its readout is the data's (aligned L1 {iv(c1)}, {x86name} {iv(x86['k04_rev.L1']['aligned'])}, NEON counts, the compiler's remark)")
+    # a loop that is not vectorized in either build: the compiler's remark is the checked build's alone, and the checks-off reason is said to be unshown
+    off_ok = []
+    for kk in [k_ for k_ in order if kern[k_]["class"] == "off_axis"]:
+        pg.click(f'#arm-rows .row[data-k="{kk}"]')
+        _, _, note_ = ro()
+        f_, n_ = kern[kk]["builds"]["fast"], kern[kk]["builds"]["none"]
+        off_ok.append(note_.startswith(f"Not vectorized in either build. Clang’s remark with the checks on: “{f_['why_not_vectorized']}”; its reason with the checks off is not shown here. "
+                                       f"The listing grows from {n_['asm_lines']} to {f_['asm_lines']} lines.")
+                      and "The L2 figure is the rougher of the two" in note_ and note_.endswith("(details page, section 6d)."))
+    ck.ok(len(off_ok) >= 2 and all(off_ok), f"Figure 7: gather and histogram say the remark is the checked build's alone and that the checks-off reason is not shown ({len(off_ok)} readouts), and every readout flags L2 as the rougher size")
+    # click a row: matrix multiply
+    pg.click('#arm-rows .row[data-k="k08_matmul"]')
+    head, trs, note = ro()
+    m1, m2 = cells["k08_matmul.L1"], cells["k08_matmul.L2"]
+    ck.ok(pg.evaluate("document.querySelector('#arm-rows .row[aria-selected=true]').dataset.k") == "k08_matmul"
+          and head.startswith(f"Matrix multiply, inner loop keeps SIMD on Arm; on {x86name} it loses SIMD under the check.")
+          and trs[0] == [arm["cpu_short"], iv(m1["aligned"]), iv(m2["aligned"])] and trs[1][1] == iv(x86["k08_matmul.L1"]["aligned"])
+          and "Placement-sensitive at L1 and L2" in note and f"{m1['placement']['d']['ratio']:.3f} and {m2['placement']['d']['ratio']:.3f}" in note
+          and f"The SIMD loop is the same {kern['k08_matmul']['simd_loop']['as_compiled']['fast_instructions']} instructions with the checks off and on, with the same opcodes;" in note
+          and f"the listing grows from {kern['k08_matmul']['builds']['none']['asm_lines']} to {kern['k08_matmul']['builds']['fast']['asm_lines']} lines." in note,
+          "Figure 7: a click on matrix multiply moves the selection and the readout: keeps SIMD on Arm, loses it on the x86-64 model, same SIMD loop, placement-sensitive with its two ratios")
+    # the column toggle: as compiled
+    pg.click('#arm-col-seg button[data-col="compiled"]')
+    rs = [cells[f"k08_matmul.{sz}"]["as_compiled"]["ratio"] for sz in ("L1", "L2")]
+    head, trs, note = ro()
+    ck.ok(pg.get_attribute('#arm-col-seg button[data-col="compiled"]', "aria-checked") == "true"
+          and pg.inner_text('#arm-rows .row[data-k="k08_matmul"] .val').strip() == range_x(min(rs), max(rs))
+          and trs[0][1] == iv(m1["as_compiled"]) and "as compiled" in pg.inner_text("#arm-cap") and "as compiled" in pg.get_attribute('#arm-rows .row[data-k="k08_matmul"]', "aria-label"),
+          f"Figure 7: the 'as compiled' button redraws every row and the readout ({range_x(min(rs), max(rs))}, {iv(m1['as_compiled'])})")
+    # keys: the toggle (arrow keys) and the rows (arrows, Home, End)
+    pg.focus('#arm-col-seg button[aria-checked="true"]')
+    pg.keyboard.press("ArrowLeft")
+    ck.ok(pg.get_attribute('#arm-col-seg button[data-col="aligned"]', "aria-checked") == "true" and pg.evaluate("document.activeElement.dataset.col") == "aligned",
+          "Figure 7: the arrow keys move the aligned / as compiled switch")
+    pg.focus('#arm-rows .row[aria-selected="true"]')
+    seq = []
+    for key in ("ArrowUp", "ArrowDown", "End", "Home", "ArrowUp"):
+        pg.keyboard.press(key)
+        seq.append(pg.evaluate("[document.querySelector('#arm-rows .row[aria-selected=true]').dataset.k, document.activeElement.dataset.k]"))
+    i8 = order.index("k08_matmul")
+    ck.ok(seq == [[order[i8 - 1]] * 2, [order[i8]] * 2, [order[-1]] * 2, [order[0]] * 2, [order[0]] * 2],
+          f"Figure 7: the arrow keys, Home and End move the selection and the focus together, without wrapping ({[s[0] for s in seq]})")
+    # the link resolves
+    pg.goto(base + "details.html#arm-full", wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16", timeout=20000)
+    top = pg.evaluate("document.getElementById('arm-full').getBoundingClientRect().top")
+    ck.ok(-5 <= top < 900, f"the link to details.html#arm-full lands on section 6d (its top at {top:.0f} px)")
+    shot(pg, saved, shots, "arm-details-1280.png", "#arm-full")
+    pg.close()
+    # the caption's 'Table 12' link lands where the table is, not a screen above it (the details page loads its text after the browser's jump)
+    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    pg.goto(base + "details.html#arm-t1-cap", wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16", timeout=20000)
+    pg.wait_for_timeout(600)
+    land = pg.evaluate("(() => { const c = document.getElementById('arm-t1-cap').getBoundingClientRect(), w = document.getElementById('arm-t1-wrap').getBoundingClientRect(); return [Math.round(c.top), Math.round(w.top), Math.round(w.bottom)]; })()")
+    ck.ok(-5 <= land[0] < 450 and land[1] < 900 and land[2] > 300, f"the link to details.html#arm-t1-cap lands on Table 12's caption with the table below it on screen (caption top {land[0]}, table top {land[1]}, bottom {land[2]})")
+    pg.close()
+
+    # ---- the collapsed main page: one gist and a Details button; the figure behind it
+    pg = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-rows .row').length === 8", timeout=20000)
+    st = pg.evaluate("""() => { const s = document.getElementById('arm'), b = document.getElementById('sb-arm'), m = s.querySelector(':scope > .sec-more');
+        return [s.querySelector(':scope > .gist').getBoundingClientRect().height > 0, b.hidden, m.textContent.trim(), m.getAttribute('aria-expanded')]; }""")
+    ck.ok(st[0] and st[1] and st[2] == "Details" and st[3] == "false", f"6a, collapsed: the gist shows, the figure and text sit behind one Details button ({st})")
+    pg.click("#arm .sec-more")
+    pg.evaluate("document.getElementById('arm').scrollIntoView()")
+    pg.wait_for_timeout(250)
+    ck.ok(pg.is_visible("#arm-rows") and pg.is_visible("#arm-read") and pg.is_visible("#arm-col-seg"), "6a: the Details button opens Figure 7, its switch and its readout")
+    pg.click('#arm-rows .row[data-k="k05_stride2"]')
+    ck.ok(pg.evaluate("document.querySelector('#arm-rows .row[aria-selected=true]').dataset.k") == "k05_stride2" and "Stride-2 loop" in pg.inner_text("#arm-read .ar-head"),
+          "6a, collapsed then opened: a click on a row works the same")
+    shot(pg, saved, shots, "arm-fig-1280.png", "#arm")
+    pg.close()
+
+    # ---- the details page, 1280 wide
+    errors_d = []
+    dp = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(dp, errors_d)
+    dp.goto(base + "details.html", wait_until="networkidle")
+    dp.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16 && document.querySelectorAll('#arm-t2 tbody tr').length === 8 && document.getElementById('arm-limits').textContent.length > 0", timeout=20000)
+    order_ok = dp.evaluate("""() => { const a = document.getElementById('arm-full'), p = document.getElementById('environment-full'), n = document.getElementById('realworld-full');
+        return [!!(p.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING), !!(a.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING),
+                document.querySelector('#arm-full h2 .secno').textContent.trim(), !!document.querySelector('.dnav a[href="#arm-full"]')]; }""")
+    ck.ok(order_ok == [True, True, "6d", True], f"details: section 6d follows 6c and precedes section 7a, with a link in the contents row ({order_ok})")
+    dp.evaluate("document.getElementById('arm-line-box').open = true")
+    intro = norm(dp.inner_text("#arm-intro"))
+    t = [__import__("datetime").datetime.fromisoformat(r["started_at"].replace("Z", "+00:00")) for r in arm["runs"]]
+    spread = round((max(t) - min(t)).total_seconds() / 60)
+    ck.ok(all(r["run_id"] in intro for r in arm["runs"]) and f"started within {spread} minutes" in intro and "ubuntu-24.04-arm" in intro and M["cpu_model"] in intro
+          and f"{M['vcpus']} vCPUs" in intro and f"{M['l1d_kib']} KiB L1 data cache" in intro and f"kernel {M['kernel']}" in intro
+          and "This section is the full account behind section 6a of the main page." in intro,
+          "6d, what ran: the runner label, the three run ids, the core and its caches, and that this is the full account behind section 6a (the numbering differs between the pages)")
+    build = norm(dp.inner_text("#arm-build"))
+    basis = norm(dp.inner_text("#arm-basis"))
+    mcs_ = arm["matmul_cost"]["sizes"]
+    kib_ = lambda n: (f"{n / 1024:.1f}".rstrip("0").rstrip(".") + " MiB") if n >= 1024 else f"{n:g} KiB"  # noqa: E731
+    ck.ok(build.startswith("Builds and sizes.") and f"built with {clang} and {libcxx}" in build and M["flags"]["common"] in build and "no -march flag" in build
+          and f"{kib_(M['size_targets_bytes']['L1'] / 1024)} and {kib_(M['size_targets_bytes']['L2'] / 1024)}" in build
+          and f"d = {mcs_['L1']['d']} and d = {mcs_['L2']['d']}" in build and "other byte counts on the x86-64 models" in build and "not the same number of bytes" in build,
+          "6d, builds and sizes: the toolchain, the flags, the two working-set sizes and matrix-multiply d from the data, and that the same size class is not the same number of bytes on x86-64")
+    ck.ok(basis.startswith("What is shared with the x86-64 study.") and f"The {M['reps_per_side']} repetitions a side" in basis and arm["criteria"]["file"] in basis
+          and arm["criteria"]["sha256"][:12] in basis and "it may change" in basis and "unpublished development history" in basis
+          and "committed after a two-kernel smoke run and after the three full runs were dispatched, and before any of their jobs finished" in basis
+          and dp.evaluate("[...document.querySelectorAll('#arm-basis a')].some(a => a.href.endsWith('arm64/PLAN.md'))"),
+          "6d, what is shared: the rule file and its hash, the plan's link and order (after the smoke run and the dispatch, before any job finished), the unpublished-history caveat, 'it may change'")
+    # the order claim is tied to the files: the plan names the smoke run's two kernels, and its commit came after the smoke run and the dispatch and before the first job finished
+    tl = json.load(open(os.path.join(REPO, "tests", "data", "s8_arm_timeline.json"), encoding="utf-8"))
+    plan_head = open(os.path.join(REPO, "arm64", "PLAN.md"), encoding="utf-8").read().split("## Question")[0]
+    seen_k = re.search(r"const ARM_SMOKE_SEEN = \[([^\]]*)\]", open(os.path.join(SITE, "app.js"), encoding="utf-8").read())
+    seen_names = re.findall(r"'([^']+)'", seen_k.group(1)) if seen_k else []
+    ck.ok(seen_names and all(n in plan_head for n in seen_names) and "the only Arm timing seen so far" in plan_head and tl["smoke"]["run"] == int(re.search(r"run (\d+)", plan_head).group(1)),
+          f"6d: the kernels the page says the smoke run had already timed ({seen_names}) are the ones arm64/PLAN.md's first paragraph names, for the smoke run recorded in the timeline file")
+    verdict = norm(dp.inner_text("#arm-verdict"))
+    fr = V["forward_rule_cells"]
+    judged = [c for c in fr if c["judged"]]
+    ck.ok(verdict.startswith("Verdict under the written rules: inconclusive.") and "is a map" not in verdict
+          and f"of the {len(fr)} cells whose loop keeps SIMD, {len(judged)} are judged" in verdict and f"and {sum(1 for c in judged if c['passes'])} pass" in verdict
+          and cell_name(mc["cell_id"]) in verdict and f"({lr_(mc['aligned']['ratio'])}× aligned, interval {lr_(mc['aligned']['ci95'][0])} to {lr_(mc['aligned']['ci95'][1])}×)" in verdict
+          and f"the smallest interval start is {lr_(SM['lost_ci_lo_min'])}×" in verdict and all(cell_name(q["cell_id"]) in verdict for q in SM["placement_sensitive"])
+          and "neither a map nor a small cost everywhere" in verdict,
+          "6d: the verdict in words is INCONCLUSIVE: the forward rule missed by the named cell (with ratio and interval), the lost-SIMD side met, the placement-sensitive cells listed and not judged")
+    ck.ok(dp.evaluate("document.getElementById('arm-line').textContent") == V["line"] and dp.evaluate("document.getElementById('arm-line').closest('pre') !== null"),
+          "6d: the pool's own verdict line is printed verbatim (in a pre, so its raw cell ids stay raw)")
+    # how firm the verdict is: the seed and interval-method readings beside it, labelled as readings that replace nothing
+    IM_ = arm["interval_methods"]
+    seed = norm(dp.inner_text("#arm-seed"))
+    sens = [norm(t_) for t_ in dp.evaluate("[...document.querySelectorAll('#arm-sens li')].map(l => l.textContent)")]
+    send = norm(dp.inner_text("#arm-seed-end"))
+    map_others = [m_ for m_ in IM_["methods"] if m_["form"] == "map"]
+    his_ = [m_["deciding_cell"]["ci95"][1] for m_ in map_others]
+    by_href = lambda sel, end: dp.evaluate(f"[...document.querySelectorAll('{sel} a')].some(a => a.href.endsWith('{end}'))")  # noqa: E731
+    ck.ok(seed.startswith("How firm that is.") and f"The form turns on one cell: {cell_name(mc['cell_id'])}, aligned, ends at {lr_(DC_['stored_hi'])}× against the limit of {fx_(DC_['limit'])}×, a margin of {DC_['margin_over_limit']:.4f}" in seed
+          and f"prefix {SS_['stored_seed']['prefix']}, {SS_['stored_seed']['resamples']:,} resamples" in seed and "so the stored verdict stays inconclusive" in seed
+          and "unpublished development history, which the public repository cannot show" in seed and "replace nothing" in seed
+          and by_href("#arm-seed", SS_["script"]) and by_href("#arm-seed", SS_["source"]) and by_href("#arm-seed", IM_["report"]) and by_href("#arm-seed", IM_["plan"]),
+          "6d, how firm: the deciding cell's end and margin, the seed's prefix and resamples, the stored verdict kept, the unpublished-history caveat, links to the seed script, its data, the interval-methods report and plan")
+    ck.ok(len(sens) == 3 and f"re-drawn under {DC_['alt_draws']} other seeds" in sens[0] and f"ends at a median of {lr_(DC_['alt_hi']['median'])} (5th to 95th percentile {lr_(DC_['alt_hi']['p05'])} to {lr_(DC_['alt_hi']['p95'])})" in sens[0]
+          and f"{DC_['alt_at_or_above_limit']} of the {DC_['alt_draws']} end at or above the limit" in sens[0] and "the stored end is higher than all 400" in sens[0]
+          and f"With {SS_['converged_resamples']:,} resamples it ends at {lr_(DC_['converged']['hi'])}, under the limit" in sens[0]
+          and f"re-run under {SS_['full']['count']} of those seeds gives a map in {SS_['full']['forms']['map']} of them" in sens[1]
+          and f"all {SS_['derived']['seeds']} is a map in {SS_['derived']['forms']['map']} and inconclusive in {SS_['derived']['forms']['inconclusive']}" in sens[1]
+          and sens[2].startswith(f"{['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'][len(map_others)]} other interval methods") and "all give a map" in sens[2]
+          and f"between {lr_(min(his_))} and {lr_(max(his_))}" in sens[2] and "only the pool’s own bootstrap gives inconclusive" in sens[2] and "a check on the interval, not a replacement for the written rule" in sens[2],
+          "6d, the three sensitivity readings: the 400-seed re-draw, the 40 full re-analyses and the derived forms, and the other interval methods; each number equals arm64.json and each is labelled a check, not a replacement")
+    ck.ok(f"So these data cannot separate inconclusive from a map at this cell. That is not evidence that the forward add costs more than {V['forward_limit_pct']:g}% at L2: its ratio is {lr_(mc['aligned']['ratio'])}× aligned" in send
+          and "an identical binary against itself spreads as widely at that size" in send,
+          "6d: the closing sentence of that block says the data cannot separate inconclusive from a map and that the cell is not shown to cost more than 2%")
+    # Table 12
+    cap1 = norm(dp.inner_text("#arm-t1-cap"))
+    ck.ok(cap1.startswith("Table 12.") and f"{arm['cpu_short']} ({arm['jobs']} jobs, {len(arm['runs'])} runs)" in cap1 and f"({arm['x86']['model']['jobs']} jobs of the {arm['x86']['jobs']}-job x86-64 pool)" in cap1
+          and arm["instr_label"] in cap1 and "No-vectorize build" in cap1 and "Layout A/A" in cap1 and "‡ marks a placement-sensitive cell" in cap1
+          and "its working sets have other byte sizes than the Arm ones" in cap1, "Table 12: caption names both machines with their job counts, defines instructions, the no-vectorize build, the layout A/A and the ‡ mark, and says the working sets differ in bytes")
+    heads = dp.evaluate("[...document.querySelectorAll('#arm-t1 thead th')].map(h => h.textContent)")
+    want_heads = ["Loop and size", "On Arm", "Arm, as compiled", "Arm, aligned", "Instructions, as compiled", "No-vectorize build", "Layout A/A half-width", f"{x86name}: SIMD", f"{x86name}, as compiled", f"{x86name}, aligned"]
+    ck.ok(heads == want_heads and dp.evaluate("document.getElementById('arm-t1').getAttribute('aria-describedby')") == "arm-t1-cap"
+          and dp.evaluate("document.getElementById('arm-t1-wrap').getAttribute('role')") == "region", f"Table 12: ten named columns, described by its caption, scrollable region ({heads})")
+    got = dp.evaluate("[...document.querySelectorAll('#arm-t1 tbody tr')].map(r => [...r.children].map(c => c.innerText))")
+    bad_t1 = []
+    for row, c in zip(got, arm["cells"]):
+        x = x86[c["cell_id"]]
+        ivc = lambda d: f"{lr_(d['ratio'])}\n{lr_(d['ci95'][0])} to {lr_(d['ci95'][1])}"  # noqa: E731
+        want = [None, ARM_CLASS_WORDS[c["class"]], ivc(c["as_compiled"]), ivc(c["aligned"]), lr_(c["instr_ratio"]["as_compiled"]),
+                ivc(c["positive"]) if c.get("positive") else "none", pct_s(c["layout_aa"]["half_width_pct"]), ARM_CLASS_WORDS[x["class"]], ivc(x["as_compiled"]), ivc(x["aligned"])]
+        first = row[0].replace("\n", " ")
+        if not (first.startswith(f"{ARM_KERNEL_NAMES[c['kernel']]}, {c['size_class']}") and ("‡" in first) == c["placement_sensitive"] and row[1:] == want[1:]):
+            bad_t1.append((c["cell_id"], row, want))
+    tags = dp.evaluate("[...document.querySelectorAll('#arm-t1 tbody th .ps-mark')].map(s => [s.getAttribute('aria-label'), s.getAttribute('title')])")
+    ck.ok(len(got) == len(arm["cells"]) == 16 and not bad_t1 and len(tags) == sum(1 for c in arm["cells"] if c["placement_sensitive"]) and all(t_ == ["placement-sensitive", "placement-sensitive"] for t_ in tags),
+          f"Table 12: all 16 cells, in the data's order, every value equal to arm64.json at its printed precision, placement-sensitive cells carry a ‡ whose label says so ({bad_t1[:1]})")
+    t1w = dp.evaluate("(() => { const w = document.getElementById('arm-t1-wrap'), r = w.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), innerWidth, w.scrollWidth, w.clientWidth]; })()")
+    ck.ok(t1w[0] >= 0 and t1w[1] <= t1w[2] and t1w[3] <= t1w[4] + 1,
+          f"Table 12 at 1280: the box sits inside the window and the ten columns fit without a sideways scroll (box {t1w[0]} to {t1w[1]} of {t1w[2]}, content {t1w[3]} in {t1w[4]})")
+    # forward, floors
+    fwd = norm(dp.inner_text("#arm-forward"))
+    f1a, f1c = arm["forward_loops"]["L1"]["aligned"], arm["forward_loops"]["L1"]["as_compiled"]
+    ps_f = [q for q in SM["placement_sensitive"] if q["cell_id"].split(".")[0] in arm["forward_loops"]["kernels"]]
+    rep, lay, jh, sd = arm["reproduction"], arm["aa"]["layout_half_width_pct"], arm["aa"]["job_half_width_pct"], arm["between_job_sd"]
+    miss_pred = all(kern[q["cell_id"].split(".")[0]]["prediction"]["placement_effect"] == "none" and kern[q["cell_id"].split(".")[0]]["prediction"]["placement_held"] is False for q in ps_f)
+    FI_ = {c["cell_id"]: c for c in arm["forward_instr"]["cells"]}
+    same_add = all(v["as_compiled"] and v["aligned"] for v in arm["forward_instr"]["added_same_at_both_sizes"].values())
+    NZ_ = arm["noise"]
+    iaa_ = NZ_["identical_binary_aa"]
+    add1, add2, sten1, sum1 = FI_["k02_add_fwd.L1"], FI_["k02_add_fwd.L2"], FI_["k03_stencil.L1"], FI_["k01_sum_fwd.L1"]
+    flip = lambda c: (c["as_compiled"]["ratio"] - 1) * (c["aligned"]["ratio"] - 1) < 0  # noqa: E731
+    ck.ok(f"cost {lr_(f1c['min'])}× to {lr_(f1c['max'])}× as compiled and {lr_(f1a['min'])}× to {lr_(f1a['max'])}× aligned (Table 12)" in fwd
+          and same_add and f"{sum1['as_compiled']['added']} for the sum, {add1['as_compiled']['added']} (aligned {add1['aligned']['added']}) for the add and {sten1['as_compiled']['added']} (aligned {sten1['aligned']['added']}) for the stencil, the same count at the L2 size" in fwd
+          and f"an instruction ratio of {add1['as_compiled']['instr_ratio']:.4f} at L1 ({add1['elements']:,} elements) and {add2['as_compiled']['instr_ratio']:.4f} at L2 ({add2['elements']:,} elements)" in fwd
+          and "that these instructions are the time cost fits the counts and was not tested" in fwd
+          and all(cell_name(q["cell_id"]).lower() in fwd.lower() and f"{q['d']:.3f}" in fwd for q in ps_f) and miss_pred and "which the plan had predicted would not happen" in fwd
+          and f"The A/A floor of {pct_s(arm['aa']['half_width_pct'])} is that of the forward add at L1 alone" in fwd and "the yardstick is the compiled ÷ aligned ratio" in fwd
+          and all(f"{ARM_SHORT_NAMES[cells[q['cell_id']]['kernel']]} {lr_(cells[q['cell_id']]['as_compiled']['ratio'])}× compiled and {lr_(cells[q['cell_id']]['aligned']['ratio'])}× aligned"
+                  + (" (it changes side of 1×, so no cost is claimed for it)" if flip(cells[q["cell_id"]]) else "") in fwd for q in ps_f)
+          and any(flip(cells[q["cell_id"]]) for q in ps_f) and "At the L2 size" not in fwd,
+          "6d, forward loops: the L1 ranges, the instructions the checks add (the same at both sizes), and the placement-sensitive cells judged by compiled ÷ aligned and not by the A/A floor, with the prediction that missed")
+    l2t = norm(dp.inner_text("#arm-l2"))
+    mixt = norm(dp.inner_text("#arm-mix"))
+    aa2 = iaa_["L2"]
+    sc_, mix_ = NZ_["same_cell_l2"], NZ_["mixture"]["by_size"]
+    sh_ = lambda x: f"{x * 100:.1f}%"  # noqa: E731
+    k4_, k5_ = cells["k04_rev.L2"], cells["k05_stride2.L2"]
+    l2_cells = [c for c in arm["cells"] if c["kernel"] in arm["forward_loops"]["kernels"] and c["size_class"] == "L2"]
+    ck.ok(l2t.startswith("Noise at the L2 size.") and f"Pooled over {aa2['jobs']} jobs it has a ratio of {lr_(aa2['pooled']['ratio'])} with an interval of {lr_(aa2['pooled']['ci95'][0])} to {lr_(aa2['pooled']['ci95'][1])} (a half-width of {pct_s(aa2['pooled']['half_width_pct'])}" in l2t
+          and f"per job the ratio runs from {lr_(aa2['job_ratio_range'][0])} to {lr_(aa2['job_ratio_range'][1])}), and {aa2['jobs_above_rule_max']} of the {aa2['jobs']} jobs are above the {NZ_['rule_aa_half_width_max_pct']:g}% that the written rules allow an A/A (at L1: {iaa_['L1']['jobs_above_rule_max']})" in l2t
+          and f"as wide as the checked cell it sits beside ({pct_s(sc_['aligned']['half_width_pct'])} aligned, {pct_s(sc_['as_compiled']['half_width_pct'])} as compiled)" in l2t
+          and f"as the unchecked binary against its own re-aligned copy ({pct_s(sc_['layout_aa']['half_width_pct'])})" in l2t
+          and "aligned intervals of " + join_and([f"{lr_(c['aligned']['ci95'][0])} to {lr_(c['aligned']['ci95'][1])}× ({ARM_SHORT_NAMES[c['kernel']]})" for c in l2_cells]) in l2t
+          and f"Of the judged forward cells only {cell_name(mc['cell_id'])} misses the {fx_(V['limit'])}× limit" in l2t
+          and f"{lr_(mc['aligned']['per_job_range'][0])}× to {lr_(mc['aligned']['per_job_range'][1])}×" in l2t
+          and f"(a between-job standard deviation of {mc['aligned']['between_job_sd_pct']:.2f}%, aligned; {aa2['pooled']['between_job_sd_pct']:.2f}% for an identical binary at that size), where no cell at L1 spreads by more than {sd['l1_max_pct']:.2f}%" in l2t
+          and l2t.endswith("is the width of L2 timing on this core, not a property of the check."),
+          "6d, noise at the L2 size: the identical-binary A/A at L2 (ratio, interval, per-job range, jobs above the rule's 2%), as wide as the checked cell and the layout A/A, the forward cells' L2 intervals and the one miss with its between-job spread beside an identical binary's")
+    ck.ok(mixt.startswith("What the samples at L2 look like.") and "The cause was not examined and no hardware counter was read" in mixt
+          and f"more than {round(NZ_['slow_share'] * 100)}% longer than the fastest process of their series" in mixt
+          and f"At L2 that share is {sh_(mix_['L2']['none']['share_slow'])} of the unchecked build’s processes and {sh_(mix_['L2']['fast']['share_slow'])} of the checked build’s ({sh_(mix_['L1']['none']['share_slow'])} and {sh_(mix_['L1']['fast']['share_slow'])} at L1)" in mixt
+          and f"it reaches {round(mix_['L2']['none']['cell_share_max'] * 100)}% and {round(mix_['L2']['fast']['cell_share_max'] * 100)}%" in mixt
+          and f"including the lost loops’ {lr_(k4_['as_compiled']['ratio'])}× and {lr_(k5_['as_compiled']['ratio'])}× at that size" in mixt and "are therefore less stable estimates than the L1 ones" in mixt,
+          "6d, the samples at L2: the per-process slow-share mixture at both sizes, no cause claimed, and the L2 medians (including the lost loops') called less stable")
+    fl = norm(dp.inner_text("#arm-floors"))
+    tiny = sum(1 for m in rep["misses"] if m["gap_pct"] < 0.01)
+
+    def widest(sz):
+        best = max(((c[col]["half_width_pct"], c["cell_id"], col) for c in arm["cells"] if c["size_class"] == sz for col in ("as_compiled", "aligned")))
+        return best[0], best[1], "aligned" if best[2] == "aligned" else "as compiled"
+
+    w1_, w2_ = widest("L1"), widest("L2")
+    ck.ok(f"is timed on the forward add at the L1 size; pooled over {arm['aa']['jobs']} jobs, it has a half-width of {pct_s(arm['aa']['half_width_pct'])}" in fl and f"{pct_s(jh['median'])} at the median ({pct_s(jh['min'])} to {pct_s(jh['max'])})" in fl
+          and "That is the floor of that one cell, not of the core" in fl
+          and f"the widest interval of a measured cell is ±{pct_s(w1_[0])} at L1 ({cell_name(w1_[1])}, {w1_[2]}) and ±{pct_s(w2_[0])} at L2 ({cell_name(w2_[1])}, {w2_[2]})" in fl
+          and f"from {pct_s(lay['min'])} to {pct_s(lay['max'])}" in fl and f"{sd['l1_max_pct']:.2f}% at L1" in fl and f"{sd['l2_max_pct']:.1f}% at L2" in fl
+          and f"{rep['outside']} of {rep['checked']} comparisons" in fl and f"by at most {rep['max_gap_pct']:.1f}%" in fl and f"{tiny} of them by less than 0.01%" in fl,
+          "6d, floors: the A/A named as the floor of one cell (the forward add at L1) beside the widest intervals at both sizes, the layout A/A range, the between-job spread at both sizes and the run-to-run comparison, from the data")
+    lyt = norm(dp.inner_text("#arm-layout"))
+    LV_ = {r["cell_id"]: r for r in arm["layout_vs_placement"]["rows"]}
+
+    def lside(cid):
+        r = LV_[cid]
+        return f"{lr_(r['layout_aa']['ratio'])} against a D of {lr_(r['d']['ratio'])}" + (", which is on the other side of 1×" if (r["layout_aa"]["ratio"] - 1) * (r["d"]["ratio"] - 1) < 0 else "")
+
+    ck.ok(lyt.startswith("Placement, and what the layout A/A can see.") and f"built with {M['flags']['align']}, so it moves only the unchecked build’s loops" in lyt
+          and f"at L1 the stencil has a layout A/A of {lside('k03_stencil.L1')}, gather {lside('k06_gather.L1')}, and matrix multiply {lside('k08_matmul.L1')}" in lyt
+          and f"At {join_and([cell_name(c_) for c_ in arm['layout_vs_placement']['d_excludes_1_layout_aa_includes_1']])} the interval of D excludes 1 while that of the layout A/A does not" in lyt
+          and "a quiet layout A/A does not show that a cell is free of placement effects here" in lyt and "was not examined" in lyt,
+          "6d, placement: the layout A/A moves only the unchecked build, and on this core it disagrees with compiled ÷ aligned at the stencil, gather and matrix-multiply cells named from the data; what 64-byte windows mean on Arm was not examined")
+    # Table 13
+    cap2 = norm(dp.inner_text("#arm-t2-cap"))
+    heads2 = dp.evaluate("[...document.querySelectorAll('#arm-t2 thead th')].map(h => h.textContent)")
+    ck.ok(cap2.startswith("Table 13.") and f"all {arm['build_facts']['jobs']} jobs produced identical hashes, listings, diffs and compiler remarks" in cap2 and arm["build_facts"]["all_agree"]
+          and "come from the saved listings (the .s files) of one job" in cap2
+          and heads2 == ["Loop", "In the plan", "Clang’s remark, checks on", "NEON instructions, off → on", "SIMD loop, off → on", "Listing lines, off → on", "Check traps, on"],
+          "Table 13: caption says all 30 jobs agree (true in the data), seven named columns")
+
+    def plan_words(k):
+        p = k["prediction"]
+        if not p["class"] and not p["placement_effect"]:
+            return "no prediction"
+        parts = []
+        if p["class"]:
+            parts.append(f"{p['class']} ({'held' if p['class_held'] else 'did not hold'})")
+        if p["placement_effect"]:
+            parts.append(f"{'no placement effect' if p['placement_effect'] == 'none' else p['placement_effect']} ({'held' if p['placement_held'] else 'did not hold'})")
+        return "; ".join(parts)
+
+    got2 = dp.evaluate("[...document.querySelectorAll('#arm-t2 tbody tr')].map(r => [...r.children].map(c => c.textContent))")
+    bad_t2 = []
+    for row, k in zip(got2, arm["kernels"]):
+        n, f_, s = k["builds"]["none"], k["builds"]["fast"], k["simd_loop"]["as_compiled"]
+        remark = f"vectorized, width {f_['width']}, interleave {f_['interleave']}" if f_["vectorized"] else (f_["why_not_vectorized"] or "not vectorized")
+        simd = "none" if s["none_instructions"] is None else f"{s['none_instructions']} → {'none' if s['fast_instructions'] is None else s['fast_instructions']}{', same opcodes' if s['same_opcodes'] else ''}"
+        want = [ARM_KERNEL_NAMES[k["kernel"]], plan_words(k), remark, f"{n['neon_instructions']} → {f_['neon_instructions']}", simd, f"{n['asm_lines']} → {f_['asm_lines']}", str(f_["traps"])]
+        if row != want:
+            bad_t2.append((row, want))
+    ck.ok(len(got2) == 8 and not bad_t2, f"Table 13: eight loops, every count, remark and plan entry equal to arm64.json ({bad_t2[:1]})")
+    # matrix multiply
+    mt = norm(dp.inner_text("#arm-matmul"))
+    mk_ = kern["k08_matmul"]
+    ck.ok(f"{lr_(m1['as_compiled']['ratio'])}× at L1 as compiled ({lr_(m1['aligned']['ratio'])}× aligned)" in mt and f"{lr_(m2['as_compiled']['ratio'])}× at L2 ({lr_(m2['aligned']['ratio'])}× aligned)" in mt
+          and f"{m1['placement']['d']['ratio']:.3f} and {m2['placement']['d']['ratio']:.3f}" in mt and f"{fx_(mmx['as_compiled']['ratio'])}× and {fx_(x86['k08_matmul.L2']['as_compiled']['ratio'])}×" in mt
+          and f"{mk_['builds']['fast']['asm_lines']} lines against {mk_['builds']['none']['asm_lines']}" in mt and f"{lr_(m1['instr_ratio']['as_compiled'])}× the instructions at L1" in mt
+          and "Observed in the checked build’s full listing (the .s file) and its L1 diff (the diff)" in mt and "fits the listing and the counts at L1; it was not tested" in mt and "Nothing here times the SIMD loop alone" in mt and "is not established here" in mt
+          and f"the SIMD loop has the same {mk_['simd_loop']['as_compiled']['fast_instructions']} instructions with the same opcodes in both builds" in mt and "brk #0x1" in mt
+          and "sit before the SIMD loop and in the scalar loop, none inside the SIMD loop. The diff drops those jump targets, so they are read from the full listing" in mt
+          and "is inferred" not in mt and "does not show their targets" not in mt
+          and f"{lr_(m1['instr_ratio']['as_compiled'])}× the instructions at L1 (Cachegrind) for {lr_(m1['as_compiled']['ratio'])}× the time, and {lr_(m2['instr_ratio']['as_compiled'])}× the instructions at L2 for {lr_(m2['as_compiled']['ratio'])}× the time" in mt
+          and f"d = {mcs_['L1']['d']} at L1 and d = {mcs_['L2']['d']} at L2, so the SIMD loop runs {mcs_['L1']['whole_passes']} and {mcs_['L2']['whole_passes']} passes of {arm['matmul_cost']['vector_pass_elements']} elements per row and the scalar loop is left {mcs_['L1']['d_mod_pass']} and {mcs_['L2']['d_mod_pass']}" in mt
+          and f"the gather loop executes {lr_(cells['k06_gather.L1']['instr_ratio']['as_compiled'])}× and {lr_(cells['k06_gather.L2']['instr_ratio']['as_compiled'])}× the instructions at the two sizes but costs {lr_(cells['k06_gather.L1']['as_compiled']['ratio'])}× and {lr_(cells['k06_gather.L2']['as_compiled']['ratio'])}×" in mt
+          and "do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; no other d was timed" in mt
+          and dp.evaluate("[...document.querySelectorAll('#arm-matmul a')].some(a => a.href.endsWith('k08_matmul.L1.diff'))")
+          and dp.evaluate("[...document.querySelectorAll('#arm-matmul a')].some(a => a.href.endsWith('asm/k08_matmul.fast.s'))"),
+          "6d, matrix multiply: the Arm and x86-64 numbers from the data, the listing facts labelled observed (including where the trap branches sit, read from the full listing), the mechanism labelled as fitting the counts and not tested, the confound between row length and cache level stated with the gather loop's example, and links to the diff and the full listing")
+    nv = norm(dp.inner_text("#arm-novec"))
+    rv = cells["k04_rev.L1"]
+    ck.ok(f"costs {lr_(rv['positive']['ratio'])}× at the reverse loop’s L1 size, against {lr_(rv['as_compiled']['ratio'])}× with the checks on: about {round(SM['novec_rev_share_pct'])}%" in nv and "(inferred)" in nv,
+          "6d, no-vectorize control: the reverse loop's yardstick and the share of the extra time, labelled inferred")
+    pl = norm(dp.inner_text("#arm-plan"))
+    pred = [k for k in arm["kernels"] if k["prediction"]["class"]]
+    held = [k for k in pred if k["prediction"]["class_held"]]
+    plc = [k for k in arm["kernels"] if k["prediction"]["placement_effect"]]
+    plm = [k for k in plc if not k["prediction"]["placement_held"]]
+    blind_ = [k for k in pred if k["kernel"] not in seen_names]
+    blind_held = [k for k in blind_ if k["prediction"]["class_held"]]
+    seen_plc = [ARM_SHORT_NAMES[k["kernel"]] for k in plc if k["kernel"] in seen_names]
+    ck.ok(f"named the class of {len(pred)} loops, and {len(held)} of {len(pred)} held" in pl and len(seen_names) == 2
+          and f"Not all of those were blind: the smoke run had already timed {join_and([ARM_SHORT_NAMES[n_] for n_ in seen_names])} on this core (the plan quotes both figures), so those two predictions were made with the result in view, and {len(blind_held)} of the {len(blind_)} others held" in pl
+          and join_and([ARM_SHORT_NAMES[k["kernel"]] for k in plm]) in pl and "did not (flagged placement-sensitive at L1)" in pl and "It made no prediction for gather and histogram" in pl
+          and seen_plc and f"{join_and(seen_plc)} had been timed in the smoke run when that was written" in pl and "that prediction was not blind" not in pl
+          and dp.evaluate("[...document.querySelectorAll('#arm-plan a')].some(a => a.href.endsWith('arm64/PLAN.md'))"),
+          f"6d, against the plan: {len(held)} of {len(pred)} class predictions held, two of them (the smoke run's two kernels) made with the result in view and {len(blind_held)} of the {len(blind_)} blind ones held; the placement prediction missed for {[k['kernel'] for k in plm]}, and the forward add's was written after its smoke timing; no prediction for gather and histogram")
+    lim = norm(dp.inner_text("#arm-limits"))
+    ck.ok("One core type (" + M["cpu_model"] in lim and f"{arm['jobs']} jobs in {len(arm['runs'])} runs from one day" in lim and clang[0].upper() + clang[1:] in lim and libcxx in lim
+          and "No real programs, no profile-guided builds and no other compilers or libc++ versions were timed on Arm" in lim and "no steal or frequency record" in lim
+          and "the layout A/A moves only the unchecked build’s loops, so it did not see placement shifts that the compiled ÷ aligned ratio shows (above): neither is a verified placement control on this core" in lim
+          and "the layout A/A is the control that applies to both" not in lim
+          and "says nothing about Apple, AWS or other Arm cores, about other Arm compilers, or about Google’s services" in lim,
+          "6d, limits: one core type, one image, 30 jobs from one day, clang 18 only, no programs, no steal record, no verified placement control on Arm (the layout A/A is blind to what compiled ÷ aligned shows), and no claim about other Arm cores, compilers or Google")
+    bad = page_numbers(dp, allowed, "#arm-full")
+    ck.ok(not bad, "6d: every number printed is in the data" + ("" if not bad else f": {bad[:4]}"))
+    # the other sentences changed because of the Arm column: no stale 'no arm64', scoped x86-64 sentences, the Reproduce command, the limits
+    dtext = norm(dp.evaluate("document.body.textContent"))
+    mp = browser.new_page(viewport={"width": 1280, "height": 900})
+    mp.goto(base, wait_until="networkidle")
+    mp.wait_for_function("document.querySelectorAll('#arm-rows .row').length === 8 && document.getElementById('arm-avg').textContent.length > 40", timeout=20000)
+    mtext = norm(mp.evaluate("document.body.textContent"))
+    ck.ok("No arm64" not in dtext + mtext and "not timed on Arm" not in dtext + mtext and "Baseline x86-64, plus one Arm column." in dtext
+          and f"Section 6d: the {arm['jobs']} jobs of the {len(arm['runs'])} Arm runs" in dtext and "(ud2 on x86-64, brk #0x1 on Arm)" in dtext
+          and "Among the x86-64 models, the forward loops are near 1× on the AMD models only" in dtext and "on the baseline x86-64 of the main timing" in dtext,
+          "details: the stale 'No arm64' limit is replaced, the jobs sentence lists the Arm pool, the trap instruction is named per architecture, the AMD-only sentence is scoped to the x86-64 models")
+    mp.evaluate("document.querySelectorAll('details.fold').forEach(d => { d.open = true; })")  # the limits box is folded by default
+    cb = mp.evaluate("[...document.querySelectorAll('#cannot li')].map(l => l.innerText.replace(/\\s+/g, ' '))")
+    ck.ok(len(cb) == 5 and f"Arm: one core type ({arm['cpu_short']}), {arm['jobs']} jobs on shared machines, {clang} only; no real programs, profile-guided builds or other compilers were timed there (section 6a)." in cb[2]
+          and "SSE2" in cb[2] and "on x86-64 one xmm register" in mtext and "NEON, Arm’s version of the same idea" in mtext,
+          "main page: the Limits box keeps its five lines and carries the Arm clause in the toolchain line; the SIMD sentence says x86-64 and points to NEON")
+    avg = norm(mp.inner_text("#arm-avg span[data-v=armAvg]"))
+    sentences = re.split(r"(?<![0-9])\.\s+(?=[A-Z])", avg)
+    wid = max((c for c in arm["cells"] if c["kernel"] in arm["forward_loops"]["kernels"] and c["size_class"] == "L2"), key=lambda c: c["aligned"]["half_width_pct"])
+    n_ps_f = sum(1 for q in SM["placement_sensitive"] if q["cell_id"].split(".")[0] in arm["forward_loops"]["kernels"] and q["cell_id"].endswith(".L1"))
+    ck.ok(len(sentences) == 2 and "neither confirms nor contradicts the 0.30% average" in sentences[0]
+          and f"against an A/A floor of ±{pct_s(arm['aa']['half_width_pct'])} that belongs to the forward add at L1 alone ({n_ps_f} of the {len(arm['forward_loops']['kernels'])} are placement-sensitive, so the rules do not judge them" in avg
+          and (not same_add or "the instructions the checks add to a call are a fixed count, the same at both sizes, so their share of a call follows the array length" in avg)
+          and f"±{pct_s(wid['aligned']['half_width_pct'])}) is too wide to resolve 0.30%, as is an identical binary against itself (±{pct_s(aa_l2['half_width_pct'])})" in avg
+          and "the pooled verdict under the written rules is inconclusive" in avg
+          and f"on a margin that {DC_['alt_draws'] - DC_['alt_at_or_above_limit']} of {DC_['alt_draws']} other bootstrap seeds reverse (section 6a)" in sentences[1],
+          f"section 10: the Arm addition is two sentences, says it neither confirms nor contradicts the average, names the A/A floor as one cell's, and gives the widest forward interval at L2 beside an identical binary's, the verdict form and the seed-noise margin ({len(sentences)} sentences)")
+    wf_text = open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8").read()
+    try:
+        import yaml
+    except ImportError:
+        yaml = None
+    if yaml is not None:
+        wf = yaml.safe_load(wf_text)
+        on_ = wf.get("on", wf.get(True))  # PyYAML reads the key `on` as the boolean True
+        rin = on_["workflow_dispatch"]["inputs"]["runner"]
+        wired = (rin.get("type") == "choice" and rin.get("default") == "ubuntu-24.04" and rin.get("options") == ["ubuntu-24.04", "ubuntu-24.04-arm"]
+                 and wf["jobs"]["measure"]["runs-on"] == "${{ inputs.runner }}")
+    else:
+        print("   note PyYAML is not installed: measure.yml's runner wiring is read with patterns (pip install pyyaml for the parsed check)")
+        wired = (re.search(r"runner:\s*\n(?:\s+.*\n)*?\s+type: choice\n\s+options: \[\"ubuntu-24\.04\", \"ubuntu-24\.04-arm\"\]\n\s+default: \"ubuntu-24\.04\"", wf_text) is not None
+                 and re.search(r"^  measure:\n    runs-on: \$\{\{ inputs\.runner \}\}$", wf_text, re.M) is not None)
+    ck.ok(mp.inner_text("#cmd-measure-arm").strip() == f"{index['repo']['measure_command']} -f runner=ubuntu-24.04-arm" and mp.is_visible('#cmd-measure-arm ~ *, .cmdline:has(#cmd-measure-arm) .copy') and wired,
+          "Reproduce: the Arm command is shown with a Copy button, and measure.yml has a choice input 'runner' (x86-64 default, the Arm label as the other option) that the measure job's runs-on reads")
+    # section markup carries no typed numbers: everything numeric in the two new sections comes from the data
+    with open(os.path.join(SITE, "index.html"), encoding="utf-8") as f:
+        src = f.read()
+    with open(os.path.join(SITE, "details.html"), encoding="utf-8") as f:
+        dsrc = f.read()
+    typed = []
+    for name, text in (("index.html #arm", src.split('<section id="arm">')[1].split("</section>")[0]), ("details.html #arm-full", dsrc.split('<section id="arm-full">')[1].split("</section>")[0])):
+        plain = re.sub(r"<[^>]+>", " ", text)
+        plain = re.sub(r"6a|6d|x86-64|Figure [17]|Table 1[23]|ubuntu-24\.04-arm|Neoverse-N2|&[a-z]+;|arm64/PLAN\.md|data/arm64\.json", " ", plain)
+        typed += [(name, m) for m in re.findall(r"\d+(?:\.\d+)?", plain)]
+    ck.ok(not typed, f"the two new sections' HTML types no number: every figure is filled from site/data ({typed[:4]})")
+    ck.ok(not errors and not errors_d, "Arm: no console errors, page errors or failed data requests on either page" + ("" if not (errors or errors_d) else f": {(errors + errors_d)[:4]}"))
+    mp.close()
+    dp.close()
+
+    # ---- phone: nothing scrolls sideways, rows and buttons are finger-sized, the readout is on screen
+    errors_p = []
+    for scheme in ("light", "dark"):
+        pp = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2, color_scheme=scheme)
+        watch(pp, errors_p)
+        pp.goto(base, wait_until="networkidle")
+        pp.wait_for_function("document.querySelectorAll('#arm-rows .row').length === 8", timeout=20000)
+        pp.evaluate("document.getElementById('arm').scrollIntoView()")
+        pp.wait_for_timeout(250)
+        small = pp.evaluate("""() => [...document.querySelectorAll('#arm-rows .row, #arm-col-seg button, #arm .sec-more, #arm .more-link a')].map(e => { const r = e.getBoundingClientRect(); return [e.className || e.tagName, Math.round(r.height), Math.round(r.width)]; })
+                                  .filter(x => x[1] < 32 || x[2] > 390)""")
+        ck.ok(no_hscroll(pp) and not small, f"390 ({scheme}): Section 6a does not scroll sideways, and its rows, switch and links are at least 32 px tall and fit ({small[:3]})")
+        tk = pp.evaluate("""() => { const q = (e) => e.getBoundingClientRect(), out = [];
+            for (const r of document.querySelectorAll('#arm-rows .row')) { const t = r.querySelector('.track'), a = q(t); for (const m of r.querySelectorAll('.xm, .mk')) { const b = q(m); if (b.left < a.left - 2 || b.right > a.right + 2) out.push(r.dataset.k); } }
+            return out; }""")
+        ck.ok(not tk, f"390 ({scheme}): Figure 7's marks and ticks stay inside their track ({tk[:3]})")
+        pp.click('#arm-rows .row[data-k="k08_matmul"]')
+        pp.wait_for_timeout(150)
+        vis = pp.evaluate("(() => { const r = document.getElementById('arm-read').getBoundingClientRect(); return [r.width > 200, r.right <= innerWidth + 1, r.left >= -1]; })()")
+        ck.ok(all(vis) and "Matrix multiply" in pp.inner_text("#arm-read .ar-head"), f"390 ({scheme}): a tap on a row shows its numbers in the readout, inside the screen")
+        shot(pp, saved, shots, f"arm-fig-390-{scheme}.png", "#arm")
+        pp.close()
+        dp = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2, color_scheme=scheme)
+        watch(dp, errors_p)
+        dp.goto(base + "details.html", wait_until="networkidle")
+        dp.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16", timeout=20000)
+        dp.evaluate("document.querySelectorAll('#arm-full details').forEach(d => { d.open = true; })")
+        dp.wait_for_timeout(150)
+        w = dp.evaluate("[...document.querySelectorAll('#arm-t1-wrap, #arm-t2-wrap')].map(w => [w.scrollWidth > w.clientWidth, getComputedStyle(w).overflowX])")
+        ck.ok(no_hscroll(dp) and all(x[0] and x[1] == "auto" for x in w) and dp.evaluate("document.getElementById('arm-line').scrollWidth <= document.getElementById('arm-line').parentElement.clientWidth + 1"),
+              f"390 ({scheme}) details: Tables 12 and 13 scroll inside their own boxes, the verbatim verdict line wraps, and the page does not scroll sideways ({w})")
+        stick = dp.evaluate("""() => [...document.querySelectorAll('#arm-t1-wrap, #arm-t2-wrap')].map(w => { w.scrollLeft = w.scrollWidth; const r = w.getBoundingClientRect(), th = w.querySelector('tbody th').getBoundingClientRect(), hd = w.querySelector('thead th').getBoundingClientRect();
+            return [Math.round(th.left - r.left), Math.round(hd.left - r.left), Math.round(th.width), Math.round(r.width), w.scrollLeft > 0]; })""")
+        ck.ok(all(s[4] and 0 <= s[0] <= 4 and 0 <= s[1] <= 4 and s[2] <= 0.5 * s[3] for s in stick),
+              f"390 ({scheme}) details: when Tables 12 and 13 are scrolled to their right end the loop's name stays in view (left edge, heading and label up to half the box) ({stick})")
+        shot(dp, saved, shots, f"arm-details-390-{scheme}.png", "#arm-full")
+        dp.close()
+    ck.ok(not errors_p, "Arm, 390: no console errors" + ("" if not errors_p else f": {errors_p[:3]}"))
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # messages may quote page text
@@ -1629,6 +2235,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shots", default=None, help="folder for the screenshots (default: a temporary folder)")
     ap.add_argument("--quick", action="store_true", help="select every row on the default CPU model only")
+    ap.add_argument("--arm-only", action="store_true", help="run only the Arm column's checks (to iterate on section 6a and 6d; the full run is the one that counts)")
     a = ap.parse_args()
     ck = Checker()
     print("== site data equals a fresh build")
@@ -1656,6 +2263,15 @@ def main():
             browser = p.chromium.launch(args=["--mute-audio", "--disable-speech-api", "--autoplay-policy=user-gesture-required"])
             browser.new_page_plain = browser.new_page
             browser.new_page = lambda **kw: (lambda pg: (pg.add_init_script("window.__OPEN_ALL__ = true"), pg)[1])(browser.new_page_plain(**kw))
+            if a.arm_only:
+                try:
+                    arm_checks(browser, base, ck, index, allowed, saved, shots)
+                finally:
+                    browser.close()
+                for s in saved:
+                    print(f"   {s}")
+                print("ARM CHECKS PASSED (not the full run)" if not ck.failures else f"ARM CHECKS FAILED ({len(ck.failures)})")
+                return 0 if not ck.failures else 1
             try:
                 # ---- desktop, default view
                 print("== 1280 wide")
@@ -2750,6 +3366,7 @@ def main():
                 hero_image_checks(browser, base, ck, index)
                 phone_checks(browser, base, ck, index)
                 wording_checks(browser, base, ck, index)
+                arm_checks(browser, base, ck, index, allowed, saved, shots)
                 print("== 390 wide")
                 errors = []
                 page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
@@ -2791,7 +3408,8 @@ def main():
                 ck.ok(not hit, f"390: the hero controls, CPU and column buttons, word chips and bar links answer a tap within 44 x 44 px ({hit[:4]})")
                 shot(page, saved, shots, "mobile-1-first-screen.png")
                 h = page.evaluate("document.documentElement.scrollHeight")
-                ck.ok(h < 21000, f"390: the main page with every section opened is {h} px long (a backstop; the default, collapsed page is the one capped, above)")
+                # See PHONE_ALL_OPEN_BACKSTOP at the top of this file for the history of this number. The default, collapsed page is the one capped.
+                ck.ok(h < PHONE_ALL_OPEN_BACKSTOP, f"390: the main page with every section opened is {h} px long (under the backstop of {PHONE_ALL_OPEN_BACKSTOP}; the default, collapsed page is the one capped, above)")
                 # the '?' works on tap and closes on an outside tap and on Escape
                 tip = "getComputedStyle(document.getElementById('col-tip')).opacity"
                 away = lambda: page.mouse.move(380, 830)  # no hover left behind: the state comes from the tap alone

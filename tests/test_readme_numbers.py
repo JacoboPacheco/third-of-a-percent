@@ -1,6 +1,7 @@
-"""The measured and counted numbers typed into README.md and readme-parts/DETAILS.md must match the stored data.
+"""The measured and counted numbers typed into README.md, readme-parts/DETAILS.md and the Arm column's text must match the stored data.
 
-Each row of ROWS (README.md) and DETAILS_ROWS (readme-parts/DETAILS.md) ties one sentence to its source:
+Each row of ROWS (README.md), DETAILS_ROWS (readme-parts/DETAILS.md), SIBLINGS_ROWS (siblings/README.md), CESWEEP_ROWS
+(ce-sweep/README.md) and ARM64_ROWS (arm64/README.md) ties one sentence to its source:
 
     (label, where the value comes from, a function giving the expected text, a regex anchored on
      the words around the number)
@@ -14,9 +15,9 @@ Failures say which sentence, what the README types, what the data gives and wher
 Two kinds of failure: the anchor no longer matches (the sentence was reworded: update the row or
 the sentence) and the typed number differs from the data (fix the README, or the data is stale).
 
-Read-only and offline: only README.md, readme-parts/DETAILS.md and the stored files are read.
-README_PATH and DETAILS_PATH point the test at other copies (the proof that the guard bites uses a
-tampered copy).
+Read-only and offline: only the documents above and the stored files are read.
+README_PATH, DETAILS_PATH, SIBLINGS_PATH, CESWEEP_PATH and ARM64_PATH point the test at other copies (the proof that the
+guard bites uses a tampered copy).
 
 Under pytest every row is its own test. Without pytest (scripts/check.py's built-in runner) one
 plain test goes through all rows.
@@ -26,13 +27,28 @@ a copy of the Actions step records of those runs (the run pages are public; the 
 The sentences about the two newest runs, which returned every job, rest on tests/data/s7_job_steps.json in the same way.
 The sentences about the Xeon 6973P-C's verdict with each of its jobs left out in turn are recomputed here with
 harness/pool.py (in memory, nothing is written; about 20 seconds).
+The Arm column's sentences (arm64/README.md, and the Arm sentences of README.md, readme-parts/DETAILS.md, siblings/README.md
+and ce-sweep/README.md) rest on results/s8-arm-pooled/pooled.json and on the per-job files of results/s8-arm-run-*/: the
+NEON, trap, csel and line counts are read again from the 30 jobs' saved listings (asm/*.s) with a pattern written here, the
+matrix-multiply loop and the branches to its trap from the listing and details.json, the machine from results.json and
+details.json. The times of the smoke run, the dispatch, the first finished job and the plan's commit rest on
+tests/data/s8_arm_timeline.json (the file says how it was read; the plan's commit time is read from a repository that is not
+published, so the file is a record of what was read and not a proof), and the plan's own words on arm64/PLAN.md.
+The Arm column's sentences about the L2 noise, the placement statistic, the interval methods and the other bootstrap seeds
+rest on site/data/arm64.json (built by scripts/build_site_data.py; tests/test_arm64_data.py derives it again from the raw
+samples) and arm64/seed-sensitivity.json (arm64/seeds.py). Both are used only after their recorded hash of results/s8-arm-pooled/
+pooled.json is checked against the pool as it is now. The seed's own constants are read from harness/pool.py, and the
+runner wiring from .github/workflows/measure.yml with PyYAML (a missing PyYAML is a failure, not a skip).
 test_cited_paths_exist checks that every repository path named in backticks, and every relative Markdown link, in
-README.md, readme-parts/DETAILS.md, siblings/README.md and variants/RESULTS.md exists.
+README.md, readme-parts/DETAILS.md, siblings/README.md, variants/RESULTS.md, arm64/README.md and ce-sweep/README.md exists.
 """
 
+import datetime
 import glob
 import gzip
+import hashlib
 import json
+import math
 import os
 import re
 import statistics
@@ -72,6 +88,18 @@ def siblings_text():
         return f.read()
 
 
+def arm64_text():
+    path = os.environ.get("ARM64_PATH") or os.path.join(REPO, "arm64", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def cesweep_text():
+    path = os.environ.get("CESWEEP_PATH") or os.path.join(REPO, "ce-sweep", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
 @lru_cache(maxsize=None)
 def J(rel):
     with open(os.path.join(REPO, rel), encoding="utf-8") as f:
@@ -92,6 +120,10 @@ def f3(x):
 
 def f4(x):
     return f"{x:.4f}"
+
+
+def f0(x):
+    return f"{x:.0f}"
 
 
 def pct1(ratio):
@@ -860,6 +892,1277 @@ def exp_kernel_pool_folders():
             "s6": str(pooled_jobs(pool=POOLED_S6))}
 
 
+# ---- the Arm column (results/s8-arm-pooled and the per-job files of results/s8-arm-run-*) ------------
+# One CPU model (Neoverse-N2), pooled apart from the x86-64 jobs. Nothing here reads or changes an x86-64 pool, except the
+# sentences that set an x86-64 number beside an Arm one: those reuse the x86-64 expectations above.
+
+ARM_POOLED = "results/s8-arm-pooled/pooled.json"
+ARM_TIMELINE = "tests/data/s8_arm_timeline.json"
+ARM_KERNELS = {"k01_sum_fwd": "forward sum", "k02_add_fwd": "forward add", "k03_stencil": "stencil", "k04_rev": "reverse",
+               "k05_stride2": "stride-2", "k06_gather": "gather", "k07_hist": "histogram", "k08_matmul": "matrix multiply"}
+ARM_BUILDS = ("none", "fast", "novec", "none_a64", "fast_a64")
+ARM_COLUMNS = ("as_compiled", "aligned")
+# written again here on purpose (the same pattern as harness/placement.py's _NEON); an SVE register is a z or p register
+ARM_NEON = re.compile(r"\bv\d+\.\d*[bhsd]\b|\bq\d+\b")
+ARM_SVE = re.compile(r"\bz\d+(?:\.[bhsdq])?\b|\bp\d+(?:\.[bhsd]|/[zm])")
+ARM_INSN = re.compile(r"^\s*([0-9a-f]+):\t(.*)$")
+ARM_BRANCH = re.compile(r"^(?:b\.[a-z]+|cbn?z|tbn?z|b)$")
+TRAP_REMARK = "could not determine number of loop iterations"
+
+
+def arm_pool():
+    d = J(ARM_POOLED)
+    assert len(d["cpus"]) == 1, f"the Arm pool has {len(d['cpus'])} CPU models; the text says one"
+    return d
+
+
+def arm_cpu():
+    return arm_pool()["cpus"][0]
+
+
+def arm_cell(cid):
+    return cell_of(arm_cpu(), cid)
+
+
+def arm_ratio(cid, column="as_compiled"):
+    return arm_cell(cid)[column]["ratio"]
+
+
+def pct1z(ratio):
+    """pct1 without a minus sign on a zero."""
+    s = pct1(ratio)
+    return "0.0" if s == "-0.0" else s
+
+
+def rel_hw(stat):
+    """The half-width of an interval as a percent of its ratio."""
+    return (stat["ci95"][1] - stat["ci95"][0]) / 2 / stat["ratio"] * 100
+
+
+def arm_label(cell, column):
+    return f"{ARM_KERNELS[cell['kernel']]}, {'aligned' if column == 'aligned' else 'as compiled'}"
+
+
+@lru_cache(maxsize=None)
+def arm_jobs():
+    """[(job folder, results.json, details.json)] for every job the Arm pool lists."""
+    base = os.path.dirname(os.path.join(REPO, ARM_POOLED))
+    out = []
+    for i in arm_pool()["inputs"]:
+        rel = os.path.relpath(os.path.normpath(os.path.join(base, os.path.dirname(i["path"]))), REPO).replace("\\", "/")
+        out.append((rel, J(rel + "/results.json"), J(rel + "/details.json")))
+    return out
+
+
+def arm_insns(rel, name):
+    """(all lines, [(address, text)] of the instruction lines) of one saved listing."""
+    with open(os.path.join(REPO, rel, "asm", name), encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    return lines, [(int(m.group(1), 16), m.group(2)) for m in map(ARM_INSN.match, lines) if m]
+
+
+def mnemonic(text):
+    return text.split("\t")[0]
+
+
+@lru_cache(maxsize=None)
+def arm_build_facts():
+    """{(kernel, build): NEON instructions, traps (brk #0x1), listing lines, SVE instructions, csel instructions}; every job must agree."""
+    facts = {}
+    for rel, _, _ in arm_jobs():
+        for k in ARM_KERNELS:
+            for b in ARM_BUILDS:
+                lines, insns = arm_insns(rel, f"{k}.{b}.s")
+                got = {"neon": sum(1 for _, t in insns if ARM_NEON.search(t)),
+                       "traps": sum(1 for _, t in insns if t.startswith("brk\t#0x1")),
+                       "brk_forms": sorted({t.split("\t", 1)[1] for _, t in insns if mnemonic(t) == "brk"}),
+                       "lines": len(lines), "sve": sum(1 for _, t in insns if ARM_SVE.search(t)),
+                       "csel": sum(1 for _, t in insns if mnemonic(t) == "csel")}
+                if (k, b) in facts:
+                    assert facts[(k, b)] == got, f"{rel}/asm/{k}.{b}.s gives {got}, the first job's gives {facts[(k, b)]}"
+                else:
+                    facts[(k, b)] = got
+    return facts
+
+
+@lru_cache(maxsize=None)
+def arm_vectorization():
+    """{(kernel, build): vectorized, width, interleave, the first remark} for NONE and FAST; every job must agree."""
+    out = {}
+    for rel, _, det in arm_jobs():
+        for k in ARM_KERNELS:
+            for b in ("none", "fast"):
+                v = det["kernels"][k][b]["vectorization"]
+                m = re.search(r"vectorization width: (\d+), interleaved count: (\d+)", " ".join(v["remarks"]))
+                got = {"vectorized": v["vectorized"], "width": int(m.group(1)) if m else None,
+                       "interleave": int(m.group(2)) if m else None, "remark": v["remarks"][0] if v["remarks"] else ""}
+                if (k, b) in out:
+                    assert out[(k, b)] == got, f"{rel}: {k} {b} vectorization {got}, the first job's {out[(k, b)]}"
+                else:
+                    out[(k, b)] = got
+    return out
+
+
+@lru_cache(maxsize=None)
+def arm_matmul():
+    """The matrix-multiply listings read for the sentences about them: line counts, the NEON loop of each build and where the
+    branches to the trap are in the FAST build. Every job must agree."""
+    out = None
+    for rel, _, det in arm_jobs():
+        got = {}
+        spans = {}
+        for b in ("none", "fast"):
+            lines, insns = arm_insns(rel, f"k08_matmul.{b}.s")
+            loops = det["kernels"]["k08_matmul"][b]["loops"]
+            neon = [l for l in loops if l["simd"] and l["innermost"]]
+            scalar = [l for l in loops if not l["simd"] and l["innermost"]]
+            assert len(neon) == 1, f"{rel}: {len(neon)} innermost NEON loops in the {b} build"
+            spans[b] = (neon[0], scalar)
+            lo, hi = int(neon[0]["start"], 16), int(neon[0]["end"], 16)
+            texts = [t for a, t in insns if lo <= a < hi]
+            body = [mnemonic(t) for t in texts]
+            assert len(body) == neon[0]["insns"], f"{rel}: the NEON loop of the {b} build has {len(body)} instructions, the record says {neon[0]['insns']}"
+            got[b] = {"lines": len(lines), "loop": body,
+                      "mla_4s": sum(1 for t in texts if mnemonic(t) == "mla" and re.search(r"\bv\d+\.4s\b", t))}
+        _, insns = arm_insns(rel, "k08_matmul.fast.s")
+        traps = [a for a, t in insns if t.startswith("brk\t#0x1")]
+        assert len(traps) == 1, f"{rel}: {len(traps)} traps in the FAST matrix multiply"
+        branches = [(a, mnemonic(t)) for a, t in insns if ARM_BRANCH.match(mnemonic(t)) and re.search(rf"\b{traps[0]:x} <", t)]
+        to_trap = [a for a, _ in branches]
+        neon, scalar = spans["fast"]
+        assert len(scalar) == 1, f"{rel}: {len(scalar)} innermost scalar loops in the FAST build"
+        inside = lambda l: sum(1 for a in to_trap if int(l["start"], 16) <= a < int(l["end"], 16))
+        got["to_trap"], got["in_neon_loop"], got["in_scalar_loop"] = len(to_trap), inside(neon), inside(scalar[0])
+        # the sentences call them conditional branches: no plain `b` may lead to the trap
+        got["to_trap_plain_b"] = sum(1 for _, mn in branches if mn == "b")
+        # the select-type instructions of the two listings, counted by mnemonic
+        for b in ("none", "fast"):
+            _, ins = arm_insns(rel, f"k08_matmul.{b}.s")
+            got[b]["selects"] = {name: sum(1 for _, t in ins if mnemonic(t) == name) for name in ("csel", "cset", "csinc")}
+        if out is None:
+            out = got
+        else:
+            assert out == got, f"{rel}: the matrix-multiply listings differ from the first job's"
+    return out
+
+
+@lru_cache(maxsize=None)
+def arm_matmul_d():
+    """The matrix size d of the two matrix-multiply cells (every job must use the same)."""
+    seen = {size: {det["cells"][f"k08_matmul.{size}"]["n"] for _, _, det in arm_jobs()} for size in ("L1", "L2")}
+    assert all(len(v) == 1 for v in seen.values()), f"jobs use different matrix sizes: {seen}"
+    return {size: v.pop() for size, v in seen.items()}
+
+
+@lru_cache(maxsize=None)
+def arm_forward_sum_identical():
+    """True when the forward sum's listing is the same line for line in the NONE and FAST builds in every job."""
+    return all(arm_insns(rel, "k01_sum_fwd.none.s")[0] == arm_insns(rel, "k01_sum_fwd.fast.s")[0] for rel, _, _ in arm_jobs())
+
+
+def arm_toolchain():
+    seen = {(res["run"]["toolchain"]["clang"], res["run"]["toolchain"]["libcxx_package"]) for _, res, _ in arm_jobs()}
+    assert len(seen) == 1, f"the Arm jobs recorded {seen}"
+    clang, lib = seen.pop()
+    return {"clang": re.search(r"Ubuntu clang version ([\d.]+)", clang).group(1), "clang_full": clang.replace("Ubuntu clang version ", ""),
+            "lib_major": re.search(r"libc\+\+-(\d+)-dev", lib).group(1), "lib_version": lib.split(" ", 1)[1]}
+
+
+def arm_start_window():
+    starts = sorted(res["run"]["started_at"] for _, res, _ in arm_jobs())
+    parse = lambda s: datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ")
+    days = {s[:10] for s in starts}
+    assert len(days) == 1, f"the Arm jobs started on {sorted(days)}"
+    year, month, day = (int(x) for x in days.pop().split("-"))
+    return {"first": starts[0][11:16], "last": starts[-1][11:16], "day": f"{MONTHS[month - 1]} {day}", "month": MONTHS[month - 1], "year": str(year),
+            "within": math.ceil((parse(starts[-1]) - parse(starts[0])).total_seconds() / 60)}
+
+
+def arm_plan_text():
+    with open(os.path.join(REPO, "arm64", "PLAN.md"), encoding="utf-8") as f:
+        return " ".join(f.read().split())
+
+
+def arm_timeline():
+    t = J(ARM_TIMELINE)
+    hhmm = lambda s: s[11:16]
+    utc = datetime.datetime.fromisoformat(t["plan_commit"]["author_date"]).astimezone(datetime.timezone.utc)
+    local = datetime.datetime.fromisoformat(t["plan_commit"]["author_date"])
+    return {"smoke": str(t["smoke"]["run"]), "smoke_at": hhmm(t["smoke"]["created_at"]), "smoke_date": t["smoke"]["created_at"][:10],
+            "dispatched": {hhmm(r["created_at"]) for r in t["full_runs"]},
+            "first_done": hhmm(min(r["first_job_completed_at"] for r in t["full_runs"])),
+            "plan_utc": utc.strftime("%H:%M"), "plan_local": local.strftime("%H:%M")}
+
+
+# ---- expected values: arm64/README.md, README.md and readme-parts/DETAILS.md ----------------------------------
+
+def exp_arm_table_row(kernel):
+    def fn():
+        facts = arm_build_facts()
+        return {"n0": str(facts[(kernel, "none")]["neon"]), "n1": str(facts[(kernel, "fast")]["neon"]),
+                "c1": f3(arm_ratio(kernel + ".L1")), "a1": f3(arm_ratio(kernel + ".L1", "aligned")),
+                "c2": f3(arm_ratio(kernel + ".L2")), "a2": f3(arm_ratio(kernel + ".L2", "aligned"))}
+    return fn
+
+
+def arm_table_pattern(label):
+    return (r"\| " + re.escape(label) + r" \| (?P<n0>\d+) / (?P<n1>\d+) \| (?P<c1>[\d.]+) \((?P<a1>[\d.]+)\) \| "
+            r"(?P<c2>[\d.]+) \((?P<a2>[\d.]+)\) \|")
+
+
+def arm_counts():
+    c = arm_cpu()
+    assert c["jobs"] == len(arm_jobs()) == len(arm_pool()["inputs"]), "the Arm pool and its job folders disagree on the job count"
+    return {"jobs": c["jobs"], "runs": len(c["runs"])}
+
+
+def exp_arm_counts_digits():
+    n = arm_counts()
+    return {"jobs": str(n["jobs"]), "runs": str(n["runs"]), "model": arm_cpu()["cpu_model"]}
+
+
+def exp_arm_short_reverse():
+    facts, vec = arm_build_facts(), arm_vectorization()
+    for k in ("k04_rev", "k05_stride2"):
+        assert not vec[(k, "fast")]["vectorized"] and TRAP_REMARK in vec[(k, "fast")]["remark"], f"{k} FAST: {vec[(k, 'fast')]}"
+        assert facts[(k, "fast")]["neon"] == 0 and facts[(k, "none")]["neon"] > 0
+    lost = {x["kernel"] for x in arm_cpu()["cells"] if x["class"] == "lost"}
+    return {"r1": f2(arm_ratio("k04_rev.L1")), "s1": f2(arm_ratio("k05_stride2.L1")),
+            "r2": f2(arm_ratio("k04_rev.L2")), "s2": f2(arm_ratio("k05_stride2.L2")),
+            "rn": str(facts[("k04_rev", "none")]["neon"]), "sn": str(facts[("k05_stride2", "none")]["neon"]), "two": word(len(lost))}
+
+
+def exp_arm_short_matmul():
+    v = exp_details_versions()
+    assert arm_vectorization()[("k08_matmul", "none")]["vectorized"] and arm_vectorization()[("k08_matmul", "fast")]["vectorized"]
+    return {"m1": f2(arm_ratio("k08_matmul.L1")), "m2": f2(arm_ratio("k08_matmul.L2")), "xlo": v["lo"], "xhi": v["hi"],
+            "ca": arm_toolchain()["clang"].split(".")[0], "cx": exp_x86_clang_major()["c"]}
+
+
+def forward_cells(size):
+    return [f"{k}.{size}" for k in FORWARD]
+
+
+def exp_arm_short_forward():
+    v = [arm_ratio(c) for c in forward_cells("L1")]
+    return {"lo": f3(min(v)), "hi": f3(max(v)), "aa": f3(arm_cpu()["aa"]["half_width_pct"])}
+
+
+def exp_arm_short_gather():
+    return {"g": f2(arm_ratio("k06_gather.L1")), "h": f2(arm_ratio("k07_hist.L1"))}
+
+
+def arm_forward_limit():
+    return 1 + arm_cpu()["verdict"]["forward_limit_pct"] / 100
+
+
+def exp_arm_short_verdict():
+    c = arm_cpu()
+    assert c["verdict"]["form"] == "inconclusive" and "missed by k02_add_fwd.L2;" in c["verdict"]["why"], c["verdict"]["why"]
+    return {"hi": f3(arm_cell("k02_add_fwd.L2")["aligned"]["ci95"][1]), "lim": f2(arm_forward_limit())}
+
+
+def exp_arm_runner():
+    seen = {json.dumps(res["run"]["runner"], sort_keys=True) for _, res, _ in arm_jobs()}
+    assert len(seen) == 1, f"the Arm jobs ran on {len(seen)} different machines"
+    r = arm_jobs()[0][1]["run"]["runner"]
+    lscpu = {k.strip(): v.strip() for k, _, v in (ln.partition(":") for ln in arm_jobs()[0][2]["lscpu"].splitlines())}
+    assert lscpu["Thread(s) per core"] == "1" and lscpu["Model name"] == r["cpu_model"] == arm_cpu()["cpu_model"]
+    flags = lscpu["Flags"].split()
+    assert "sve" in flags and "sve2" in flags, "lscpu no longer lists SVE and SVE2"
+    assert all(f["sve"] == 0 for f in arm_build_facts().values()), "a listing contains an SVE instruction"
+    return {"cpus": str(r["cores"]), "l1": str(r["l1d_kib"]), "l2": str(r["l2_kib"]), "l3": str(r["l3_kib"]),
+            "os": r["os"], "kernel": r["kernel"]}
+
+
+def exp_arm_toolchain():
+    t = arm_toolchain()
+    flags = arm_jobs()[0][1]["run"]["flags"]
+    commands = [bd["command"] for _, _, det in arm_jobs() for kd in det["kernels"].values() for bd in kd.values() if isinstance(bd, dict) and "command" in bd]
+    assert not any("-march" in x or "-mcpu" in x for x in commands), "a build command names -march or -mcpu"
+    assert "-fno-vectorize" in flags["novec"] and "-falign-loops=64" in flags["align"]
+    return {"clang": t["clang_full"], "lm": t["lib_major"], "lib": t["lib_version"], "common": flags["common"], "align": flags["align"]}
+
+
+def exp_arm_sizes():
+    det = arm_jobs()[0][2]
+    assert all(d["sizes_requested"] == ["L1", "L2"] for _, _, d in arm_jobs()), "a job timed a size other than L1 and L2"
+    assert all(d["size_targets_bytes"] == det["size_targets_bytes"] and d["cache_bytes"] == det["cache_bytes"] for _, _, d in arm_jobs())
+    t, c = det["size_targets_bytes"], det["cache_bytes"]
+    assert 2 * t["L1"] == c["l1d"] and 2 * t["L2"] == c["l2"], "the working sets are no longer half of the per-core caches"
+    d = arm_matmul_d()
+    return {"k": word(len(ARM_KERNELS)), "l1": str(t["L1"] // 1024), "l2": str(t["L2"] // 1024), "d1": str(d["L1"]), "d2": str(d["L2"])}
+
+
+def exp_arm_timing():
+    reps = {d["reps_per_side"] for _, _, d in arm_jobs()}
+    assert len(reps) == 1
+    assert all(re.fullmatch(r"\d+", str(d["pinned_cpu"])) for _, _, d in arm_jobs()), "a job pinned more than one vCPU"
+    return {"reps": str(reps.pop()), "one": word(1)}
+
+
+def exp_arm_align_flag():
+    flag = arm_jobs()[0][1]["run"]["flags"]["align"]
+    return {"a": flag, "b": flag}
+
+
+def exp_arm_runs():
+    c = arm_cpu()
+    w = arm_start_window()
+    per = {jobs_per_run()}
+    by_run = {rid: sum(1 for i in arm_pool()["inputs"] if i["run_id"] == rid) for rid in c["runs"]}
+    assert set(by_run.values()) == per, f"jobs per run {by_run}, the workflow dispatches {per}"
+    a, b, cc = c["runs"]
+    return {"three": word(len(c["runs"])), "a": a, "b": b, "c": cc, "per": str(per.pop()), "n": str(c["jobs"]), "n2": str(c["jobs"]),
+            "t1": w["first"], "t2": w["last"], "day": w["day"], "n3": str(c["jobs"])}
+
+
+def exp_arm_min_jobs():
+    return {"min": str(J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"])}
+
+
+def exp_arm_intervals():
+    c = arm_cpu()
+    out = {}
+    for size, tag in (("L1", "1"), ("L2", "2")):
+        cells = [(x, col) for x in c["cells"] if x["size_class"] == size for col in ARM_COLUMNS]
+        w = max(cells, key=lambda t: rel_hw(t[0][t[1]]))
+        s = max(cells, key=lambda t: t[0][t[1]]["between_job_sd_pct"])
+        out["w" + tag], out["c" + tag] = f2(rel_hw(w[0][w[1]])), arm_label(*w)
+        out["s" + tag], out["d" + tag] = f2(s[0][s[1]]["between_job_sd_pct"]), arm_label(*s)
+    return out
+
+
+def exp_arm_rev_stride2_prose():
+    v, facts = arm_vectorization(), arm_build_facts()
+    for k in ("k04_rev", "k05_stride2"):
+        assert (v[(k, "none")]["width"], v[(k, "none")]["interleave"]) == (4, 2), f"{k} NONE: {v[(k, 'none')]}"
+        assert facts[(k, "fast")]["traps"] == 1 and facts[(k, "fast")]["neon"] == 0
+    pos = arm_cpu()["positive"]
+    return {"w": "4", "i": "2", "trap": word(facts[("k04_rev", "fast")]["traps"]),
+            "ir": f2(arm_cell("k04_rev.L1")["instr"]["ratio"]), "is": f2(arm_cell("k05_stride2.L1")["instr"]["ratio"]),
+            "nr": f2(pos["k04_rev.L1"]["ratio"]), "ns": f2(pos["k05_stride2.L1"]["ratio"]),
+            "r": f2(arm_ratio("k04_rev.L1")), "nr2": f2(pos["k04_rev.L1"]["ratio"]),
+            "s": f2(arm_ratio("k05_stride2.L1")), "ns2": f2(pos["k05_stride2.L1"]["ratio"])}
+
+
+def exp_arm_cesweep():
+    rows = [r for r in J("site/data/cesweep.json")["rows"]
+            if r["family"] == "clang" and r["target"] == "aarch64" and r["opt"] == "-O2" and r["macro_effective"] and r["version"] == "18.1.0"]
+    assert len(rows) == 1, f"{len(rows)} AArch64 rows for clang 18.1.0 at -O2 in the sweep"
+    timed_lost = sorted(c["kernel"] for c in arm_cpu()["cells"] if c["class"] == "lost" and c["size_class"] == "L1")
+    assert sorted(rows[0]["lost"]) == timed_lost == ["k04_rev", "k05_stride2"], f"sweep {rows[0]['lost']}, timed {timed_lost}"
+    kept = {c["kernel"] for c in arm_cpu()["cells"] if c["class"] == "kept"}
+    assert kept == {"k01_sum_fwd", "k02_add_fwd", "k03_stencil", "k08_matmul"}, kept
+    return {"v": rows[0]["version"]}
+
+
+def exp_arm_matmul_observed():
+    """The NEON loop and the line counts: what is read straight from the two listings."""
+    m = arm_matmul()
+    assert m["none"]["loop"] == m["fast"]["loop"], "the NEON loop differs between the NONE and FAST builds"
+    assert m["none"]["mla_4s"] == m["fast"]["mla_4s"] == m["none"]["loop"].count("mla"), "an mla in the NEON loop is not a v.4s one"
+    return {"nine": word(len(m["none"]["loop"])), "two": word(m["none"]["mla_4s"]),
+            "fl": str(m["fast"]["lines"]), "nl": str(m["none"]["lines"]), "extra": str(m["fast"]["lines"] - m["none"]["lines"])}
+
+
+def exp_arm_matmul_listing():
+    """The select instructions and the branches to the trap, read from the listings of every job."""
+    m, facts = arm_matmul(), arm_build_facts()
+    sel_none, sel_fast = m["none"]["selects"], m["fast"]["selects"]
+    assert sel_none["csel"] == 0 and facts[("k08_matmul", "none")]["csel"] == 0, "the NONE matrix multiply now contains csel"
+    assert sel_fast["csel"] == facts[("k08_matmul", "fast")]["csel"], "two counts of csel in the FAST listing disagree"
+    assert m["in_neon_loop"] == 0, "a branch to the trap is inside the NEON loop"
+    assert m["to_trap_plain_b"] == 0, "an unconditional branch leads to the trap, so the sentences must not call them all conditional"
+    example = f"{arm_jobs()[0][0]}/asm/k08_matmul.fast.s"
+    assert os.path.exists(os.path.join(REPO, example)), f"{example} does not exist"
+    return {"csel": str(sel_fast["csel"]), "cset": word(sel_none["cset"]), "csinc": word(sel_none["csinc"]),
+            "three": word(m["to_trap"]), "path": example, "two": word(m["in_scalar_loop"]), "two2": word(m["in_scalar_loop"])}
+
+
+def arm_matmul_log_share(size):
+    """log(time ratio) / log(instruction ratio) of a matrix-multiply cell, as compiled."""
+    c = arm_cell(f"k08_matmul.{size}")
+    return math.log(c["as_compiled"]["ratio"]) / math.log(c["instr"]["ratio"])
+
+
+def exp_arm_matmul_time_vs_instr():
+    c1, c2 = arm_cell("k08_matmul.L1"), arm_cell("k08_matmul.L2")
+    return {"i1": f2(c1["instr"]["ratio"]), "i2": f2(c2["instr"]["ratio"]), "t1": f2(c1["as_compiled"]["ratio"]), "t2": f2(c2["as_compiled"]["ratio"]),
+            "l1": f2(arm_matmul_log_share("L1")), "l2": f2(arm_matmul_log_share("L2")),
+            "rise": f0((c2["instr"]["ratio"] - 1) * 100), "tr": f1((c2["as_compiled"]["ratio"] - 1) * 100)}
+
+
+def exp_arm_matmul_inferred():
+    """The arithmetic of the inferred reading: passes of the NEON loop and the scalar remainder at the two d."""
+    d, v = arm_matmul_d(), arm_vectorization()[("k08_matmul", "none")]
+    per = v["width"] * v["interleave"]
+    cost = arm_site()["matmul_cost"]
+    assert (cost["vector_pass_elements"], cost["sizes"]["L1"]["whole_passes"], cost["sizes"]["L1"]["d_mod_pass"]) == (per, d["L1"] // per, d["L1"] % per)
+    assert (cost["sizes"]["L2"]["whole_passes"], cost["sizes"]["L2"]["d_mod_pass"]) == (d["L2"] // per, d["L2"] % per)
+    return {"d1": str(d["L1"]), "p1": str(d["L1"] // per), "e": str(per), "r1": str(d["L1"] % per),
+            "d2": str(d["L2"]), "p2": str(d["L2"] // per), "r2": str(d["L2"] % per),
+            "i1": f2(arm_cell("k08_matmul.L1")["instr"]["ratio"]), "i2": f2(arm_cell("k08_matmul.L2")["instr"]["ratio"])}
+
+
+# the d values the plan for the cheap check names; the properties the sentence gives them are checked against the data here
+ARM_D_SWEEP = {"inside": (28, 44, 52, 60, 68), "beyond": (76, 100, 148, 212, 276), "multiple_of_pass": (48, 56, 208)}
+
+
+def exp_arm_matmul_d_sweep():
+    d, v = arm_matmul_d(), arm_vectorization()[("k08_matmul", "none")]
+    per = v["width"] * v["interleave"]
+    l1d = arm_jobs()[0][2]["cache_bytes"]["l1d"]
+    fits = lambda n: 3 * n * n * 4 <= l1d  # three d x d int32 matrices
+    biggest = max(n for n in range(1, 400) if fits(n))
+    s = ARM_D_SWEEP
+    assert all(n % per == d["L1"] % per and fits(n) for n in s["inside"]), "a d inside L1d is not at the L1 remainder or does not fit"
+    assert d["L1"] in s["inside"], "the measured L1 d is not among the d inside L1d"
+    assert all(n % per == d["L1"] % per and not fits(n) for n in s["beyond"]), "a d beyond L1d is not at the L1 remainder or fits"
+    assert all(n % per == 0 for n in s["multiple_of_pass"]), "a d is not a multiple of the elements per pass"
+    j = lambda xs: ", ".join(str(x) for x in xs)
+    return {"rem": str(d["L1"] % per), "per": str(per), "per2": str(per), "inside": j(s["inside"]), "kib": str(l1d // 1024), "max": str(biggest),
+            "beyond": j(s["beyond"]), "zero": j(s["multiple_of_pass"])}
+
+
+def exp_arm_vs_x86_matmul():
+    v = exp_versions()
+    return {"a": v["a"], "b": v["b"], "l1": v["l1"], "l2": v["l2"]}
+
+
+def exp_arm_gather_hist():
+    return {"g": f2(arm_ratio("k06_gather.L1")), "ga": f2(arm_ratio("k06_gather.L1", "aligned")), "h": f2(arm_ratio("k07_hist.L1")),
+            "g2": f2(arm_ratio("k06_gather.L2")), "h2": f2(arm_ratio("k07_hist.L2")),
+            "gi": f2(arm_cell("k06_gather.L1")["instr"]["ratio"]), "hi": f2(arm_cell("k07_hist.L1")["instr"]["ratio"])}
+
+
+def arm_plan_aa_floor():
+    m = re.search(r"If the A/A half-width is below ([\d.]+)%", arm_plan_text())
+    assert m, "arm64/PLAN.md no longer gives the A/A half-width below which the forward loops are reported against it"
+    return m.group(1)
+
+
+def exp_arm_aa_floor():
+    hws = [res["controls"]["aa"]["half_width_pct"] for _, res, _ in arm_jobs()]
+    return {"plan": arm_plan_aa_floor(), "aa": f3(arm_cpu()["aa"]["half_width_pct"]), "j1": f3(min(hws)), "j2": f3(max(hws))}
+
+
+def exp_arm_forward_bullets():
+    c = {k: arm_cell(k + ".L1") for k in FORWARD}
+    s, a, t = c["k01_sum_fwd"], c["k02_add_fwd"], c["k03_stencil"]
+    return {"s1": pct1z(s["as_compiled"]["ratio"]), "sr": f3(s["as_compiled"]["ratio"]), "slo": f4(s["as_compiled"]["ci95"][0]),
+            "shi": f4(s["as_compiled"]["ci95"][1]), "s2": pct1z(s["aligned"]["ratio"]),
+            "a1": pct1z(a["as_compiled"]["ratio"]), "a2": pct1z(a["aligned"]["ratio"]),
+            "t1": pct1z(t["as_compiled"]["ratio"]), "t2": pct1z(t["aligned"]["ratio"])}
+
+
+def arm_forward_instr(kernel, size):
+    """The instructions Cachegrind counts per call of a forward kernel in the NONE and FAST builds (site/data/arm64.json)."""
+    rows = [c for c in arm_site()["forward_instr"]["cells"] if c["cell_id"] == f"{kernel}.{size}"]
+    assert len(rows) == 1, f"{ARM_SITE} forward_instr has {len(rows)} rows for {kernel}.{size}"
+    r = rows[0]
+    for col in ARM_COLUMNS:
+        assert r[col]["fast"] - r[col]["none"] == r[col]["added"], f"{kernel}.{size} {col}: added is not fast minus none"
+        assert abs(r[col]["time_ratio"] - arm_cell(f"{kernel}.{size}")[col]["ratio"]) < 1e-12, f"{kernel}.{size} {col}: time ratio is not the pool's"
+    return r
+
+
+def exp_arm_short_add():
+    a1, a2 = arm_forward_instr("k02_add_fwd", "L1"), arm_forward_instr("k02_add_fwd", "L2")
+    assert a1["as_compiled"]["added"] == a2["as_compiled"]["added"], "the forward add adds a different number of instructions at L2"
+    return {"pct": pct1z(arm_ratio("k02_add_fwd.L1")), "n": str(a1["as_compiled"]["added"]), "aa": f2(arm_noise()["identical_binary_aa"]["L2"]["pooled"]["half_width_pct"])}
+
+
+def exp_arm_add_instructions():
+    a1, a2 = arm_forward_instr("k02_add_fwd", "L1"), arm_forward_instr("k02_add_fwd", "L2")
+    c1, c2 = a1["as_compiled"], a2["as_compiled"]
+    assert c1["added"] == c2["added"] and a1["aligned"]["added"] == a2["aligned"]["added"], "the forward add adds a different number of instructions at L2"
+    return {"n1": thousands(c1["none"]), "f1": thousands(c1["fast"]), "e1": thousands(a1["elements"]), "c1": str(c1["added"]),
+            "al": str(a1["aligned"]["added"]), "n2": thousands(c2["none"]), "f2": thousands(c2["fast"]), "e2": thousands(a2["elements"]),
+            "c2": str(c2["added"]), "p1": f2(c1["added"] / c1["none"] * 100), "p2": f2(c2["added"] / c2["none"] * 100)}
+
+
+def exp_arm_stencil_instructions():
+    s1, s2 = arm_forward_instr("k03_stencil", "L1"), arm_forward_instr("k03_stencil", "L2")
+    assert all(s1[col]["added"] == s2[col]["added"] for col in ARM_COLUMNS), "the stencil adds a different number of instructions at L2"
+    tc, ta = arm_ratio("k03_stencil.L1"), arm_ratio("k03_stencil.L1", "aligned")
+    assert tc > 1 > ta, "the stencil's time ratio no longer changes sign with loop alignment"
+    row = arm_lvp_row("k03_stencil.L1")
+    return {"c": str(s1["as_compiled"]["added"]), "al": str(s1["aligned"]["added"]), "tc": pct1(tc), "ta": f1((1 - ta) * 100),
+            "d": f3(row["d"]["ratio"]), "dp": f1(row["d_shift_pct"])}
+
+
+def exp_arm_forward_l2():
+    cells = [arm_cell(c) for c in forward_cells("L2")]
+    ac, al = [x["as_compiled"]["ratio"] for x in cells], [x["aligned"]["ratio"] for x in cells]
+    both = [x[col] for x in cells for col in ARM_COLUMNS]
+    return {"alo": f3(min(ac)), "ahi": f3(max(ac)), "blo": f3(min(al)), "bhi": f3(max(al)),
+            "w": f1(max(rel_hw(s) for s in both)), "s": exp_arm_limits_spread()["s"]}
+
+
+def exp_arm_aa_control():
+    cells = {det["aa"]["cell"] for _, _, det in arm_jobs()}
+    assert cells == {"k02_add_fwd.L1"}, f"the A/A control timed {cells}"
+    aa = arm_cpu()["aa"]
+    return {"r": f4(aa["ratio"]), "hw": f3(aa["half_width_pct"])}
+
+
+def exp_arm_layout():
+    la = arm_cpu()["layout_aa"]
+    lo, hi = min(la, key=lambda k: la[k]["half_width_pct"]), max(la, key=lambda k: la[k]["half_width_pct"])
+    assert lo.endswith(".L1"), f"the quietest layout A/A cell is {lo}"
+    moves = {k: abs(v["ratio"] - 1) * 100 for k, v in la.items() if k.endswith(".L1")}
+    top = max(moves, key=moves.get)
+    assert top == "k08_matmul.L1", f"the largest layout effect at L1 is {top}"
+    other = max(v for k, v in moves.items() if k != top)
+    kernel, size = hi.split(".")
+    return {"lo": f3(la[lo]["half_width_pct"]), "hi": f1(la[hi]["half_width_pct"]), "c": f"{ARM_KERNELS[kernel]}, {size}",
+            "m": f1(moves[top]), "r": f3(la[top]["ratio"]), "o": f2(math.ceil(other * 100) / 100)}
+
+
+def exp_arm_negative():
+    f = arm_build_facts()
+    assert arm_forward_sum_identical() and f[("k01_sum_fwd", "fast")]["traps"] == 0, "the forward sum differs between the builds or has a trap"
+    for k in FORWARD:
+        assert f[(k, "none")]["neon"] == f[(k, "fast")]["neon"] > 0
+    return {"a": str(f[("k01_sum_fwd", "none")]["neon"]), "b": str(f[("k02_add_fwd", "none")]["neon"]), "c": str(f[("k03_stencil", "none")]["neon"])}
+
+
+def exp_arm_positive():
+    pos = arm_cpu()["positive"]
+    order = ("k01_sum_fwd", "k02_add_fwd", "k03_stencil", "k04_rev", "k05_stride2", "k08_matmul")
+    v = [pos[k + ".L1"]["ratio"] for k in order]
+    return {**{key: f2(x) for key, x in zip("abcdef", v)}, "lo": f1(min(v)), "hi": f1(max(v))}
+
+
+def exp_arm_placement():
+    c = arm_cpu()
+    ids = sorted(p["cell_id"] for p in c["verdict"]["placement_sensitive"])
+    assert ids == ["k02_add_fwd.L1", "k03_stencil.L1", "k08_matmul.L1", "k08_matmul.L2"], ids
+    d = {cid: arm_cell(cid)["placement"]["d"] for cid in ids}
+    assert d["k02_add_fwd.L1"]["ci95"][1] < 1, "the add's placement interval no longer excludes 1"
+    return {"n": word(len(ids)), "a": f3(d["k02_add_fwd.L1"]["ratio"]), "b": f3(d["k03_stencil.L1"]["ratio"]),
+            "c": f3(d["k08_matmul.L1"]["ratio"]), "d": f3(d["k08_matmul.L2"]["ratio"]),
+            "e": f1((1 - d["k02_add_fwd.L1"]["ratio"]) * 100)}
+
+
+def exp_arm_verdict_form():
+    c = arm_cpu()
+    assert c["verdict"]["form"] == "inconclusive" and "a mixed picture" in c["verdict"]["line"]
+    assert all(r["form"] == "inconclusive" for r in c["per_run"]), "a run on its own is no longer INCONCLUSIVE"
+    return {"three": word(len(c["per_run"]))}
+
+
+def exp_arm_lost_floor():
+    lost = [arm_cell(c)[col]["ci95"][0] for c in ("k04_rev.L1", "k04_rev.L2", "k05_stride2.L1", "k05_stride2.L2") for col in ARM_COLUMNS]
+    assert {x["kernel"] for x in arm_cpu()["cells"] if x["class"] == "lost"} == {"k04_rev", "k05_stride2"}
+    return {"lo": f2(math.floor(min(lost) * 100) / 100), "min": f1(J("site/data/index.json")["criteria"]["lost_ci_lo_min_ratio"])}
+
+
+def exp_arm_judged():
+    c = arm_cpu()
+    kept = [x["cell_id"] for x in c["cells"] if x["class"] == "kept"]
+    ps = {p["cell_id"] for p in c["verdict"]["placement_sensitive"]}
+    judged = sorted(set(kept) - ps)
+    assert judged == ["k01_sum_fwd.L1", "k01_sum_fwd.L2", "k02_add_fwd.L2", "k03_stencil.L2"], judged
+    return {"four": word(len(judged)), "eight": word(len(kept)), "four2": word(len(ps))}
+
+
+def exp_arm_add_l2():
+    x = arm_cell("k02_add_fwd.L2")["aligned"]
+    lim = arm_forward_limit()
+    runs = arm_cpu()["per_run"]
+    for r in runs:
+        assert "k01_sum_fwd.L2" in r["line"] and "k02_add_fwd.L2" in r["line"] and "missed by" in r["line"], f"run {r['run_id']}: {r['line']}"
+    return {"r": f3(x["ratio"]), "lo": f3(x["ci95"][0]), "hi": f3(x["ci95"][1]), "over": f4(x["ci95"][1] - lim), "lim": f2(lim),
+            "sd": f1(x["between_job_sd_pct"])}
+
+
+def exp_arm_matmul_counted():
+    lim = arm_forward_limit()
+    l1, l2 = arm_cell("k08_matmul.L1")["aligned"], arm_cell("k08_matmul.L2")["aligned"]
+    assert l1["ci95"][1] > lim >= l2["ci95"][1], "counted, the matrix-multiply cells no longer split around the forward limit"
+    return {"m1": f2(l1["ratio"]), "m2": f3(l2["ratio"]), "m3": f3(l2["ci95"][1])}
+
+
+def arm_reproduction():
+    r = arm_cpu()["reproduction"]
+    stride = [m for m in r["misses"] if m["cell_id"] == "k05_stride2.L2"]
+    others = [m for m in r["misses"] if m["cell_id"] != "k05_stride2.L2"]
+    assert len(stride) + len(others) == r["outside"]
+    return r, stride, others
+
+
+def exp_arm_run_to_run():
+    r, stride, others = arm_reproduction()
+    c = arm_cpu()
+    n = len(c["runs"])
+    assert r["checked"] == len(c["cells"]) * len(ARM_COLUMNS) * n * (n - 1)
+    assert all(m["gap_pct"] < 0.01 for m in others), "a miss outside stride-2 at L2 has a gap of 0.01% or more"
+    points = [f2(run["cells"]["k05_stride2.L2"]["as_compiled"][0]) for run in c["per_run"]]
+    return {"chk": str(r["checked"]), "cells": str(len(c["cells"])), "cols": str(len(ARM_COLUMNS)), "pairs": str(n * (n - 1)),
+            "out": str(r["outside"]), "gap": f2(max(m["gap_pct"] for m in r["misses"])), "eight": word(len(stride)), "out2": str(r["outside"]),
+            "g1": f2(min(m["gap_pct"] for m in stride)), "g2": f2(max(m["gap_pct"] for m in stride)),
+            "p1": points[0], "p2": points[1], "p3": points[2], "five": word(len(others)), "u": "0.01"}
+
+
+def exp_arm_held():
+    f = arm_build_facts()
+    return {"a": str(f[("k01_sum_fwd", "none")]["neon"]), "a2": str(f[("k01_sum_fwd", "fast")]["neon"]),
+            "b": str(f[("k02_add_fwd", "none")]["neon"]), "b2": str(f[("k02_add_fwd", "fast")]["neon"]),
+            "c": str(f[("k03_stencil", "none")]["neon"]), "c2": str(f[("k03_stencil", "fast")]["neon"])}
+
+
+def exp_arm_held_jobs():
+    return {"ret": str(arm_counts()["jobs"]), "disp": str(arm_counts()["runs"] * jobs_per_run())}
+
+
+def exp_siblings_setup():
+    return {"c": timed_clang(), "l": timed_clang().split(".")[0]}
+
+
+def exp_siblings_arm():
+    return {"model": arm_cpu()["cpu_model"], "c": arm_toolchain()["clang"].split(".")[0]}
+
+
+def exp_cesweep_arm():
+    return {"c": timed_clang().split(".")[0], "t": arm_toolchain()["clang"], "model": arm_cpu()["cpu_model"], "v": exp_arm_cesweep()["v"]}
+
+
+def exp_arm_limits_spread():
+    """The largest spread between jobs in a forward cell at L2, either column; the sentences say it is the add's."""
+    top = max(((arm_cell(c), col) for c in forward_cells("L2") for col in ARM_COLUMNS), key=lambda t: t[0][t[1]]["between_job_sd_pct"])
+    assert top[0]["kernel"] == "k02_add_fwd", f"the largest spread between jobs in a forward cell at L2 is the {top[0]['cell_id']}'s"
+    return {"s": f1(top[0][top[1]]["between_job_sd_pct"])}
+
+
+def exp_arm_limits_window():
+    return {"n": str(arm_counts()["jobs"]), "three": word(arm_counts()["runs"]), "m": str(arm_start_window()["within"])}
+
+
+def exp_arm_limits_compiler():
+    t = arm_toolchain()
+    return {"c": t["clang"], "l": t["lib_major"]}
+
+
+def exp_arm_limits_core():
+    """One core type: one pooled CPU model, one runner image in all the jobs, and a core name the sentence spells the same."""
+    pool = arm_pool()
+    assert len(pool["cpus"]) == 1, "the Arm pool holds more than one CPU model"
+    images = {json.dumps(res["run"]["runner"], sort_keys=True) for _, res, _ in arm_jobs()}
+    assert len(images) == 1, "the Arm jobs ran on more than one machine image"
+    assert "Neoverse-N2" in arm_cpu()["cpu_model"], arm_cpu()["cpu_model"]
+    return {"core": "Neoverse-N2", "one": word(1), "one2": word(len(images))}
+
+
+def exp_arm_limits_one_cell():
+    """The INCONCLUSIVE form rests on one forward cell (the add at L2), as the verdict's own reason lists it."""
+    verdict = arm_cpu()["verdict"]
+    assert verdict["form"].upper() == "INCONCLUSIVE", verdict["form"]
+    assert verdict["why"].count("missed by k02_add_fwd.L2;") == 1, verdict["why"]
+    return {"one": word(1)}
+
+
+def exp_arm_three_runs():
+    return {"three": word(arm_counts()["runs"])}
+
+
+def exp_arm_pooled_over():
+    return {"n": str(arm_counts()["jobs"])}
+
+
+def exp_arm_title():
+    return {"k": word(len(ARM_KERNELS))}
+
+
+def exp_arm_status_date():
+    w = arm_start_window()
+    return {"m": w["month"], "y": w["year"]}
+
+
+def exp_arm_pool_entries():
+    return {"one": word(len(arm_pool()["cpus"]))}
+
+
+def interval_level():
+    """The confidence level of the intervals, as the written rules give it (percentile bootstrap, <resamples>, ..., 95 %)."""
+    m = re.search(r"percentile bootstrap, \d+ resamples[^\"]*?, (\d+) %", json.dumps(J("harness/criteria-v3.json")))
+    assert m, "harness/criteria-v3.json no longer states the level of the intervals"
+    assert all("ci95" in x["as_compiled"] for x in arm_cpu()["cells"]), "the pooled cells no longer carry ci95"
+    return m.group(1)
+
+
+def exp_arm_interval_level():
+    return {"p": interval_level()}
+
+
+def exp_arm_forward_rule_percent():
+    limit = arm_cpu()["verdict"]["forward_limit_pct"]
+    assert limit == int(limit)
+    return {"p": str(int(limit))}
+
+
+def placement_window_bytes():
+    with open(os.path.join(REPO, "harness", "placement.py"), encoding="utf-8") as f:
+        m = re.search(r"windows = \(end - 1\) // (\d+) - tgt // (\d+) \+ 1", f.read())
+    assert m and m.group(1) == m.group(2), "harness/placement.py no longer counts fetch windows of one size"
+    return m.group(1)
+
+
+def exp_arm_window():
+    w = placement_window_bytes()
+    return {"w1": w, "w2": w, "w3": w, "w4": w}
+
+
+# ---- the derived files the noise, placement, interval-method and seed sentences rest on ---------------------------
+
+ARM_SITE = "site/data/arm64.json"
+ARM_SEEDS = "arm64/seed-sensitivity.json"
+# the pattern harness/asm.py normalize() used before it was changed to strip three-digit AArch64 branch targets (four or more hex
+# digits); it is history that the file no longer holds, and the stored .diff files were written with it
+ASM_NORMALIZE_BEFORE = 4
+
+
+def pool_sha256():
+    with open(os.path.join(REPO, ARM_POOLED), "rb") as f:
+        return hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def arm_site():
+    """site/data/arm64.json, after checking that it was built from the Arm pool as it is now."""
+    d = J(ARM_SITE)
+    assert d["source"] == ARM_POOLED and d["source_sha256"] == pool_sha256(), f"{ARM_SITE} was built from another version of {ARM_POOLED}"
+    return d
+
+
+def arm_seeds():
+    """arm64/seed-sensitivity.json, after checking that it was made from the Arm pool as it is now."""
+    d = J(ARM_SEEDS)
+    assert d["pool"]["path"] == ARM_POOLED and d["pool"]["sha256"] == pool_sha256(), f"{ARM_SEEDS} was made from another version of {ARM_POOLED}"
+    return d
+
+
+def arm_noise():
+    n = arm_site()["noise"]
+    aa = n["identical_binary_aa"]
+    assert aa["L1"]["cell_id"] == "k02_add_fwd.L1" and aa["L2"]["cell_id"] == "k02_add_fwd.L2" and n["same_cell_l2"]["cell_id"] == "k02_add_fwd.L2"
+    assert abs(aa["L1"]["pooled"]["half_width_pct"] - arm_cpu()["aa"]["half_width_pct"]) < 1e-12, "the L1 A/A of the noise block is not the pool's"
+    return n
+
+
+def arm_lvp_row(cid):
+    rows = [r for r in arm_site()["layout_vs_placement"]["rows"] if r["cell_id"] == cid]
+    assert len(rows) == 1, f"{ARM_SITE} layout_vs_placement has {len(rows)} rows for {cid}"
+    return rows[0]
+
+
+def pool_py_constants():
+    """(SEED_PREFIX, RESAMPLES) as harness/pool.py defines them."""
+    with open(os.path.join(REPO, "harness", "pool.py"), encoding="utf-8") as f:
+        src = f.read()
+    seed, res = re.search(r'^SEED_PREFIX = "(\d+)"', src, re.M), re.search(r"^RESAMPLES = (\d+)", src, re.M)
+    assert seed and res, "harness/pool.py no longer defines SEED_PREFIX and RESAMPLES in the form this test reads"
+    return seed.group(1), res.group(1)
+
+
+def rule_aa_ceiling():
+    """The A/A half-width above which the written rules end at INCONCLUSIVE (harness/criteria-v3.json)."""
+    with open(os.path.join(REPO, "harness", "criteria-v3.json"), encoding="utf-8") as f:
+        found = set(re.findall(r'"aa_half_width_max_pct": ([\d.]+)', f.read()))
+    assert len(found) == 1, f"harness/criteria-v3.json gives the A/A ceiling as {sorted(found)}"
+    return float(found.pop())
+
+
+@lru_cache(maxsize=None)
+def x86_7763_sizes():
+    """(L1 bytes, L2 bytes, matrix-multiply d at L1, d at L2) of the EPYC 7763 jobs of results/s7-run-*; every job must agree."""
+    seen = set()
+    for p in sorted(glob.glob(os.path.join(REPO, "results", "s7-run-*", "results-amd-epyc-7763-*", "details.json"))):
+        with open(p, encoding="utf-8") as f:
+            det = json.load(f)
+        t, c = det["size_targets_bytes"], det["cache_bytes"]
+        assert 2 * t["L1"] == c["l1d"] and 2 * t["L2"] == c["l2"], f"{p}: the working sets are no longer half of the per-core caches"
+        seen.add((t["L1"], t["L2"], det["cells"]["k08_matmul.L1"]["n"], det["cells"]["k08_matmul.L2"]["n"]))
+    assert len(seen) == 1, f"the EPYC 7763 jobs of results/s7-run-* differ in working-set or matrix sizes: {sorted(seen)}"
+    return seen.pop()
+
+
+@lru_cache(maxsize=None)
+def arm_matmul_windows():
+    """{build: (offset of the innermost NEON loop in its 64-byte window, windows it spans)} for NONE and NONE aligned; every job must agree."""
+    out = None
+    for rel, _, det in arm_jobs():
+        got = {}
+        for b in ("none", "none_a64"):
+            loops = [l for l in det["kernels"]["k08_matmul"][b]["loops"] if l["simd"] and l["innermost"]]
+            assert len(loops) == 1, f"{rel}: {len(loops)} innermost NEON loops in the {b} matrix multiply"
+            got[b] = (loops[0]["start_mod64"], loops[0]["windows64"])
+        if out is None:
+            out = got
+        else:
+            assert out == got, f"{rel}: the matrix-multiply loop placement differs from the first job's"
+    return out
+
+
+def asm_normalize_digits():
+    """The number of hex digits from which harness/asm.py normalize() strips a branch target."""
+    with open(os.path.join(REPO, "harness", "asm.py"), encoding="utf-8") as f:
+        m = re.search(r'ln = re\.sub\(r"\\b\[0-9a-f\]\{(\d+),\} <", "<", ln\)', f.read())
+    assert m, "harness/asm.py normalize() no longer strips branch targets in the form this test reads"
+    return int(m.group(1))
+
+
+def none_or_word(n):
+    return "none" if n == 0 else word(n)
+
+
+def measure_workflow():
+    """.github/workflows/measure.yml parsed with PyYAML. A missing PyYAML fails the test (CI installs it): skipping would leave the
+    runner wiring unchecked without anyone seeing it."""
+    try:
+        import yaml
+    except ImportError as e:
+        raise AssertionError("PyYAML is needed to read .github/workflows/measure.yml (pip install pyyaml)") from e
+    with open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def measure_runner_labels():
+    """(x86-64 label, Arm label, Arm CPU name) from the `runner` input of measure.yml, read as YAML: a choice of two labels whose
+    default is the x86-64 one, the job's runs-on taking that input, and a description that names the Arm core."""
+    wf = measure_workflow()
+    on = wf.get("on", wf.get(True))  # PyYAML reads the key `on` as the boolean True
+    assert isinstance(on, dict) and "workflow_dispatch" in on, "measure.yml no longer starts on workflow_dispatch"
+    runner = (on["workflow_dispatch"].get("inputs") or {}).get("runner")
+    assert isinstance(runner, dict), "measure.yml has no `runner` input"
+    options = runner.get("options")
+    assert runner.get("type") == "choice" and isinstance(options, list) and len(options) == 2, f"the runner input is not a choice of two labels: {runner}"
+    x86, arm = options
+    assert runner.get("default") == x86, f"the runner input defaults to {runner.get('default')}, the x86-64 label is {x86}"
+    assert arm == x86 + "-arm", f"the Arm label {arm} is not the x86-64 label {x86} plus -arm"
+    runs_on = wf["jobs"]["measure"]["runs-on"]
+    assert runs_on == "${{ inputs.runner }}", f"the measure job runs on {runs_on!r}, not on the runner input"
+    m = re.match(r"GitHub-hosted runner label: (ubuntu-[\d.]+) \(x86-64, the default\) or (ubuntu-[\d.]+-arm) \(AArch64, ([\w-]+)\)", runner.get("description", ""))
+    assert m, "the runner input no longer describes itself as an x86-64 label and an AArch64 one"
+    assert (m.group(1), m.group(2)) == (x86, arm), f"the description names {m.group(1)} and {m.group(2)}, the options are {x86} and {arm}"
+    assert m.group(3) == arm_cpu()["cpu_model"], f"measure.yml names {m.group(3)}, the Arm jobs ran on {arm_cpu()['cpu_model']}"
+    return x86, arm, m.group(3)
+
+
+def exp_arm_labels():
+    arm = measure_runner_labels()[1]
+    return {"a": arm, "b": arm, "c": arm}
+
+
+def exp_readme_runner_label():
+    return {"label": measure_runner_labels()[1]}
+
+
+def exp_details_runners():
+    x, a, model = measure_runner_labels()
+    return {"x": x, "a": a, "model": model}
+
+
+def exp_arm_trap_form():
+    forms = {x for f in arm_build_facts().values() for x in f["brk_forms"]}
+    assert forms == {"#0x1"}, f"the Arm listings contain brk forms {sorted(forms)}"
+    return {"t": "brk #0x1"}
+
+
+def exp_arm_stable_runs():
+    return exp_arm_verdict_form()
+
+
+def exp_arm_cesweep_only():
+    exp_arm_cesweep()
+    return {}
+
+
+def arm_plan_smoke_kernels():
+    m = re.search(r"after one (\w+)-kernel smoke run", arm_plan_text())
+    assert m, "arm64/PLAN.md no longer says how many kernels the smoke run timed"
+    return m.group(1)
+
+
+def exp_arm_smoke_kernels():
+    return {"k": arm_plan_smoke_kernels()}
+
+
+def exp_arm_timeline():
+    t = arm_timeline()
+    plan = arm_plan_text()
+    m = re.search(r"Written \w+ \w+ \d+, ([\d:]+) EDT", plan)
+    assert m, "arm64/PLAN.md no longer gives the time it was written"
+    assert plan.count(f"run {t['smoke']}") == 1, "arm64/PLAN.md no longer names the smoke run"
+    assert len(t["dispatched"]) == 1, f"the runs were dispatched at {sorted(t['dispatched'])}"
+    month, day = (int(x) for x in t["smoke_date"].split("-")[1:])
+    return {"k": arm_plan_smoke_kernels(), "smoke": t["smoke"], "t0": t["smoke_at"], "day": f"{MONTHS[month - 1]} {day}",
+            "three": word(len(arm_cpu()["runs"])), "t1": next(iter(t["dispatched"])), "t2": t["plan_utc"], "t2e": t["plan_local"],
+            "t3": t["first_done"], "h": m.group(1), "c": t["plan_local"]}
+
+
+def arm_plan_smoke_numbers():
+    """(reverse ratio, forward-add ratio, A/A half-width) as arm64/PLAN.md quotes them from the smoke run."""
+    m = re.search(r"k04_rev \(reverse\) ([\d.]+)x and k02_add_fwd ([\d.]+)x, with an A/A half-width of ([\d.]+)%", arm_plan_text())
+    assert m, "arm64/PLAN.md no longer quotes the smoke run's reverse, forward-add and A/A figures in this form"
+    return m.groups()
+
+
+def exp_arm_smoke_quote():
+    t = J(ARM_TIMELINE)["smoke"]
+    m = re.fullmatch(r"(\w+) kernels, (L\d)", t["timing_step"])
+    assert m, f"the timeline's name of the smoke run's timing step is {t['timing_step']!r}"
+    assert m.group(1).lower() == arm_plan_smoke_kernels(), "the smoke run's timing step and arm64/PLAN.md disagree on the number of kernels"
+    assert f"run {t['run']}" in arm_plan_text(), "arm64/PLAN.md does not name the smoke run of the timeline"
+    r, a, aa = arm_plan_smoke_numbers()
+    return {"run": str(t["run"]), "k": m.group(1).lower(), "sz": m.group(2), "r": r, "a": a, "aa": aa}
+
+
+def exp_arm_smoke_add_known():
+    return {"a": arm_plan_smoke_numbers()[1]}
+
+
+def exp_arm_timeline_source():
+    t = J(ARM_TIMELINE)
+    m = re.search(r"\) on (\d{4})-(\d\d)-(\d\d)", t["what"])
+    assert m, "tests/data/s8_arm_timeline.json no longer says on which day the Actions API was read"
+    assert "not published" in t["plan_commit"]["source"], "the timeline no longer says that the plan's commit is read from a repository that is not published"
+    return {"d": f"{MONTHS[int(m.group(2)) - 1]} {int(m.group(3))}", "np": "not published"}
+
+
+def exp_arm_short_margin():
+    s, dc = arm_deciding()
+    return {"over": f4(dc["stored_hi"] - dc["limit"]), "n": str(dc["alt_draws"]), "lim": f2(dc["limit"]),
+            "k": str(dc["alt_at_or_above_limit"]), "m": str(s["derived"]["forms"]["map"])}
+
+
+def arm_deciding():
+    """The seed file and its deciding cell (the forward add at L2, aligned), checked against the pool."""
+    s = arm_seeds()
+    dc = s["deciding_cell"]
+    stored = arm_cell("k02_add_fwd.L2")["aligned"]["ci95"][1]
+    assert dc["cell_id"] == "k02_add_fwd.L2" and dc["column"] == "aligned", f"the seed file's deciding cell is {dc['cell_id']} {dc['column']}"
+    assert abs(dc["stored_hi"] - stored) < 1e-12 and abs(dc["limit"] - arm_forward_limit()) < 1e-12, "the seed file's deciding cell is not the pool's"
+    assert abs(dc["margin_over_limit"] - (stored - dc["limit"])) < 1e-12
+    assert dc["alt_draws"] == s["alt_seeds"]["count"] == s["derived"]["seeds"], "the seed counts of the seed file disagree"
+    assert s["derived"]["forms"]["inconclusive"] == dc["alt_at_or_above_limit"] == len(dc["seeds_at_or_above_limit"]), \
+        "the seeds that end at or above the limit and the seeds with an INCONCLUSIVE form are no longer the same number"
+    assert stored > dc["limit"] and dc["margin_over_limit"] < dc["alt_hi"]["max"] - dc["alt_hi"]["min"], "the margin is no longer smaller than the spread over the other seeds"
+    return s, dc
+
+
+def exp_arm_seed_origin():
+    s = arm_seeds()
+    prefix, resamples = pool_py_constants()
+    ss = s["stored_seed"]
+    assert ss["prefix"] == prefix and str(ss["resamples"]) == resamples and str(s["alt_seeds"]["resamples"]) == resamples, \
+        "the seed file and harness/pool.py disagree on the prefix or the number of resamples"
+    fixed = datetime.datetime.fromisoformat(ss["fixed_on"])
+    first = min(res["run"]["started_at"] for _, res, _ in arm_jobs())
+    days = (datetime.datetime.strptime(first[:10], "%Y-%m-%d").date() - fixed.date()).days
+    return {"res": resamples, "pre": prefix, "day": f"{MONTHS[fixed.month - 1]} {fixed.day}", "iso": ss["fixed_on"], "days": word(days)}
+
+
+def exp_arm_seed_distribution():
+    s, dc = arm_deciding()
+    alt = dc["alt_hi"]
+    assert dc["stored_rank_from_top"] == 1 and dc["stored_hi"] > alt["max"], "the stored upper end is no longer above those of all the other seeds"
+    conv = dc["converged"]
+    assert conv["above_limit"] is False and conv["hi"] < dc["limit"], "with many resamples the end is no longer below the limit"
+    assert str(s["alt_seeds"]["resamples"]) == pool_py_constants()[1], "the other seeds use another number of resamples than harness/pool.py"
+    return {"res2": str(s["alt_seeds"]["resamples"]), "n": str(dc["alt_draws"]), "med": f4(alt["median"]), "p05": f4(alt["p05"]), "p95": f4(alt["p95"]), "mn": f4(alt["min"]), "mx": f4(alt["max"]),
+            "k": str(dc["alt_at_or_above_limit"]), "n2": str(dc["alt_draws"]), "lim": f2(dc["limit"]), "st": f4(dc["stored_hi"]), "n3": str(dc["alt_draws"]),
+            "conv": thousands(conv["resamples"]), "ch": f4(conv["hi"])}
+
+
+def exp_arm_seed_whole():
+    s, dc = arm_deciding()
+    full, der = s["full"], s["derived"]
+    placement = sorted(p["cell_id"] for p in arm_cpu()["verdict"]["placement_sensitive"])
+    for part in (full, der):
+        assert not part["lost_missed_any"], "a seed lets a lost-loop cell miss its rule"
+        assert len(part["placement_sets"]) == 1 and sorted(part["placement_sets"][0]["cells"]) == placement, "the placement-sensitive set changes with the seed"
+    assert der["forward_missed_counts"] == {"k02_add_fwd.L2": der["forms"]["inconclusive"]}, f"the 8 INCONCLUSIVE seeds miss on {der['forward_missed_counts']}"
+    assert der["equals_analyse_cpu_on_first"] == full["count"], "the whole-analysis seeds are no longer the first of the derived ones"
+    assert der["positive_seen_in_all"], "a seed loses the positive control"
+    aa = next(r for r in s["rows"] if r["kind"] == "aa")["alt"]
+    assert aa["draws"] == der["seeds"]
+    return {"n": str(full["count"]), "map": str(full["forms"]["map"]), "inc": str(full["forms"]["inconclusive"]), "all": str(der["seeds"]),
+            "m2": str(der["forms"]["map"]), "i2": str(der["forms"]["inconclusive"]), "i3": str(der["forms"]["inconclusive"]), "four": word(len(placement)),
+            "alo": f4(aa["half_width_pct"]["min"]), "ahi": f4(aa["half_width_pct"]["max"])}
+
+
+def exp_arm_interval_methods():
+    m = arm_site()["interval_methods"]
+    by = {x["id"]: x for x in m["methods"]}
+    assert m["inconclusive_methods"] == ["a"] and sorted(m["map_methods"]) == sorted(set(by) - {"a"}), \
+        f"the methods that give INCONCLUSIVE: {m['inconclusive_methods']}, MAP: {m['map_methods']}"
+    assert m["self_test"]["exact"] == m["self_test"]["numbers_checked"] and m["self_test"]["forms_equal"], "the robustness self-test no longer reproduces the pool exactly"
+    for i, x in by.items():
+        assert x["deciding_cell"]["cell_id"] == "k02_add_fwd.L2" and x["deciding_cell"]["column"] == "aligned", f"method {i} reports another deciding cell"
+    hi = lambda i: by[i]["deciding_cell"]["ci95"][1]
+    assert abs(hi("a") - arm_cell("k02_add_fwd.L2")["aligned"]["ci95"][1]) < 1e-12, "method a is no longer the pool's own interval"
+    assert f3(hi("d")) == f3(hi("d0")), "the two lag-1 corrections no longer give the same end"
+    block = [hi(i) for i in ("b", "b2", "b5")]
+    return {"k": word(len(by)), "ex": str(m["self_test"]["exact"]), "b1": f3(min(block)), "b2": f3(max(block)), "c1": f3(hi("c")), "c2": f3(hi("ct")),
+            "d": f3(hi("d")), "a": f3(hi("a"))}
+
+
+def exp_arm_seed_l2aa():
+    n = arm_noise()
+    p = n["identical_binary_aa"]["L2"]["pooled"]
+    assert p["half_width_pct"] > rule_aa_ceiling(), "the L2 A/A is no longer above the rule's ceiling"
+    return {"aa": f2(p["half_width_pct"]), "c": f0(rule_aa_ceiling())}
+
+
+def exp_arm_seed_pool_check():
+    path = os.path.join(REPO, "harness", "pool_check.py")
+    with open(path, encoding="utf-8") as f:
+        src = f.read()
+    cells = re.search(r"^SAMPLE_CELLS = \((.*?)\)", src, re.M | re.S)
+    width, ratio = re.search(r"^BOUND_TOL_WIDTH = ([\d.]+)", src, re.M), re.search(r"^BOUND_TOL_RATIO = ([\d.]+)", src, re.M)
+    assert cells and width and ratio, "harness/pool_check.py no longer defines SAMPLE_CELLS, BOUND_TOL_WIDTH and BOUND_TOL_RATIO in the form this test reads"
+    assert "k02_add_fwd.L2" not in cells.group(1), "harness/pool_check.py now samples the cell that decides the Arm verdict"
+    x = arm_cell("k02_add_fwd.L2")["aligned"]
+    tol = float(width.group(1)) * (x["ci95"][1] - x["ci95"][0]) + float(ratio.group(1)) * x["ratio"]
+    margin = x["ci95"][1] - arm_forward_limit()
+    assert tol > margin > 0, "the check's tolerance is no longer larger than the margin"
+    return {"tol": f3(tol), "over": f4(margin)}
+
+
+def exp_arm_seed_summary():
+    x = arm_cell("k02_add_fwd.L2")["aligned"]
+    s, dc = arm_deciding()
+    return {"hw": f1(rel_hw(x)), "over": f4(dc["stored_hi"] - dc["limit"])}
+
+
+def exp_arm_l2_aa_control():
+    n = arm_noise()
+    p = n["identical_binary_aa"]["L2"]["pooled"]
+    assert "aa_extra" not in json.dumps(arm_cpu()), "pooled.json now holds the L2 A/A"
+    return {"r": f4(p["ratio"]), "hw": f2(p["half_width_pct"])}
+
+
+def exp_arm_noise_l2_aa():
+    n = arm_noise()
+    aa = n["identical_binary_aa"]
+    p, s = aa["L2"]["pooled"], n["same_cell_l2"]
+    cell = arm_cell("k02_add_fwd.L2")
+    assert abs(s["identical_binary_aa"]["half_width_pct"] - p["half_width_pct"]) < 1e-12
+    assert abs(s["as_compiled"]["half_width_pct"] - cell["as_compiled"]["half_width_pct"]) < 1e-12 and abs(s["aligned"]["half_width_pct"] - cell["aligned"]["half_width_pct"]) < 1e-12, \
+        "the half-widths of the add at L2 in the noise block are not the pool's"
+    assert abs(s["layout_aa"]["half_width_pct"] - arm_cpu()["layout_aa"]["k02_add_fwd.L2"]["half_width_pct"]) < 1e-12, "the layout A/A of the add at L2 is not the pool's"
+    lo, hi = aa["L2"]["job_ratio_range"]
+    return {"r": f4(p["ratio"]), "lo": f3(p["ci95"][0]), "hi": f3(p["ci95"][1]), "hw": f2(p["half_width_pct"]), "sd": f2(p["between_job_sd_pct"]),
+            "jlo": f3(lo), "jhi": f3(hi), "l1": f3(aa["L1"]["pooled"]["half_width_pct"]),
+            "h1": f2(s["as_compiled"]["half_width_pct"]), "h2": f2(s["aligned"]["half_width_pct"]), "h3": f2(s["layout_aa"]["half_width_pct"])}
+
+
+def exp_arm_noise_ceiling():
+    n, ceiling = arm_noise(), rule_aa_ceiling()
+    l1, l2 = n["identical_binary_aa"]["L1"], n["identical_binary_aa"]["L2"]
+    assert n["rule_aa_half_width_max_pct"] == ceiling, "the noise block and the criteria file disagree on the A/A ceiling"
+    assert l2["pooled"]["half_width_pct"] > ceiling >= l1["pooled"]["half_width_pct"] and l2["above_rule_max"] and not l1["above_rule_max"]
+    return {"ceil": f0(ceiling), "jobs": str(l2["jobs_above_rule_max"]), "of": str(l2["jobs"]), "l1": none_or_word(l1["jobs_above_rule_max"])}
+
+
+def exp_arm_noise_slow():
+    n = arm_noise()
+    bs, aa = n["mixture"]["by_size"], n["identical_binary_aa"]
+    a2, b2, a1, b1 = (aa[size]["mixture"][side] for size in ("L2", "L1") for side in ("a", "b"))
+    assert f0(a2["p_slow_after_ok"] * 100) == f0(b2["p_slow_after_ok"] * 100), "the chance of a slow process after an ordinary one differs between the two sides"
+    return {"th": f0(n["slow_share"] * 100), "n1": f1(bs["L1"]["none"]["share_slow"] * 100), "f1": f1(bs["L1"]["fast"]["share_slow"] * 100),
+            "n2": f1(bs["L2"]["none"]["share_slow"] * 100), "f2": f1(bs["L2"]["fast"]["share_slow"] * 100),
+            "mn": f0(bs["L2"]["none"]["cell_share_max"] * 100), "mf": f0(bs["L2"]["fast"]["cell_share_max"] * 100),
+            "cva": f1(a2["cv_pct"]["median"]), "cvb": f1(b2["cv_pct"]["median"]), "c1a": f2(a1["cv_pct"]["median"]), "c1b": f2(b1["cv_pct"]["median"]),
+            "s1": f0(a2["p_slow_after_slow"] * 100), "s2": f0(b2["p_slow_after_slow"] * 100), "o1": f0(a2["p_slow_after_ok"] * 100)}
+
+
+def exp_arm_noise_medians():
+    cells = {c["cell_id"]: c for c in arm_noise()["mixture"]["cells"]}
+    r, s, a = cells["k04_rev.L2"], cells["k05_stride2.L2"], cells["k02_add_fwd.L2"]
+    for c in (r, s):
+        assert c["fast"]["share_slow"] == 0 and c["none"]["share_slow"] > 0, f"{c['cell_id']}: the slow processes are no longer only on the NONE side"
+    p10 = lambda c: c["floor_ratio"]["as_compiled"]["p10_ratio"]
+    return {"r": f0(r["none"]["share_slow"] * 100), "s": f0(s["none"]["share_slow"] * 100), "p1": f2(p10(r)), "p2": f2(p10(s)),
+            "m1": f2(arm_ratio("k04_rev.L2")), "m2": f2(arm_ratio("k05_stride2.L2")), "fa": f3(p10(a)), "fm": f3(arm_ratio("k02_add_fwd.L2")),
+            "fw": f1(rel_hw(arm_cell("k02_add_fwd.L2")["as_compiled"]))}
+
+
+def exp_arm_layout_vs_d():
+    lvp = arm_site()["layout_vs_placement"]
+    st, s2, ga, mm = (arm_lvp_row(c) for c in ("k03_stencil.L1", "k05_stride2.L1", "k06_gather.L1", "k08_matmul.L1"))
+    assert lvp["d_excludes_1_layout_aa_includes_1"] == ["k03_stencil.L1", "k06_gather.L2"], f"cells where D excludes 1 and the layout A/A does not: {lvp['d_excludes_1_layout_aa_includes_1']}"
+    top = lvp["largest_d_shift_l1"]
+    assert top["cell_id"] == "k06_gather.L1" and abs(top["d_shift_pct"] - ga["d_shift_pct"]) < 1e-12, f"the largest D shift at L1 is {top['cell_id']}"
+    for cid in ("k03_stencil.L1", "k08_matmul.L1"):  # the pool itself holds D and the layout A/A for these
+        row = arm_lvp_row(cid)
+        assert abs(row["d"]["ratio"] - arm_cell(cid)["placement"]["d"]["ratio"]) < 1e-12 and abs(row["layout_aa"]["ratio"] - arm_cpu()["layout_aa"][cid]["ratio"]) < 1e-12
+    return {"ds": f3(st["d"]["ratio"]), "d2": f3(s2["d"]["ratio"]), "dg": f3(ga["d"]["ratio"]), "ls": f2(st["layout_aa_shift_pct"]),
+            "l2": f2(s2["layout_aa_shift_pct"]), "lg": f2(ga["layout_aa_shift_pct"]), "lm": f2(mm["layout_aa_shift_pct"]), "dm": f2(mm["d_shift_pct"]),
+            "mx": f1(top["d_shift_pct"])}
+
+
+def exp_arm_matmul_windows():
+    w = arm_matmul_windows()
+    la = arm_cpu()["layout_aa"]["k08_matmul.L1"]
+    assert la["ratio"] > 1, "the aligned NONE matrix multiply is no longer the slower one"
+    return {"off": str(w["none"][0]), "w": placement_window_bytes(), "n1": str(w["none"][1]), "n2": str(w["none_a64"][1]),
+            "pct": f1((la["ratio"] - 1) * 100), "r": f3(la["ratio"])}
+
+
+def exp_arm_limits_placement():
+    return {"st": f1(arm_lvp_row("k03_stencil.L1")["d_shift_pct"]), "ga": f1(arm_lvp_row("k06_gather.L1")["d_shift_pct"])}
+
+
+def exp_arm_limits_floor():
+    aa = arm_cpu()["aa"]["half_width_pct"]
+    cells = [(x, col) for x in arm_cpu()["cells"] for col in ARM_COLUMNS]
+    widest = {}
+    for size in ("L1", "L2"):
+        widest[size] = max((t for t in cells if t[0]["size_class"] == size), key=lambda t: rel_hw(t[0][t[1]]))
+    assert widest["L1"][0]["kernel"] == "k03_stencil" and widest["L2"][0]["kernel"] == "k05_stride2", \
+        f"the widest intervals are the {widest['L1'][0]['kernel']}'s at L1 and the {widest['L2'][0]['kernel']}'s at L2"
+    return {"aa": f3(aa), "w1": f2(rel_hw(widest["L1"][0][widest["L1"][1]])), "w2": f2(rel_hw(widest["L2"][0][widest["L2"][1]]))}
+
+
+def exp_arm_limits_aa_l2():
+    return {"aa": f1(arm_noise()["identical_binary_aa"]["L2"]["pooled"]["half_width_pct"])}
+
+
+def exp_arm_limits_identical_spread():
+    return {"sd": f3(arm_cpu()["aa"]["between_job_sd_pct"])}
+
+
+def exp_arm_normalize():
+    new = asm_normalize_digits()
+    d = next(k for k in arm_site()["stored_diffs"]["kernels"] if k["kernel"] == "k02_add_fwd")["L1"]
+    assert d["added"] != d["added_after_fix"] or d["removed"] != d["removed_after_fix"], "the stored diff of the add at L1 is no longer changed by the fix"
+    return {"new": word(new), "old": word(ASM_NORMALIZE_BEFORE), "dig": word(new), "a": str(d["added"]), "r": str(d["removed"]),
+            "a2": str(d["added_after_fix"]), "r2": str(d["removed_after_fix"])}
+
+
+def exp_arm_setup_x86_sizes():
+    l1, l2, d1, d2 = x86_7763_sizes()
+    return {"l1": str(l1 // 1024), "l2": str(l2 // 1024), "d1": str(d1), "d2": str(d2)}
+
+
+def exp_arm_setup_x86_d():
+    _, _, d1, d2 = x86_7763_sizes()
+    return {"d1": str(d1), "d2": str(d2)}
+
+
+def exp_arm_seeds_reproduce():
+    return {"n": str(arm_seeds()["alt_seeds"]["count"])}
+
+
+def exp_arm_readme_bullet():
+    s, r = exp_arm_short_reverse(), exp_arm_short_matmul()
+    f = exp_arm_short_forward()
+    v = exp_arm_short_verdict()
+    n = exp_arm_counts_digits()
+    m = exp_arm_short_margin()
+    exp_arm_placement()  # the add and the stencil at L1 are among the placement-sensitive cells, as the bullet says
+    return {"model": n["model"], "jobs": n["jobs"], "runs": n["runs"], "r": s["r1"], "s": s["s1"], "m1": r["m1"], "m2": r["m2"],
+            "lo": f["lo"], "hi": f["hi"], "aa": f["aa"], "end": v["hi"], "lim": v["lim"],
+            "over": m["over"], "k": m["k"], "n": m["n"], "lim2": m["lim"], "l2aa": f1(arm_noise()["identical_binary_aa"]["L2"]["pooled"]["half_width_pct"])}
+
+
+def exp_arm_readme_trust():
+    n = exp_arm_counts_digits()
+    return {"model": n["model"], "jobs": n["jobs"], "runs": n["runs"], "c": arm_toolchain()["clang"].split(".")[0]}
+
+
+def exp_arm_readme_folder():
+    return {"jobs": str(arm_counts()["jobs"])}
+
+
+def exp_x86_clang_major():
+    return {"c": timed_clang().split(".")[0]}
+
+
+def exp_details_arm_intro():
+    return {"n": str(arm_counts()["jobs"]), "m": str(pooled_jobs())}
+
+
+def exp_details_arm_runs():
+    n, t = exp_arm_counts_digits(), arm_toolchain()
+    return {"model": n["model"], "three": word(arm_counts()["runs"]), "jobs": n["jobs"], "clang": t["clang"], "lib": t["lib_major"]}
+
+
+def exp_details_arm_reverse():
+    s = exp_arm_short_reverse()
+    return {"r1": s["r1"], "s1": s["s1"], "r2": s["r2"], "s2": s["s2"], "a": s["rn"], "b": s["sn"]}
+
+
+def exp_details_arm_matmul():
+    o, t = exp_arm_matmul_observed(), exp_arm_matmul_time_vs_instr()
+    return {"m1": t["t1"], "m2": t["t2"], "i1": t["i1"], "i2": t["i2"], "fl": o["fl"], "nl": o["nl"], "nine": o["nine"]}
+
+
+def exp_details_arm_forward():
+    f, g, a = exp_arm_short_forward(), exp_arm_short_gather(), exp_arm_short_add()
+    return {"lo": f["lo"], "hi": f["hi"], "aa": f["aa"], "pct": a["pct"], "n": a["n"], "g": g["g"], "h": g["h"]}
+
+
+def exp_details_arm_seeds():
+    m = exp_arm_short_margin()
+    return {"n": m["n"], "lim": m["lim"], "k": m["k"], "m": m["m"], "aa": f1(arm_noise()["identical_binary_aa"]["L2"]["pooled"]["half_width_pct"])}
+
+
+def exp_details_arm_time_vs_instr():
+    o = exp_arm_matmul_time_vs_instr()
+    return {k: o[k] for k in ("t1", "t2", "i1", "i2", "l1", "l2")}
+
+
+def exp_details_arm_verdict():
+    v, a = exp_arm_add_l2(), exp_arm_run_to_run()
+    exp_arm_verdict_form()
+    return {"lo": v["lo"], "hi": v["hi"], "lim": v["lim"], "over": v["over"], "sd": v["sd"], "three": word(len(arm_cpu()["per_run"])),
+            "out": a["out"], "chk": a["chk"], "eight": str(len(arm_reproduction()[1])), "gap": a["gap"]}
+
+
+def exp_details_arm_sensitive():
+    exp_arm_placement()
+    return {}
+
+
+def exp_details_arm_limits():
+    c = arm_cpu()
+    w = arm_start_window()
+    exp_arm_runs()
+    t = arm_toolchain()
+    assert len({json.dumps(res["run"]["runner"], sort_keys=True) for _, res, _ in arm_jobs()}) == 1, "the Arm jobs ran on more than one machine image"
+    one_cell = c["verdict"]["why"].count("missed by k02_add_fwd.L2;") == 1
+    assert one_cell, f"the INCONCLUSIVE form no longer rests on the forward add at L2 alone: {c['verdict']['why']}"
+    return {"a": c["runs"][0], "b": c["runs"][1], "c": c["runs"][2], "n": str(c["jobs"]), "runs": str(len(c["runs"])),
+            "per": str(jobs_per_run()), "lim": str(job_limit_now()), "m": str(w["within"]), "sd": exp_arm_limits_spread()["s"],
+            "o1": word(1), "o2": word(1), "three": word(len(c["runs"])), "clang": t["clang"], "lib": t["lib_major"],
+            "w": placement_window_bytes(), "cell": word(1), **exp_arm_limits_placement(), "aa": exp_arm_limits_aa_l2()["aa"]}
+
+
+def exp_details_arm_links():
+    dirs = sorted(glob.glob(os.path.join(REPO, "results", "s8-arm-run-*")))
+    for rel, res, _ in arm_jobs():
+        run = re.search(r"s8-arm-run-(\d+)/", rel).group(1)
+        assert res["run"]["workflow_run_url"] == PUBLIC_RUN_PREFIX + run, f"{rel}: the record links to {res['run']['workflow_run_url']}"
+    return {"three": word(len(dirs))}
+
+
+def exp_details_arm_other_arch():
+    return {"c": arm_toolchain()["clang"], "model": arm_cpu()["cpu_model"]}
+
+
+def exp_details_arm_followup():
+    return {"k": str(len(ARM_KERNELS)), "model": arm_cpu()["cpu_model"], "n": str(arm_counts()["runs"])}
+
+
+def exp_details_arm_stage():
+    n = exp_arm_counts_digits()
+    return {"three": word(arm_counts()["runs"]), "disp": str(arm_counts()["runs"] * jobs_per_run()), "ret": n["jobs"],
+            "lim": str(job_limit_now()), "model": n["model"], "pool": n["jobs"], "runs": n["runs"]}
+
+
 # ---- the table -------------------------------------------------------------------------------
 # (label, source of the value, expected-value function, regex with one named group per typed value)
 
@@ -997,6 +2300,26 @@ ROWS = [
      r"clang 19 to 21 price each of the two checks at (?P<new>\d+) cost unit where clang 18 prices them at (?P<old>\d+)"),
     ("trust: the LLVM commit", "investigate/vectorizer/matmul/llvm-src/commit_b6a8f5486b.json and commit_in_tag.json",
      exp_commit_readme, r"LLVM commit `(?P<sha>[0-9a-f]{10})` caused it is inferred"),
+    ("found: the lost loops are measured with clang 18", "results/s4-run-*/ toolchain",
+     exp_x86_clang_major, r"reverse, stride-2, matrix multiply on x86-64 with clang (?P<c>\d+)\)"),
+    ("try it: the Arm runner label", ".github/workflows/measure.yml runner input", exp_readme_runner_label,
+     r"add `-f runner=(?P<label>ubuntu-[\d.]+-arm)` for the Arm column"),
+    ("found: Arm column", "results/s8-arm-pooled/pooled.json cells, aa and verdict; per-job listings of results/s8-arm-run-*/; arm64/seed-sensitivity.json; site/data/arm64.json noise",
+     exp_arm_readme_bullet,
+     r"Arm \(a separate column; the figures above are x86-64\): on one Arm core type \((?P<model>[\w-]+), (?P<jobs>\d+) jobs in (?P<runs>\d+) runs, "
+     r"the same compiler, flags and rules\) reverse and stride-2 lose their NEON loops and cost (?P<r>[\d.]+)x and (?P<s>[\d.]+)x at L1 "
+     r"\(all ratios here as compiled\); matrix multiply keeps its NEON loop and still costs (?P<m1>[\d.]+)x at L1 \((?P<m2>[\d.]+)x at L2\); "
+     r"forward loops cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1 \(the add and the stencil are placement-sensitive and not judged\), "
+     r"against an A/A floor of (?P<aa>[\d.]+)% that belongs to one L1 cell\. "
+     r"The verdict is INCONCLUSIVE under the written rules, which stay as written: the forward add at L2, aligned, has an interval ending at (?P<end>[\d.]+), "
+     r"over the (?P<lim>[\d.]+) limit by (?P<over>[\d.]+), a margin inside the bootstrap's own seed noise \((?P<k>\d+) of (?P<n>\d+) other seeds end at or above (?P<lim2>[\d.]+)\) "
+     r"in a cell where an identical binary is as noisy \(A/A half-width (?P<l2aa>[\d.]+)%\), so the data cannot separate INCONCLUSIVE from MAP there\."),
+    ("trust: mostly x86-64", "results/s8-arm-pooled/pooled.json; per-job toolchain",
+     exp_arm_readme_trust,
+     r"\*\*Mostly x86-64\.\*\* Every figure outside the Arm bullet is x86-64 \(AMD and Intel\)\. The Arm column is one core type \((?P<model>[\w-]+)\) "
+     r"on shared machines, (?P<jobs>\d+) jobs in (?P<runs>\d+) runs, clang (?P<c>\d+) only; its verdict is INCONCLUSIVE"),
+    ("folders: the Arm runs", "results/s8-arm-pooled/pooled.json jobs",
+     exp_arm_readme_folder, r"the Arm column is the (?P<jobs>\d+) jobs of `s8-arm-run-\*`, pooled apart in `s8-arm-pooled`"),
 ]
 
 # ---- the same for readme-parts/DETAILS.md ------------------------------------------------------------
@@ -1576,6 +2899,81 @@ DETAILS_ROWS = [
     ("details: the LLVM commit and the tags", "investigate/vectorizer/matmul/llvm-src/commit_b6a8f5486b.json and commit_in_tag.json",
      exp_details_commit,
      r"LLVM commit `(?P<sha>[0-9a-f]{10})` .*? is in `llvmorg-(?P<in>[\d.]+)` and not in `llvmorg-(?P<n1>[\d.]+)`, `(?P<n2>[\d.]+)` or `(?P<n3>[\d.]+)`"),
+    ("details: the matrix multiply that is lost is the x86-64 one", "results/s4-run-*/ toolchain",
+     exp_x86_clang_major, r"\(under clang (?P<c>\d+) on x86-64\) matrix multiply"),
+    ("details: the runner labels", ".github/workflows/measure.yml runner input; results/s8-arm-pooled/pooled.json cpu_model", exp_details_runners,
+     r"`measure\.yml` takes one `runner` label per run, `(?P<x>ubuntu-[\d.]+)` \(x86-64, the default\) or `(?P<a>ubuntu-[\d.]+-arm)` \(AArch64, (?P<model>[\w-]+)\)"),
+    ("details: the trap instructions", "per-job listings of results/s8-arm-run-*/", exp_arm_trap_form,
+     r"\(`ud2` on x86-64, `(?P<t>brk #0x1)` on AArch64\)"),
+    ("details: the Arm jobs beside the 95", "results/s8-arm-pooled/pooled.json jobs; results/s7-pooled/pooled.json jobs",
+     exp_details_arm_intro,
+     r"A further (?P<n>\d+) jobs on GitHub's arm64 runner \(one core type\) are pooled apart from these (?P<m>\d+) and reported in their own column below"),
+    ("details: Arm, runs and toolchain", "results/s8-arm-pooled/pooled.json; per-job toolchain in results/s8-arm-run-*/",
+     exp_details_arm_runs,
+     r"\*\*Arm \((?P<model>[\w-]+)\), a separate column\*\* \(\[arm64/README\.md\]\(\.\./arm64/README\.md\); `results/s8-arm-run-\*/`, "
+     r"pooled in `results/s8-arm-pooled/pooled\.json`\)\. (?P<three>\w+) full runs of `measure\.yml` on GitHub's `ubuntu-24\.04-arm` runner, "
+     r"(?P<jobs>\d+) jobs on one core type, with the same clang (?P<clang>[\d.]+) and libc\+\+ (?P<lib>\d+), flags, harness and rules"),
+    ("details: Arm, reverse and stride-2", "results/s8-arm-pooled/pooled.json cells; per-job listings",
+     exp_details_arm_reverse,
+     r"In cache, as compiled: reverse (?P<r1>[\d.]+)x and stride-2 (?P<s1>[\d.]+)x at L1 \((?P<r2>[\d.]+)x and (?P<s2>[\d.]+)x at L2\)\. "
+     r"Both lose their NEON loops under FAST \((?P<a>\d+) and (?P<b>\d+) NEON instructions with the checks off, none with them on\)"),
+    ("details: Arm, matrix multiply", "results/s8-arm-pooled/pooled.json cells; per-job listings",
+     exp_details_arm_matmul,
+     r"and still costs (?P<m1>[\d.]+)x at L1 and (?P<m2>[\d.]+)x at L2 \(Cachegrind counts (?P<i1>[\d.]+)x and (?P<i2>[\d.]+)x the instructions\): "
+     r"the FAST listing has (?P<fl>\d+) lines against (?P<nl>\d+), and the extra lines lie outside the NEON loop, "
+     r"which is the same (?P<nine>\w+) instructions in both builds"),
+    ("details: Arm, matrix multiply, time against instructions", "results/s8-arm-pooled/pooled.json cells (time ratio and Cachegrind instruction ratio, as compiled)",
+     exp_details_arm_time_vs_instr,
+     r"the time ratio falls from (?P<t1>[\d.]+)x to (?P<t2>[\d.]+)x while the instruction ratio falls from (?P<i1>[\d.]+)x to (?P<i2>[\d.]+)x, "
+     r"so in log terms the time ratio is (?P<l1>[\d.]+) of the instruction ratio at L1 and (?P<l2>[\d.]+) at L2"),
+    ("details: Arm, forward loops, gather and histogram", "results/s8-arm-pooled/pooled.json cells and aa; site/data/arm64.json forward_instr; noise",
+     exp_details_arm_forward,
+     r"Forward loops keep their NEON loops and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1, against a pooled A/A half-width of (?P<aa>[\d.]+)% "
+     r"\(that of one L1 cell, the add's; the add's (?P<pct>[\d.]+)% is (?P<n>\d+) extra instructions in each call, the same at L2, "
+     r"and the add and the stencil at L1 are placement-sensitive and not judged\); "
+     r"gather and histogram, never vectorized, pay (?P<g>[\d.]+)x and (?P<h>[\d.]+)x at L1"),
+    ("details: Arm, the margin against the bootstrap's seeds", "arm64/seed-sensitivity.json; site/data/arm64.json noise (L2 A/A)",
+     exp_details_arm_seeds,
+     r"re-drawn under (?P<n>\d+) other seeds \(`arm64/seed-sensitivity\.json`, a sensitivity reading beside the stored verdict, which is unchanged\) "
+     r"the interval ends at or above (?P<lim>[\d.]+) in (?P<k>\d+) and the whole verdict is MAP in (?P<m>\d+), "
+     r"and an identical binary timed against itself at that L2 cell has a half-width of (?P<aa>[\d.]+)%"),
+    ("details: Arm, the verdict", "results/s8-arm-pooled/pooled.json verdict, per_run, reproduction",
+     exp_details_arm_verdict,
+     r"the forward add at L2, aligned, has an interval of (?P<lo>[\d.]+) to (?P<hi>[\d.]+), over the (?P<lim>[\d.]+) limit by (?P<over>[\d.]+), "
+     r"in a cell whose spread between jobs is (?P<sd>[\d.]+)%\. Each of the (?P<three>\w+) runs alone is INCONCLUSIVE too, and (?P<out>\d+) of (?P<chk>\d+) "
+     r"comparisons of one run's point against another run's interval fall outside \((?P<eight>\d+) of them stride-2 at L2; largest gap (?P<gap>[\d.]+)%\)"),
+    ("details: Arm, the compile-only sweep said so", "site/data/cesweep.json aarch64 rows; results/s8-arm-pooled/pooled.json classes",
+     exp_arm_cesweep_only,
+     r"as the compile-only sweep said it would on AArch64"),
+    ("details: Arm, the placement-sensitive cells", "results/s8-arm-pooled/pooled.json verdict.placement_sensitive",
+     exp_details_arm_sensitive,
+     r"Matrix multiply at both sizes and the add and the stencil at L1 are placement-sensitive under the written rule and not judged"),
+    ("details: Arm, links to the runs", "results/s8-arm-run-*/*/results.json run.workflow_run_url",
+     exp_details_arm_links,
+     r"The (?P<three>\w+) records in `results/s8-arm-run-\*/` \(the Arm runs\) link to public runs of this repository"),
+    ("details: Arm, the one other architecture", "results/s8-arm-run-*/*/results.json toolchain; results/s8-arm-pooled/pooled.json",
+     exp_details_arm_other_arch,
+     r"The Arm column \(above\) is the one other architecture, and only with clang (?P<c>[\d.]+) on one core type \((?P<model>[\w-]+)\)"),
+    ("details: Arm, limits", "results/s8-arm-pooled/pooled.json; results/s8-arm-run-*/ start times; .github/workflows/measure.yml",
+     exp_details_arm_limits,
+     r"\*\*The Arm column's own limits \(`arm64/`, runs (?P<a>\d+), (?P<b>\d+) and (?P<c>\d+)\)\.\*\* All (?P<n>\d+) jobs dispatched returned results "
+     r"\((?P<runs>\d+) runs of (?P<per>\d+), job limit (?P<lim>\d+) minutes\) and none was dropped, .*?"
+     r"but they came from (?P<o1>\w+) core type in (?P<o2>\w+) runner image, drawn without choice, and the (?P<three>\w+) runs were launched together "
+     r"\(every job started within (?P<m>\d+) minutes of the others\), .*? It is clang (?P<clang>[\d.]+) with libc\+\+ (?P<lib>\d+) only, .*? "
+     r"The placement fields \((?P<w>\d+)-byte windows\) were defined for x86 fetch windows, and the layout A/A \(which moves only the unchecked build's loops\) "
+     r"did not see the placement shifts of the FAST/NONE ratio that the compiled-over-aligned ratio showed "
+     r"\((?P<st>[\d.]+)% for the stencil and (?P<ga>[\d.]+)% for gather at L1\)\. "
+     r"The L2 forward cells are noisy \(spread between jobs up to (?P<sd>[\d.]+)% for the add\), an identical binary is as noisy at the add's L2 cell "
+     r"\(A/A half-width (?P<aa>[\d.]+)%\), and the INCONCLUSIVE form rests on (?P<cell>\w+) of them"),
+    ("details: the follow-up list, arm64", "results/s8-arm-pooled/pooled.json",
+     exp_details_arm_followup,
+     r"`arm64/`: the same (?P<k>\d+) kernels timed on GitHub's arm64 runner \((?P<model>[\w-]+)\), (?P<n>\d+) full runs pooled apart"),
+    ("details: stage S8", "results/s8-arm-run-*/; results/s8-arm-pooled/pooled.json; .github/workflows/measure.yml",
+     exp_details_arm_stage,
+     r"\| S8 \| The Arm column: (?P<three>\w+) further full runs of `measure\.yml` with `runner=ubuntu-24\.04-arm`, (?P<disp>\d+) jobs dispatched, "
+     r"(?P<ret>\d+) returned results \(job limit (?P<lim>\d+) minutes\), all on (?P<model>[\w-]+); `harness/criteria-v3\.json` unchanged; "
+     r"pooled apart from the x86-64 jobs into the (?P<pool>\d+)-job Arm pool, whose form is INCONCLUSIVE under the written rules; "
+     r"its plan was written before the full results \| `arm64/`, `results/s8-arm-run-\*/` \((?P<runs>\d+) runs\)"),
 ]
 
 # ---- the same for siblings/README.md ------------------------------------------------------------------
@@ -1591,6 +2989,300 @@ SIBLINGS_ROWS = [
     ("siblings: the Intel forward add in the main pool", "results/s7-pooled/pooled.json Xeon k02_add_fwd.L1 aligned per_job", exp_siblings_intel,
      r"the main (?P<pool>\d+)-job pool has since drawn it and the 8573C, (?P<j>\d+) jobs each, with the same forward add at "
      r"(?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x and (?P<blo>[\d.]+)x to (?P<bhi>[\d.]+)x aligned"),
+    ("siblings: the main setup", "results/s4-run-*/, s6-run-*/ and s7-run-*/ toolchain", exp_siblings_setup,
+     r"Ubuntu clang (?P<c>[\d.]+), libc\+\+ (?P<l>\d+) in FAST mode"),
+    ("siblings: the Arm column's compiler", "results/s8-arm-run-*/*/results.json toolchain; results/s8-arm-pooled/pooled.json", exp_siblings_arm,
+     r"the main kernels were timed on one Arm core type, (?P<model>[\w-]+), with clang (?P<c>\d+) only, in `arm64/`"),
+]
+
+# ---- the same for ce-sweep/README.md ------------------------------------------------------------------
+
+CESWEEP_ROWS = [
+    ("ce-sweep: what the timed builds cover", "results/s4-run-*/ and results/s8-arm-run-*/ toolchain; site/data/cesweep.json aarch64 rows",
+     exp_cesweep_arm,
+     # the sentence wraps over several lines in the file: every space of the anchor matches any run of white space
+     (r"measured only for clang (?P<c>\d+) \(and the `siblings/` and `versions/` toolchains, all on x86-64\) in the main study, and for the Ubuntu "
+      r"clang (?P<t>[\d.]+) build on one Arm core type, (?P<model>[\w-]+), in `arm64/`\. There the timed builds agree with this sweep's "
+      r"AArch64 rows for clang (?P<v>[\d.]+): reverse and stride-2 are lost and matrix multiply is kept").replace(" ", r"\s+")),
+]
+
+# ---- the same for arm64/README.md ----------------------------------------------------------------------
+
+ARM64_ROWS = [
+    ("arm64: title", "arm kernels in results/s8-arm-pooled/pooled.json", exp_arm_title,
+     r"# Arm column: the same (?P<k>\w+) loops on an AArch64 runner"),
+    ("arm64: status date", "results/s8-arm-run-*/*/results.json run.started_at", exp_arm_status_date,
+     r"Status: work in progress \((?P<m>[A-Z][a-z]{2}) (?P<y>\d{4})\)"),
+    ("arm64: status line", "results/s8-arm-pooled/pooled.json jobs", exp_arm_pooled_over,
+     r"One core type, one compiler and (?P<n>\d+) jobs make this a first reading"),
+    ("arm64: question, the x86-64 range", "site/data/index.json page.lost", exp_lost_range,
+     r"pay (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x in cache, and that forward loops pay little on the AMD models"),
+    ("arm64: short answer, runs and machine", "results/s8-arm-pooled/pooled.json", exp_arm_counts_digits,
+     r"`ubuntu-24\.04-arm` runner, (?P<jobs>\d+) jobs in (?P<runs>\d+) runs, every job on a (?P<model>[\w-]+) core"),
+    ("arm64: short answer, reverse and stride-2", "results/s8-arm-pooled/pooled.json cells; per-job listings", exp_arm_short_reverse,
+     r"\*\*Reverse and stride-2 lose their NEON loops under FAST and pay\.\*\* (?P<r1>[\d.]+)x and (?P<s1>[\d.]+)x at L1, "
+     r"(?P<r2>[\d.]+)x and (?P<s2>[\d.]+)x at L2 \(as compiled\)\. Their functions go from (?P<rn>\d+) and (?P<sn>\d+) NEON instructions to none.*?"
+     r"the remark the x86-64 builds print for the same (?P<two>\w+) loops"),
+    ("arm64: short answer, matrix multiply", "results/s8-arm-pooled/pooled.json cells; site/data/versions.json and index.json for the x86-64 range",
+     exp_arm_short_matmul,
+     r"said it would be on AArch64 for clang (?P<ca>\d+)\. FAST costs (?P<m1>[\d.]+)x at L1 and (?P<m2>[\d.]+)x at L2\. "
+     r"On x86-64 the same loop is lost under clang (?P<cx>\d+) and costs (?P<xlo>[\d.]+)x to (?P<xhi>[\d.]+)x\."),
+    ("arm64: short answer, forward loops", "results/s8-arm-pooled/pooled.json cells and aa", exp_arm_short_forward,
+     r"\*\*Forward loops keep NEON and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1\*\* \(as compiled\), against a pooled A/A floor of (?P<aa>[\d.]+)%"),
+    ("arm64: short answer, the forward add", "results/s8-arm-pooled/pooled.json cells; site/data/arm64.json forward_instr and noise (L2 A/A)", exp_arm_short_add,
+     r"the add's (?P<pct>[\d.]+)% is (?P<n>\d+) extra instructions in each call, a count that is the same at L2\. "
+     r"At L2 the forward cells are noisy, and so is an identical binary timed against itself there \(A/A half-width (?P<aa>[\d.]+)%\)"),
+    ("arm64: short answer, gather and histogram", "results/s8-arm-pooled/pooled.json cells", exp_arm_short_gather,
+     r"pay for the check itself: (?P<g>[\d.]+)x and (?P<h>[\d.]+)x at L1\."),
+    ("arm64: short answer, the verdict", "results/s8-arm-pooled/pooled.json verdict and cells", exp_arm_short_verdict,
+     r"One forward cell misses the rule: the forward add at L2, aligned, has an interval that ends at (?P<hi>[\d.]+), against a limit of (?P<lim>[\d.]+)\."),
+    ("arm64: short answer, the margin", "arm64/seed-sensitivity.json deciding_cell and derived; results/s8-arm-pooled/pooled.json", exp_arm_short_margin,
+     r"The margin, (?P<over>[\d.]+), is inside the bootstrap's own seed noise: the same data under (?P<n>\d+) other seeds gives an end at or above (?P<lim>[\d.]+) "
+     r"in (?P<k>\d+), and a whole verdict of MAP in (?P<m>\d+)\."),
+    ("arm64: setup, the machine", "results/s8-arm-run-*/*/results.json run.runner; details.json lscpu; per-job listings", exp_arm_runner,
+     r"`lscpu` reports `[\w-]+`, (?P<cpus>\d+) vCPUs with one thread each, (?P<l1>\d+) KiB of L1d and (?P<l2>\d+) KiB of L2 per core "
+     r"and a (?P<l3>\d+) KiB L3; (?P<os>Ubuntu [\d.]+ LTS), kernel (?P<kernel>[\w.-]+)\."),
+    ("arm64: setup, the toolchain", "results/s8-arm-run-*/*/results.json run.toolchain and flags; details.json build commands", exp_arm_toolchain,
+     r"Ubuntu clang version (?P<clang>[\d.]+ \(1ubuntu1\)) and libc\+\+-(?P<lm>\d+)-dev (?P<lib>[\d:.]+-1ubuntu1) from apt, `(?P<common>[^`]+)`; "
+     r".*?the aligned pair \(`(?P<align>[^`]+)`\)"),
+    ("arm64: setup, loops and sizes", "results/s8-arm-run-*/*/details.json size_targets_bytes, cache_bytes, cells", exp_arm_sizes,
+     r"The same (?P<k>\w+) kernels \(`kernels/`\)\. Working sets of (?P<l1>\d+) KiB \(L1\) and (?P<l2>\d+) KiB \(L2\), half of the per-core caches; "
+     r"matrix multiply uses d = (?P<d1>\d+) and d = (?P<d2>\d+)\. There are no RAM cells"),
+    ("arm64: setup, the sizes beside the x86-64 ones", "results/s7-run-*/results-amd-epyc-7763-*/details.json size_targets_bytes and cells", exp_arm_setup_x86_sizes,
+     r"On EPYC 7763 the same rule gives working sets of (?P<l1>\d+) KiB and (?P<l2>\d+) KiB and d = (?P<d1>\d+) and d = (?P<d2>\d+), "
+     r"so an \"L1\" or \"L2\" cell here and one in the x86-64 column share the name of a cache level"),
+    ("arm64: setup, repetitions", "results/s8-arm-run-*/*/details.json reps_per_side", exp_arm_timing,
+     r"\*\*Timing\.\*\* (?P<reps>\d+) repetitions per side in ABBA order, pinned to (?P<one>\w+) vCPU"),
+    ("arm64: the aligned flag", "results/s8-arm-run-*/*/results.json run.flags.align", exp_arm_align_flag,
+     r"the aligned build \(`(?P<a>-falign-loops=\d+)`\) in parentheses.*?\(NONE against NONE built with `(?P<b>-falign-loops=\d+)`\)"),
+    ("arm64: setup, the runs", "results/s8-arm-pooled/pooled.json runs and inputs; results/s8-arm-run-*/*/results.json run.started_at; .github/workflows/measure.yml",
+     exp_arm_runs,
+     r"(?P<three>\w+) runs of `measure\.yml` with `runner=ubuntu-24\.04-arm` \((?P<a>\d+), (?P<b>\d+) and (?P<c>\d+)\), (?P<per>\d+) jobs each, "
+     r"dispatched together\. All (?P<n>\d+) jobs returned results and all (?P<n2>\d+) are pooled; none was dropped\. "
+     r"The harness started between (?P<t1>[\d:]+) and (?P<t2>[\d:]+) UTC on (?P<day>Oct \d+)\. All (?P<n3>\d+) are the same CPU model"),
+    ("arm64: setup, one entry in the pool", "results/s8-arm-pooled/pooled.json cpus", exp_arm_pool_entries,
+     r"so the pool \(`results/s8-arm-pooled/pooled\.json`\) has (?P<one>\w+) entry"),
+    ("arm64: setup, the runner label in the three places it appears", ".github/workflows/measure.yml runner input", exp_arm_labels,
+     r"\*\*Runner\.\*\* `(?P<a>ubuntu-[\d.]+-arm)` \(GitHub-hosted\)\..*?The `(?P<b>ubuntu-[\d.]+-arm)` label could map to other core types later.*?"
+     r"gh workflow run measure\.yml -f runner=(?P<c>ubuntu-[\d.]+-arm)"),
+    ("arm64: setup, the trap instruction", "harness/asm.py; per-job listings", exp_arm_trap_form,
+     r"`(?P<t>brk #0x1)` is a trap"),
+    ("arm64: setup, the fetch window", "harness/placement.py", exp_arm_window,
+     r"The (?P<w1>\d+)-byte-window placement fields .*? whether (?P<w2>\d+) bytes is the right unit on this core was not examined.*?"
+     r"against (?P<w3>\d+)-byte windows\. .*?\*\*Placement fields were defined for x86 fetch windows\*\* \((?P<w4>\d+)-byte windows\)"),
+    ("arm64: setup, the change to normalize()", "harness/asm.py normalize(); site/data/arm64.json stored_diffs", exp_arm_normalize,
+     r"`normalize\(\)` in `harness/asm\.py` was changed to strip branch targets of (?P<new>\w+) or more hex digits \(it stripped (?P<old>\w+) or more, "
+     r"which left AArch64's (?P<dig>\w+)-digit targets in the diffs\).*?"
+     r"\(for the forward add at L1: (?P<a>\d+) added and (?P<r>\d+) removed lines as stored, (?P<a2>\d+) and (?P<r2>\d+) after the change\)"),
+    ("arm64: setup, the rules", "harness/criteria-v3.json v3.pooling.minimum_jobs", exp_arm_min_jobs,
+     r"and at least (?P<min>\d+) jobs for a verdict"),
+    ("arm64: the level of the intervals", "harness/criteria-v3.json; results/s8-arm-pooled/pooled.json ci95", exp_arm_interval_level,
+     r"The (?P<p>\d+)% intervals \(a bootstrap over jobs and repetitions\)"),
+    ("arm64: Google's average, forward loops", "site/data/index.json claim.google_pct", exp_google_pct,
+     r"neither confirm nor contradict Google's (?P<v>[\d.]+)%"),
+    ("arm64: Google's average, limits", "site/data/index.json claim.google_pct", exp_google_pct,
+     r"\*\*Nothing about Google's services\*\* or its (?P<v>[\d.]+)% average"),
+    ("arm64: the forward rule, at L2", "results/s8-arm-pooled/pooled.json verdict.forward_limit_pct", exp_arm_forward_rule_percent,
+     r"too noisy on this core for the (?P<p>\d+)% forward rule to settle"),
+    ("arm64: stable across the runs", "results/s8-arm-pooled/pooled.json per_run", exp_arm_stable_runs,
+     r"The form is stable across the (?P<three>\w+) runs in the sense that each is INCONCLUSIVE"),
+    ("arm64: pooled over", "results/s8-arm-pooled/pooled.json jobs", exp_arm_pooled_over,
+     r"Pooled over the (?P<n>\d+) jobs\."),
+] + [
+    (f"arm64: table row, {label}", "results/s8-arm-pooled/pooled.json cells; per-job listings", exp_arm_table_row(kernel), arm_table_pattern(label))
+    for kernel, label in ARM_KERNELS.items()
+] + [
+    ("arm64: table notes, widest intervals and spreads", "results/s8-arm-pooled/pooled.json cells ci95 and between_job_sd_pct", exp_arm_intervals,
+     r"The widest at L1 is (?P<w1>[\d.]+)% either side of its ratio \((?:the )?(?P<c1>[a-z0-9 -]+, (?:aligned|as compiled))\) and the widest at L2 is "
+     r"(?P<w2>[\d.]+)% \((?:the )?(?P<c2>[a-z0-9 -]+, (?:aligned|as compiled))\)\. The spread between jobs \(the standard deviation of the log ratio\) "
+     r"is largest at (?P<s1>[\d.]+)% at L1 \((?:the )?(?P<d1>[a-z0-9 -]+, (?:aligned|as compiled))\) and (?P<s2>[\d.]+)% at L2 "
+     r"\((?:the )?(?P<d2>[a-z0-9 -]+, (?:aligned|as compiled))\)"),
+    ("arm64: reverse and stride-2, remarks, instructions and the no-vectorize build", "results/s8-arm-pooled/pooled.json cells and positive; details.json remarks; per-job listings",
+     exp_arm_rev_stride2_prose,
+     r"vectorize both loops \(width (?P<w>\d+), interleaved count (?P<i>\d+)\)\. .*?the functions contain no NEON instruction and (?P<trap>\w+) `brk #0x1` each, .*?"
+     r"Cachegrind counts (?P<ir>[\d.]+)x and (?P<is>[\d.]+)x the instructions at L1 \(instructions, not time\)\. "
+     r"The no-vectorize build over NONE, at L1, costs (?P<nr>[\d.]+)x for reverse and (?P<ns>[\d.]+)x for stride-2, "
+     r"so the checked scalar loops cost more than plain scalar loops do: (?P<r>[\d.]+)x against (?P<nr2>[\d.]+)x, and (?P<s>[\d.]+)x against (?P<ns2>[\d.]+)x\."),
+    ("arm64: the sweep's AArch64 rows", "site/data/cesweep.json rows (clang 18.1.0, aarch64, -O2); results/s8-arm-pooled/pooled.json classes", exp_arm_cesweep,
+     r"Compiler Explorer's clang (?P<v>[\d.]+) for AArch64\)"),
+    ("arm64: matrix multiply, observed: the NEON loop and the line counts", "results/s8-arm-run-*/*/asm/k08_matmul.*.s; details.json loops", exp_arm_matmul_observed,
+     r"\*\*Observed\.\*\* Both builds contain the same NEON loop: (?P<nine>\w+) instructions, the same opcodes, with (?P<two>\w+) `mla v\.4s` in it\. "
+     r"The FAST listing has (?P<fl>\d+) lines against (?P<nl>\d+) \(function header included\), so its (?P<extra>\d+) extra lines lie outside that loop\."),
+    ("arm64: matrix multiply, observed: selects and branches to the trap", "results/s8-arm-run-*/*/asm/k08_matmul.*.s; details.json loops", exp_arm_matmul_listing,
+     r"The FAST listing has (?P<csel>\d+) `csel` instructions; the NONE listing has no `csel`, but (?P<cset>\w+) `cset` and (?P<csinc>\w+) `csinc`\. "
+     r"(?P<three>\w+) conditional branches in the function lead to its single `brk #0x1` \(their targets are in the saved listing, for example "
+     r"`(?P<path>results/[^`]+)`; the `\.diff` files normalise targets away\); none is inside the NEON loop, "
+     r"and (?P<two>\w+) are inside the scalar remainder loop, so that loop runs (?P<two2>\w+) checks for every element it handles\."),
+    ("arm64: matrix multiply, observed: time against instructions", "results/s8-arm-pooled/pooled.json cells (time ratio, Cachegrind instruction ratio)", exp_arm_matmul_time_vs_instr,
+     r"Cachegrind counts (?P<i1>[\d.]+)x the instructions at L1 and (?P<i2>[\d.]+)x at L2 \(instructions, not time\), "
+     r"and the time ratio is (?P<t1>[\d.]+)x at L1 and (?P<t2>[\d.]+)x at L2\. "
+     r"In log terms the time ratio is (?P<l1>[\d.]+) of the instruction ratio at L1 and (?P<l2>[\d.]+) at L2: "
+     r"at L2 a rise of (?P<rise>\d+)% in instructions comes with a rise of (?P<tr>[\d.]+)% in time\."),
+    ("arm64: matrix multiply, inferred: the arithmetic", "results/s8-arm-pooled/pooled.json cells; site/data/arm64.json matmul_cost; harness remarks (width and interleave)", exp_arm_matmul_inferred,
+     r"At d = (?P<d1>\d+) each inner call runs the NEON loop (?P<p1>\d+) times \((?P<e>\d+) elements per pass\) and the scalar loop for (?P<r1>\d+) elements; "
+     r"at d = (?P<d2>\d+) it runs the NEON loop (?P<p2>\d+) times and the scalar loop for (?P<r2>\d+) element, .*?"
+     r"the instruction ratio, which falls from (?P<i1>[\d.]+)x to (?P<i2>[\d.]+)x\."),
+    ("arm64: matrix multiply, the check not run", "results/s8-arm-run-*/*/details.json cache_bytes; results/s8-arm-pooled/pooled.json cells", exp_arm_matmul_d_sweep,
+     r"with d mod (?P<per>\d+) = (?P<rem>\d+) inside L1d \(d = (?P<inside>[\d, ]+?); three d x d int32 matrices fit in the (?P<kib>\d+) KiB of L1d up to d = (?P<max>\d+)\) "
+     r"and beyond it \(d = (?P<beyond>[\d, ]+?)\), and at d mod (?P<per2>\d+) = 0 \(d = (?P<zero>[\d, ]+?), where no element is left for the scalar loop\)"),
+    ("arm64: matrix multiply beside the x86-64 versions run", "site/data/versions.json summary.matmul_main", exp_arm_vs_x86_matmul,
+     r"on x86-64 with clang and libc\+\+ (?P<a>\d+) to (?P<b>\d+), which also keep matrix multiply vectorized, the cost is (?P<l1>[\d.]+)x at L1 "
+     r"and (?P<l2>[\d.]+)x at L2 on EPYC 7763"),
+    ("arm64: matrix multiply beside the x86-64 versions run, sizes", "results/s7-run-*/results-amd-epyc-7763-*/details.json cells", exp_arm_setup_x86_d,
+     r"other cache and matrix sizes \(d = (?P<d1>\d+) and d = (?P<d2>\d+) on EPYC 7763\)"),
+    ("arm64: gather and histogram", "results/s8-arm-pooled/pooled.json cells", exp_arm_gather_hist,
+     r"gather (?P<g>[\d.]+)x \(aligned (?P<ga>[\d.]+)x\) and histogram (?P<h>[\d.]+)x at L1, (?P<g2>[\d.]+)x and (?P<h2>[\d.]+)x at L2\. "
+     r"Their instruction counts rise (?P<gi>[\d.]+)x and (?P<hi>[\d.]+)x\."),
+    ("arm64: the A/A floor", "results/s8-arm-pooled/pooled.json aa; results/s8-arm-run-*/*/results.json controls.aa; arm64/PLAN.md", exp_arm_aa_floor,
+     r"if the A/A half-width is below (?P<plan>[\d.]+)%, the forward loops would be reported against it as a description\. "
+     r"The pooled A/A half-width is (?P<aa>[\d.]+)% \(per job, (?P<j1>[\d.]+)% to (?P<j2>[\d.]+)%\)"),
+    ("arm64: forward loops at L1, in percent", "results/s8-arm-pooled/pooled.json cells", exp_arm_forward_bullets,
+     r"the forward sum costs (?P<s1>-?[\d.]+)% as compiled \(ratio (?P<sr>[\d.]+), interval (?P<slo>[\d.]+) to (?P<shi>[\d.]+)\) and (?P<s2>-?[\d.]+)% aligned;.*?"
+     r"the forward add costs (?P<a1>-?[\d.]+)% as compiled and (?P<a2>-?[\d.]+)% aligned;.*?"
+     r"the stencil costs (?P<t1>-?[\d.]+)% as compiled and (?P<t2>-?[\d.]+)% aligned\."),
+    ("arm64: forward loops, the add's instructions", "site/data/arm64.json forward_instr (Cachegrind counts per call, NONE and FAST)", exp_arm_add_instructions,
+     r"Cachegrind counts (?P<n1>[\d,]+) instructions per call in NONE and (?P<f1>[\d,]+) in FAST at L1 \((?P<e1>[\d,]+) elements\), "
+     r"(?P<c1>\d+) more as compiled \((?P<al>\d+) more aligned\), and (?P<n2>[\d,]+) and (?P<f2>[\d,]+) at L2 \((?P<e2>[\d,]+) elements\), "
+     r"the same (?P<c2>\d+) more\. The cost is a constant per call, not a cost per element: (?P<p1>[\d.]+)% of the instructions of an L1 call "
+     r"and (?P<p2>[\d.]+)% of an L2 call\."),
+    ("arm64: forward loops, the stencil's instructions", "site/data/arm64.json forward_instr and layout_vs_placement; results/s8-arm-pooled/pooled.json cells",
+     exp_arm_stencil_instructions,
+     r"(?P<c>\d+) more instructions per call as compiled \((?P<al>\d+) aligned\), at both sizes\. "
+     r"Its time ratio changes sign with loop alignment \(\+(?P<tc>[\d.]+)% as compiled, -(?P<ta>[\d.]+)% aligned\): "
+     r"the yardstick for it is the compiled-over-aligned ratio, (?P<d>[\d.]+) \((?P<dp>[\d.]+)%\), not the A/A floor"),
+    ("arm64: limits, the A/A floor is the floor of one cell", "results/s8-arm-pooled/pooled.json aa and cells", exp_arm_limits_floor,
+     r"\*\*The A/A floor is the floor of one cell\*\*, the forward add at L1 \((?P<aa>[\d.]+)%\)\. "
+     r"The widest interval at L1 is the stencil's, (?P<w1>[\d.]+)% either side of its ratio, and at L2 stride-2's, (?P<w2>[\d.]+)%\."),
+    ("arm64: forward loops at L2", "results/s8-arm-pooled/pooled.json cells", exp_arm_forward_l2,
+     r"At L2 the forward cells are (?P<alo>[\d.]+) to (?P<ahi>[\d.]+) as compiled \((?P<blo>[\d.]+) to (?P<bhi>[\d.]+) aligned\), "
+     r"but with intervals reaching (?P<w>[\d.]+)% either side of the ratio and a spread between jobs of up to (?P<s>[\d.]+)%"),
+    ("arm64: control, A/A", "results/s8-arm-pooled/pooled.json aa; details.json aa.cell", exp_arm_aa_control,
+     r"one binary against a byte-identical copy\): pooled (?P<r>[\d.]+), half-width (?P<hw>[\d.]+)%\."),
+    ("arm64: control, A/A at the add's L2 cell", "site/data/arm64.json noise.identical_binary_aa.L2 (details.json aa_extra, pooled with harness/pool.py)", exp_arm_l2_aa_control,
+     r"Every job also timed the same A/A at the add's L2 cell \(`details\.json`, `aa_extra`; `pooled\.json` does not hold it\): "
+     r"pooled (?P<r>[\d.]+), half-width (?P<hw>[\d.]+)%\."),
+    ("arm64: control, layout A/A", "results/s8-arm-pooled/pooled.json layout_aa", exp_arm_layout,
+     r"the half-width runs from (?P<lo>[\d.]+)% at the quietest L1 cells to (?P<hi>[\d.]+)% \((?P<c>[a-z0-9 -]+, L2)\)\. "
+     r"Moving the loops alone changes matrix multiply at L1 by (?P<m>[\d.]+)% \(ratio (?P<r>[\d.]+)\), the largest layout effect at L1; "
+     r"the other L1 cells move by at most (?P<o>[\d.]+)%"),
+    ("arm64: control, negative", "per-job listings k01..k03 none and fast", exp_arm_negative,
+     r"the NEON instructions stay at (?P<a>\d+), (?P<b>\d+) and (?P<c>\d+); the forward sum's function is identical line for line in both builds and has no trap"),
+    ("arm64: control, positive", "results/s8-arm-pooled/pooled.json positive", exp_arm_positive,
+     r"at L1 it costs (?P<a>[\d.]+)x for the sum, (?P<b>[\d.]+)x for the add, (?P<c>[\d.]+)x for the stencil, (?P<d>[\d.]+)x for reverse, "
+     r"(?P<e>[\d.]+)x for stride-2 and (?P<f>[\d.]+)x for matrix multiply \((?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x\)"),
+    ("arm64: noise at L2, the identical binary", "site/data/arm64.json noise.identical_binary_aa and same_cell_l2; results/s8-arm-pooled/pooled.json cells and layout_aa",
+     exp_arm_noise_l2_aa,
+     r"The A/A at the forward add's L2 cell, pooled by the same method \(`harness/pool\.py`\), is (?P<r>[\d.]+) with an interval of (?P<lo>[\d.]+) to (?P<hi>[\d.]+), "
+     r"a half-width of (?P<hw>[\d.]+)%, a spread between jobs of (?P<sd>[\d.]+)% and per-job ratios from (?P<jlo>[\d.]+) to (?P<jhi>[\d.]+)\. "
+     r"At L1 the A/A is (?P<l1>[\d.]+)%\. The forward add at L2 has half-widths of (?P<h1>[\d.]+)% \(as compiled\), (?P<h2>[\d.]+)% \(aligned\) "
+     r"and (?P<h3>[\d.]+)% \(the layout A/A\) in the same cell\."),
+    ("arm64: noise at L2, the rule's ceiling", "site/data/arm64.json noise.identical_binary_aa; harness/criteria-v3.json aa_half_width_max_pct", exp_arm_noise_ceiling,
+     r"The L2 A/A is above the rule's own ceiling of (?P<ceil>\d+)% in the pool and in (?P<jobs>\d+) of the (?P<of>\d+) jobs \(in (?P<l1>\w+) at L1\)"),
+    ("arm64: noise at L2, slow processes", "site/data/arm64.json noise.mixture and noise.identical_binary_aa (per-process samples of every job)", exp_arm_noise_slow,
+     r"A process is slow when it takes more than (?P<th>\d+)% longer than the fastest process of the same series \(one side of one cell in one job\)\. "
+     r"At L1, (?P<n1>[\d.]+)% of NONE processes and (?P<f1>[\d.]+)% of FAST processes are slow; at L2, (?P<n2>[\d.]+)% and (?P<f2>[\d.]+)%, "
+     r"and single cells reach (?P<mn>\d+)% \(NONE\) and (?P<mf>\d+)% \(FAST\)\. In the L2 A/A series the coefficient of variation of one side's 40 processes is "
+     r"(?P<cva>[\d.]+)% and (?P<cvb>[\d.]+)% on the two sides of the pair \(median over jobs\), against (?P<c1a>[\d.]+)% and (?P<c1b>[\d.]+)% at L1, "
+     r"and the slow processes come in runs: after a slow process the next one on that side is slow (?P<s1>\d+)% and (?P<s2>\d+)% of the time on the two sides of the pair, "
+     r"after an ordinary one (?P<o1>\d+)%\."),
+    ("arm64: noise at L2, the medians", "site/data/arm64.json noise.mixture cells; results/s8-arm-pooled/pooled.json cells", exp_arm_noise_medians,
+     r"In the reverse and stride-2 cells at L2 only the NONE side has slow processes \((?P<r>\d+)% and (?P<s>\d+)% of them, none on the FAST side\)\. "
+     r"Taken at the fast end of the timings .*? the two ratios are (?P<p1>[\d.]+)x and (?P<p2>[\d.]+)x, against the medians' (?P<m1>[\d.]+)x and (?P<m2>[\d.]+)x\. "
+     r"For the forward add at L2 the same ratio is (?P<fa>[\d.]+), against a median ratio of (?P<fm>[\d.]+) whose interval is (?P<fw>[\d.]+)% either side\."),
+    ("arm64: placement", "results/s8-arm-pooled/pooled.json verdict.placement_sensitive and cells placement.d", exp_arm_placement,
+     r"(?P<n>\w+) cells are flagged: the add at L1 \(ratio of the two (?P<a>[\d.]+)\), the stencil at L1 \((?P<b>[\d.]+)\), "
+     r"and matrix multiply at L1 \((?P<c>[\d.]+)\) and L2 \((?P<d>[\d.]+)\)\. On this quiet core the interval excludes 1 for a difference as small as "
+     r"the add's (?P<e>[\d.]+)%"),
+    ("arm64: placement, D against the layout A/A", "site/data/arm64.json layout_vs_placement; results/s8-arm-pooled/pooled.json placement.d and layout_aa", exp_arm_layout_vs_d,
+     r"D, which moves the loops of both builds, is (?P<ds>[\d.]+) for the stencil at L1, (?P<d2>[\d.]+) for stride-2 at L1 and (?P<dg>[\d.]+) for gather at L1, "
+     r"where the layout A/A moves (?P<ls>[\d.]+)%, (?P<l2>[\d.]+)% and (?P<lg>[\d.]+)%; for matrix multiply at L1 the layout A/A moves (?P<lm>[\d.]+)% and D (?P<dm>-?[\d.]+)%\. "
+     r"D's interval excludes 1 and the layout A/A's includes it for the stencil at L1 and for gather at L2\..*?"
+     r"on this core it moves by up to (?P<mx>[\d.]+)% at L1 \(gather\)"),
+    ("arm64: placement, the matrix-multiply loop against its window", "results/s8-arm-run-*/*/details.json k08_matmul loops start_mod64 and windows64; results/s8-arm-pooled/pooled.json layout_aa",
+     exp_arm_matmul_windows,
+     r"as compiled the NONE NEON loop starts at offset (?P<off>\d+) of a (?P<w>\d+)-byte window and spans (?P<n1>\d+) windows, aligned it sits in (?P<n2>\d+), "
+     r"and the aligned NONE build is (?P<pct>[\d.]+)% slower \(layout A/A ratio (?P<r>[\d.]+)\)"),
+    ("arm64: verdict, form in the pool and in each run", "results/s8-arm-pooled/pooled.json verdict and per_run", exp_arm_verdict_form,
+     r"in the pool and in each of the (?P<three>\w+) runs on their own"),
+    ("arm64: verdict, the lost loops", "results/s8-arm-pooled/pooled.json cells; site/data/index.json criteria.lost_ci_lo_min_ratio", exp_arm_lost_floor,
+     r"starts at (?P<lo>[\d.]+) or higher, against a minimum of (?P<min>[\d.]+)\."),
+    ("arm64: verdict, the judged cells", "results/s8-arm-pooled/pooled.json cells and verdict.placement_sensitive", exp_arm_judged,
+     r"(?P<four>\w+) of the (?P<eight>\w+) kept cells are judged \(the sum at L1 and L2, the add at L2, the stencil at L2\); the other (?P<four2>\w+) are the placement-sensitive ones"),
+    ("arm64: verdict, the forward add at L2", "results/s8-arm-pooled/pooled.json cells and per_run", exp_arm_add_l2,
+     r"The forward add at L2, aligned, has a ratio of (?P<r>[\d.]+) and an interval of (?P<lo>[\d.]+) to (?P<hi>[\d.]+); its upper end is "
+     r"(?P<over>[\d.]+) over the limit of (?P<lim>[\d.]+), and the spread between jobs in that cell is (?P<sd>[\d.]+)%\. "
+     r"In each run on its own both the forward sum and the forward add at L2 miss the rule"),
+    ("arm64: verdict, counting the matrix-multiply cells", "results/s8-arm-pooled/pooled.json cells", exp_arm_matmul_counted,
+     r"The one at L1 would miss the forward limit as well \((?P<m1>[\d.]+)x aligned\); the one at L2 \((?P<m2>[\d.]+)x aligned, interval ending at (?P<m3>[\d.]+)\) would pass it"),
+    ("arm64: verdict, where the seed comes from", "harness/pool.py SEED_PREFIX and RESAMPLES; arm64/seed-sensitivity.json stored_seed; results/s8-arm-run-*/*/results.json run.started_at",
+     exp_arm_seed_origin,
+     r"bootstrap of (?P<res>\d+) resamples whose draws are fixed by a seed \(`harness/pool\.py`, prefix (?P<pre>\d+)\)\. "
+     r"The seed was set on (?P<day>Oct \d+) \((?P<iso>[\d:T+-]+) in the development history, which this repository does not contain\), "
+     r"(?P<days>\w+) days before the first Arm run"),
+    ("arm64: verdict, the add's upper end under other seeds", "arm64/seed-sensitivity.json deciding_cell", exp_arm_seed_distribution,
+     r"from the same data with the same code and the same (?P<res2>\d+) resamples, under (?P<n>\d+) other seeds \(`arm64/seed-sensitivity\.json`\): "
+     r"the upper end has a median of (?P<med>[\d.]+) \(5th to 95th percentile (?P<p05>[\d.]+) to (?P<p95>[\d.]+), range (?P<mn>[\d.]+) to (?P<mx>[\d.]+)\), "
+     r"(?P<k>\d+) of the (?P<n2>\d+) are at or above (?P<lim>[\d.]+), and the stored (?P<st>[\d.]+) is higher than all (?P<n3>\d+)\. "
+     r"With (?P<conv>[\d,]+) resamples under the stored prefix the end converges to (?P<ch>[\d.]+), below the limit"),
+    ("arm64: verdict, the whole analysis under other seeds", "arm64/seed-sensitivity.json full and derived; results/s8-arm-pooled/pooled.json verdict", exp_arm_seed_whole,
+     r"`analyse_cpu` run under (?P<n>\d+) of those seeds gives (?P<map>\d+) MAP and (?P<inc>\d+) INCONCLUSIVE\. "
+     r"The verdict form derived from the re-drawn statistics \(forward, lost, placement, A/A and positive-control rules\) for all (?P<all>\d+) is "
+     r"(?P<m2>\d+) MAP and (?P<i2>\d+) INCONCLUSIVE, each of the (?P<i3>\d+) because of the same cell\. "
+     r"Under every seed the lost loops pass, the placement-sensitive set is the same (?P<four>\w+) cells and the A/A half-width stays between (?P<alo>[\d.]+)% and (?P<ahi>[\d.]+)%\."),
+    ("arm64: verdict, the other interval methods", "site/data/arm64.json interval_methods (robustness/results-arm.json)", exp_arm_interval_methods,
+     r"`robustness/` applies (?P<k>\w+) interval methods to this pool \(.*?its self-test reproduces (?P<ex>\d+) of the pool's own numbers exactly\)\. "
+     r"Only the pool's own method gives INCONCLUSIVE; .*? all give MAP, with the add's upper end at (?P<b1>[\d.]+) to (?P<b2>[\d.]+) \(block\), "
+     r"(?P<c1>[\d.]+) and (?P<c2>[\d.]+) \(jobs only\) and (?P<d>[\d.]+) \(lag-1\), against the pool's (?P<a>[\d.]+)\."),
+    ("arm64: verdict, the L2 A/A reading", "site/data/arm64.json noise.identical_binary_aa.L2; harness/criteria-v3.json aa_half_width_max_pct", exp_arm_seed_l2aa,
+     r"\*\*The L2 A/A\.\*\* Read at the L2 cell the A/A is (?P<aa>[\d.]+)%, above the rule's (?P<c>\d+)% ceiling"),
+    ("arm64: verdict, the independent check", "harness/pool_check.py SAMPLE_CELLS, BOUND_TOL_WIDTH and BOUND_TOL_RATIO; results/s8-arm-pooled/pooled.json cells", exp_arm_seed_pool_check,
+     r"its tolerance \(a share of the interval's width, about (?P<tol>[\d.]+) here\) is larger than the margin of (?P<over>[\d.]+), so it could not flag a change of this size"),
+    ("arm64: verdict, what this says", "results/s8-arm-pooled/pooled.json cells; arm64/seed-sensitivity.json deciding_cell", exp_arm_seed_summary,
+     r"that cell's interval is (?P<hw>[\d.]+)% either side because L2 timings on this machine are that noisy, even for an identical binary, "
+     r"and a margin of (?P<over>[\d.]+) is smaller than the bootstrap's seed noise"),
+    ("arm64: run to run", "results/s8-arm-pooled/pooled.json reproduction and per_run", exp_arm_run_to_run,
+     r"Of the (?P<chk>\d+) comparisons of one run's point against another run's interval \((?P<cells>\d+) cells, (?P<cols>\d+) columns, "
+     r"(?P<pairs>\d+) ordered pairs of runs\), (?P<out>\d+) fall outside, with a largest gap of (?P<gap>[\d.]+)%\. "
+     r"(?P<eight>\w+) of the (?P<out2>\d+) are stride-2 at L2 \(gaps of (?P<g1>[\d.]+)% to (?P<g2>[\d.]+)%\), where the runs' points are "
+     r"(?P<p1>[\d.]+)x, (?P<p2>[\d.]+)x and (?P<p3>[\d.]+)x as compiled; the other (?P<five>\w+) have gaps under (?P<u>[\d.]+)%"),
+    ("arm64: the smoke run", "arm64/PLAN.md", exp_arm_smoke_kernels,
+     r"reverse was already seen in a (?P<k>\w+)-kernel smoke run"),
+    ("arm64: written first, the forward loops", "per-job listings k01..k03", exp_arm_held,
+     r"The first part held \((?P<a>\d+) / (?P<a2>\d+), (?P<b>\d+) / (?P<b2>\d+) and (?P<c>\d+) / (?P<c2>\d+) NEON instructions\)"),
+    ("arm64: written first, every job pooled", "results/s8-arm-pooled/pooled.json; .github/workflows/measure.yml", exp_arm_held_jobs,
+     r"none dropped:\*\* (?P<ret>\d+) of (?P<disp>\d+) returned and all are pooled"),
+    ("arm64: limits, the time window", "results/s8-arm-run-*/*/results.json run.started_at", exp_arm_limits_window,
+     r"\*\*Shared machines, (?P<n>\d+) jobs, one time window\.\*\* The (?P<three>\w+) runs were launched together and the jobs started within "
+     r"(?P<m>\d+) minutes of each other"),
+    ("arm64: limits, one compiler", "results/s8-arm-run-*/*/results.json run.toolchain", exp_arm_limits_compiler,
+     r"\*\*One compiler\.\*\* clang (?P<c>[\d.]+) with libc\+\+ (?P<l>\d+) only"),
+    ("arm64: limits, one core type", "results/s8-arm-pooled/pooled.json cpus; results/s8-arm-run-*/*/results.json run.runner", exp_arm_limits_core,
+     r"\*\*(?P<one>\w+) core type\.\*\* (?P<core>Neoverse-N2), in (?P<one2>\w+) runner image"),
+    ("arm64: limits, the L2 forward cells", "results/s8-arm-pooled/pooled.json cells", exp_arm_limits_spread,
+     r"\*\*L2 forward cells are noisy\*\* \(spread between jobs up to (?P<s>[\d.]+)% for the add\)"),
+    ("arm64: limits, the L2 identical binary", "site/data/arm64.json noise.identical_binary_aa.L2", exp_arm_limits_aa_l2,
+     r"an identical binary is as noisy at the add's L2 cell \(A/A half-width (?P<aa>[\d.]+)%\), and the INCONCLUSIVE form rests on one of them, "
+     r"by a margin inside the bootstrap's seed noise"),
+    ("arm64: limits, the spread of the identical binary at L1", "results/s8-arm-pooled/pooled.json aa", exp_arm_limits_identical_spread,
+     r"\(the identical-binary A/A at L1 has a spread between jobs of (?P<sd>[\d.]+)%\)"),
+    ("arm64: limits, the placement shifts the layout A/A did not see", "site/data/arm64.json layout_vs_placement", exp_arm_limits_placement,
+     r"did not see the placement shifts of the FAST/NONE ratio \((?P<st>[\d.]+)% for the stencil and (?P<ga>[\d.]+)% for gather at L1\)"),
+    ("arm64: reproduce, the runs", "results/s8-arm-pooled/pooled.json runs", exp_arm_three_runs,
+     r"\(the (?P<three>\w+) runs here were dispatched together\)"),
+    ("arm64: reproduce, the seeds", "arm64/seed-sensitivity.json alt_seeds", exp_arm_seeds_reproduce,
+     r"`python arm64/seeds\.py` rewrites `arm64/seed-sensitivity\.json` \(it re-draws (?P<n>\d+) seeds, so it takes a while\)"),
+    ("arm64: written first, what the smoke run had given", "tests/data/s8_arm_timeline.json smoke; arm64/PLAN.md", exp_arm_smoke_quote,
+     r"The smoke run \((?P<run>\d+)\) timed (?P<k>\w+) kernels at the (?P<sz>L\d) size and had given reverse (?P<r>[\d.]+)x, "
+     r"the forward add (?P<a>[\d.]+)x and an A/A half-width of (?P<aa>[\d.]+)%; the plan quotes all three"),
+    ("arm64: written first, the add's time ratio was known", "arm64/PLAN.md", exp_arm_smoke_add_known,
+     r"for the add the time ratio at L1 \((?P<a>[\d.]+)x\) was known"),
+    ("arm64: what was written first", "tests/data/s8_arm_timeline.json; arm64/PLAN.md", exp_arm_timeline,
+     r"The (?P<k>\w+)-kernel smoke run \((?P<smoke>\d+)\) started at (?P<t0>[\d:]+) UTC on (?P<day>Oct \d+), the (?P<three>\w+) full runs were dispatched at "
+     r"(?P<t1>[\d:]+) UTC, the plan was committed at (?P<t2>[\d:]+) UTC \((?P<t2e>[\d:]+) EDT\) and the first full-run job finished at (?P<t3>[\d:]+) UTC\..*?"
+     r"The plan's own heading gives the time as (?P<h>[\d:]+) EDT, which is wrong \(the author date of the commit that added the file says (?P<c>[\d:]+)\)"),
+    ("arm64: what was written first, what a reader can check", "tests/data/s8_arm_timeline.json", exp_arm_timeline_source,
+     r"\(the run's creation time and the first measure job's completion time, read from the Actions API on (?P<d>Oct \d+)\)\. "
+     r"The plan's commit time is not: it comes from the git log of the working repository in which the project is developed, which is (?P<np>not published),"),
 ]
 
 # Rows whose typed number is wrong against the data: label -> reason. None at the time of writing.
@@ -1636,11 +3328,20 @@ if pytest is not None:
     @pytest.mark.parametrize("row", [_param(r) for r in SIBLINGS_ROWS])
     def test_siblings_number(row):
         check_row(row, siblings_text(), "siblings/README.md")
+
+    @pytest.mark.parametrize("row", [_param(r) for r in CESWEEP_ROWS])
+    def test_cesweep_number(row):
+        check_row(row, cesweep_text(), "ce-sweep/README.md")
+
+    @pytest.mark.parametrize("row", [_param(r) for r in ARM64_ROWS])
+    def test_arm64_number(row):
+        check_row(row, arm64_text(), "arm64/README.md")
 else:
     def test_readme_numbers_all_rows():
         failures = []
         for rows, text, doc in ((ROWS, readme_text(), "README.md"), (DETAILS_ROWS, details_text(), "readme-parts/DETAILS.md"),
-                                (SIBLINGS_ROWS, siblings_text(), "siblings/README.md")):
+                                (SIBLINGS_ROWS, siblings_text(), "siblings/README.md"), (CESWEEP_ROWS, cesweep_text(), "ce-sweep/README.md"),
+                                (ARM64_ROWS, arm64_text(), "arm64/README.md")):
             for row in rows:
                 try:
                     check_row(row, text, doc)
@@ -1712,13 +3413,13 @@ def test_every_intel_model_loses_the_same_loops():
 
 # ---- every repository path the prose cites must exist -----------------------------------------------
 
-CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md")
+CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md", "arm64/README.md", "ce-sweep/README.md")
 # Planning documents that are not published. The note appended to DETAILS.md in the public export names them on purpose,
 # saying that they do not exist in the repository, so they are not counted as broken citations.
 UNPUBLISHED = {"docs/PLAN.md", "docs/SPEC.md", "docs/skeptic.md"}
 CITED_ROOTS = ("results/", "dayone/", "investigate/", "tests/", "harness/", "siblings/", "variants/", "ce-sweep/", "layout-sweep/",
                "pgo/", "versions/", "environment/", "robustness/", "mitigate/", "corpus/", "realworld/", "audit/", "kernels/",
-               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/")
+               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/")
 
 
 def cited_paths(doc):

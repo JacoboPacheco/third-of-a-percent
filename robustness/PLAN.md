@@ -86,3 +86,25 @@ change that status.
   run once on s7 and the stored run is that run. No method, threshold, comparison or pre-announced page-text rule above was
   changed, and no code other than the dataset list; the rules under "What would change the page text" apply to s7 as written.
   The s4, s5 and s6 output is unchanged.
+
+## Plan for the Arm pool (written Fri Oct 16 2026 19:10 EDT, before any robustness number of the Arm pool existed)
+Dataset `s8arm`: results/s8-arm-pooled/pooled.json (30 jobs, one CPU model, Neoverse-N2, AArch64; see arm64/README.md). Its
+verdict form in the pool is INCONCLUSIVE, and it rests on one cell, k02_add_fwd.L2 (aligned column, interval end 1.02106 against
+a limit of 1.02). A review found that re-drawing the harness's own bootstrap with other seeds gives an interval end below the
+limit in most draws (arm64/seeds.py; that re-draw was run after this note was written).
+- What is run: exactly the code and the eight methods above on this one dataset (analyze.py, no method changed). The Arm pool is
+  analysed on its own: the numbers go to robustness/results-arm.json and the tables to a second generated block at the end of
+  robustness/report.md (`python robustness/analyze.py --arm --report`); robustness/results.json, the first tables block of
+  report.md and the s4 to s7 output are not touched (the x86-64 README figures read them).
+- What is reported, whatever it is: for each of the eight methods, the verdict form from harness/pool.py analyse_cpu with the
+  interval functions swapped, the classification flips against (a) (forward rule, lost rule, placement flag), the interval-width
+  ratios, the margins (smallest lost-cell ci95_lo, largest counted forward aligned ci95_hi against the limit), and the number of
+  methods that give MAP and the number that give INCONCLUSIVE.
+- No prediction is written for the outcome: autocorrelation at L2 is plausible (the slow processes of the L2 timings come in runs),
+  which would widen the block-bootstrap intervals, and the jobs-only intervals ignore within-job spread, which would narrow them
+  at L1; both outcomes are reported.
+- Not a rule change. The verdict of record for the Arm pool is the INCONCLUSIVE in pooled.json (harness/criteria-v3.json, the
+  stored seed). The rules under "What would change the page text" do not apply to the Arm pool; the page may print this table
+  beside the verdict as a labelled sensitivity reading, with the count of methods per form, and nothing else is changed by it.
+- Not claimed: the Arm pool has one CPU model and one time window (the runs were launched together); a robustness reading that
+  allows autocorrelation within a job does not allow for differences between hosts or days.

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """The measurement: build every kernel NONE, FAST and NONE-NOVEC, time them, write results/results.json.
 
-Runs on a GitHub Actions ubuntu-24.04 x64 runner (clang-18, libc++-18-dev, valgrind from apt);
-the laptop has no compiler. For every kernel it records the binary hashes, clang's vectorization
-remark for the marked loop, the trap count and the assembly of kern_<id>, the NONE-to-FAST
+Runs on a GitHub Actions runner, ubuntu-24.04 (x64, the default) or ubuntu-24.04-arm (arm64, Neoverse-N2), chosen by
+the runner input of measure.yml, with clang-18, libc++-18-dev and valgrind from apt; the laptop has no
+compiler. For every kernel it records the binary hashes, clang's vectorization remark for the marked loop, the trap count and the assembly of kern_<id>, the NONE-to-FAST
 assembly diff, and Cachegrind instruction counts at the L1 size. For every cell (kernel x size)
 it times NONE against FAST in ABBA order (20 processes per side, pinned to one CPU), and NONE
 against NOVEC for kernels vectorized in NONE at the in-cache sizes. The A/A control times the

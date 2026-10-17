@@ -201,7 +201,10 @@ diff pane is not included, because the API's simple state format has no way to d
 ## What this does not show
 
 - **No timing.** "Lost" is a compile-time fact. What it costs is measured only for clang 18 (and the
-  `siblings/` toolchains) in the main study.
+  `siblings/` and `versions/` toolchains, all on x86-64) in the main study, and for the Ubuntu clang 18.1.3
+  build on one Arm core type, Neoverse-N2, in `arm64/`. There the timed builds agree with this sweep's
+  AArch64 rows for clang 18.1.0: reverse and stride-2 are lost and matrix multiply is kept. No other
+  AArch64 compiler row, and no GCC row, was timed.
 - **Compiler Explorer's builds** of each compiler and library. The libc++ used with clang N is
   taken to be libc++ N; it was not checked beyond the macro having its expected effect.
   "trunk" means trunk as Compiler Explorer served it on 2026-10-12 (`fetched_at` in each cached answer).

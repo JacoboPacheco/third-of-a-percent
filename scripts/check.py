@@ -25,6 +25,9 @@
    with) and all of results/s6-pooled's (the 75-job intermediate pool, which itself must list every job of
    the s4-run-* and s6-run-* folders once). Every pooled.json under results/ is recomputed, the run-level
    ones in the s6-run and s7-run folders and the three pools alike.
+   results/s8-arm-pooled/pooled.json (the Arm column: an AArch64 runner, its own pool, none of the x86-64 inputs)
+   must list every job of every s8-arm-run-* folder once and nothing else; it, the run-level pooled.json of
+   each s8-arm-run-* folder and every job's results.json there go through the same recomputations as the rest.
    The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps and skip cleanly when their results are absent.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
    the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots).
@@ -231,18 +234,27 @@ def check_holdout_result():
     return not problems
 
 
-def check_pool_complete():
+def check_pool_complete(base=None):
     """Each pool pools every job of the run folders it names exactly once and nothing else, and contains every
-    input of results/s4-pooled/pooled.json (the original pool the holdout is compared with):
-      results/s6-pooled/pooled.json  the 75-job intermediate pool: every job of every s4-run-* and s6-run-* folder
-      results/s7-pooled/pooled.json  the pool the page reads: every job of every s4-run-*, s6-run-* and s7-run-* folder"""
-    base = os.path.join(REPO, "results")
+    input of the earlier pools it builds on:
+      results/s6-pooled/pooled.json  the 75-job intermediate pool: every job of every s4-run-* and s6-run-* folder,
+                                     including all of results/s4-pooled (the original pool the holdout is compared with)
+      results/s7-pooled/pooled.json  the pool the page reads: every job of every s4-run-*, s6-run-* and s7-run-* folder,
+                                     including all of results/s4-pooled and results/s6-pooled
+      results/s8-arm-pooled/pooled.json  the Arm column's pool: every job of every s8-arm-run-* folder and nothing else
+                                     (an AArch64 runner; it shares no input with the x86-64 pools and does not need them)
+    `base` is the results folder (default: the repository's); the tests point it at a scratch copy."""
+    base = base or os.path.join(REPO, "results")
 
     def listed(rel):
         with open(os.path.join(base, rel, "pooled.json"), encoding="utf-8") as f:
             return [os.path.normpath(os.path.join(base, rel, i["path"])) for i in json.load(f)["inputs"]]
     ok = True
-    for rel, patterns in (("s6-pooled", ("s4-run-*", "s6-run-*")), ("s7-pooled", ("s4-run-*", "s6-run-*", "s7-run-*"))):
+    # (pool folder, the run folders it pools, the earlier pools whose every input it must contain)
+    pools = (("s6-pooled", ("s4-run-*", "s6-run-*"), ("s4-pooled",)),
+             ("s7-pooled", ("s4-run-*", "s6-run-*", "s7-run-*"), ("s4-pooled", "s6-pooled")),
+             ("s8-arm-pooled", ("s8-arm-run-*",), ()))
+    for rel, patterns, earlier in pools:
         if not os.path.exists(os.path.join(base, rel, "pooled.json")):
             continue
         pooled = listed(rel)
@@ -257,18 +269,15 @@ def check_pool_complete():
             problems.append(f"{os.path.relpath(p, base)} is on disk but not pooled")
         for p in sorted(set(pooled) - set(on_disk)):
             problems.append(f"{os.path.relpath(p, base)} is pooled but is not in an {kinds.replace(' and ', ' or ')} folder")
-        for p in sorted(set(listed("s4-pooled")) - set(pooled)):
-            problems.append(f"{os.path.relpath(p, base)} is in the original pool but not in this one")
-        if rel == "s7-pooled":
-            old = set(listed("s6-pooled"))
-            for p in sorted(old - set(pooled)):
-                problems.append(f"{os.path.relpath(p, base)} is in the s6 pool but not in this one")
+        for e in earlier:
+            for p in sorted(set(listed(e)) - set(pooled)):
+                problems.append(f"{os.path.relpath(p, base)} is in the {'original' if e == 's4-pooled' else e.split('-')[0]} pool but not in this one")
         for pr in problems:
             print(f"   FAIL results/{rel}/pooled.json: {pr}")
         if not problems:
-            extra = f" and the {len(listed('s6-pooled'))} of results/s6-pooled" if rel == "s7-pooled" else ""
+            incl = " and ".join(f"the {len(listed(e))} of results/{e}" for e in earlier)
             print(f"   ok   results/{rel}/pooled.json pools all {len(on_disk)} jobs of the {kinds} folders "
-                  f"once each, including the {len(listed('s4-pooled'))} of results/s4-pooled{extra}")
+                  f"once each" + (f", including {incl}" if incl else ""))
         ok &= not problems
     return ok
 
@@ -353,15 +362,26 @@ def check_results(path, criteria_sha=None):
     return not problems
 
 
+def results_files():
+    """Every results.json under results/ that check_results() goes through (the x86-64 folders and the s8-arm-run-* jobs alike)."""
+    own_checker = ("mitigate-run-", "siblings-run-", "corpus-run-")  # these folders have their own checks, below
+    return sorted(set(p for p in glob.glob(os.path.join(REPO, "results", "**", "results.json"), recursive=True)
+                      if not any(os.path.relpath(p, os.path.join(REPO, "results")).startswith(s) for s in own_checker)))
+
+
+def pooled_files():
+    """Every pooled.json under results/ that check_pooled() goes through (the three x86-64 pools, their run-level files, the Arm pool and its runs)."""
+    return sorted(p for p in glob.glob(os.path.join(REPO, "results", "**", "pooled.json"), recursive=True)
+                  if os.path.basename(os.path.dirname(p)) != "pooled")  # a workflow's own per-run copy, kept as downloaded
+
+
 def main():
     ok = run_tests()
     print("== results files (schema 1, recomputed intervals, criteria hash, recomputed verdict)")
     with open(os.path.join(REPO, "harness", "criteria.json"), "rb") as f:
         criteria_sha = hashlib.sha256(f.read()).hexdigest()
     files = [os.path.join(REPO, "results", "fixture.json")]
-    own_checker = ("mitigate-run-", "siblings-run-", "corpus-run-")  # these folders have their own checks, below
-    files += sorted(set(p for p in glob.glob(os.path.join(REPO, "results", "**", "results.json"), recursive=True)
-                        if not any(os.path.relpath(p, os.path.join(REPO, "results")).startswith(s) for s in own_checker)))
+    files += results_files()
     files += [os.path.abspath(x) for x in sys.argv[1:]]
     for path in files:
         if not os.path.exists(path):
@@ -377,8 +397,7 @@ def main():
     if not combined:
         print("   none yet")
     print("== pooled files (criteria-v3: every job of a CPU model pooled, recomputed, independent sample)")
-    pooled = sorted(p for p in glob.glob(os.path.join(REPO, "results", "**", "pooled.json"), recursive=True)
-                    if os.path.basename(os.path.dirname(p)) != "pooled")  # a workflow's own per-run copy, kept as downloaded
+    pooled = pooled_files()
     for path in pooled:
         ok &= check_pooled(path)
     if not pooled:
@@ -427,6 +446,13 @@ def main():
     if os.path.exists(os.path.join(REPO, "robustness", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "check.py")]) == 0
+    else:
+        print("   none yet")
+    print("== Arm seed sensitivity (arm64/seeds.py --check: the stored seed's numbers, eight other seeds, two whole analyses and the "
+          "deciding cell's converged reading recomputed from the pool; the full recomputation is --check --all; skips if absent)")
+    if os.path.exists(os.path.join(REPO, "arm64", "seeds.py")) and os.path.exists(os.path.join(REPO, "arm64", "seed-sensitivity.json")):
+        sys.stdout.flush()
+        ok &= subprocess.call([sys.executable, os.path.join(REPO, "arm64", "seeds.py"), "--check"]) == 0
     else:
         print("   none yet")
     print("== PGO column (pgo/check.py: plan, build script, pooled file recomputed from the raw samples, report, tests)")

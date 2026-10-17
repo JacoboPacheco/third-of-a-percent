@@ -10,13 +10,19 @@ the first byte after the jump. For each loop:
   start, end (hex strings), bytes, start_mod64, crosses64 (the body touches two or more 64-byte
   windows), windows64 (how many it touches), min_windows64 (the fewest a body this long can touch),
   extra_window (windows64 > min_windows64: the placement costs a fetch window it does not need),
-  insns, simd (an %xmm register in the body), innermost (no other loop lies inside it).
+  insns, simd (an %xmm register in the body; on AArch64 a NEON vector operand such as v0.4s or q0),
+  innermost (no other loop lies inside it).
+The objdump text is read for x86-64 (conditional jumps, `jne addr <sym>`) and for AArch64 (`b.ne`, `cbz`,
+`cbnz`, `tbz`, `tbnz`, with the target as the last address before ` <`); an unconditional jump or branch
+is not a loop in either.
 "Hot" loops are the innermost ones; outer ones are listed for completeness.
 """
 import re
 
 _INSN = re.compile(r"^\s*([0-9a-f]+):\s*(.*)$")
 _JCC = re.compile(r"^(j(?!mp)\w+)\s+([0-9a-f]+)\s+<")
+_BCC = re.compile(r"^(b\.\w+|cbn?z|tbn?z)\s+(?:[^<]*,\s*)?([0-9a-f]+)\s+<")
+_NEON = re.compile(r"\bv\d+\.\d*[bhsd]\b|\bq\d+\b")
 
 
 def instructions(lines):
@@ -34,7 +40,7 @@ def loops(lines):
     insns = instructions(lines)
     found = []
     for i, (addr, text) in enumerate(insns):
-        m = _JCC.match(text)
+        m = _JCC.match(text) or _BCC.match(text)
         if not m:
             continue
         tgt = int(m.group(2), 16)
@@ -48,7 +54,7 @@ def loops(lines):
         found.append({"start": hex(tgt), "end": hex(end), "bytes": n, "start_mod64": tgt % 64,
                       "crosses64": windows > 1, "windows64": windows, "min_windows64": min_windows,
                       "extra_window": windows > min_windows, "insns": len(body),
-                      "simd": any("%xmm" in t for t in body)})
+                      "simd": any("%xmm" in t or _NEON.search(t) for t in body)})
     for lp in found:
         s, e = int(lp["start"], 16), int(lp["end"], 16)
         lp["innermost"] = not any(o is not lp and s <= int(o["start"], 16) and int(o["end"], 16) <= e

@@ -1,6 +1,6 @@
 # Siblings: does the finding hold beyond clang 18 + libc++ 18 FAST?
 
-Every number on the main page comes from one setup: Ubuntu clang 18.1.3, libc++ 18 in FAST mode, `-O2`, baseline x86-64 (SSE2). This folder runs the same 8 kernels (`kernels/*.cpp`, unchanged) with the same method next to six other setups, so a reader can see what changes when the setup changes.
+Every number of the main x86-64 pool comes from one setup: Ubuntu clang 18.1.3, libc++ 18 in FAST mode, `-O2`, baseline x86-64 (SSE2). (The Arm column in `arm64/` uses the same compiler and mode on one AArch64 core type and is pooled apart.) This folder runs the same 8 kernels (`kernels/*.cpp`, unchanged) with the same method next to six other setups, so a reader can see what changes when the setup changes.
 
 ## Short answer
 
@@ -251,7 +251,7 @@ Read each cell the same way as in the L1 table.
 
 ## What this does not show
 
-- **Not arm64**, not AVX-512 (`-march=x86-64-v4`), not MSVC, not clang 19 or 21. apt had no clang 21; clang 19 was skipped as older than 20.
+- **Not arm64 in these runs** (the main kernels were timed on one Arm core type, Neoverse-N2, with clang 18 only, in `arm64/`), not AVX-512 (`-march=x86-64-v4`), not MSVC, not clang 19 or 21. apt had no clang 21; clang 19 was skipped as older than 20.
 - **Not libstdc++ under clang**, not `_GLIBCXX_DEBUG`, not libc++ EXTENSIVE or DEBUG on clang 20 or at x86-64-v3, not GCC with `-march=x86-64-v3`, not GCC `-O2 -fvect-cost-model=dynamic`.
 - **DEBUG mode's extra checks are mostly beside the point here.** These kernels only call `operator[]` and `size()`, so iterator-heavy code may pay more under EXTENSIVE or DEBUG than these 8 loops do.
 - **No RAM sizes, no real programs, no Cachegrind, no `-fno-vectorize` control.** RAM cells did not reproduce on the main page. The json and fmt programs were not rebuilt with the sibling toolchains.
