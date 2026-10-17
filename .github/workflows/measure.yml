@@ -1,40 +1,53 @@
-name: dsweep
+name: measure
 
-# The matrix-multiply d-sweep (dsweep/PLAN.md, fixed before any run): is the cost that FAST adds to the inner loop
-# of kernels/k08_matmul.cpp per inner call the same at every matrix size (a fixed cost, H1), proportional to the
-# size (a cost per element, H2), or smaller at the larger size (falls)? Each job builds the kernel five ways (the
-# no-vectorize build is built by harness/run.py and not timed), times FAST against NONE at the d ladder that the
-# runner's cache sizes decide (as compiled and with -falign-loops=64), with a byte-identical A/A at the middle d
-# and Cachegrind counts beside the times, and uploads its out/ folder BEFORE any check of the results. A job that
-# aborts after its first timing leaves out/dsweep.partial.jsonl. The last job pools every job of a CPU model with
-# dsweep/analyze.py (two-level bootstrap, at least 3 jobs per model) and uploads dsweep-pooled.json and a markdown
-# table.
+# Stage S3 setup (harness/criteria-v2.json, four runners): one click builds and times everything on
+# four runners at once (a matrix of 4 jobs), so more than one runner CPU model is drawn:
+# 8 kernels at the L1, L2 and RAM sizes (NONE, FAST, NONE-NOVEC, and NONE and FAST again with
+# -falign-loops=64), the A/A and layout A/A controls, and the two real programs (nlohmann/json parsing twitter.json, fmt). Each job writes its own results.json (schema 1,
+# verdict under harness/criteria-v2.json for its CPU model) and uploads it as the artifact
+# "results-<cpu>-j<N>"; the last job reads them all and writes combined.json, the page-level line
+# (harness/combine.py), uploaded as "combined". Why several runners: investigate/FINDINGS.md (the same
+# binary cost 1.6x on two EPYC models and 0.98x on a third).
 #
-# Planned runs (PLAN.md): runner=ubuntu-24.04-arm once (6 jobs); runner=ubuntu-24.04 twice (6 jobs each), the two
-# x86-64 runs started from the same commit. A run with jobs=[1] is a test of the workflow; a run with reps set is a
-# smoke run (the files are marked and refused by the analysis). Neither is ever pooled into a result.
+# Stage S4-measurement (harness/criteria-v3.json, the default since Oct 12): TEN jobs, the in-cache
+# sizes only, no programs, 40 processes per side, Cachegrind for every build at L1 and L2; the last
+# job pools every job of each CPU model with a two-level bootstrap (harness/pool.py) and writes
+# pooled.json: one verdict per CPU model, no single page-level form. Why: the S3 audit (within-job
+# intervals missed the next run; the page-level form flipped with the CPU models drawn).
 
 on:
   workflow_dispatch:
     inputs:
+      kernels:
+        description: "comma-separated kernel ids, or all"
+        default: "all"
+      sizes:
+        description: "comma-separated size classes (L1, L2, RAM); criteria-v3 runs time L1,L2"
+        default: "L1,L2"
+      programs:
+        description: "comma-separated programs (json_parse, fmt_format), all, or none; criteria-v3 runs: none"
+        default: "none"
+      criteria:
+        description: "criteria file (harness/criteria-v3.json pools per CPU model; harness/criteria-v2.json is the S3 setup)"
+        default: "harness/criteria-v3.json"
+      jobs:
+        description: "matrix job numbers as a JSON list; criteria-v3 full runs use all ten (fewer only for a smoke test, never pooled)"
+        default: "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
       runner:
         description: "GitHub-hosted runner label: ubuntu-24.04 (x86-64, the default) or ubuntu-24.04-arm (AArch64, Neoverse-N2). One label per run; results are pooled per CPU model afterwards"
         type: choice
         options: ["ubuntu-24.04", "ubuntu-24.04-arm"]
         default: "ubuntu-24.04"
-      jobs:
-        description: "matrix job numbers as a JSON list; the planned runs use all six (jobs=[1] is a test of the workflow, never pooled)"
-        default: "[1, 2, 3, 4, 5, 6]"
-      reps:
-        description: "SMOKE RUN ONLY: processes per side instead of the 40 of harness/criteria-v3.json (for example 4, to exercise the whole path in about a minute). Leave empty for a real run; a file made with it is marked as a smoke file and the analysis refuses it"
-        default: ""
 
 permissions:
   contents: read
 
 jobs:
-  sweep:
+  measure:
     runs-on: ${{ inputs.runner }}
+    # The timing steps take about 10 minutes. On Oct 15 the job also ran the whole-repository check (scripts/check.py)
+    # before uploading; that took 12 to 19 minutes or more, and 55 of 100 jobs in ten runs were cancelled at the
+    # old 22-minute limit before they uploaded. The job now uploads first and checks only its own file.
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -64,86 +77,136 @@ jobs:
           valgrind --version
           dpkg-query -W libc++-18-dev libc++abi-18-dev clang-18 valgrind
 
+      - name: Fetch the pinned program inputs (sha256 checked)
+        if: inputs.programs != 'none'
+        run: |
+          bash programs/json_parse/fetch.sh build/deps/json_parse
+          bash programs/fmt_format/fetch.sh build/deps/fmt_format
+
       - name: Runner facts
         run: |
           lscpu
           nproc
           free -m
           for i in /sys/devices/system/cpu/cpu0/cache/index*; do echo "$i $(cat $i/level) $(cat $i/type) $(cat $i/size)"; done
-          python3 dsweep/sweep.py --assume-caches 64,1024
-
-      # Before the 8-minute timing: the rule, the ladder and the file schema run on generated data, with this
-      # Python and this numpy. A failure here stops the job before it times anything.
-      - name: Offline self-test (generated data, no timing)
-        run: |
-          sudo apt-get install -y -qq python3-yaml
-          python3 tests/test_dsweep.py
 
       - name: Build, time and collect
         env:
-          JOB: ${{ matrix.job }}
-          REPS: ${{ inputs.reps }}
-        run: |
-          ARGS=()
-          if [ -n "$REPS" ]; then ARGS+=(--reps "$REPS"); fi
-          python3 dsweep/sweep.py --job "$JOB" --out out --build build/dsweep "${ARGS[@]}"
+          KERNELS: ${{ inputs.kernels }}
+          SIZES: ${{ inputs.sizes }}
+          PROGRAMS: ${{ inputs.programs }}
+          CRITERIA: ${{ inputs.criteria }}
+        run: python3 harness/run.py --kernels "$KERNELS" --sizes "$SIZES" --programs "$PROGRAMS" --criteria "$CRITERIA" --deps build/deps --out out
 
-      # Immediately after the sweep and before any check of the results: the folder is the result.
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dsweep-job-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          name: results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
           path: out/
           if-no-files-found: warn
 
-      - name: Per-job table (informational; one job is not a verdict)
+      - name: Check the results without a compiler (as on the laptop)
         if: always()
-        run: python3 dsweep/analyze.py out | tee -a "$GITHUB_STEP_SUMMARY" || true
+        run: |
+          python3 harness/schema.py out/results.json
+          python3 harness/verdict.py out/results.json
 
-  pool:
-    needs: sweep
-    if: always() && inputs.reps == ''
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("out/results.json"))
+          print(f"CPU: {r['run']['runner']['cpu_model']}\n")
+          print(f"Per-job verdict ({r['verdict']['form']}, {r['run']['criteria_file']}): {r['verdict']['line']}\n")
+          print(f"Verdict v1 ({r['verdict_v1']['form']}, as compiled): {r['verdict_v1']['line']}\n")
+          print(f"A/A ({r['controls']['aa']['n_per_side']} per side): half-width {r['controls']['aa']['half_width_pct']:.3f}%\n")
+          print("| layout A/A | none_a64/none | half-width |\n|---|---|---|")
+          for p in r["controls"].get("layout_aa", []):
+              print(f"| {p['id']} | {p['ratio']:.3f} | {p['half_width_pct']:.2f}% |")
+          print("\n| cell | FAST/NONE as compiled | 95% CI | loops aligned | 95% CI | instructions FAST/NONE (not time) | aligned |\n|---|---|---|---|---|---|---|")
+          for c in r["cells"]:
+              a = c["aligned"]
+              ir = f"{c['instr']['ratio']:.3f}" if c.get("instr") else "-"
+              ira = f"{a['instr']['ratio']:.3f}" if a.get("instr") else "-"
+              print(f"| {c['cell_id']} | {c['ratio']:.3f} | {c['ci95'][0]:.3f} to {c['ci95'][1]:.3f} | "
+                    f"{a['ratio']:.3f} | {a['ci95'][0]:.3f} to {a['ci95'][1]:.3f} | {ir} | {ira} |")
+          print("\n| program | FAST/NONE | 95% CI | aligned | own A/A half-width | consistent with at most |\n|---|---|---|---|---|---|")
+          for p in r["programs"]:
+              print(f"| {p['name']} | {p['ratio']:.4f} | {p['ci95'][0]:.4f} to {p['ci95'][1]:.4f} | "
+                    f"{p['aligned']['ratio']:.4f} | {p['aa_half_width_pct']:.2f}% | {p['consistent_with_at_most_pct']:.2f}% |")
+          EOF
+
+  combine:
+    needs: measure
+    if: always()
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install numpy (Ubuntu noble apt)
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
-
       - name: Download every job's results
-        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          pattern: dsweep-job-*
+          pattern: results-*
           path: matrix/
 
-      - name: Any results?
-        id: have
-        run: |
-          if ls matrix/*/dsweep.json >/dev/null 2>&1; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No sweep job produced a dsweep.json; nothing to pool. Jobs that timed something before they stopped are listed below (dsweep.partial.jsonl); see the sweep jobs' logs." | tee -a "$GITHUB_STEP_SUMMARY"
-            python3 dsweep/analyze.py matrix | tee -a "$GITHUB_STEP_SUMMARY" || true
-          fi
+      - name: Install numpy (Ubuntu noble apt)
+        if: inputs.criteria == 'harness/criteria-v3.json'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
 
-      - name: Pool per CPU model and apply the written rule
-        if: steps.have.outputs.found == 'true'
+      - name: Per-CPU verdicts, every job of a CPU model pooled (criteria-v3)
+        if: inputs.criteria == 'harness/criteria-v3.json'
         run: |
           ls matrix
-          python3 dsweep/analyze.py matrix --out matrix/dsweep-pooled.json --md matrix/dsweep-pooled.md | tee matrix/report.txt
-          { echo '### d-sweep, pooled per CPU model'; echo; cat matrix/dsweep-pooled.md; } >> "$GITHUB_STEP_SUMMARY"
+          python3 harness/pool.py matrix/pooled.json matrix
+          python3 harness/schema.py matrix/pooled.json matrix/*/results.json
+          python3 harness/pool_check.py matrix/pooled.json
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("matrix/pooled.json"))
+          print(f"### Per CPU model, pooled (criteria-v3; no single page-level form)\n\n{d['page']['line']}\n")
+          print("| CPU model | jobs | form | pooled A/A half-width |\n|---|---|---|---|")
+          for b in d["cpus"]:
+              print(f"| {b['cpu_model']} | {b['jobs']} | {b['verdict']['form']} | {b['aa']['half_width_pct']:.3f}% |")
+          for b in d["cpus"]:
+              print(f"\n#### {b['cpu_model']}\n\n{b['verdict']['line']}\n")
+              print("| cell | pooled as compiled [95% two-level] | pooled aligned | instr FAST/NONE (not time) |\n|---|---|---|---|")
+              for c in b["cells"]:
+                  x, a = c["as_compiled"], c["aligned"]
+                  ir = f"{c['instr']['ratio']:.3f}" if c.get("instr") else "-"
+                  print(f"| {c['cell_id']} | {x['ratio']:.3f} [{x['ci95'][0]:.3f}, {x['ci95'][1]:.3f}] | "
+                        f"{a['ratio']:.3f} [{a['ci95'][0]:.3f}, {a['ci95'][1]:.3f}] | {ir} |")
+          EOF
 
       - name: Upload pooled
-        if: steps.have.outputs.found == 'true'
+        if: always() && inputs.criteria == 'harness/criteria-v3.json'
         uses: actions/upload-artifact@v4
         with:
-          name: dsweep-pooled
-          path: |
-            matrix/dsweep-pooled.json
-            matrix/dsweep-pooled.md
-            matrix/report.txt
+          name: pooled
+          path: matrix/pooled.json
+          if-no-files-found: warn
+
+      - name: Page-level verdict across CPU models (criteria-v2)
+        if: inputs.criteria != 'harness/criteria-v3.json'
+        run: |
+          ls matrix
+          python3 harness/combine.py matrix
+          python3 harness/schema.py matrix/combined.json matrix/*/results.json
+          python3 - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          c = json.load(open("matrix/combined.json"))
+          print(f"### Page-level verdict ({c['verdict']['form']})\n\n{c['verdict']['line']}\n")
+          print("| CPU model | form | files | why |\n|---|---|---|---|")
+          for x in c["cpus"]:
+              print(f"| {x['cpu_model']} | {x['form']} | {len(x['files'])} | {x['why']} |")
+          EOF
+
+      - name: Upload combined
+        if: always() && inputs.criteria != 'harness/criteria-v3.json'
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined
+          path: matrix/combined.json
           if-no-files-found: warn
