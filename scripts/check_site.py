@@ -1869,6 +1869,32 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     land = pg.evaluate("(() => { const c = document.getElementById('arm-t1-cap').getBoundingClientRect(), w = document.getElementById('arm-t1-wrap').getBoundingClientRect(); return [Math.round(c.top), Math.round(w.top), Math.round(w.bottom)]; })()")
     ck.ok(-5 <= land[0] < 450 and land[1] < 900 and land[2] > 300, f"the link to details.html#arm-t1-cap lands on Table 12's caption with the table below it on screen (caption top {land[0]}, table top {land[1]}, bottom {land[2]})")
     pg.close()
+    # the same two links in a browser that does not keep the target in place while the page above it grows (scroll anchoring off:
+    # Chromium on the Linux runner stayed where its first jump left it, with the target 17,000 px below the screen)
+    no_anchor = "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '*{overflow-anchor:none !important}'; document.head.append(s); })"
+    for frag, probe in (("arm-full", "document.getElementById('arm-full').getBoundingClientRect().top"),
+                        ("arm-t1-cap", "document.getElementById('arm-t1-cap').getBoundingClientRect().top")):
+        pg = browser.new_page(viewport={"width": 1280, "height": 900})
+        pg.add_init_script(no_anchor)
+        pg.goto(base + "details.html#" + frag, wait_until="networkidle")
+        pg.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16", timeout=20000)
+        top = pg.evaluate(f"Math.round({probe})")
+        ck.ok(-5 <= top < 450, f"the link to details.html#{frag} lands on its target when the browser does not follow it as the page grows (top at {top} px)")
+        pg.close()
+    # a reader who has scrolled is left where they are: the late landing never pulls them back
+    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    pg.add_init_script(no_anchor)
+    pg.goto(base + "details.html#arm-full", wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16", timeout=20000)
+    y0 = pg.evaluate("scrollY")
+    pg.mouse.move(640, 450)
+    pg.mouse.wheel(0, -1500)
+    pg.wait_for_timeout(300)
+    y1 = pg.evaluate("scrollY")
+    pg.wait_for_timeout(1000)  # past the late landings (fonts, the 600 ms timer)
+    y2 = pg.evaluate("scrollY")
+    ck.ok(y1 < y0 - 800 and abs(y2 - y1) < 3, f"a reader who scrolled up from the linked section is not pulled back to it (scrollY {y0:.0f}, after the wheel {y1:.0f}, a second later {y2:.0f})")
+    pg.close()
 
     # ---- the collapsed main page: one gist and a Details button; the figure behind it
     pg = browser.new_page_plain(viewport={"width": 1280, "height": 900})

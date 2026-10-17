@@ -2466,10 +2466,25 @@ async function loadPooled() {
   notice('sample-mark', 'SAMPLE DATA');
   return true;
 }
+// A link such as details.html#arm-full jumps to its target before this page has filled in the sections above it, and
+// the browser does not always follow the target as they grow (Chromium on Linux stays where the first jump left it).
+// Each time a section lands, a reader who has not scrolled yet is brought back to the target.
+let readerMoved = false;
+for (const ev of ['wheel', 'touchstart', 'keydown', 'mousedown']) addEventListener(ev, () => { readerMoved = true; }, { passive: true, once: true });
+function landOnHash() {
+  if (PAGE !== 'details' || readerMoved) return;
+  let id = '';
+  try { id = decodeURIComponent(location.hash.slice(1)); } catch (err) { return; }
+  const target = id && !id.includes('=') ? document.getElementById(id) : null;
+  if (!target) return;
+  const top = target.getBoundingClientRect().top;
+  if (top < -4 || top > 120) target.scrollIntoView({ behavior: 'instant', block: 'start' });
+}
 async function loadSection(path, key, render, boxId) {
   try {
     S[key] = await getJSON(path);
     render();
+    landOnHash();
   } catch (err) {
     const box = $(boxId);
     if (box) box.prepend(el('p', { class: 'err' }, `This section’s data did not load (${err.message}).`));
@@ -2509,6 +2524,9 @@ async function start() {
     renderRuleList();
     renderProgSum();
     updateScrollHints();
+    landOnHash();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(landOnHash);
+    setTimeout(landOnHash, 600);
   }
   showCpu();
   writeHash();
