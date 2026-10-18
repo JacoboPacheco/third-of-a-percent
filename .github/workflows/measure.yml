@@ -67,7 +67,7 @@ jobs:
           echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
           echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install clang-18, libc++-18, valgrind and numpy (Ubuntu noble apt)
         run: |
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: results-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
           path: out/
@@ -144,10 +144,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download every job's results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: results-*
           path: matrix/
@@ -182,7 +182,7 @@ jobs:
 
       - name: Upload pooled
         if: always() && inputs.criteria == 'harness/criteria-v3.json'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pooled
           path: matrix/pooled.json
@@ -205,7 +205,7 @@ jobs:
 
       - name: Upload combined
         if: always() && inputs.criteria != 'harness/criteria-v3.json'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: combined
           path: matrix/combined.json

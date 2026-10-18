@@ -48,7 +48,7 @@ export const BASE_CSS = `
 .w3 .w-seg-b:hover { background: var(--hv); color: var(--i); }
 .w3 .w-seg-b[aria-checked="true"] { background: var(--i); color: var(--pp); }
 .w3 .w-seg-b:focus-visible { outline: 2px solid var(--ac); outline-offset: -2px; position: relative; z-index: 1; }
-.w3 .w-seg-sub { display: block; font-size: .75rem; opacity: .75; margin-top: .1rem; }
+.w3 .w-seg-sub { display: block; font-size: .75rem; opacity: .8; margin-top: .1rem; }
 .w3 .w-note { font-size: .84rem; color: var(--i2); margin: .6rem 0 0; }
 .w3 .w-foot { font-size: .8rem; color: var(--i3); margin: .9rem 0 0; padding-top: .55rem; border-top: 1px solid var(--r2); line-height: 1.5; }
 .w3 .w-err { font-size: .9rem; color: var(--lo); border-left: 3px solid var(--lo); padding: .3rem .7rem; margin: 0; }

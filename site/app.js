@@ -172,6 +172,68 @@ const capFirst = (t) => t.replace(/^./, (c) => c.toUpperCase());
 // a share as words when it is close to a simple fraction, else as a percentage
 const shareWords = (x) => (Math.abs(x - 0.75) <= 0.03 ? 'about three quarters' : Math.abs(x - 0.5) <= 0.03 ? 'about half' : `${Math.round(x * 100)}%`);
 function writtenWhen(s) { const m = (s || '').match(/^(.*?\d{2}:\d{2}\s+[A-Z]{2,4})/); return m ? m[1] : null; }
+// The order in which plans and runs came is told from the records and from a few facts read from the GitHub API on a
+// stated date (ix.provenance); the sentences below say what those show and what they cannot.
+const utcText = (s) => s.replace('T', ' ').replace('Z', ' UTC');
+const utcClock = (s) => `${s.slice(11, 19)} UTC`;
+const LONG_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const longDate = (s) => `${Number(s.slice(8, 10))} ${LONG_MONTHS[Number(s.slice(5, 7)) - 1]} ${s.slice(0, 4)}`;
+const minSec = (n) => {
+  const m = Math.floor(n / 60), s = n % 60, u = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  return m ? (s ? `${u(m, 'minute')} ${u(s, 'second')}` : u(m, 'minute')) : u(s, 'second');
+};
+function provReplication() {
+  const RV = S.ix.provenance.replication, lags = [RV.first_run_lag_s, ...Object.values(RV.arm_run_lags_s).filter((x) => x < 120)];
+  return `the commit time, ${utcText(RV.plan_commit_utc)}, is ${RV.margin_s} seconds before the first record’s start (${utcClock(RV.first_record_start_utc)}), and a run’s first record starts ${Math.min(...lags)} to ${Math.max(...lags)} seconds after the run is created (the first of these runs and two of the three Arm runs of the day before), so the margin lies within the range of the start lags and the order cannot be shown (the commit time is read on the author’s clock, the run times on GitHub’s and the runner’s).`;
+}
+// "What the public record shows": the rule files, plans and expectations were committed in the author's unpublished
+// development history; the public history begins after the earlier runs, so that order cannot be checked here for them. The
+// records show which rule file judged them, which commits they name and whether their run links can open.
+function renderProvenance() {
+  if (!has('prov-full')) return;
+  const P = S.ix.provenance, groups = P.groups, sum = (gs, f) => gs.reduce((t, g) => t + f(g), 0), rec = (gs) => sum(gs, (g) => g.records);
+  const gone = groups.filter((g) => g.commits.every((c) => !c.where));
+  const inMain = groups.filter((g) => g.commits.every((c) => c.where === 'main'));
+  const arm = groups.find((g) => g.id === 'arm'), ds = groups.find((g) => g.id === 'dsweep');
+  const matched = sum(groups, (g) => g.criteria_match), total = rec(groups);
+  const open = sum(groups, (g) => g.links.open), linked = sum(groups, (g) => g.links.records);
+  const ac = arm.commits[0], dc = ds.commits[0];
+  $('prov-full').replaceChildren(
+    el('p', null, `The rule files, plans and expectations named on this page were committed in the author’s unpublished development history before the runs they govern. The public history begins on ${longDate(P.public_history.first_commit_utc)}, after the runs of s1 to s4, the holdout and the rewrite, so for those that order cannot be checked from public records. The hashes stored in the result files show that the rule files did not change after the runs: `,
+      `${matched} of the ${total} result records store the sha256 of `, code(P.rule_file.file), ' as it is now, all the records of s4 to s10 and none of the older ones (s1 to s3, judged under earlier versions of the rules) or of the rewrite runs (judged under their own rule file).'),
+    el('p', null, `The commit stamped in a record names the code that produced it. The ${rec(gone)} records of s1 to s4, the holdout and the rewrite runs name commits of the unpublished history that this repository does not contain, so the code at those commits cannot be recovered from it; the ${rec(inMain)} records of s6, s7 and s9 name commits in this repository’s history, which hold the rule file as it is now. The ${arm.records} Arm records name `, code(ac.commit), ` and the ${ds.records} d-sweep records name `, code(dc.commit),
+      ', commits on the temporary public branches ', code(ac.where), ' and ', code(dc.where), ', which are kept for that reason.'),
+    el('p', null, `Run links in the records open only for the runs of s6 to s10 (${open} of ${linked} links): the earlier runs were made before this repository existed, in repositories that are not public. The commit and run facts here were read from the GitHub API on ${P.read_on}.`));
+}
+// What the placement exemption does and does not settle (details, section 3). The labels in Table 1 describe the cells left
+// after it; it sets no limit on the size of the effect it leaves out; aligning the loop starts removes one source of
+// code-placement variation; several words rest on margins of a few thousandths.
+function renderPsScope() {
+  if (!has('ps-scope')) return;
+  const good = S.ix.cpus.filter((c) => c.enough);
+  const all = good.flatMap((c) => c.placement_sensitive.map((q) => ({ c, q })));
+  if (!all.length) { $('ps-scope').hidden = true; return; }
+  const big = all.reduce((a, x) => (x.q.aligned_ratio > a.q.aligned_ratio ? x : a));
+  const judged = good.filter((c) => missedForward(c).some((x) => x.cell_id === big.q.cell_id)).map((c) => ({ c, x: missedForward(c).find((x) => x.cell_id === big.q.cell_id) }));
+  const ex = all.filter((x) => x.q.cell_id === 'k03_stencil.L1').reduce((a, x) => (!a || Math.abs(x.q.aligned_ratio - x.q.ratio) > Math.abs(a.q.aligned_ratio - a.q.ratio) ? x : a), null);
+  const narrow = good.map((c) => ({ c, n: nearestCall(c) })).filter((x) => x.n).map((x) => ({ c: x.c, m: x.n.margin, left: x.n.left }));
+  const verdictOf = (c) => (c.form === 'inconclusive' ? 'is inconclusive' : 'has a verdict');
+  const bare = (id) => cellName(id).replace(/^the /, '');
+  const kids = [
+    el('p', null, `The exemption sets no limit on the size of the effect it leaves out. The largest cell it leaves out is ${cellName(big.q.cell_id)} on the ${big.c.cpu_short}, ${fx(big.q.aligned_ratio)}× aligned, and the ${big.c.cpu_short} ${verdictOf(big.c)}`,
+      judged.length ? `; the ${joinAnd(judged.map((j) => `${j.c.cpu_short}’s ${bare(big.q.cell_id)}, ${fx(j.x.aligned.ratio)}× aligned and not flagged,`))} is judged, misses the limit, and the ${judged[0].c.cpu_short} ${verdictOf(judged[0].c)}` : '',
+      '. The labels in Table 1 therefore describe the cells left after the exemption, not every forward cell; the cells left out and their aligned ratios are listed beside each label (Table 1, and Table 2 below).'),
+    ex ? el('p', null, `Aligning every hot loop to a 64-byte boundary removes one source of code-placement variation, not all of it: it fixes only where each hot loop starts, and the loop’s length, the position of its inner branches and of the code around it are left as compiled. The ${cellName(ex.q.cell_id).replace(/^the /, '')} on the ${ex.c.cpu_short} shows that the column still matters: ${fx(ex.q.ratio)}× as compiled, ${fx(ex.q.aligned_ratio)}× aligned.`) : null,
+    narrow.length ? el('p', null, `Several words rest on small margins. ${narrow.length === 1 ? 'On the model' : 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies ${joinAnd(narrow.map((x) => (x.left ? `${x.m.toFixed(4)} above it on the ${x.c.cpu_short} (a cell left out as placement-sensitive, which would miss the limit if counted)` : `${x.m.toFixed(4)} below it on the ${x.c.cpu_short}`)))}. The intervals resample jobs and understate the spread between runs (`,
+      el('a', { href: '#method-full' }, '“Run to run”, section 8'), '), so these words can change with the jobs drawn or the seed. How the verdicts move with the interval method is in the ',
+      repoNode('robustness/report.md', 'robustness report'), ' and, for the Arm pool, how the stored verdict sits among other seeds is in the ', repoNode('arm64/seed-sensitivity.json', 'seed-sensitivity file'), '.') : null,
+  ];
+  $('ps-scope').replaceChildren(...kids.filter(Boolean));
+}
+function provDsweep() {
+  const D = S.ix.provenance.dsweep;
+  return `The public record is the temporary branch ${D.branch}: its commit ${D.commit} holds the plan file (the stored hash) together with the sweep code, with the commit time ${utcClock(D.commit_utc)} (${D.commit_utc.slice(0, 10)}), ${minSec(D.gap_s)} before the first record started (${utcClock(D.first_record_start_utc)}); whether the plan was written before the code cannot be seen there.`;
+}
 function fillStatic() {
   const ix = S.ix, pg = ix.page, cr = ix.criteria;
   // Repository files: a link into the public repository (REPO_BASE in the builder); plain monospace text if it is empty.
@@ -231,6 +293,12 @@ function fillStatic() {
   v.reproMethod = reproM.length
     ? `On ${joinAnd(reproM.map((c) => c.cpu_short))}, the ${reproM.length === 1 ? 'only model' : 'models'} with enough jobs in more than one run (a run needs ${cr.minimum_jobs} jobs of the model), a run’s pooled ratio fell outside another run’s pooled interval in ${joinAnd(reproM.map((c) => `${c.reproduction.outside} of ${c.reproduction.checked}`))} comparisons${reproM.length === 1 ? '' : ', respectively'}.`
     : 'No model had enough jobs in more than one run to compare runs.';
+  // working sets larger than the cache: timed only in the early jobs, as compiled
+  const RM = ix.ram_early;
+  if (RM) {
+    v.ramShort = `The headline range is for data that fits in cache. RAM-sized data, timed only in the ${RM.jobs} early jobs, cost reverse ${rangeX(RM.rev.min, RM.rev.max)}, stride-2 ${rangeX(RM.stride2.min, RM.stride2.max)}, by CPU model.`;
+    v.ramText = `A RAM-sized working set was timed only in the ${RM.jobs} early jobs (as compiled) and not in the pooled runs. There the reverse loop cost ${rangeX(RM.rev.min, RM.rev.max)} and the stride-2 loop ${rangeX(RM.stride2.min, RM.stride2.max)}, depending on the CPU model, against ${rangeX(RM.rev_l2.min, RM.rev_l2.max)} for the reverse loop at the L2 size in the same jobs. Jobs of one CPU model differed by up to ${RM.spread.rev.pct.toFixed(0)}% (the reverse loop on the ${RM.spread.rev.cpu_short}), and in ${RM.pairs.rev.disjoint} of the ${RM.pairs.rev.total} pairs of such jobs the reverse loop’s intervals did not overlap (stride-2: ${RM.pairs.stride2.disjoint} of ${RM.pairs.stride2.total}). Out of cache the cost was smaller in these jobs and differed by CPU model, so the headline range holds for data that fits in cache only.`;
+  }
   const psAll = good.flatMap((c) => c.placement_sensitive.map((q) => [q, c]));
   v.psSummary = psAll.length
     ? `On the CPU models with enough jobs, ${joinAnd([...new Set(psAll.map((x) => cellName(x[0].cell_id)))])} are placement-sensitive (${psAll.length} cases over the ${good.length} models). As compiled they run ${rangeX(Math.min(...psAll.map((x) => x[0].ratio)), Math.max(...psAll.map((x) => x[0].ratio)))}; aligned, ${rangeX(Math.min(...psAll.map((x) => x[0].aligned_ratio)), Math.max(...psAll.map((x) => x[0].aligned_ratio)))}. They are left out of the 2% test.`
@@ -278,6 +346,9 @@ function fillStatic() {
   const groups = [`the ${L.orig} original runs`, L.cut ? `the ${L.cut} cut runs` : '', L.whole ? `the last ${L.whole}` : ''].filter(Boolean);
   v.lostLong = L.lost && topCpu ? `${L.runs} runs started ${L.started} jobs and ${L.returned} returned results. The ${runsS(L.orig)} that pooled first (the original runs) returned all ${L.per}.${L.cut ? ` The next ${L.cut} started ${L.cutStarted} and returned ${L.cutJobs}: each of the ${L.lost} jobs that returned nothing had finished its timing step and was cancelled in the next one, a check of the whole repository that the job ran on the machine before uploading its results, when the job time limit of that time (22 minutes) ran out (read from the workflow’s run records on GitHub).` : ''}${L.whole ? ` The last ${L.whole} were started after that limit was raised to 45 minutes, to see whether jobs return again, and were not chosen on their results; the check still ran before the upload in them, and all their jobs returned.` : ''} The workflow now uploads first and runs no such check. The cut does not touch the timing of the jobs that returned; it changes which CPU models are represented, and the ones that returned are not an even draw: jobs by model, in ${joinAnd(groups)}, ${L.byCpu.map((c) => `${c.cpu} ${joinAnd([c.inOrig, L.cut ? c.inCut : null, L.whole ? c.inWhole : null].filter((x) => x != null).map(String))}`).join('; ')}. The ${L.cut} cut runs therefore added ${jobsS(topCpu.inCut)} to ${topCpu.cpu}, which supplied ${topCpu.inOrig} of the ${L.origJobs} in the original runs, and ${jobsS(L.cutJobs - topCpu.inCut)} to the other models${L.whole ? `; the last ${L.whole} added ${topCpu.inWhole} and ${L.wholeJobs - topCpu.inWhole}` : ''}. Whether the lost jobs would have given different ratios was not tested.` : 'Every job started returned results.';
   v.lostPoolNote = L.lost ? ` (${L.lost} more were started and returned nothing; see the limits below)` : '';
+  // how the kernel pool grew: the registered design and the runs added after (the sizes of the three pooled files)
+  const ST = ix.pooled.steps;
+  v.poolSteps = `The registered design was ${numWord(ST[0].runs)} runs of ${cr.jobs_per_run} jobs (${ST[0].jobs} jobs). ${capFirst(numWord(ST[1].runs - ST[0].runs))} more full runs (${ST[1].jobs} jobs in all), then ${numWord(ST[2].runs - ST[1].runs)} more (${ST[2].jobs}), were added after the verdicts of the earlier pool had been read, with no written stopping rule.`;
   v.pooledPath = ix.pooled.source;
   // the day-one record and the criteria history
   const d1 = ix.method.dayone[0], d2 = ix.method.dayone[1];
@@ -376,8 +447,11 @@ function fillStatic() {
   if (document.getElementById('tuned')) {
     const s1 = (ix.s1_forward || [])[0];
     $('tuned').replaceChildren(`Partly, and openly. The rule files v1, v2 and v3 each followed earlier results; only v1 loosened a threshold (after the day-one runs failed the original rule), and none came after the pooled runs. v2 added the aligned column and the placement-sensitive treatment after the first harness run showed the forward add missing the original rule`,
-      s1 ? ` (as compiled it ran ${s1.ratio.toFixed(2)}× [${s1.ci95[0].toFixed(3)}, ${s1.ci95[1].toFixed(3)}] on ${s1.cpu_short}, run ${s1.run_id})` : '', `. Every rule file was committed before the runs it judges.`);
+      s1 ? ` (as compiled it ran ${s1.ratio.toFixed(2)}× [${s1.ci95[0].toFixed(3)}, ${s1.ci95[1].toFixed(3)}] on ${s1.cpu_short}, run ${s1.run_id})` : '', `. Every rule file was committed before the runs it judges, in the author’s unpublished development history (`,
+      el('a', { href: 'details.html#prov-full' }, 'what the public record shows'), ').');
   }
+  renderProvenance();
+  renderPsScope();
   // the original rule applied to the pooled forward-add and stencil cells, as compiled
   const ol = $('orig-rule');
   ol.replaceChildren();
@@ -620,6 +694,29 @@ function renderAppA() {
   $('appa-count').textContent = `${n} cells, pooled over ${pc ? pc.jobs : 0} job${pc && pc.jobs > 1 ? 's' : ''}`;
   updateScrollHints();
 }
+// A table box that scrolls (sideways, or up and down in a boxed one) has to be reachable from the keyboard: while it
+// overflows it is a focusable region with a name taken from its table's caption; when it fits it is left alone.
+function scrollerName(w) {
+  for (let s = w.previousElementSibling, i = 0; s && i < 4; s = s.previousElementSibling, i++) {
+    const b = s.classList.contains('tcap') ? s.querySelector('b') : null;
+    if (b) return b.textContent.replace(/[.:]\s*$/, '').trim();
+  }
+  const cap = w.querySelector('caption');
+  return cap ? cap.textContent.trim() : 'Table';
+}
+const scrollerOver = (w) => w.offsetParent !== null && (w.scrollWidth > w.clientWidth + 1 || w.scrollHeight > w.clientHeight + 1);
+// a box's size changes after the last call (fonts, a section filled in later, a window resize): watch the boxes and their tables
+const scrollerWatch = typeof ResizeObserver === 'function'
+  ? new ResizeObserver((entries) => { for (const e of entries) { const w = e.target.closest('.tablewrap'); if (w) scrollerReach(w, scrollerOver(w)); } })
+  : null;
+function scrollerReach(w, over) {
+  if (over) {
+    if (!w.hasAttribute('tabindex')) { w.setAttribute('tabindex', '0'); w.dataset.reach = '1'; }
+    if (w.dataset.reach) { w.setAttribute('role', 'region'); w.setAttribute('aria-label', `${scrollerName(w)}, scrollable`); }
+  } else if (w.dataset.reach) {
+    w.removeAttribute('tabindex'); w.removeAttribute('role'); w.removeAttribute('aria-label'); delete w.dataset.reach;
+  }
+}
 function updateScrollHints() { // the 'swipe sideways' lines show only while a table is wider than its box
   for (const [wrap, hint] of [['appa-wrap', 'appa-hint'], ['sib-wrap', 'sib-hint']]) {
     const w = $(wrap);
@@ -628,6 +725,7 @@ function updateScrollHints() { // the 'swipe sideways' lines show only while a t
     if ($(hint)) $(hint).hidden = !over;
     w.classList.toggle('overflowing', over);
     w.classList.toggle('at-end', w.scrollLeft + w.clientWidth >= w.scrollWidth - 2);
+    scrollerReach(w, scrollerOver(w));
   }
   for (const w of document.querySelectorAll('.tablewrap:not(#appa-wrap):not(#sib-wrap)')) {
     let h = w.previousElementSibling;
@@ -640,7 +738,9 @@ function updateScrollHints() { // the 'swipe sideways' lines show only while a t
     h.hidden = !over;
     w.classList.toggle('overflowing', over);
     w.classList.toggle('at-end', w.scrollLeft + w.clientWidth >= w.scrollWidth - 2);
+    scrollerReach(w, scrollerOver(w));
   }
+  if (scrollerWatch) for (const w of document.querySelectorAll('.tablewrap')) { scrollerWatch.observe(w); const t = w.querySelector('table'); if (t) scrollerWatch.observe(t); }
 }
 /* The clause that keeps the lost-SIMD explanation in proportion: the NOVEC build (vectorization switched off by hand,
    no checks, pooled, L1, as compiled) against the checked build's extra time. Empty when the data has no such control.
@@ -889,7 +989,8 @@ function moveTip(e) {
   let x = e.clientX + 14, y = e.clientY - h - 10;
   if (x + w > innerWidth - 8) x = e.clientX - w - 14;
   if (y < 8) y = e.clientY + 16;
-  t.style.left = `${Math.max(8, x)}px`;
+  if (y + h > innerHeight - 8) y = Math.max(8, innerHeight - h - 8);
+  t.style.left = `${Math.min(Math.max(8, x), Math.max(8, innerWidth - w - 8))}px`;
   t.style.top = `${y}px`;
 }
 function hideTip() { $('tip').hidden = true; }
@@ -1099,6 +1200,10 @@ async function renderFig2() {
     jobsLine(r),
     src ? el('p', { class: 'f2-src' }, code(srcLine(src.text))) : null,
   ].filter(Boolean);
+  // The figure is not a live region (a selection rewrites about 4,000 characters, and a screen reader would read all of them);
+  // this one line is, and a pointer preview is not announced.
+  const live = $('fig2-live');
+  if (live && shownK === S.sel) live.textContent = hp ? `${KERNEL_NAMES[r.k]}: ${fx(hp.ratio)}× as long with the check on, at the smallest data size, ${cpu.cpu_short}. The machine code is below.` : `${KERNEL_NAMES[r.k]}: not measured.`;
   const aligned = S.col === 'aligned' && cell && cell.aligned;
   const sfx = aligned ? '_a64' : '';
   const f = cpu.asm;
@@ -1222,7 +1327,7 @@ function renderCensus() {
     const checks = [cc1.determinism.pass && cc2.determinism.pass && cc2a.determinism.pass && cc1a.determinism.pass, cc2.kernels.pass, cc2a.kernels.pass, cc2.kernels.index_evidence_pass, cc2.remark_crosscheck.pass];
     const nFail = checks.filter((b) => !b).length;
     v.censusCtlSum = nFail
-      ? `${checks.length - nFail} of ${checks.length} controls passed. ${cc2a.kernels.pass ? 'One control' : 'The AVX2 kernel control (the same kernels built for AVX2, a newer x86-64 instruction set with wider SIMD)'} failed as registered${cc2a.kernels.pass ? '' : ': with AVX2, some kernel loops the rule expected to lose SIMD keep it, and the rule was not changed afterwards'}.`
+      ? `${checks.length - nFail} of ${checks.length} controls passed. ${cc2a.kernels.pass ? 'One control' : 'The AVX2 kernel control (the same kernels built for AVX2, a newer x86-64 instruction set with wider SIMD)'} failed as registered${cc2a.kernels.pass ? '' : ': with AVX2, some loops the rule expected to lose SIMD keep it, and the rule was not changed afterwards'}.`
       : `All ${checks.length} controls passed.`;
   }
   const un = C.census2.patterns_unlabelled;
@@ -1310,7 +1415,7 @@ function renderCensus() {
   ul.append(
     el('li', null, ok(c1.determinism.pass && c2.determinism.pass && c2a.determinism.pass && c1a.determinism.pass), ' Determinism: each census ran twice on separate machines with byte-identical outputs.'),
     el('li', null, ok(c2.kernels.pass), ` Kernel control, baseline: the pipeline marks exactly the ${joinAnd(c2.kernels.lost_kernels.map((k) => SHORT_NAMES[k]))} loops as lost, as timed in Figure 1.`),
-    el('li', null, ok(c2a.kernels.pass), ` Kernel control, AVX2, as registered: ${joinAnd(miss)}, so the rule written before the run fails; it was not changed afterwards.`),
+    el('li', null, ok(c2a.kernels.pass), ` Kernel control, AVX2, as registered: ${joinAnd(miss)}, so the rule written before the run (in the author’s unpublished development history) fails; it was not changed afterwards.`),
     el('li', null, ok(c2.kernels.index_evidence_pass), ' Evidence method: each lost kernel loop shows the libc++ check inside its loop line.'),
     el('li', null, ok(c2.remark_crosscheck.pass), ' Remark cross-check: the vectorized loops in the optimization records equal the compiler’s printed remarks, per project.'));
   // Appendix D
@@ -1449,7 +1554,7 @@ function renderSiblings() {
     setV('sib6973Pooled', k69 && k69.aligned ? `the pooled timing of section 1 has ${c69.jobs} jobs of it, ${fx(k69.aligned.ratio)}× aligned` : 'no pooled timing of it'); }
   const IFc = S.ix.intel_forward && S.ix.intel_forward.jobs.length ? S.ix.intel_forward : null;
   const intelCounts = IFc ? joinAnd(IFc.cpus.map((c) => { const n = IFc.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; })) : '';
-  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs included)` : '');
+  setV('intelCounts', IFc ? `${IFc.cpus.length === 1 ? 'the one Intel model' : `the ${IFc.cpus.length} Intel models`} drawn (${intelCounts}; earlier runs included, replication set C’s ${IFc.set_c.jobs} Intel jobs not counted)` : '');
   const IF = S.ix.intel_forward;
   // the Intel models with enough pooled jobs have a row in Table 1; what the written rules said about each, and why
   const incl = S.ix.cpus.filter((c) => c.enough && IF && IF.cpus.includes(c.cpu_short));
@@ -1469,7 +1574,7 @@ function renderSiblings() {
   };
   const intelStatus = (c) => (c.form === 'inconclusive' ? 'came out inconclusive under the written rules, so no headline number is printed' : 'has a verdict');
   setV('intelText', IF && IF.jobs.length
-    ? `Among the x86-64 models, the forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
+    ? `Among the x86-64 models, the forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs. The ${IF.set_c.jobs} Intel jobs of replication set C (${joinAnd(Object.entries(IF.set_c.per_cpu).map(([c, n]) => `${c} in ${n} job${n === 1 ? '' : 's'}`))}; Figure 8 in section 1) are not among these ${IF.jobs.length}; in the same cell they cost ${rangeX(IF.set_c.aligned.min, IF.set_c.aligned.max)} aligned.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1666,7 +1771,7 @@ function renderLayout() {
   const good = L.cpus.filter((c) => c.enough), thin = L.cpus.filter((c) => !c.enough);
   const R = L.rules, res = L.residues;
   const jobsOf = (c) => `${c.jobs} job${c.jobs === 1 ? '' : 's'}`;
-  setV('layoutIntro', `Every figure above times one placement of the hot loop: the one the compiler produced or the 64-byte aligned one. This sweep moves each kernel function by ${L.step_bytes} bytes at a time, ${L.placements} placements in all, so the hot loop starts at ${joinAnd(res.map(String))} bytes past a 64-byte boundary (a coarse sweep: the ${L.placements} placements the compiler can produce itself, not every placement). Four kernels (the forward sum, the forward add, the stencil and the reverse loop), sizes L1 and L2, ${R.reps_per_side} repetitions per side, pooled per CPU model like the main result. A forward cell passes at a placement when its pooled ratio is at most ${R.forward_point_max_ratio} and the upper end of its interval stays under ${1 + R.forward_ci_hi_floor_pct / 100} or ${R.forward_ci_hi_aa_multiplier} times that run’s own A/A half-width above 1, whichever is more; a cell is robust when all ${L.placements} placements pass and placement-dependent when at most ${R.dependent_max_pass} do. The rules were fixed before the run (an earlier attempt with 16 placements stopped at its probe step with no timing recorded, and the plan was amended to ${L.placements} placements before any timing existed). A CPU model needs ${R.min_jobs} jobs for a reading.`);
+  setV('layoutIntro', `Every figure above times one placement of the hot loop: the one the compiler produced or the 64-byte aligned one. This sweep moves each kernel function by ${L.step_bytes} bytes at a time, ${L.placements} placements in all, so the hot loop starts at ${joinAnd(res.map(String))} bytes past a 64-byte boundary (a coarse sweep: the ${L.placements} placements the compiler can produce itself, not every placement). Four kernels (the forward sum, the forward add, the stencil and the reverse loop), sizes L1 and L2, ${R.reps_per_side} repetitions per side, pooled per CPU model like the main result. A forward cell passes at a placement when its pooled ratio is at most ${R.forward_point_max_ratio} and the upper end of its interval stays under ${1 + R.forward_ci_hi_floor_pct / 100} or ${R.forward_ci_hi_aa_multiplier} times that run’s own A/A half-width above 1, whichever is more; a cell is robust when all ${L.placements} placements pass and placement-dependent when at most ${R.dependent_max_pass} do. The rules were fixed before the run, in the author’s unpublished development history (an earlier attempt with 16 placements stopped at its probe step with no timing recorded, and the plan was amended to ${L.placements} placements before any timing existed). A CPU model needs ${R.min_jobs} jobs for a reading.`);
   const k = L.kernels || {};
   const rev = L.reverse;
   const dep = good.flatMap((c) => c.rows.filter((r) => r.verdict === 'PLACEMENT_DEPENDENT').map((r) => `${r.size} on ${c.cpu_short} (median ${lr(r.median)}, ${r.n_cost} of ${r.n_placements} placements cost, aligned ${lr(r.aligned)})`));
@@ -1744,7 +1849,7 @@ function renderVersions() {
   const thin = T.flatMap((t) => t.cpus.filter((c) => !c.enough).map((c) => c.jobs));
   const thinMin = Math.min(...thin), thinMax = Math.max(...thin);
   const tcName = (t) => `clang and libc++ ${t.clang}`;
-  setV('verIntro', `The main study is clang ${S.ix.toolchain.clang.match(/\d+\.\d+\.\d+/)[0]} with Ubuntu’s libc++ 18, and section 6 timed other setups on few jobs. This column runs the main study’s harness unchanged on the same eight loops (as compiled and aligned, ${reps} processes a side, alternating order, one pinned CPU, in cache), under ${joinAnd(T.map(tcName))} from apt.llvm.org: ${sm.jobs} jobs in one run, ${sm.cpu_models} CPU models, ${T.length} toolchains. The rules were written before the run (${V.plan}). ${sm.all_probes_trap ? 'On every toolchain the checks trapped an out-of-range index in the probe, and a build without them ran clean.' : 'On some toolchain the probe did not trap; its rows are inconclusive.'} A loop holds when it loses SIMD and its interval’s lower end is at least ${fx(V.lost_lo)} in both columns at both sizes; a CPU model needs ${V.min_jobs} jobs on a toolchain for a verdict form.`);
+  setV('verIntro', `The main study is clang ${S.ix.toolchain.clang.match(/\d+\.\d+\.\d+/)[0]} with Ubuntu’s libc++ 18, and section 6 timed other setups on few jobs. This column runs the main study’s harness unchanged on the same eight loops (as compiled and aligned, ${reps} processes a side, alternating order, one pinned CPU, in cache), under ${joinAnd(T.map(tcName))} from apt.llvm.org: ${sm.jobs} jobs in one run, ${sm.cpu_models} CPU models, ${T.length} toolchains. The rules were written before the run, in the author’s unpublished development history (${V.plan}). ${sm.all_probes_trap ? 'On every toolchain the checks trapped an out-of-range index in the probe, and a build without them ran clean.' : 'On some toolchain the probe did not trap; its rows are inconclusive.'} A loop holds when it loses SIMD and its interval’s lower end is at least ${fx(V.lost_lo)} in both columns at both sizes; a CPU model needs ${V.min_jobs} jobs on a toolchain for a verdict form.`);
   const alSpan = (kernel, size) => { // the same cells, loops aligned: the second column of the ranges quoted as compiled
     const vs = T.flatMap((t) => t.cpus.flatMap((c) => c.cells.filter((x) => x.kernel === kernel && (!size || x.size === size) && x.aligned != null).map((x) => x.aligned)));
     return vs.length ? { min: Math.min(...vs), max: Math.max(...vs) } : null;
@@ -1805,7 +1910,7 @@ function renderEnvironment() {
   const jobsOf = (n) => `${n} job${n === 1 ? '' : 's'}`;
   const mhz = M.flatMap((m) => m.jobs.map((j) => j.mhz_median));
   const per = M.map((m) => { const v = m.jobs.map((j) => j.mhz_median); return Math.min(...v) === Math.max(...v) ? `${Math.round(v[0])}` : `${Math.round(Math.min(...v))} to ${Math.round(Math.max(...v))}`; });
-  setV('envIntro', `The harness pins one vCPU and times each pair in alternating order, but nothing recorded what the machine did meanwhile. This run times the eight loops (clang 18, as compiled, ${sm.reps_per_side} processes a side, both sizes) on ${sm.jobs} jobs (${joinAnd(M.map((m) => `${m.cpu_short}: ${jobsOf(m.n_jobs)}`))}) and records, for every timed process, the pinned vCPU’s steal time, its reported CPU MHz and the vCPU the Python driver was on, and, for every job, the topology, the kernel, the online CPUs, any cgroup CPU limit and any cpufreq files. The rules for “large” were written before the run (${E.plan}). Source: ${E.source}; report ${E.report}.`);
+  setV('envIntro', `The harness pins one vCPU and times each pair in alternating order, but nothing recorded what the machine did meanwhile. This run times the eight loops (clang 18, as compiled, ${sm.reps_per_side} processes a side, both sizes) on ${sm.jobs} jobs (${joinAnd(M.map((m) => `${m.cpu_short}: ${jobsOf(m.n_jobs)}`))}) and records, for every timed process, the pinned vCPU’s steal time, its reported CPU MHz and the vCPU the Python driver was on, and, for every job, the topology, the kernel, the online CPUs, any cgroup CPU limit and any cpufreq files. The rules for “large” were written before the run, in the author’s unpublished development history (${E.plan}). Source: ${E.source}; report ${E.report}.`);
   setV('envFinding', `Steal: ${sm.processes_with_steal} of ${num(sm.processes)} timed processes saw a steal tick on the pinned vCPU, so the steal share was ${pctS(sm.steal_max_pct)} everywhere (large: above ${pctS(E.steal_large_pct)}). Frequency: the reported MHz drifted at most ${pctS(sm.half_drift_max_pct)} between the first and second half of a job and at most ${pctS(sm.side_drift_max_pct)} between the checks-off and checks-on processes (large: above ${pctS(E.drift_large_pct)}). Jobs with a large finding: ${sm.large_jobs}. Exclusion test: each model’s pooled FAST ÷ NONE per cell was recomputed without steal-affected processes; ${sm.excluded_processes} processes were left out, so no cell moved (${sm.cells_moved} of ${M.reduce((a, m) => a + m.cells, 0)}). That test could not have moved anything here, because no process had steal. The page’s verdict text therefore did not change.`);
   setV('envTopo', `Topology. The pinned vCPU has a hyperthread sibling, and the driver (the Python process that starts each timed run) was seen on that sibling after at least one process in ${sm.jobs_sharing_core} of ${sm.jobs} jobs; it was seen on the pinned vCPU itself in ${sm.jobs_driver_on_pinned}. The driver starts a run and waits for it to end, so it is not working while a loop is timed; what a shared core can matter for is anything else running on the sibling, for example the runner’s own services, and this run did not record that. It is a real feature of this setup, not something removed. Alternating the order of the two builds should give both the same neighbours on average, so it should largely cancel in an A/A and in a ratio; this run does not measure how much noise it adds or whether it cancels fully. No cgroup CPU limit was present (${sm.jobs_cgroup} jobs), and every job was a virtual machine with ${(() => { const m = /^(\d+)-(\d+)$/.exec(sm.online[0] || ''); return sm.online.length === 1 && m ? `${+m[2] - +m[1] + 1} vCPUs` : 'CPUs'; })()} (online list ${joinAnd(sm.online)}) on kernel ${joinAnd(sm.kernels)}.`);
   setV('envLimits', `Limits: the guest’s view only. A virtual machine may report a constant or nominal MHz and hide real frequency changes; here the reading was one constant value in ${sm.mhz_constant_jobs} of ${sm.jobs} jobs, but it comes from /proc/cpuinfo inside the guest, and the median reading differs between jobs (${M.map((m, i) => `${m.cpu_short} ${per[i]}`).join('; ')}). No cpufreq governor or boost files exist in these VMs (${sm.governor_files} jobs). Steal is counted in 10 ms ticks, coarse against a process of about ${sm.process_ms_median} ms (the median); bursts inside a process are invisible. ${sm.jobs} jobs draw whatever CPU models the pool gives: ${M.map((m) => `${m.cpu_short} ${jobsOf(m.n_jobs)}`).join(', ')}. Correlation only, no cause.`);
@@ -1956,7 +2061,7 @@ function armCaption() {
     el('details', { class: 'cap-more', open: open || null }, el('summary', null, 'How to read the marks'),
       el('span', { class: 'key key-fill', 'aria-hidden': 'true' }), ' Filled dot: data sized to fit L1. ', el('span', { class: 'key key-open', 'aria-hidden': 'true' }), ` Hollow ring: sized to fit L2; timings at that size are noisier (an identical binary against itself spreads by ±${pctS(A.noise.identical_binary_aa.L2.pooled.half_width_pct)} there), so read a ring as rough. `,
       `The thin line is the 95% interval over ${A.jobs} jobs in ${A.runs.length} runs. A grey tick is the same loop and size class on ${x86name} (${A.x86.model.jobs} jobs, pooled; the working sets have other byte sizes): a filled one for L1 sticks out above the L1 dot, a hollow one for L2 below the ring, so a close value cannot hide it. ‡ and a dashed ring mark a placement-sensitive cell: moving the loop’s code changes its ratio by more than noise (section 3), so the forward test leaves it out. `,
-      'Aligned: every hot loop starts on a 64-byte boundary in both builds, so where the code happens to land cannot sway the result. As compiled: the binaries exactly as clang emitted them. The switch moves the Arm marks and the grey ticks together and is separate from Figure 1’s. One core type: no claim about other Arm cores.'));
+      'Aligned: every hot loop starts on a 64-byte boundary in both builds. That removes one source of code-placement variation, not all of it (details, section 3). As compiled: the binaries exactly as clang emitted them. The switch moves the Arm marks and the grey ticks together and is separate from Figure 1’s. One core type: no claim about other Arm cores.'));
 }
 function armRead() {
   if (!has('arm-read')) return;
@@ -2031,7 +2136,7 @@ function armDetails() {
     V.lost_rule_cells.every((c) => c.passes) ? `The other side is met: every loop that loses SIMD (${names(D.lostK)}) has its whole interval above ${fx(V.lost_ci_lo_min_ratio)}× in both columns at both sizes; the smallest interval start is ${lr(SM.lost_ci_lo_min)}×. ` : '',
     `Placement-sensitive cells are listed separately and not judged: ${joinAnd(SM.placement_sensitive.map((q) => cellName(q.cell_id)))}.`,
     psAbove.length ? ` Counted, ${joinAnd(psAbove.map((q) => `${cellName(q.cell_id)} (${lr(q.aligned_ratio)}× aligned)`))} would also miss the limit.` : '',
-    ` The rule file is the one the x86-64 pool used, byte for byte, so this core has neither a map nor a small cost everywhere under rules written before these runs.`);
+    ` The rule file is the one the x86-64 pool used, byte for byte, so this core has neither a map nor a small cost everywhere under rules written before these runs (in the author’s unpublished development history).`);
   $('arm-line').textContent = V.line;
   // how firm the verdict is: the seed and interval-method readings, beside the stored verdict (which they do not replace)
   const SS = A.seed_sensitivity, DC = SS.deciding_cell, IM = A.interval_methods, mc = D.missed[0];
@@ -2129,7 +2234,7 @@ function armDetails() {
   const noPred = A.kernels.filter((k) => !k.prediction.class), offc = (k) => D.cell(`${k.kernel}.L1`).as_compiled.ratio;
   const seen = (k) => ARM_SMOKE_SEEN.includes(k.kernel), blindP = pred.filter((k) => !seen(k)), blindHeld = blindP.filter((k) => k.prediction.class_held);
   $('arm-plan').replaceChildren(el('b', null, 'Against the plan. '), repoNode(A.plan),
-    ` was written after a two-kernel smoke run and before the full runs had finished. It named the class of ${pred.length} loops, and ${heldC.length} of ${pred.length} held (${names(pred.filter((k) => k.class === 'lost').map((k) => k.kernel))} lost; ${names(pred.filter((k) => k.class === 'kept').map((k) => k.kernel))} kept). Not all of those were blind: the smoke run had already timed ${names(ARM_SMOKE_SEEN)} on this core (the plan quotes both figures), so those ${numWord(pred.filter(seen).length)} predictions were made with the result in view, and ${blindHeld.length} of the ${blindP.length} others held. It predicted no placement effect for the forward loops: ${plHeld.length ? `${names(plHeld.map((k) => k.kernel))} held` : 'none held'}${plMiss.length ? `, ${names(plMiss.map((k) => k.kernel))} did not (flagged placement-sensitive at L1)` : ''}${plc.some(seen) ? `; ${names(plc.filter(seen).map((k) => k.kernel))} had been timed in the smoke run when that was written` : ''}. It made no prediction for ${names(noPred.map((k) => k.kernel))}, which cost ${joinAnd(noPred.map((k) => `${fx(offc(k))}×`))} at L1, as compiled.`);
+    ` was committed after a two-kernel smoke run and before the full runs had finished, by commit times in the author’s unpublished development history. It named the class of ${pred.length} loops, and ${heldC.length} of ${pred.length} held (${names(pred.filter((k) => k.class === 'lost').map((k) => k.kernel))} lost; ${names(pred.filter((k) => k.class === 'kept').map((k) => k.kernel))} kept). Not all of those were blind: the smoke run had already timed ${names(ARM_SMOKE_SEEN)} on this core (the plan quotes both figures), so those ${numWord(pred.filter(seen).length)} predictions were made with the result in view, and ${blindHeld.length} of the ${blindP.length} others held. It predicted no placement effect for the forward loops: ${plHeld.length ? `${names(plHeld.map((k) => k.kernel))} held` : 'none held'}${plMiss.length ? `, ${names(plMiss.map((k) => k.kernel))} did not (flagged placement-sensitive at L1)` : ''}${plc.some(seen) ? `; ${names(plc.filter(seen).map((k) => k.kernel))} had been timed in the smoke run when that was written` : ''}. It made no prediction for ${names(noPred.map((k) => k.kernel))}, which cost ${joinAnd(noPred.map((k) => `${fx(offc(k))}×`))} at L1, as compiled.`);
   // limits
   const flags = Object.entries(M.isa_flags).filter(([, v]) => v).map(([f]) => f);
   $('arm-limits').replaceChildren(el('b', null, 'Limits. '),
@@ -2170,7 +2275,11 @@ function renderHoldout() {
   // Table 1 pools every run so far, the holdout compares only the first pooled runs with the fresh ones: say where a model stands now
   const now = (r) => { const c = S.ix.cpus.find((x) => x.cpu_short === r.cpu_short); return c ? `Table 1, which pools every run so far, now has ${c.jobs} jobs of it${c.enough ? ` and reads ${formWords(c.form)}` : ''}` : ''; };
   setV('holdoutShort', `A fresh holdout run: same pattern on ${joinAnd(same.map((r) => r.cpu_short))}${diff.length ? `, not on ${joinAnd(diff.map((r) => r.cpu_short))}` : ''}`);
-  setV('holdoutText', `The rules and the code that pools jobs were fixed first, and the plan for this run was committed at ${when}, before its first run started. Then ${H.runs.length} fresh runs (${H.jobs} jobs) were measured and pooled with the same code. Same pattern on ${joinAnd(same.map((r) => r.cpu_short))}, with nearly the same numbers. ${diff.map((r) => `${r.cpu_short} did not reproduce as a pattern: ${cell(r.holdout).toLowerCase()} against ${cell(r.original).toLowerCase()} the first time; it had only ${r.holdout.jobs} jobs, and was already marked fragile (${now(r)})`).join('; ')}${diff.length ? '. ' : ''}${H.rows.filter((r) => r.reproduced == null).map((r) => `${r.cpu_short} drew too few jobs both times (${r.original ? r.original.jobs : 0} and ${r.holdout ? r.holdout.jobs : 0}), so nothing is said about it (${now(r)})`).join('; ')}. Nothing here tests another toolchain.`);
+  const gap = H.first_job_start_utc && H.preregistration_committed_utc ? Math.round((Date.parse(H.preregistration_committed_utc) - Date.parse(H.first_job_start_utc)) / 1000) : null;
+  const first = H.first_job_start_utc ? H.first_job_start_utc.replace('T', ' ').replace('Z', ' UTC') : null;
+  const order = gap == null ? 'The plan for this run was committed before the runs, in the author’s unpublished development history.'
+    : `The plan for this run (PREREGISTRATION.md) carries the commit time ${when}, from the author’s clock in unpublished development history; that is ${gap} second${gap === 1 ? '' : 's'} ${gap >= 0 ? 'after' : 'before'} the start of the first job it governs (${first}), so the records do not show which came first. The file lists the ${numWord(H.runs.length)} run IDs, so the commit that holds this version came after those runs were created.`;
+  setV('holdoutText', `${order} What can be checked is that all ${H.jobs_with_rule_hash} of the ${H.jobs} jobs record the sha256 of the rule file as it is in this repository${H.jobs_with_rule_hash === H.jobs ? '' : ' (not all do)'}; nothing in the records shows that the pooling code (harness/pool.py) was unchanged. ${capFirst(numWord(H.runs.length))} fresh runs (${H.jobs} jobs) were pooled as the first runs were. Same pattern on ${joinAnd(same.map((r) => r.cpu_short))}, with nearly the same numbers. ${diff.map((r) => `${r.cpu_short} did not reproduce as a pattern: ${cell(r.holdout).toLowerCase()} against ${cell(r.original).toLowerCase()} the first time; it had only ${r.holdout.jobs} jobs, and was already marked fragile (${now(r)})`).join('; ')}${diff.length ? '. ' : ''}${H.rows.filter((r) => r.reproduced == null).map((r) => `${r.cpu_short} drew too few jobs both times (${r.original ? r.original.jobs : 0} and ${r.holdout ? r.holdout.jobs : 0}), so nothing is said about it (${now(r)})`).join('; ')}. Nothing here tests another toolchain.`);
   $('holdout-table').querySelector('tbody').replaceChildren(...H.rows.map((r) => el('tr', null,
     el('th', { scope: 'row' }, r.cpu_short), el('td', null, cell(r.original)), el('td', null, cell(r.holdout)),
     el('td', { class: 'num' }, `${lost(r.original)} → ${lost(r.holdout)}`),
@@ -2296,8 +2405,8 @@ function repDetails() {
   const drawn = (o) => joinAnd(Object.entries(o).sort((a, b) => b[1] - a[1]).map(([m, n]) => `${repShort(m)} ${n}`));
   const thin = Math.max(q6.earlier_closest_forward.margin, arm.earlier.aligned_hi_over_limit), red = REP_RED.filter((id) => P.x86.replication.run_ids.includes(id));
   $('rep-what').replaceChildren(el('b', null, 'Why a second set, and how it is read. '),
-    `Two readings rested on a forward cell whose interval ended within ${d4(thin)} of the limit, the Arm core’s and the Xeon 6973P-C’s, so more runs were requested. The plan (`, repoNode(R.plan), `) was written before the runs were dispatched, in the author’s unpublished development history; no public record shows that order, and the hash stored with the comparison shows the file’s integrity, not when it was written. It fixes the reading: each set is pooled on its own, by the same code under the same rule file (`, code(R.criteria.file),
-    `), and for each cell it asks whether the second set’s pooled aligned ratio lies inside the first set’s 95% interval, reported as a share, whatever comes out. The pooling code, the statistics and the rule file were not changed after a result; one consistency check (`, repoNode('harness/pool_check.py'),
+    `Two readings rested on a forward cell whose interval ended within ${d4(thin)} of the limit, the Arm core’s and the Xeon 6973P-C’s, so more runs were requested. The plan (`, repoNode(R.plan), `) was committed in the author’s unpublished development history, by the author’s account before the runs were dispatched, and this repository cannot show that order: ${provReplication()} The hash stored with the comparison shows the file’s integrity, not when it was written. It fixes the reading: each set is pooled on its own, by the same code under the same rule file (`, code(R.criteria.file),
+    `), and for each cell it asks whether the second set’s pooled aligned ratio lies inside the first set’s 95% interval, reported as a share, whatever comes out. The rule file was not changed after a result (every record stores its hash), and by the author’s account neither were the pooling code and the statistics; one consistency check (`, repoNode('harness/pool_check.py'),
     `) was changed afterwards to sample only models with at least ${R.criteria.minimum_jobs} jobs, after ${numWord(red.length)} combine runs (${joinAnd(red)}) went red on it for models with fewer, and no verdict uses such a model. ${capFirst(X.names.replication)} is ${P.x86.replication.run_ids.length} more x86-64 runs (${P.x86.replication.jobs} jobs), drawn by GitHub from the same pool of machines; ${AR.names.replication} is ${P.arm.replication.run_ids.length} more Arm runs (${P.arm.replication.jobs} jobs). The pooled forms of the two sets together are secondary: the sets were requested after a borderline reading, so the stopping point depended on the data, and they never replace a set read alone. The earlier pools’ stored verdicts are unchanged. No further runs will be made for these questions.`);
   const al = (a) => rows.filter((r) => r.arch === a && r.inside).reduce((t, r) => { const x = repAligned(r); return [t[0] + x.n, t[1] + x.of]; }, [0, 0]);
   const alX = al('x86'), alA = al('arm'), cellsN = rows.find((r) => r.inside).inside.checked / 2;
@@ -2380,7 +2489,7 @@ function dsDetails() {
   const last = (a) => a[a.length - 1], fitA = dsRows(mA, 'fit'), fitX = dsRows(mX, 'fit');
   $('ds-q').replaceChildren(el('b', null, 'The question. '),
     `On ${mA.cpu_short}, matrix multiply keeps its NEON loop in both builds and the checked build still costs ${mA.published.L1.toFixed(3)}× at L1 (d = ${mA.ladder.study_l1_d}). The listing shows compares and selects before the NEON loop and a checked scalar loop for the leftover elements, which the matrix-multiply paragraph above reads as a set-up cost paid once per inner call (an inner call is one run of the innermost loop over d elements); that reading was inferred, and this sweep tests it. Three accounts are written in the plan (`,
-    repoNode(D.plan), `, sha256 ${D.plan_sha256.slice(0, 8)}…). It was drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code, which changed the deciding statistic, and committed alone, before the code commit and before the first run, in the author’s unpublished development history. On the public repository it arrived in one commit together with the code; the hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs, but the order before the runs is not checkable from public records. H1, a fixed extra cost per inner call, predicts the same extra time per inner call at every d. H2, a cost per element, predicts extra time in proportion to d. “Falls” is extra time that is smaller at the longer rows. The rule reads the fixed share of the extra time at the study size, fitted over the L1-resident row lengths that leave the same remainder modulo ${mA.ladder.modulus} as the study size (d = ${fitA[0].d} to ${last(fitA).d} on ${mA.cpu_short}): H1 when the share and its 95% interval lie inside ${R.h1_share_band[0]} to ${R.h1_share_band[1]}, H2 inside ${sgn(R.h2_share_band[0])} to ${R.h2_share_band[1]}, “falls” above ${R.falls_share_above}, anything else “neither”. It is applied twice, to the code as compiled and with every hot loop aligned to 64 bytes; when the two disagree the word is “neither” and both are stated.`);
+    repoNode(D.plan), `, sha256 ${D.plan_sha256.slice(0, 8)}…). It was drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code, which changed the deciding statistic, and committed alone, before the code commit and before the first run, in the author’s unpublished development history, which this repository does not contain and so cannot show that order. ${provDsweep()} The hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs. H1, a fixed extra cost per inner call, predicts the same extra time per inner call at every d. H2, a cost per element, predicts extra time in proportion to d. “Falls” is extra time that is smaller at the longer rows. The rule reads the fixed share of the extra time at the study size, fitted over the L1-resident row lengths that leave the same remainder modulo ${mA.ladder.modulus} as the study size (d = ${fitA[0].d} to ${last(fitA).d} on ${mA.cpu_short}): H1 when the share and its 95% interval lie inside ${R.h1_share_band[0]} to ${R.h1_share_band[1]}, H2 inside ${sgn(R.h2_share_band[0])} to ${R.h2_share_band[1]}, “falls” above ${R.falls_share_above}, anything else “neither”. It is applied twice, to the code as compiled and with every hot loop aligned to 64 bytes; when the two disagree the word is “neither” and both are stated.`);
   const commits = [...new Set(D.runs.map((r) => r.commit))];
   $('ds-ran').replaceChildren(el('b', null, 'What ran. '),
     `${capFirst(numWord(D.runs.length))} runs of the sweep workflow, from ${commits.length === 1 ? 'one commit' : `${commits.length} commits`} (${commits.map((c) => c.slice(0, 7)).join(', ')}) of the temporary branch dsweep-smoke, where the sweep workflow file is named ci.yml because a dispatchable workflow must already exist on the default branch (the branch is kept because the run records name the commit): ${D.runs.map((r) => `run ${r.run_id}, ${repJobs(r.jobs)} (${joinAnd(Object.entries(r.models).map(([k, n]) => `${nameOf(k)} ${n}`))})`).join('; ')}. A CPU model needs ${R.minimum_jobs} jobs to get a word, so ${joinAnd(D.too_few_jobs.map((m) => `${m.cpu_short} (${repJobs(m.jobs)})`))} get${D.too_few_jobs.length === 1 ? 's' : ''} none. The timing, the pooling and the intervals are the main study’s. The identical-binary A/A has a half-width of ${pctS(mX.aa.half_width_pct)} on ${mX.cpu_short} and ${pctS(mA.aa.half_width_pct)} on ${mA.cpu_short}, against the ${R.aa_half_width_max_pct}% the rule allows.`);
@@ -2642,7 +2751,7 @@ function renderRealworld() {
   setV('rwDetectProjects', numWord(projectsOf(detected)));
   setV('rwOthers', numWord(T.groups.length - 1));
   setV('rwStatus', `${capFirst(numWord(prog.length))} program workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and tabulated on the details page.`);
-  setV('rwTCap', `FAST ÷ NONE, whole program, AMD ${main.cpu_short}, ${main.jobs} jobs, 95% interval beneath. Aligned: both builds with every hot loop aligned to 64 bytes. A/A floor: the unchecked program against a copy of itself. A reading needs both columns to clear the floor.`);
+  setV('rwTCap', `FAST ÷ NONE, whole program, AMD ${main.cpu_short}, ${main.jobs} jobs, 95% interval beneath. Aligned: both builds with every hot loop aligned to 64 bytes. A/A floor: the unchecked program against a copy of itself. A reading needs both columns above the floor.`);
   $('rw-time-table').querySelector('tbody').replaceChildren(...Object.keys(RW_NAMES).map((n) => rwTimeRow(n, main.rows[n])));
   const lostProgs = prog.map((r) => r.row);
   const slowLost = lostProgs.filter((n) => slow(main).includes(n));
@@ -2661,10 +2770,10 @@ function renderRealworld() {
   const fmax = Math.max(...prog.map((r) => r.funcs_none));
   const small = prog.filter((r) => r.lines_none < 1 && slow(main).includes(r.row));
   const lin = prog.find((r) => r.row === 'lightgbm_linear');
-  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ own lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of what the programs execute (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} that is under 1%, yet FAST costs them ${pc(Math.min(...small.map((r) => main.rows[r.row].fast.ratio)))}% to ${pc(Math.max(...small.map((r) => main.rows[r.row].fast.ratio)))}%: consistent with most of the cost being checks elsewhere, in loops that kept SIMD or in other code. Which checks account for this was not isolated, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
+  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ own lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of what the programs execute (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} that is under 1%, yet FAST costs them ${pc(Math.min(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% to ${pc(Math.max(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% across the two columns: consistent with most of the cost being checks elsewhere, in loops that kept SIMD or in other code. Which checks account for this was not isolated, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
   const ex = T.expect, held = ex.filter((e) => e.held), miss = ex.filter((e) => !e.held);
   const why = (e) => `${RW_NAMES[e.row].replace(' (control)', '')}: expected ${e.low.toFixed(2)} to ${e.high.toFixed(2)}${e.call === 'probably not' || e.call === 'no' ? ' and undetectable' : ''}, got ${rwR3(e.fast)} and ${rwR3(e.aligned)}${e.reading === 'detectably slower' ? ', detectable' : ''}`;
-  setV('rwExpect', `Of the ${ex.length} expectations committed before any run, ${held.length} held (range and detectable-or-not call, both columns; Table 11 on the details page). Missed: ${miss.map(why).join('; ')}.`);
+  setV('rwExpect', `Of the ${ex.length} expectations committed before any run (in the author’s unpublished development history), ${held.length} held (range and detectable-or-not call, both columns; Table 11 on the details page). Missed: ${miss.map(why).join('; ')}.`);
   setV('rwLimits', `Limits: no profile-guided optimization in this timing (a separate PGO column, section 7c, did not make the cost vanish in most rows), shared virtual machines, one toolchain (clang 18, libc++ 18, -O2, x86-64 baseline), three AMD CPU models only, and programs picked because they contain lost loops, so not a sample of Google’s services. This neither confirms nor contradicts Google’s 0.30%.`);
   setV('rwOtherCap', `The other CPU models: ${rest.map((g) => `AMD ${g.cpu_short}, ${g.jobs} jobs in ${g.runs} runs`).join('; ')} (the second in Table 10c). Readings are summarised in section 7; with so few jobs the intervals understate the spread between machines. FAST ÷ NONE, interval beneath; Layout A/A: the unchecked binary aligned ÷ as compiled.`);
   setV('rwOther2Cap', rest[1] ? `AMD ${rest[1].cpu_short}, ${rest[1].jobs} jobs in ${rest[1].runs} runs. Same columns as Table 10.` : '');
@@ -2673,7 +2782,7 @@ function renderRealworld() {
     if (!g) continue;
     $(id).querySelector('tbody').replaceChildren(...Object.keys(RW_NAMES).map((n) => rwTimeRow(n, g.rows[n], 'layout')));
   }
-  setV('rwExpectCap', `Expectations written before any build or run (realworld/PLAN.md), checked against AMD ${main.cpu_short}. “Held” needs the as-compiled and aligned ratios inside the expected range and the detectable-or-not call to match.`);
+  setV('rwExpectCap', `Expectations written before any build or run, in the author’s unpublished development history (realworld/PLAN.md), checked against AMD ${main.cpu_short}. “Held” needs the as-compiled and aligned ratios inside the expected range and the detectable-or-not call to match.`);
   $('rw-expect-table').querySelector('tbody').replaceChildren(...ex.map((e) => el('tr', null,
     el('th', { scope: 'row' }, RW_NAMES[e.row]),
     el('td', null, `${e.low.toFixed(2)} to ${e.high.toFixed(2)}; detectable: ${e.call}`),
@@ -2852,13 +2961,19 @@ async function loadPooled() {
 let readerMoved = false;
 for (const ev of ['wheel', 'touchstart', 'keydown', 'mousedown']) addEventListener(ev, () => { readerMoved = true; }, { passive: true, once: true });
 function landOnHash() {
-  if (PAGE !== 'details' || readerMoved) return;
+  if (readerMoved) return;
   let id = '';
   try { id = decodeURIComponent(location.hash.slice(1)); } catch (err) { return; }
+  // On the main page only the reference links point at things this script builds (#ref-queue, #cite-queue): the script that
+  // opens collapsed sections and follows the hash runs before the reference list and the related-work table exist.
+  if (PAGE !== 'details' && !/^(ref|cite)-[a-z0-9-]+$/.test(id)) return;
   const target = id && !id.includes('=') ? document.getElementById(id) : null;
   if (!target) return;
+  const body = target.closest('.sec-body');
+  if (body && body.hidden) { const more = document.querySelector(`.sec-more[aria-controls="${body.id}"]`); if (more) more.click(); } // the section the target sits in is collapsed
   const top = target.getBoundingClientRect().top;
-  if (top < -4 || top > 120) target.scrollIntoView({ behavior: 'instant', block: 'start' });
+  const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0; // the room the sticky bar needs
+  if (top < pad - 6 || top > pad + 64) target.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
 async function loadSection(path, key, render, boxId) {
   try {
@@ -2909,6 +3024,11 @@ async function start() {
     landOnHash();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(landOnHash);
     setTimeout(landOnHash, 600);
+    if (typeof ResizeObserver === 'function' && location.hash.length > 1) { // whatever else grows above the target in the next few seconds
+      const ro = new ResizeObserver(() => landOnHash());
+      ro.observe(document.body);
+      setTimeout(() => ro.disconnect(), 4000);
+    }
   }
   showCpu();
   writeHash();
@@ -2926,7 +3046,16 @@ function buildChrome() {
     const a = el('a', { href: `#${sec.id}` }, el('span', { class: 'tn' }, no ? no.textContent : ''), (no ? h.textContent.slice(no.textContent.length) : h.textContent).trim());
     links.push([sec, a]);
     toc.append(el('li', null, a));
-    h.append(el('a', { class: 'pil', href: `#${sec.id}`, 'aria-label': `Link to ${h.textContent.trim()}` }, '¶'));
+    // the heading is named by its own words; the permalink inside it keeps its own name, so a screen reader does not read "Result Link to Result"
+    const title = (no ? h.textContent.slice(no.textContent.length) : h.textContent).trim();
+    h.setAttribute('aria-label', `${no ? `${no.textContent} ` : ''}${title}`);
+    h.append(el('a', { class: 'pil', href: `#${sec.id}`, 'aria-label': `Link to section: ${title}` }, '¶'));
+    const more = sec.querySelector(':scope > .sec-more');
+    if (more) { // "Details" and "Hide details" say which section they open or close, whatever the button's text is at the moment
+      const label = () => more.setAttribute('aria-label', `${more.textContent.trim()}: ${title}`);
+      label();
+      new MutationObserver(label).observe(more, { childList: true, characterData: true, subtree: true });
+    }
   }
   const nav = $('toc'), btn = nav.querySelector('.toc-btn');
   const setOpen = (o) => { nav.classList.toggle('open', o); btn.setAttribute('aria-expanded', o ? 'true' : 'false'); };
@@ -2941,14 +3070,38 @@ function buildChrome() {
   addEventListener('scroll', mark, { passive: true });
   mark();
   const base = (S.ix && S.ix.repo && S.ix.repo.base) || '';
+  const gpct = S.ix && S.ix.claim ? `${S.ix.claim.google_pct.toFixed(2)}\\% ` : ''; // a bare % starts a comment in LaTeX, so it is escaped in the title
   $('cmd-cite').textContent = `@misc{jacobopacheco2026thirdofapercent,
   author = {JacoboPacheco},
-  title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's 0.30% average},
+  title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's ${gpct}average},
   year   = {2026},
   note   = {Work in progress, October 2026. Code written by AI coding agents directed by the author},
   url    = {${base}}
 }`;
 }
+/* The machine-code slide-over (built in hero.js) is a modal dialog. Tell assistive technology so, and keep Tab inside it: the
+   panel's own handler skips <summary> elements, so with one of them last in the panel, Tab left the dialog for the page behind. */
+function hardenDialog() {
+  const mark = () => { const p = document.getElementById('asm-panel'); if (p) p.setAttribute('aria-modal', 'true'); return !!p; };
+  if (!mark()) { const mo = new MutationObserver(() => { if (mark()) mo.disconnect(); }); mo.observe(document.body, { childList: true }); setTimeout(() => mo.disconnect(), 20000); }
+  document.addEventListener('keydown', (e) => {
+    const p = document.getElementById('asm-panel');
+    if (e.key !== 'Tab' || !p || p.hidden || e.ctrlKey || e.altKey || e.metaKey) return;
+    const f = [...p.querySelectorAll('button, a[href], summary, input, select, textarea, [tabindex]')].filter((n) => n.tabIndex >= 0 && !n.disabled);
+    if (!f.length) return;
+    const step = e.shiftKey ? -1 : 1;
+    let i = f.indexOf(document.activeElement);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    // the next control that takes focus: links and buttons inside a closed <details> are skipped because focus() refuses them
+    for (let k = 0; k < f.length; k++) {
+      i = i === -1 ? (step > 0 ? 0 : f.length - 1) : (i + step + f.length) % f.length;
+      f[i].focus();
+      if (document.activeElement === f[i]) return;
+    }
+  }, true);
+}
+
 async function init() {
   S.fixture = new URLSearchParams(location.search).get('data') === 'fixture';
   const h = readHash();
@@ -2984,6 +3137,7 @@ async function init() {
     const done = () => { b.textContent = 'Copied'; b.setAttribute('aria-live', 'polite'); setTimeout(() => { b.textContent = 'Copy'; }, 1200); };
     if (navigator.clipboard) navigator.clipboard.writeText(t.textContent).then(done, () => { b.textContent = 'Select and copy'; });
   });
+  hardenDialog();
   await start();
   buildChrome();
 }

@@ -32,7 +32,8 @@ def test_opening_defines_the_check_and_sets_google_beside_the_loop_range():
                    "Measured one loop at a time",
                    "(reverse, stride-2, matrix multiply)",
                    "(x86-64, one compiler version, data that fits in the CPU cache)",
-                   "one command that re-checks every number"):
+                   "one command that re-checks every stored measurement and verdict",
+                   "(what it does not cover is listed under \"Check it yourself\")"):
         assert needed in para, f"the opening paragraph lost: {needed}"
 
 

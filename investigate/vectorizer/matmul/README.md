@@ -183,7 +183,7 @@ INFERRED, for the libc++ kernel: on clang 23.1 and trunk the optimizer does not 
 | `requests.tsv` | log of the 94 requests |
 | `analyze.py`, `cost_table.py`, `lv_summary.py`, `pipe_tools.py`, `loadtrack.py` | offline analysis of `raw/` |
 | `derived/` | outputs of the analysis: `tables.md` (outcome tables), `readme-table.md` (the table at the top of this file), `cost-table.md`, `outcomes.tsv`, `revisions.txt`, IR dumps and diffs, `first_umin.txt`, `loads_in_loop.txt`, `licm_hoisting.txt`, `tbaa_pointer_loads.txt`, `g0_comparison.txt` |
-| `fetch_llvm_src.py`, `llvm-src/` | the LLVM passages quoted, commits, and tag containment |
+| `fetch_llvm_src.py`, `llvm-src/` | the LLVM passages quoted, commits, and tag containment (third-party material: `llvm-src/NOTICE` gives the source and the licence) |
 | `check.py` | offline verification of the statements above |
 
 To reproduce: `python run_requests.py` (sends only missing requests, 94 for an empty `raw/`), `python analyze.py`, `python fetch_llvm_src.py`, `python check.py`. Compiler Explorer's trunk builds move daily, so the trunk rows will drift; the version-numbered rows should not.

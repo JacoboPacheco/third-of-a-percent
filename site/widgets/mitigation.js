@@ -28,8 +28,11 @@ const CSS = `
 .w3-mitigation .mi-time { font-family: var(--mo); font-size: .75rem; color: var(--i3); margin-top: .25rem; }
 .w3-mitigation .mi-playrow { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .w3-mitigation .mi-bars { margin-top: 1.3rem; border-top: 1px solid var(--r2); padding-top: .8rem; }
-.w3-mitigation .mi-brow { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 6.6rem; gap: .5rem .8rem; align-items: center; padding: .35rem 0; opacity: .62; transition: opacity .2s; }
-.w3-mitigation .mi-brow.act { opacity: 1; }
+.w3-mitigation .mi-brow { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) 6.6rem; gap: .5rem .8rem; align-items: center; padding: .35rem 0; }
+/* the rows that are not selected are quieter, but their words keep a colour that passes 4.5:1: only the bars are faded */
+.w3-mitigation .mi-btrack { transition: opacity .2s; }
+.w3-mitigation .mi-brow:not(.act) .mi-btrack { opacity: .55; }
+.w3-mitigation .mi-brow:not(.act) .mi-bname b, .w3-mitigation .mi-brow:not(.act) .mi-bval { color: var(--i2); }
 .w3-mitigation .mi-bname { font-size: .82rem; line-height: 1.25; }
 .w3-mitigation .mi-bname b { display: block; font-weight: 600; }
 .w3-mitigation .mi-bname span { color: var(--i3); font-size: .75rem; }
@@ -214,7 +217,7 @@ export function mount(el, ctx) {
       ch.push(h('span', { class: 'w-chip' }, showV.keeps_safety ? 'keeps safety: the too-short input trapped under FAST' : `does not keep safety: the too-short input ${trapped || 'did not trap'}`));
       if (showV.readability_cost && showV !== orig) ch.push(h('span', { class: 'w-chip' }, showV.readability_cost));
       const key = `${sh.kernel}.${showV.variant}`;
-      ch.push(h('span', { class: 'w-chip' + (addedLater.has(key) ? ' hl' : '') }, addedLater.has(key) ? 'added after the first timed run' : showV === orig ? 'the original' : 'written before the first timed run'));
+      ch.push(h('span', { class: 'w-chip' + (addedLater.has(key) ? ' hl' : '') }, addedLater.has(key) ? 'added after the first timed run' : showV === orig ? 'the original' : 'in the first timed run'));
       if (showV !== orig && showV.variant === sh.recommended) ch.push(h('span', { class: 'w-chip' }, 'the rewrite shown first on the page'));
       chips.replaceChildren(...ch);
       what.textContent = st.mode === 'before' ? `${orig.what}. With FAST every index is checked as the loop runs.` : `${v.what}. Highlighted: lines that are not in the original.`;
@@ -263,7 +266,7 @@ export function mount(el, ctx) {
       const later = [...addedLater];
       rules.replaceChildren(
         h('p', null, `Only ${usable} of ${total} jobs had a clean enough noise floor to count (A/A at most ${d.aa_max_pct}%), all on ${(d.usable_cpus || []).join(', ') || 'no CPU model'}. The ranges above include every job.`),
-        h('p', null, `The rule for the word “better”, written before the first timed run: ${d.headline_rule}`),
+        h('p', null, `The rule for the word “better”: ${d.headline_rule}`),
         later.length ? h('p', null, `Added after the first timed run, judged by the same rules: ${later.join(', ')}.`) : null);
       announce(`${sh.shape}, ${st.mode === 'before' ? 'original loop' : 'rewrite ' + v.variant}, ${st.cpu === 'all' ? 'all CPU models' : st.cpu}: ${rangeOf(showV, st.cpu) ? showRange(rangeOf(showV, st.cpu)) : 'no jobs'} against the unchecked original.`);
     }

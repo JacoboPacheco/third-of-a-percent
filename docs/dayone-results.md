@@ -1,7 +1,7 @@
 # Day-one test results
 
 Run: 38116223923 (Sun Oct 11 2026, 05:52 to 05:56 UTC), commit `5d22102`. This is the first and only run of the day-one test as written; a separate rerun is reported elsewhere.
-Thresholds: `dayone/criteria.json`, committed in `176be71` before this run, not changed since. The rules were drafted in planning documents that are not published (a day-one plan, a specification and a review of the idea); `dayone/criteria.json` carries the thresholds and the verdict rule inline, and `dayone/evaluate.py` implements them.
+Thresholds: `dayone/criteria.json`, committed in `176be71` before this run (the commit and the order are in the author's unpublished development history), not changed since. The rules were drafted in planning documents that are not published (a day-one plan, a specification and a review of the idea); `dayone/criteria.json` carries the thresholds and the verdict rule inline, and `dayone/evaluate.py` implements them.
 Raw data, remarks and assembly: `dayone/results/run-38116223923/` (`raw.json` has every sample; `dayone.json` is the evaluation; `asm/` has each kernel's function for NONE, FAST and NOVEC and the NONE-to-FAST diff).
 Recompute on Windows, no compiler needed: `python dayone/evaluate.py dayone/results/run-38116223923/raw.json <out.json>`.
 

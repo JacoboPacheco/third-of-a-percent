@@ -16,12 +16,12 @@ rewrite gets checked for vectorization, check traps, the original's checksum and
   `first(2*n)` vectorizes, but with interleave 1. Adding `#pragma clang loop interleave_count(2)`
   brings it to **0.96x to 1.03x**. Raw `data()` pointers behind one check: **0.95x to 1.03x**.
 - **Matrix multiply: only with raw row pointers behind one check (1.00x everywhere).** The rewrites that keep
-  every access under hardening (row spans) stay at **1.09x to 1.37x at L1** and **0.98x to 1.12x at L2**.
+  every access under hardening (row spans) stay at **1.08x to 1.37x at L1** and **0.98x to 1.12x at L2**.
 - **Gather: no.** The data-dependent check `a[idx[i]]` cannot be hoisted. Moving only `c[i]`'s check up front cuts
   1.58x to 1.84x down to **1.27x to 1.36x at L1** (1.01x to 1.14x at L2). Every rewrite that removes the last check
   either is slower (a clamp, a validation pass) or is UNSAFE (raw pointers).
 
-**Under the rules committed before the first timed run (`criteria.json`), no rewrite is called "better".** That
+**Under the rules committed before the first timed run (`criteria.json`; the order is in the author's unpublished development history), no rewrite is called "better".** That
 word needs the aligned interval to sit within A/A noise of 1.0 on every CPU model drawn. Only EPYC 7763 had
 jobs usable under the whole-job A/A rule (2 of 12 jobs). On EPYC 9V45 the reverse rewrites sit at 1.06x to 1.09x with
 intervals clearly above 1. The numbers below are measurements, not that claim.
@@ -129,7 +129,7 @@ Ranked by: keeps safety, then recovers speed, then small code change.
   than the check (up to 2.4x), and a validation pass costs a second read (up to 2.2x).
 - **Matrix multiply.** (1) Raw row pointers behind one `REQUIRE` that all three matrices hold `d*d` elements
   (overflow-checked): 0.99x to 1.00x on every CPU drawn. Safety rests on that one line. (2) If every access must stay under
-  hardening: row spans (`subspan(i*d, d)`) with `std::transform` over the row, 1.09x to 1.14x at L1 and 0.99x to
+  hardening: row spans (`subspan(i*d, d)`) with `std::transform` over the row, 1.08x to 1.14x at L1 and 0.98x to
   1.02x at L2. A precondition with `operator[]` does **not** work (clang cannot prove `i*d+j < size`).
 
 ## Surprises
@@ -150,7 +150,7 @@ Ranked by: keeps safety, then recovers speed, then small code change.
 
 ## Reading against the rules, and the objection
 
-`criteria.json` was committed before the first timed run (commit e0dabd8). Run 38256846461 already existed when three
+`criteria.json` was committed before the first timed run (commit e0dabd8, in the author's unpublished development history). Run 38256846461 already existed when three
 variants (`span_il2` for stride-2 and matmul, `clamp` for gather) were added. They are judged by the same rules,
 and that file records the addition. The rules as written:
 

@@ -22,7 +22,7 @@ Linux, with Python 3.8+, clang 18 or newer and libc++ 18 or newer. On Ubuntu 24.
 sudo apt install clang-18 libc++-18-dev libc++abi-18-dev binutils llvm-18
 ```
 
-Copy this folder (`lostloops.py`, `ll_optrecord.py`, `ll_classify.py`, `evidence/`) anywhere. Then:
+Run it from this folder (`lostloops.py`, `ll_optrecord.py`, `ll_classify.py` and `evidence/` stay together). Then:
 
 ```sh
 # CMake: export the compile commands of your release configuration (no need to build)
@@ -39,8 +39,8 @@ Options: `--mode fast|extensive|debug` (default `fast`), `--filter REGEX` (only 
 loop), `--objdump none`, `--keep-work`. Output: a summary on screen, `report.md` and `report.json`
 in `--out`. Exit code 0 when a report was written, whatever it says; 2 when clang, libc++ or the
 input is missing (so on Windows or a machine without libc++ it stops with a message); 1 only if the
-tool itself breaks. A ready-made GitHub Actions job is in [example-workflow.yml](example-workflow.yml)
-(copy it into your repository's `.github/workflows/`; it is not run here).
+tool itself breaks. A GitHub Actions job written as an example is in [example-workflow.yml](example-workflow.yml)
+(documentation only; it is not run here).
 
 What it adds to your command, and nothing else: `-stdlib=libc++`,
 `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE` (or `_FAST`, `_EXTENSIVE`, `_DEBUG`),

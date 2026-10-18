@@ -88,7 +88,7 @@ figcaption b { color: var(--ink); font-weight: 600; }
 /* a bigger invisible target for a finger */
 .hint::after { content: ""; position: absolute; inset: -12px; }
 .hint-wrap .tip-text {
-  position: absolute; z-index: 5; top: 24px; right: -8px; width: 270px; padding: 8px 10px;
+  position: absolute; z-index: 5; top: 24px; left: -8px; width: 270px; padding: 8px 10px;
   background: var(--ink); color: var(--paper); font-size: 0.78rem; line-height: 1.45; border-radius: 3px;
   opacity: 0; pointer-events: none; transition: opacity .12s; font-style: normal; text-align: left;
 }
@@ -243,7 +243,7 @@ q::before, q::after { content: none; }
   h1 { font-size: 2.05rem; }
   .wide { width: calc(100% - 32px); }
   .col { padding: 0 16px; }
-  .row { grid-template-columns: minmax(0, 1fr) 4.4em; grid-template-areas: "lab val" "trk trk"; padding: 8px 4px 4px 10px; }
+  .row { grid-template-columns: minmax(0, 1fr) minmax(4.4em, max-content); grid-template-areas: "lab val" "trk trk"; padding: 8px 4px 4px 10px; }
   .row .lab { grid-area: lab; }
   .row .val { grid-area: val; }
   .row .track { grid-area: trk; margin-top: 2px; }
@@ -272,6 +272,7 @@ q::before, q::after { content: none; }
 #mini-axis { grid-template-columns: 7.5em minmax(0, 1fr) 11.5em; gap: 0 12px; padding: 0; margin: 0; font-size: 0.82rem; }
 .linkbtn { font: inherit; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: #9a9a94; text-underline-offset: 2px; }
 .linkbtn:hover { text-decoration-color: var(--ink); }
+.linkbtn { padding: 3px 0; margin: -3px 0; } /* a 24 px tall target; the negative margin keeps the line where it was */
 .sw-simd, .sw-chk { display: inline-block; width: 18px; height: 10px; vertical-align: -1px; }
 .sw-simd { background: var(--simd-tint); border-left: 3px solid var(--kept); }
 .sw-chk { background: var(--check-hl); border-left: 3px solid #b8960a; }
@@ -287,7 +288,7 @@ q::before, q::after { content: none; }
   .mini .mrow { grid-template-columns: 5.6em minmax(0, 1fr); grid-template-areas: "n t" "v v"; }
   .mini .mrow > span:first-child { grid-area: n; }
   .mini .mrow .track { grid-area: t; }
-  .mini .mrow .val { grid-area: v; text-align: left; padding-left: 5.6em; margin-left: 8px; }
+  .mini .mrow .val { grid-area: v; text-align: left; padding-left: 5.6em; margin-left: 8px; white-space: normal; overflow-wrap: anywhere; } /* wraps only when large text leaves no room: at 200% on a 320 px window the value ran 14 px past the edge */
   #mini-axis { grid-template-columns: 5.6em minmax(0, 1fr) 0; }
 }
 
@@ -299,7 +300,7 @@ q::before, q::after { content: none; }
 @media (max-width: 640px) {
   .axis.top { grid-template-columns: minmax(0, 1fr); padding: 0 4px 4px 10px; height: auto; row-gap: 2px; }
   .axis.top .axis-pad:last-child { display: none; }
-  .axis.top .axis-title { text-align: left; }
+  .axis.top .axis-title { text-align: left; white-space: normal; }
   .axis.top .axis-track { height: 16px; }
 }
 
@@ -308,6 +309,8 @@ q::before, q::after { content: none; }
 details.more { margin: 0.2rem 0 1.2rem; }
 details.more > summary { cursor: pointer; font-size: 0.9rem; color: var(--ink-2); list-style-position: outside; margin-left: 1.1em; }
 details.more > summary:hover { color: var(--ink); }
+details.more > summary, details.est-details > summary { min-height: 24px; }
+.dall-list a { display: inline-block; padding: 3px 0; margin: -3px 0; }
 details.more[open] > summary { margin-bottom: 0.6rem; }
 details.more > p, details.more > div { font-size: 0.92rem; }
 #loosened { margin-top: 0.4rem; }
@@ -522,6 +525,11 @@ ul.orig-rule { font-size: 0.9rem; margin: 0.2rem 0 0.8rem; }
 .dnav { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.88rem; margin: 0 0 1.2rem; }
 .dnav a { color: var(--ink-2); }
 .front .dnav { margin-bottom: .2rem; }
+/* the Contents row stays at the top of the viewport for the whole details page: it is a direct child of main, so its containing block is as tall as the page */
+.dnav-bar { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--rule-2); }
+.front.col.dnav-in { padding-top: 0; padding-bottom: 0; }
+.dnav-bar + .front.col.dnav-in { padding-top: .5rem; }
+.dnav-bar .dnav { margin: 0; padding: 6px 0; }
 body[data-page="details"] .front p { hyphens: none; }  /* the first screen is read in ten seconds: no word is split across lines */
 .front .crumb { display: inline-flex; align-items: center; min-height: 32px; font-size: .88rem; color: var(--ink-2); margin: 0 0 .1rem; }
 #details-purpose { margin: 0 0 1rem; }
@@ -597,7 +605,7 @@ details.est-details > summary { font-size: 0.95rem; color: var(--ink); }
   .hint { min-width: 34px; min-height: 34px; }
   .copy { min-height: 34px; }
   .body a, .front a, .foot a, .dnav a, .more-link a { display: inline-block; padding: 5px 0; margin: -5px 0; }
-  .body p a, .body li a, .body dd a, .front p a, .body figcaption a, .body .tnote a, .foot a { display: inline; padding: 8px 0; margin: 0; }
+  .body p a, .body li a, .body dd a, .front p a, .body figcaption a, .body .tnote a, .foot a { display: inline; padding: 9px 0; margin: 0; } /* 9 px: with the system serif the line box is a pixel shorter and 8 px left a link at 31 px */
 }
 @media (max-width: 640px) {
   body { font-size: 16px; line-height: 1.5; }
@@ -685,6 +693,7 @@ ol.rel-list li { margin-bottom: 0.7rem; }
 .ce-row, .ce-ch { display: contents; }
 .ce-h { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.68em; text-align: left; padding: 2px 0; color: var(--kept); text-decoration: none; justify-self: center; line-height: 1.1; }
 .ce-h:hover { text-decoration: underline; }
+.ce-h { min-width: 24px; }
 .ce-rl { font-size: 0.7em; color: var(--ink-2); white-space: nowrap; align-self: center; line-height: 1.1; }
 .ce-cell { display: block; min-height: 15px; border-radius: 2px; cursor: pointer; }
 .ce-cell.ce-lost { background: var(--lost); }
@@ -753,7 +762,7 @@ section[id], figure[id], h2[id], h3[id] { scroll-margin-top: 14px; }
 .toc { position: relative; margin-left: auto; }
 .toc-btn { font: inherit; font-size: 0.8rem; font-variant-caps: small-caps; letter-spacing: 0.04em; padding: 5px 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink-2); cursor: pointer; border-radius: 3px; min-height: 32px; }
 .toc-btn:hover, .toc-btn[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
-.toc ol { display: none; list-style: none; margin: 4px 0 0; max-height: 80vh; overflow-y: auto; padding: 8px 12px; position: absolute; right: 0; top: 100%; z-index: 40; width: 17em; background: var(--paper); border: 1px solid var(--ink); font-size: 0.86rem; line-height: 1.35; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.toc ol { display: none; list-style: none; margin: 4px 0 0; max-height: 80vh; overflow-y: auto; padding: 8px 12px; position: absolute; right: 0; top: 100%; z-index: 40; width: 17em; max-width: calc(100vw - 32px); background: var(--paper); border: 1px solid var(--ink); font-size: 0.86rem; line-height: 1.35; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
 .toc.open ol { display: block; }
 .toc li { margin: 0; }
 .toc a { display: block; padding: 3px 0; color: var(--ink-2); text-decoration: none; }
@@ -817,6 +826,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
   .rows:hover .row:not(:hover) { opacity: 1; }
   details > summary { list-style: none; }
   details:not([open]) > :not(summary) { display: block; }
+  details:not([open])::details-content { content-visibility: visible !important; display: block !important; } /* current Chromium hides a closed details' content this way, not with display */
+  /* a printed copy has the text of every section: the folded bodies print as if opened, and the buttons that open them do not print */
+  .sec-body[hidden] { display: block !important; }
+  .sec-more { display: none !important; }
   a { text-decoration: none; color: #000; }
   .body p a[href^="http"]::after, .abstract a[href^="http"]::after, .refs a[href^="http"]::after, .foot a[href^="http"]::after { content: " <" attr(href) ">"; font-size: 0.8em; word-break: break-all; color: #333; }
   .sidenote { position: static; width: auto; transform: none; border-left: 1px solid #000; padding-left: 8px; margin: 0 0 8pt; }
@@ -853,6 +866,19 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .mit-detail:empty { display: none; }
 @media print { .mk, .asm .ln, .asm-lite .ln, .row::before, .key, .ce-cell, .callout { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
+/* forced colours (Windows contrast themes): the browser paints every background in the canvas colour, so a mark that is only a coloured box
+   would vanish. The marks keep their own colours and gain an outline in the text colour; the filled dot against the ring (L1 against L2)
+   and the numbers beside every mark carry the same information in shape and text. */
+@media (forced-colors: active) {
+  .mk, .wh, .jt, .aa-band, .one, .gl, .key, .row .name i, .rh-key i, .ln-t, .ln-tile, .ln-grid i, .mv-bar, .ce-cell, .c-mk, .c-link, .key-sq-safe, .key-sq-orig,
+  .sw-t, .sw-t i, .rg.g-map i, .rbar, .rbar i, .pl-ci, .rw-one, .rw-fill, .mi-brange, .mi-bmed, .xm, .lg-np, .lg-lo, .pr-iv, .pr-mini, .pr-mini i, .rng,
+  .row[aria-selected="true"]::before { forced-color-adjust: none; }
+  .mk, .key, .row .name i, .rh-key i, .ln-t, .mv-bar, .ce-cell, .c-mk, .key-sq-safe, .key-sq-orig, .sw-t, .rg.g-map i, .rbar, .rw-fill, .mi-brange, .pr-iv, .xm, .lg-np, .lg-lo, .rng
+    { outline: 1px solid CanvasText; outline-offset: -1px; box-shadow: none; }
+  .row[aria-selected="true"]::before { background: Highlight; width: 5px; }
+  .row[aria-selected="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+}
+
 /* =====================================================================================
    Interactive layer (hero race, story stage, slide-over, widgets). Tokens are stable:
    the WIDGETS modules read --paper --ink --ink-2 --ink-3 --rule --rule-2 --hover --sel --lost
@@ -870,7 +896,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 56px; }
 button, .seg button, a { transition: background-color .12s cubic-bezier(.25,.46,.45,.94), color .12s cubic-bezier(.25,.46,.45,.94), border-color .12s cubic-bezier(.25,.46,.45,.94), transform .12s cubic-bezier(.25,.46,.45,.94), opacity .12s cubic-bezier(.25,.46,.45,.94); }
 
 /* sticky bar with a reading-progress line */
-.bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; height: 46px; padding: 0 max(16px, calc((100vw - 1220px) / 2)); background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid transparent; }
+.bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; flex-wrap: wrap; row-gap: 2px; gap: 14px; min-height: 46px; padding: 0 max(16px, calc((100vw - 1220px) / 2)); background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid transparent; }
 .bar.on { border-bottom-color: var(--rule); }
 /* status pill next to the title: the work is still in progress */
 .bar-wip { font-family: inherit; font-size: .75rem; line-height: 1; color: var(--ink-2); white-space: nowrap; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 9px; background: #fff8e6; border-color: #e5cf8a; cursor: pointer; }
@@ -882,11 +908,14 @@ button, .seg button, a { transition: background-color .12s cubic-bezier(.25,.46,
 .wip-note[hidden] { display: none; }
 @media (max-width: 360px) { .bar-wip { display: none; } } /* no room beside the title and the Contents button: the hero's dateline carries the marking instead */
 .bar-title { font-weight: 700; text-decoration: none; letter-spacing: -0.01em; font-size: 1rem; white-space: nowrap; }
-.bar-sec { color: var(--ink-3); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: 0; transition: opacity .2s; }
+.bar-sec { flex: 1 1 0; color: var(--ink-3); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: 0; transition: opacity .2s; }
 .bar.on .bar-sec { opacity: 1; }
 .toc-btn { font-variant-caps: normal; letter-spacing: 0; font-size: .86rem; border-radius: 999px; padding: 5px 14px; }
 .toc ol { border-radius: var(--radius); border-color: var(--rule); box-shadow: var(--e1); }
 @media (max-width: 640px) { .bar-sec { display: none; } }
+/* larger text on a phone: a title that does not fit wraps instead of running past the window (the hero's own rule keeps it on one line at the normal size) */
+@media (max-width: 640px) { h1, .hero h1 { white-space: normal !important; overflow-wrap: anywhere; } }
+@media (max-width: 640px) { .ex-src, .mc-src { overflow-wrap: anywhere; } }
 
 /* section rail (wide screens) */
 .rail { display: none; }
@@ -1036,7 +1065,7 @@ body.panel-open { overflow: hidden; }
 .hero .scope { font-size: .95rem; line-height: 1.45; color: var(--ink-2); margin: 0 0 .7rem; }
 @media (max-width: 640px) { .hero .scope { font-size: .86rem; margin-bottom: .4rem; } }
 .sec-open > .gist { display: none; }
-@media (max-width: 640px) { .fcol p a, .fcol li a { display: inline; padding: 8px 0; margin: 0; } }
+@media (max-width: 640px) { .fcol p a, .fcol li a { display: inline; padding: 9px 0; margin: 0; } } /* 9 px: with the system serif the line box is a pixel shorter and 8 px left "[1]" and "Every limit, in full" at 31 px */
 
 /* section toggles and word pills */
 .sec-more { border: 0; border-radius: 0; padding: 5px 0; min-height: 32px; margin: 0 0 .2rem; text-decoration: underline; text-decoration-color: var(--rule-2); text-underline-offset: 3px; font-size: .84rem; }
@@ -1048,6 +1077,7 @@ body.panel-open { overflow: hidden; }
 .w-chip:hover, .w-chip[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
 .w-def { margin: 2px 0 0; font-size: .84rem; color: var(--ink-2); }
 .w-ns { font-size: .84rem; }
+.ns-note { margin: .8rem 0; padding: .5rem .8rem; border-left: 3px solid var(--lost); background: var(--hover); font-size: .9rem; }
 @media (max-width: 640px) {
   #controls #cpu-label, #controls #cpu-seg, #controls #cpu-few { display: none; } /* the hero's CPU buttons switch the model; the verdict note stays (the models drawn too rarely are named in Table 1 and the limits) */
   #controls .ctl:has(#cpu-seg):has(#cpu-verdict:empty) { display: none; }
@@ -1062,7 +1092,9 @@ body.panel-open { overflow: hidden; }
   .cannot li { font-size: .86rem; line-height: 1.38; margin-bottom: .2rem; }
 }
 @media (max-width: 640px) {
-  .dnav { flex-wrap: nowrap; overflow-x: auto; gap: 6px; position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 8px 0; margin: 0 0 .8rem; border-bottom: 1px solid var(--rule-2); -webkit-overflow-scrolling: touch; scrollbar-width: none; box-shadow: inset -18px 0 12px -12px rgba(0,0,0,.14); }
+  .dnav-bar { margin: 0 0 .8rem; }
+  .dnav-bar .dnav { padding: 8px 0; }
+  .dnav { flex-wrap: nowrap; overflow-x: auto; gap: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; box-shadow: inset -18px 0 12px -12px rgba(0,0,0,.14); }
   .dnav::-webkit-scrollbar { display: none; }
   .dnav a { flex: none; border: 1px solid var(--rule); border-radius: 999px; padding: 6px 11px !important; margin: 0 !important; white-space: nowrap; font-size: .84rem; }
   .dnav .dgo { border-color: var(--ink); color: var(--paper); background: var(--ink); }
@@ -1109,7 +1141,7 @@ details.f2-full[open] > summary::before { content: "\25BE"; }
 .tablewrap.boxed .arm-tbl td { white-space: nowrap; }
 .tablewrap.boxed .arm-tbl td:not(.num) { white-space: normal; min-width: 6.5em; }
 @media (min-width: 1041px) { /* a little wider than the text column, so Table 12 fits without a sideways scroll on a desktop screen */
-  .body .tablewrap.boxed.arm-wrap { margin-left: -6em; margin-right: -6em; }
+  .body .tablewrap.boxed.arm-wrap { margin-left: -6.5em; margin-right: -6.5em; } /* half an em more than the web fonts need: the system serif is wider and would scroll it by 5 px */
   .tablewrap.boxed .arm-tbl tbody th[scope=row] { max-width: 11em; }
 }
 .arm-line { margin: 4px 0 6px; padding: 8px 10px; background: #f7f7f4; border-left: 2px solid var(--rule); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; font-size: 0.75rem; }
@@ -1148,3 +1180,5 @@ details.f2-full[open] > summary::before { content: "\25BE"; }
 .ds-read:empty { display: none; }
 .ds-read .rp-head { margin: 0 0 4px; color: var(--ink); }
 @media (max-width: 640px) { .ds-read { padding: 10px 10px 8px; } }
+/* Visually hidden, still read by screen readers (the one-line announcement for Figure 2). */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }

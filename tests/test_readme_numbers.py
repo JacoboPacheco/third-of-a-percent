@@ -1,8 +1,8 @@
 """The measured and counted numbers typed into README.md, readme-parts/DETAILS.md and the Arm column's text must match the stored data.
 
 Each row of ROWS (README.md), DETAILS_ROWS (readme-parts/DETAILS.md), SIBLINGS_ROWS (siblings/README.md), CESWEEP_ROWS
-(ce-sweep/README.md), ARM64_ROWS (arm64/README.md), REPLICATION_ROWS (replication/README.md) and DSWEEP_ROWS
-(dsweep/README.md) ties one sentence to its source:
+(ce-sweep/README.md), ARM64_ROWS (arm64/README.md), REPLICATION_ROWS (replication/README.md), DSWEEP_ROWS
+(dsweep/README.md) and MITIGATE_ROWS (mitigate/README.md) ties one sentence to its source:
 
     (label, where the value comes from, a function giving the expected text, a regex anchored on
      the words around the number)
@@ -17,8 +17,22 @@ Two kinds of failure: the anchor no longer matches (the sentence was reworded: u
 the sentence) and the typed number differs from the data (fix the README, or the data is stale).
 
 Read-only and offline: only the documents above and the stored files are read.
-README_PATH, DETAILS_PATH, SIBLINGS_PATH, CESWEEP_PATH, ARM64_PATH, REPLICATION_PATH and DSWEEP_PATH point the test at other
-copies (the proof that the guard bites uses a tampered copy).
+README_PATH, DETAILS_PATH, SIBLINGS_PATH, CESWEEP_PATH, ARM64_PATH, REPLICATION_PATH, DSWEEP_PATH and MITIGATE_PATH point the test
+at other copies (the proof that the guard bites uses a tampered copy).
+
+What this file does NOT tie to data, so that the sentence above is not read as a promise about every number: (1) a sentence
+listed in tests/data/guarded_sentences.json is pinned word for word (a caveat, a rule, an order of events, a verdict word), which
+catches a rewording or a reversal but says nothing about whether it is true; (2) fewer than half of the digit groups in the prose of
+readme-parts/DETAILS.md sit inside a captured group of a row (counted against the rows' spans on Oct 18; many of the others are
+in paths, hashes and run ids), and the untied numbers are mostly in these paragraphs: the rule files and their commit hashes, the
+Arm paragraph's secondary figures, the ten later runs' timings, Machine state, the first bullets' siblings and Compiler Explorer
+sweep counts, the forward-verdict and independence paragraphs' secondary figures, and the d-sweep ladder prose; (3) the typed hashes, run ids and commit times that come from the author's unpublished development history are tied only
+where tests/data/*.json records what was read (the history itself is not in this repository); (4) siblings/README.md,
+ce-sweep/README.md, variants/RESULTS.md, corpus/README.md, robustness/report.md, realworld/README.md, investigate/FINDINGS.md and
+docs/dayone-results.md are covered only by their own checkers (corpus/run_tests.py, robustness/check.py, ...), which recompute
+data but not the prose around it; the one check on their prose is test_order_statements_name_the_unpublished_history, which reads every
+Markdown file under the folders of ORDER_FOLDERS (the plans, which are the records, left out) and the day-one results note, and fails on a
+statement of the order of events that does not name the author's unpublished development history.
 
 Under pytest every row is its own test. Without pytest (scripts/check.py's built-in runner) one
 plain test goes through all rows.
@@ -118,6 +132,18 @@ def replication_text():
 
 def dsweep_text():
     path = os.environ.get("DSWEEP_PATH") or os.path.join(REPO, "dsweep", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def mitigate_text():
+    path = os.environ.get("MITIGATE_PATH") or os.path.join(REPO, "mitigate", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def gaps_text():
+    path = os.environ.get("GAPS_PATH") or os.path.join(REPO, "gaps", "GAPS.md")
     with open(path, encoding="utf-8") as f:
         return f.read()
 
@@ -409,6 +435,16 @@ def exp_lost_bullet():
     return out
 
 
+def census_driver_loops():
+    """Vectorized loops (NONE build) in the census's own driver files in census 2; the "project code" column of the table is project + driver, census 1 has none."""
+    c = J("site/data/corpus.json")
+    c1, c2 = c["census1"]["totals"]["none"]["vectorized_by_origin"], c["census2"]["totals"]["none"]["vectorized_by_origin"]
+    assert c1["driver"] == 0, "census 1 now has driver loops: the README says 1 of 150 for project code"
+    assert c2["project"] + c2["driver"] == corpus_total_label(2)["vectorized_project_code"], "the 'project code' column is no longer project plus driver"
+    assert c1["project"] == corpus_total_label(1)["vectorized_project_code"]
+    return c2["driver"]
+
+
 def exp_census_bullet():
     c = J("site/data/corpus.json")
     c1, c2 = c["census1"]["totals"], c["census2"]["totals"]
@@ -421,6 +457,7 @@ def exp_census_bullet():
         "p1lost": str(c1["lost_by_origin"]["project"]),
         "p2lost": str(c2["lost_by_origin"]["project"]),
         "p2": thousands(corpus_total_label(2)["vectorized_project_code"]),
+        "drv": word(census_driver_loops()),
         "with": str(c2["projects_with_a_lost_loop"]), "of": str(c2["projects"]),
         "lgbm": str(next(p for p in c["census2"]["projects"] if p["name"] == "lightgbm")["lost"]),
         "of444": str(c2["lost"]),
@@ -1978,6 +2015,21 @@ def exp_arm_seed_pool_check():
     return {"tol": f3(tol), "over": f4(margin)}
 
 
+def exp_pool_check_sample():
+    """What harness/pool_check.py samples and how closely its interval has to agree: read from its constants and from the minimum-jobs rule."""
+    with open(os.path.join(REPO, "harness", "pool_check.py"), encoding="utf-8") as f:
+        src = f.read()
+    cells = re.search(r"^SAMPLE_CELLS = \((.*?)\)", src, re.M | re.S)
+    placement = re.search(r"^PLACEMENT_CELLS = \((.*?)\)", src, re.M | re.S)
+    b, width, ratio = (re.search(rf"^{n} = ([\d.]+)", src, re.M) for n in ("B", "BOUND_TOL_WIDTH", "BOUND_TOL_RATIO"))
+    assert cells and placement and b and width and ratio, "harness/pool_check.py no longer defines its constants in the form this test reads"
+    n_cells, n_place = len(re.findall(r'"[^"]+"', cells.group(1))), len(re.findall(r'"[^"]+"', placement.group(1)))
+    words = {2: "two", 7: "seven"}
+    assert n_cells in words and n_place in words, f"pool_check samples {n_cells} cells and {n_place} placement statistics: add the words"
+    return {"mn": str(J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]), "cells": words[n_cells], "pl": words[n_place],
+            "b": f"{int(b.group(1)):,}", "w": f"{round(float(width.group(1)) * 100):d}", "r": f"{float(ratio.group(1)) * 100:g}"}
+
+
 def exp_arm_seed_summary():
     x = arm_cell("k02_add_fwd.L2")["aligned"]
     s, dc = arm_deciding()
@@ -2259,12 +2311,13 @@ ROWS = [
      r"\*\*(?P<lost1>\d+) of (?P<vec1>[\d,]+)\*\* vectorized loops in (?P<libs>\d+) general libraries lose SIMD, "
      r"against (?P<lost2>\d+) of (?P<vec2>[\d,]+) in (?P<projs>\d+) numeric projects\. Counted, not timed\. "
      r"Of the (?P<vec1b>[\d,]+), (?P<libcxx>\d+) are inside libc\+\+'s own headers and none of those was lost; "
-     r"counting project code only, it is (?P<p1lost>\d+) of (?P<p1>\d+) against (?P<p2lost>\d+) of (?P<p2>[\d,]+)\. "
+     r"counting project code and the census's own driver files, it is (?P<p1lost>\d+) of (?P<p1>\d+) against (?P<p2lost>\d+) of (?P<p2>[\d,]+) "
+     r"\((?P<drv>\w+) of those (?P=p2) is a driver loop\)\. "
      r"In the numeric set (?P<with>\d+) of (?P<of>\d+) projects have any lost loop, and LightGBM holds (?P<lgbm>\d+) of the (?P<of444>\d+)\."),
     ("found: real programs timed whole", "site/data/realworld.json rows and timing.groups",
      exp_realworld_bullet,
      r"\((?P<six>\w+) workloads from (?P<four>\w+) projects picked for their lost loops: LightGBM with (?P<lgbm>\w+) option sets.*?"
-     r"detectably slower for (?P<n7>\w+) of the \w+ on EPYC 7763 \((?P<lo>[\d.]+)% to (?P<hi>[\d.]+)%, (?P<j7>\d+) jobs; "
+     r"detectably slower for (?P<n7>\w+) of the \w+ on EPYC 7763 \((?P<lo>[\d.]+)% to (?P<hi>[\d.]+)% across the two columns, (?P<j7>\d+) jobs; "
      r"(?P<p>\w+) of the \w+ projects\), (?P<n74>\w+) on EPYC 9V74 \((?P<j74>\d+) jobs\), "
      r"(?P<n45>\w+) on EPYC 9V45 \((?P<j45>\d+) jobs\); the rest were not detectable\. "
      r"(?P<ctl>\w+) control programs"),
@@ -2310,7 +2363,7 @@ ROWS = [
      r"On the (?P<n>\d+)-job pool a block bootstrap and the other interval methods tried \(exploratory, \[report\]\(robustness/report\.md\)\) "
      r"change (?P<same>no verdict form) on EPYC 7763, 9V74, 9V45 or the Xeon 8573C; the Xeon 6973P-C stays MAP under (?P<k>\w+) of the (?P<m>\w+), "
      r"and changes with the set of jobs more than with the method \(leaving one job out, in turn, gives INCONCLUSIVE in (?P<inc>\d+) of its (?P<tot>\d+) cases\)\. "
-     r"A fresh, pre-planned run matched the original (?P<o>\d+)-job pool on (?P<yes>EPYC 7763 and 9V74), not (?P<no>9V45)\. "
+     r"A fresh run, planned in writing \(the records do not show the order\), matched the original (?P<o>\d+)-job pool on (?P<yes>EPYC 7763 and 9V74), not (?P<no>9V45)\. "
      r"Intervals still understate run-to-run spread: on EPYC 7763 a run's point fell outside another run's interval in (?P<out>\d+) of (?P<chk>\d+) comparisons "
      r"\((?P<pct>\d+)%; (?P<pct6>\d+)% in the (?P<n6>\d+)-job pool\)\."),
     ("folders: the eight loops", "site/data/index.json criteria.kernels",
@@ -2939,7 +2992,8 @@ DETAILS_ROWS = [
      r"on 9V45 it is ROBUST at L1 \(median (?P<m45>[\d.]+), (?P<p45>\d+) of (?P<n45>\d+) placements pass\)"),
     ("details: links to the twelve later runs", "results/s6-run-*/*/results.json and results/s7-run-*/*/results.json run.workflow_run_url",
      exp_details_links,
-     r"The exception is the (?P<twelve>\w+) records in `results/s6-run-\*/` and `results/s7-run-\*/`: they link to runs of this repository"),
+     r"The links work for the records in `results/s6-run-\*/` and `results/s7-run-\*/` \((?P<twelve>\w+) runs\), .*? they link to runs of this repository, "
+     r"whose run pages are public"),
     ("details: Compiler Explorer's clang 18.1.0 is a release candidate", "investigate/vectorizer/matmul/derived/revisions.txt; results/s4-run-*/ and s6-run-*/ toolchain",
      exp_rc_and_same_remark,
      r"its clang (?P<ce>[\d.]+) is a release-candidate build, not the Ubuntu (?P<timed>[\d.]+) that was timed"),
@@ -3009,7 +3063,8 @@ DETAILS_ROWS = [
      r"Matrix multiply at both sizes and the add and the stencil at L1 are placement-sensitive under the written rule and not judged"),
     ("details: Arm, links to the runs", "results/s8-arm-run-*/*/results.json run.workflow_run_url",
      exp_details_arm_links,
-     r"The (?P<three>\w+) records in `results/s8-arm-run-\*/` \(the Arm runs\) link to public runs of this repository"),
+     r"`results/s8-arm-run-\*/` \((?P<three>\w+)\), `results/s9-arm-run-\*/` and `results/s9-run-\*/` \(\w+\) and `results/s10-dsweep-run-\*/` \(\w+\): "
+     r"they link to runs of this repository"),
     ("details: Arm, the one other architecture", "results/s8-arm-run-*/*/results.json toolchain; results/s8-arm-pooled/pooled.json",
      exp_details_arm_other_arch,
      r"The Arm column \(above\) is the one other architecture, and only with clang (?P<c>[\d.]+) on one core type \((?P<model>[\w-]+)\)"),
@@ -3032,7 +3087,7 @@ DETAILS_ROWS = [
      r"\| S8 \| The Arm column: (?P<three>\w+) further full runs of `measure\.yml` with `runner=ubuntu-24\.04-arm`, (?P<disp>\d+) jobs dispatched, "
      r"(?P<ret>\d+) returned results \(job limit (?P<lim>\d+) minutes\), all on (?P<model>[\w-]+); `harness/criteria-v3\.json` unchanged; "
      r"pooled apart from the x86-64 jobs into the (?P<pool>\d+)-job Arm pool, whose form is INCONCLUSIVE under the written rules; "
-     r"its plan was written before the full results \| `arm64/`, `results/s8-arm-run-\*/` \((?P<runs>\d+) runs\)"),
+     r"its plan was written before the full results, in the author's unpublished development history \| `arm64/`, `results/s8-arm-run-\*/` \((?P<runs>\d+) runs\)"),
 ]
 
 # ---- the same for siblings/README.md ------------------------------------------------------------------
@@ -3428,6 +3483,152 @@ def short_commit(*patterns):
     commits = {d["run"]["commit"][:7] for p in patterns for d in job_records(p)}
     assert len(commits) == 1, f"the jobs name {len(commits)} commits: {sorted(commits)}"
     return commits.pop()
+
+
+S8_ARM_JOBS = "results/s8-arm-run-*/results-*/results.json"
+RUN_LINKS = "tests/data/run_links_and_commits.json"
+TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def exp_start_lag():
+    """The lag between creating a run and the first recorded start of its harness, from the three Arm runs of Oct 16 (the creation times in
+    tests/data/s8_arm_timeline.json, the starts in the s8 job records): two runs started at once, the third waited for a runner."""
+    lags = {}
+    for r in J(ARM_TIMELINE)["full_runs"]:
+        starts = [d["run"]["started_at"] for d in job_records(f"results/s8-arm-run-{r['run']}/results-*/results.json")]
+        assert len(starts) == r["measure_jobs"], f"run {r['run']}: {len(starts)} job records, the timeline says {r['measure_jobs']}"
+        lags[r["run"]] = (datetime.datetime.strptime(min(starts), TS_FORMAT) - datetime.datetime.strptime(r["created_at"], TS_FORMAT)).total_seconds()
+    prompt = sorted(v for v in lags.values() if v < 60)
+    queued = sorted(v for v in lags.values() if v >= 60)
+    assert len(prompt) == 2 and len(queued) == 1, f"the lags of the three Arm runs are {sorted(lags.values())}; the texts say two that started at once and one that queued"
+    assert all(v == int(v) for v in prompt + queued)
+    return {"lo": str(int(prompt[0])), "hi": str(int(prompt[1])), "wait": str(int(queued[0]))}
+
+
+def exp_holdout_order():
+    """The holdout's plan commit time against the first recorded job start, and the rule file's hash in every holdout job."""
+    recs = [json.load(open(f, encoding="utf-8")) for f in sorted(glob.glob(os.path.join(REPO, "results", "s5-holdout", "**", "results.json"), recursive=True))]
+    assert len(recs) == 30, f"the holdout holds {len(recs)} job records"
+    first = min(datetime.datetime.strptime(d["run"]["started_at"], TS_FORMAT) for d in recs)
+    commit = datetime.datetime.strptime(J("site/data/holdout.json")["preregistration_committed_utc"], TS_FORMAT)
+    gap = (commit - first).total_seconds()
+    assert gap == 2, f"the holdout plan's commit time is {gap} s after the first recorded job start; the texts say 2 s after"
+    assert {d["run"]["criteria_sha256"] for d in recs} == {lf_sha("harness/criteria-v3.json")}, "a holdout job records another rule-file hash than harness/criteria-v3.json"
+    return {"tc": commit.strftime("%H:%M:%S"), "ts": first.strftime("%H:%M:%S"), "s": str(int(gap)), "n": str(len(recs))}
+
+
+CURRENT_RUN_LINK = "github.com/JacoboPacheco/third-of-a-percent/actions/runs/"
+LINKED_GROUPS = ("s6-run", "s7-run", "s8-arm-run", "s9-arm-run", "s9-run", "s10-dsweep-run")
+
+
+def record_commits(doc, top_level_commit=False):
+    """The repository commit a record says its run was dispatched from: run.commit, source.repo_sha in the census records and, in the
+    day-one records only, the top-level commit. Other commit fields (the upstream projects' pins in the census and in
+    results/lostloops-live-*) are not these."""
+    found = set()
+
+    def walk(node, top):
+        if isinstance(node, list):
+            for x in node:
+                walk(x, top)
+        elif isinstance(node, dict):
+            run, source = node.get("run"), node.get("source")
+            if isinstance(run, dict) and isinstance(run.get("commit"), str):
+                found.add(run["commit"][:7])
+            if isinstance(source, dict) and isinstance(source.get("repo_sha"), str):
+                found.add(source["repo_sha"][:7])
+            if top and top_level_commit and isinstance(node.get("commit"), str) and re.fullmatch(r"[0-9a-f]{40}", node["commit"]):
+                found.add(node["commit"][:7])
+            for v in node.values():
+                walk(v, False)
+    walk(doc, True)
+    return found
+
+
+def result_groups():
+    """Group -> the run ids its records link and the repository commits they name. The groups are the folders of results/ without their run id,
+    plus "dayone" (dayone/results/) and "versions" (versions/results/)."""
+    groups = {}
+    for root, label in (("results", None), (os.path.join("dayone", "results"), "dayone"), (os.path.join("versions", "results"), "versions")):
+        for dp, _, fns in os.walk(os.path.join(REPO, root)):
+            for fn in fns:
+                if not fn.endswith(".json"):
+                    continue
+                rel = os.path.relpath(os.path.join(dp, fn), os.path.join(REPO, root)).replace("\\", "/")
+                if "/" not in rel:
+                    continue  # results/fixture.json, the made-up sample, carries no run links or commits
+                g = label or re.sub(r"-\d{8,}.*", "", rel.split("/")[0])
+                with open(os.path.join(dp, fn), encoding="utf-8", errors="ignore") as f:
+                    text = f.read()
+                e = groups.setdefault(g, {"runs": set(), "commits": set(), "current_name": set()})
+                for m in re.finditer(r"github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/(\d+)", text):
+                    e["runs"].add(m.group(1))
+                    e["current_name"].add(CURRENT_RUN_LINK + m.group(1) in text)
+                try:
+                    e["commits"] |= record_commits(json.loads(text), top_level_commit=(label == "dayone"))
+                except ValueError:
+                    pass
+    return groups
+
+
+def exp_run_links():
+    """Which run links work and which commits the records name (tests/data/run_links_and_commits.json, a record of what the GitHub API said),
+    checked against the records themselves: the ids and commits of results/ are the ones the record lists, the six linked groups are the ones that
+    resolve and carry this repository's name in their links, every other group's ids returned 404 and its commits are not in the repository."""
+    rec = J(RUN_LINKS)
+    groups = result_groups()
+    for g, e in groups.items():
+        if not e["runs"] and not e["commits"]:
+            continue  # pooled folders and the like: no run link and no commit of their own
+        if g in LINKED_GROUPS:
+            assert e["runs"] == set(rec["runs"][g]["resolve"]) and not rec["runs"][g]["not_found"], f"{g}: the run ids of the records are not the ones read as existing"
+            assert e["current_name"] == {True}, f"{g}: a run link does not carry this repository's name"
+        elif e["runs"]:
+            assert e["runs"] == set(rec["runs"][g]["not_found"]) and not rec["runs"][g]["resolve"], f"{g}: its run links were read as existing, or are not the ones read"
+        listed = {c["commit"]: c for c in rec["commits"].get(g, [])}
+        assert e["commits"] == set(listed), f"{g}: the commits of the records are not the ones the record lists"
+        if g in LINKED_GROUPS:
+            assert all(c["in_repository"] for c in listed.values()), f"{g}: a commit the records name is not in the repository"
+        elif g.startswith(("s1-", "s2-", "s3-", "s4-", "s5-", "mitigate", "siblings", "corpus", "realworld", "pgo")) or g in ("dayone", "versions"):
+            assert not any(c["in_repository"] for c in listed.values()), f"{g}: a commit the records name is in the repository, the texts say it is not"
+        else:
+            raise AssertionError(f"{g}: a results folder group the texts do not place")
+    assert set(rec["runs"]) <= set(groups), "the record lists a run group that results/ no longer has"
+    arm, ds_ = rec["commits"]["s8-arm-run"], rec["commits"]["s10-dsweep-run"]
+    assert [(c["commit"], c["vs_main"]) for c in arm] == [("6176991", "diverged")] and [(c["commit"], c["vs_main"]) for c in ds_] == [("8c874ec", "diverged")]
+    for g in ("s6-run", "s7-run", "s9-arm-run", "s9-run"):
+        assert {c["vs_main"] for c in rec["commits"][g]} == {"ahead"}, f"{g}: its commit is no longer an ancestor of the default branch"
+    smoke = rec["arm_smoke"]
+    assert smoke["head"].startswith("6176991") and smoke["measure_yml_sha256_at_head"] == smoke["measure_yml_sha256_on_main_at_bbcee23"], (
+        "the measure.yml on arm-smoke is not recorded as the default branch's")
+    assert rec["public_main_at_the_time"].startswith("bbcee23")
+    s4 = len(job_records("results/s4-run-*/results-*/results.json"))
+    return {"n4": str(s4), "p95": str(repl()["pools"]["x86"]["earlier"]["jobs"]), "nh": str(len(job_records("results/s5-holdout/runs/*/results-*/results.json"))),
+            "n8": str(len(job_records(S8_ARM_JOBS))), "c8": "6176991", "b8": "arm-smoke", "base": "bbcee23",
+            "r67": word(sum(1 for g in ("s6-run", "s7-run") for _ in rec["runs"][g]["resolve"])), "r8": word(len(rec["runs"]["s8-arm-run"]["resolve"])),
+            "r9": word(len(rec["runs"]["s9-arm-run"]["resolve"]) + len(rec["runs"]["s9-run"]["resolve"])), "r10": word(len(rec["runs"]["s10-dsweep-run"]["resolve"])),
+            "c10": "8c874ec", "b10": "dsweep-smoke"}
+
+
+def exp_runner_cores():
+    """run.runner.cores of every result record: 2 for the early runs (s1 to s4), 4 for the holdout and every later run."""
+    cores = {}
+    for dp, _, fns in os.walk(os.path.join(REPO, "results")):
+        for fn in fns:
+            if fn not in ("results.json", "dsweep.json"):
+                continue
+            with open(os.path.join(dp, fn), encoding="utf-8") as f:
+                d = json.load(f)
+            c = ((d.get("run") or {}).get("runner") or {}).get("cores")
+            if c is not None:
+                g = re.sub(r"-\d{8,}.*", "", os.path.relpath(dp, os.path.join(REPO, "results")).replace("\\", "/").split("/")[0])
+                cores.setdefault(g, set()).add(c)
+    early = {g: v for g, v in cores.items() if g.startswith(("s1-", "s2-", "s3-", "s4-"))}
+    later = {g: v for g, v in cores.items() if g not in early}
+    assert early and all(v == {2} for v in early.values()), f"the early runs report these core counts: {early}"
+    assert later and all(v == {4} for v in later.values()), f"the later runs report these core counts: {later}"
+    assert {"s5-holdout", "s6-run", "s7-run", "s8-arm-run", "s9-arm-run", "s9-run"} <= set(later)
+    return {"e": "2", "l": "4"}
 
 
 def exp_repl_sets():
@@ -4009,8 +4210,8 @@ DETAILS_NEW_ROWS = [
     row("details: what the new sets do not test, the commits", "results/s9-*/ and results/s10-dsweep-run-*/ job records run.commit", exp_repl_window,
         r"`results/s9-\*` name commit (?P<c1>[0-9a-f]+) of the default branch, and those of `results/s10-dsweep-run-\*/` name commit (?P<c2>[0-9a-f]+) of the temporary branch"),
     row("details: stage S9", "results/s9-*/ and replication/results.json pools; .github/workflows/measure.yml", exp_repl_sets,
-        r"\| S9 \| Replication: two further sets of `measure\.yml` runs, planned in writing before they were dispatched, in the author's unpublished development history \(`replication/PLAN\.md`; the order is not "
-        r"checkable from public records\): set B on "
+        r"\| S9 \| Replication: two further sets of `measure\.yml` runs, planned in writing \(`replication/PLAN\.md`, committed in the author's unpublished development "
+        r"history \d+ seconds before the first job's recorded start; the order of plan and dispatch cannot be established from the records\): set B on "
         r"`(?P<al>[\w.-]+)` \((?P<br>\d+) runs, (?P<bd>\d+) jobs dispatched, (?P<bq>\d+) returned results; (?P<n2>\d+) on Neoverse-N2, (?P<v3>\d+) on Neoverse-V3\) "
         r"and set C on `(?P<xl>[\w.-]+)` \((?P<cr>\d+) runs, (?P<cd>\d+) jobs dispatched, (?P<cq>\d+) returned\)"),
     row("details: stage S10", "results/s10-dsweep-pooled/dsweep-pooled.json inputs, cpus, ladders", exp_ds_overview,
@@ -4040,7 +4241,7 @@ ARM64_NEW_ROWS = [
         r"d = (?P<q1b>\d+) and d = (?P<q2b>\d+)"),
     row("arm64: the replication of set A", "replication/results.json arm models",
         lambda: {**exp_repl_arm(), "bj": exp_repl_sets()["bj"], "n2": exp_repl_sets()["n2"]},
-        r"A pre-planned replication of (?P<bj>\d+) more jobs \(set B, (?P<n2>\d+) of them Neoverse-N2\) was run afterwards; alone it is (?P<fb>[A-Z]+) on the same cell, "
+        r"A replication of (?P<bj>\d+) more jobs \(set B, (?P<n2>\d+) of them Neoverse-N2\), planned in writing \(the records do not show the order\), was run afterwards; alone it is (?P<fb>[A-Z]+) on the same cell, "
         r"with the aligned interval ending at (?P<hb>[\d.]+), and pooled with this column \((?P<nab>\d+) Neoverse-N2 jobs\) it gives (?P<fab>[A-Z]+), "
         r"which the harness labels (?P<stab>\w+)\."),
 ]
@@ -4079,7 +4280,7 @@ DSWEEP_ROWS = [
         r"fewer repetitions per side than the (?P<reps>\d+) of `harness/criteria-v3\.json`"),
 ]
 
-# ---- the provenance, caveat and verdict sentences (review round 5) ----------------------------------------------------
+# ---- the provenance, caveat and verdict sentences ----------------------------------------------------
 # A caveat or a verdict word is not a measured number, so the rows below do two things. Where the sentence states something the
 # data hold (a count, a verdict word, a model, a run id) its groups are compared with the data like any other row. Where it states
 # a limit or an order of events, the row has no group and fixes that the sentence is still there in these words: reworded,
@@ -4119,6 +4320,12 @@ def exp_prov_dsweep():
     assert {"dsweep/PLAN.md", "dsweep/analyze.py", "dsweep/sweep.py", ".github/workflows/dsweep.yml"} <= set(pub["paths_in_that_commit"]), (
         "the record no longer shows the plan arriving in the same public commit as the code")
     assert utc(pub["date"]) <= first, "the first public commit of the plan and code is recorded after the first job started"
+    public_plan = J(RUN_LINKS)["dsweep_plan_in_public_commit"]
+    assert public_plan["commit"] == pub["first_commit_with_plan_and_code"], "the public commit with the plan is not the one the record names"
+    assert public_plan["plan_sha256"] == ds()["plan_sha256"] == lf_sha("dsweep/PLAN.md"), (
+        "the plan in the public commit, the plan the result files store and dsweep/PLAN.md are not the same file")
+    minutes = (first - utc(pub["date"])).total_seconds() / 60
+    assert 8.5 <= minutes < 9.5, f"the public plan is dated {minutes:.1f} minutes before the first job start; the texts say about 9"
     assert ds()["plan_sha256"] == lf_sha("dsweep/PLAN.md"), "dsweep/PLAN.md differs from the plan the pooled d-sweep file was made under"
     commit = short_commit(S10_JOBS)
     assert br["commit"].startswith(commit), f"the d-sweep job records name {commit}, the record names {br['commit'][:7]}"
@@ -4127,12 +4334,44 @@ def exp_prov_dsweep():
     assert os.path.exists(path), "the tree has no .github/workflows/dsweep.yml"
     with open(path, encoding="utf-8") as f:
         assert f.readline().strip() == "name: " + br["ci_yml_workflow_name"], "the d-sweep workflow in this tree has another name than the one run as ci.yml"
-    return {"br": br["branch"], "c": commit, "f": "ci.yml", "g": "dsweep.yml"}
+    return {"br": br["branch"], "c": commit, "f": "ci.yml", "g": "dsweep.yml", "pub": pub["first_commit_with_plan_and_code"],
+            "t1": utc(pub["date"]).strftime("%H:%M"), "t2": first.strftime("%H:%M"), "m": str(round(minutes))}
 
 
 def exp_prov_dsweep_none():
     exp_prov_dsweep()
     return {}
+
+
+LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+RECORDS_BEFORE_PUBLIC_HISTORY = ("results/s1-run-*/results.json", "results/s2-run-*/results.json", "results/s3-run-*/results-*/results.json",
+                                 "results/s3-audit-run-*/results-*/results.json", "results/s4-run-*/results-*/results.json",
+                                 "results/s4-smoke-*/results-*/results.json", "results/s5-holdout/runs/*/results-*/results.json",
+                                 "results/mitigate-run-*/mitigate-*/results.json")
+RECORDS_AFTER_PUBLIC_HISTORY = ("results/s6-run-*/results-*/results.json", "results/s7-run-*/results-*/results.json", S8_ARM_JOBS, S9_ARM_JOBS, S9_X86_JOBS)
+
+
+def record_start(doc):
+    return (doc["run"] if isinstance(doc.get("run"), dict) else doc)["started_at"]
+
+
+def exp_public_history():
+    """The date the public history begins (tests/data/s9_s10_provenance.json, read from the GitHub API), checked against the records: every record of s1 to s4,
+    the holdout and the rewrite started before the first public commit and every record of s6 to s10 after it; and the public commits that the records of s6,
+    s7 and s9 name hold the rule file as it is now (the blob hash in the fixture is the hash of harness/criteria-v3.json)."""
+    ph, rf = prov()["public_history"], prov()["rule_file_in_public_commits"]
+    begin = ph["author_date"]
+    before = [record_start(d) for pat in RECORDS_BEFORE_PUBLIC_HISTORY for d in job_records(pat)]
+    after = [record_start(d) for pat in RECORDS_AFTER_PUBLIC_HISTORY for d in job_records(pat)] + [record_start(d) for d in job_records(S10_JOBS)]
+    assert len(before) == 92 and max(before) < begin < min(after), (
+        f"the public history begins at {begin}; the records of the earlier runs ({len(before)}) end {max(before)}, those of the later runs start {min(after)}")
+    with open(os.path.join(REPO, rf["file"]), "rb") as f:
+        raw = f.read().replace(b"\r\n", b"\n")
+    assert hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest() == rf["git_blob_sha1"], f"{rf['file']} is not the file the public commits hold"
+    stamped = {d["run"]["commit"][:7] for pat in (RECORDS_AFTER_PUBLIC_HISTORY[0], RECORDS_AFTER_PUBLIC_HISTORY[1], S9_ARM_JOBS, S9_X86_JOBS) for d in job_records(pat)}
+    assert stamped and stamped <= set(rf["commits"]), f"the records of s6, s7 and s9 name {sorted(stamped)}; the fixture lists the public commits {rf['commits']}"
+    day = ph["author_date"]
+    return {"d": f"{int(day[8:10])} {LONG_MONTHS[int(day[5:7]) - 1]} {day[:4]}"}
 
 
 def exp_prov_replication():
@@ -4144,6 +4383,10 @@ def exp_prov_replication():
     gap = (min(ts) - utc(plan["author_date"])).total_seconds()
     assert plan["files"] == ["replication/PLAN.md"], "the replication plan commit is no longer recorded as holding the plan alone"
     assert 0 < gap < 60 and gap == int(gap), f"the plan commit is {gap} s before the earliest job start; the text says a whole number of seconds under a minute"
+    lag = exp_start_lag()
+    assert int(lag["lo"]) <= gap <= int(lag["hi"]), (
+        f"the plan commit is {gap} s before the earliest job start, outside the {lag['lo']} to {lag['hi']} s the Arm runs took from creation to first start: "
+        "the texts say the margin lies inside that lag")
     commit = short_commit(S9_ARM_JOBS, S9_X86_JOBS)
     assert disp["commit"].startswith(commit), f"the s9 job records name {commit}, the record names {disp['commit']}"
     assert disp["plan_in_public_history_at_that_commit"] is False, "the record says the plan was public at the commit the runs were dispatched from"
@@ -4152,7 +4395,7 @@ def exp_prov_replication():
         assert "plan_sha256" not in d and "plan_sha256" not in d["run"], "a replication job record now carries the plan hash"
     dsj = job_records(S10_JOBS)
     assert len(dsj) == 18 and all(d["plan_sha256"] == lf_sha("dsweep/PLAN.md") for d in dsj), "not every d-sweep result file stores the hash of its plan"
-    return {"sec": str(int(gap)), "n": str(len(ts)), "c": commit}
+    return {"sec": str(int(gap)), "n": str(len(ts)), "c": commit, **lag}
 
 
 def exp_sweep_floor():
@@ -4324,10 +4567,12 @@ README_GUARD_ROWS = [
         r"d = (?P<d12>\d+), (?P<r36>[\d.]+)x at d = (?P<d36>\d+) \(the study's L1 size\) and (?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), "
         r"so (?P=pm)x is not a floor for these loops\."),
     row("replication: the plan's order rests on an unpublished commit time (README)", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at, run.commit; replication/results.json plan_sha256",
-        exp_prov_replication_pick("sec", "c"),
-        r"before they were dispatched \(the order rests on a commit time in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's "
-        r"recorded start; no public record shows it, and the plan's hash in `replication/results\.json` is computed when the comparison is built, so it shows the file "
-        r"is unchanged, not when it was written\): set B, .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+)\."),
+        exp_prov_replication_pick("sec", "lo", "hi", "c"),
+        r"so two replication sets were planned in \[replication/PLAN\.md\]\(replication/PLAN\.md\) \(the plan's commit time in the author's unpublished development "
+        r"history is (?P<sec>\d+) seconds before the first job's recorded start, and the harness started (?P<lo>\d+) and (?P<hi>\d+) seconds after dispatch in the two "
+        r"Arm runs of Oct 16 that did not queue, so that margin lies inside the lag and the order of plan and dispatch cannot be established from the records; no "
+        r"public record shows it, and the plan's hash in `replication/results\.json` is computed when the comparison is built, so it shows the file is unchanged, not "
+        r"when it was written\): set B, .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+)\."),
     row("replication: the two red combine jobs and the checker's sampling rule (README)", "tests/data/s9_s10_provenance.json; the pooled files of the red runs; harness/criteria-v3.json",
         lambda: pick(exp_pool_check(), "two", "four", "mn", "o1", "o2"),
         r"(?P<two>Two) of the (?P<four>four) set-C combine jobs ended red on `harness/pool_check\.py`, on a model with fewer than (?P<mn>\d+) jobs "
@@ -4336,13 +4581,17 @@ README_GUARD_ROWS = [
     row("replication: a second INCONCLUSIVE on a cell close to its limit is a weak repeat (README)", "replication/results.json arm models",
         exp_repl_arm_close,
         r"The cell sits close to the (?P<lim>[\d.]+) limit in both sets, so a second (?P<fb>[A-Z]+) is a weak repeat of the word and not strong evidence for it\."),
-    row("d-sweep: the plan's history and what it does not show (README)", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash", exp_prov_dsweep_none,
+    row("d-sweep: the plan's history and what it does not show (README)",
+        "tests/data/s9_s10_provenance.json; tests/data/run_links_and_commits.json; the s10 records; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "pub", "br", "t1", "m", "t2"),
         r"It was drafted before the sweep code, revised while the code was written and once more after a review that changed the deciding statistic, and committed "
         r"alone, before the code commit and the first run, in the author's unpublished development history; its hash, stored in every result file, shows that it did "
-        r"not change after the runs, and the order before the runs cannot be checked from public records\."),
+        r"not change after the runs\. That order cannot be checked from public records; what the public repository holds is the plan file, byte for byte the one "
+        r"here, in commit (?P<pub>[0-9a-f]+) on the temporary public branch `(?P<br>dsweep-smoke)`, dated (?P<t1>\d\d:\d\d) UTC, about (?P<m>\d+) minutes before the "
+        r"first job's recorded start \((?P<t2>\d\d:\d\d) UTC\) and together with the code, so whether the plan was written before the code is not observable there\."),
     row("d-sweep: where the runs were dispatched from, in the folder map", "tests/data/s9_s10_provenance.json; the s10 records run.commit; the stored plan hash",
         lambda: pick(exp_prov_dsweep(), "br", "c", "f"),
-        r"its plan \(committed alone before the code and any run, in unpublished history, and unchanged since\), code and workflow \(runs `s10-dsweep-run-\*`, "
+        r"its plan \(committed alone before the code and any run, in the author's unpublished development history, and unchanged since\), code and workflow \(runs `s10-dsweep-run-\*`, "
         r"pooled in `s10-dsweep-pooled`\), dispatched from the temporary public branch `(?P<br>dsweep-smoke)` \(commit (?P<c>[0-9a-f]+)\), where the d-sweep workflow "
         r"is the file `(?P<f>ci\.yml)` \(only a workflow already on the default branch can be dispatched\); the branch is kept because the run records name that commit\."),
     row("replication: the inside count is descriptive", "the sentence, as worded", lambda: {},
@@ -4382,10 +4631,11 @@ DETAILS_GUARD_ROWS = [
         r"\(the study's L1 size\) and (?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), so (?P<pm>[\d.]+)x is not a floor for these loops and the "
         r"range holds at the study's sizes\."),
     row("details: replication, the plan's order rests on an unpublished commit time", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at; replication/results.json plan_sha256",
-        exp_prov_replication_pick("sec"),
-        r"committed before the sets were dispatched, in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's recorded start: "
-        r"no public record shows that order, and the plan's hash in `replication/results\.json` is computed when the comparison is built, so it shows the file is "
-        r"unchanged, not when it was written;"),
+        exp_prov_replication_pick("sec", "lo", "hi", "wait"),
+        r"committed in the author's unpublished development history (?P<sec>\d+) seconds before the first job's recorded start; the harness started (?P<lo>\d+) and "
+        r"(?P<hi>\d+) seconds after dispatch in the two Arm runs of Oct 16 that did not queue \(the third waited (?P<wait>\d+) seconds\), so that margin lies inside the "
+        r"lag and the order of plan and dispatch cannot be established from the records, and no public record shows it; the plan's hash in `replication/results\.json` "
+        r"is computed when the comparison is built, so it shows the file is unchanged, not when it was written;"),
     row("details: replication, the sets were dispatched from the default branch", "the s9 job records run.commit", exp_prov_replication_pick("c"),
         r"all dispatched from the default branch at commit (?P<c>[0-9a-f]+)\. Each is pooled alone"),
     row("details: replication, a second INCONCLUSIVE on a cell close to its limit is a weak repeat", "replication/results.json arm models", exp_repl_arm_close,
@@ -4396,20 +4646,26 @@ DETAILS_GUARD_ROWS = [
         r"disagreed with the pooled file on a model with fewer than (?P<mn>\d+) jobs \(run (?P=r1): the Xeon 6973P-C, (?P<j1>\d+) job, matrix multiply at L1, as compiled; "
         r"run (?P=r2): the EPYC 9V74, (?P<j2>\d+) jobs, the stencil at L1, as compiled\)\. The checker now samples only models with (?P=mn) or more jobs, the minimum "
         r"for a verdict; no verdict uses a model with fewer, the pooled files and the rules are unchanged, and only that check's sampling rule changed\."),
-    row("details: stage S9, unpublished order and the dispatch commit", "tests/data/s9_s10_provenance.json; the s9 job records run.commit", exp_prov_replication_pick("c"),
-        r"planned in writing before they were dispatched, in the author's unpublished development history \(`replication/PLAN\.md`; the order is not checkable from "
-        r"public records\): set B .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+); "),
-    row("details: the follow-up list and the folder map call the replication order unpublished", "the sentences, as worded", lambda: {},
-        r"planned in writing before they were dispatched \(the order rests on commit times in unpublished history\), pooled alone"),
-    row("details: the folder map, the replication plan is in unpublished history", "the sentence, as worded", lambda: {},
-        r"replication/ +the plan for replication sets B and C \(committed before they were dispatched, in unpublished history\), compare\.py"),
-    row("details: d-sweep, the plan's history and what it does not show", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash",
-        lambda: pick(exp_prov_dsweep(), "br"),
+    row("details: stage S9, the plan's commit time and the dispatch commit", "tests/data/s9_s10_provenance.json; the s9 job records run.commit, run.started_at",
+        exp_prov_replication_pick("sec", "c"),
+        r"planned in writing \(`replication/PLAN\.md`, committed in the author's unpublished development history (?P<sec>\d+) seconds before the first job's recorded "
+        r"start; the order of plan and dispatch cannot be established from the records\): set B .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+); "),
+    row("details: the follow-up list calls the replication order unestablished", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at",
+        exp_prov_replication_pick("sec"),
+        r"planned in writing \(the plan's commit time, in the author's unpublished development history, is (?P<sec>\d+) seconds before the first job's recorded start, inside the dispatch lag, so "
+        r"the order cannot be established\), pooled alone"),
+    row("details: the folder map, the replication plan is in the author's unpublished development history", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at",
+        exp_prov_replication_pick("sec"),
+        r"replication/ +the plan for replication sets B and C \(committed in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's recorded start\), compare\.py"),
+    row("details: d-sweep, the plan's history and what it does not show",
+        "tests/data/s9_s10_provenance.json; tests/data/run_links_and_commits.json; the s10 records; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "pub", "br", "t1", "m", "t2"),
         r"plan `dsweep/PLAN\.md`, drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code "
         r"\(the review changed the deciding statistic\), and committed alone, before the code commit and before the first run, in the author's unpublished development "
         r"history: its sha256 is stored in every result file, which shows that it did not change after the runs, and `dsweep/analyze\.py` treats a file with another "
-        r"hash as a file problem\. The order before the runs is not checkable from public records: on this repository the plan arrived in one commit together with "
-        r"the code, on the temporary branch `(?P<br>dsweep-smoke)`\)"),
+        r"hash as a file problem\. That order cannot be checked from that history, which is not published\. What the public repository holds is the plan file, byte for "
+        r"byte the one here, in commit (?P<pub>[0-9a-f]+) on the temporary branch `(?P<br>dsweep-smoke)`, dated (?P<t1>\d\d:\d\d) UTC, about (?P<m>\d+) minutes before the "
+        r"first job's recorded start \((?P<t2>\d\d:\d\d) UTC\) and in the same commit as the code, so whether the plan was written before the code is not observable there\)"),
     row("details: d-sweep, where the runs were dispatched from", "tests/data/s9_s10_provenance.json; the s10 records run.commit; .github/workflows/dsweep.yml",
         lambda: pick(exp_prov_dsweep(), "br", "c", "f", "g"),
         r"They were dispatched from the temporary public branch `(?P<br>dsweep-smoke)` at commit (?P<c>[0-9a-f]+), where the workflow file is named `(?P<f>ci\.yml)` "
@@ -4436,19 +4692,22 @@ DETAILS_GUARD_ROWS = [
 ]
 
 REPLICATION_GUARD_ROWS = [
-    row("replication/README: the plan was committed in unpublished history and its hash is not a time", "tests/data/s9_s10_provenance.json; the s9 and s10 job records; replication/results.json plan_sha256",
-        exp_prov_replication_pick("sec", "n", "c"),
+    row("replication/README: the plan was committed in the author's unpublished development history and its hash is not a time", "tests/data/s9_s10_provenance.json; the s9 and s10 job records; replication/results.json plan_sha256",
+        exp_prov_replication_pick("sec", "n", "lo", "hi", "wait", "c"),
         r"committed in the author's unpublished development history (?P<sec>\d+) seconds before the earliest job start recorded in the (?P<n>\d+) job records "
-        r"\(`run\.started_at`; the commit time is from the author's machine and the start time from the runner, and the two clocks were not compared\)\. The public "
+        r"\(`run\.started_at`; the commit time is from the author's machine and the start time from the runner, and the two clocks were not compared\)\. A run's first "
+        r"recorded start comes some seconds after the run is dispatched: in the two Arm runs of Oct 16 that started at once it was (?P<lo>\d+) and (?P<hi>\d+) seconds "
+        r"after the run was created \(`tests/data/s8_arm_timeline\.json`\), and the third waited (?P<wait>\d+) seconds\. The (?P=sec)-second margin lies inside that lag, "
+        r"so the order of the plan commit and the dispatch cannot be established from the records\. The public "
         r"repository did not hold the file at commit (?P<c>[0-9a-f]+), the commit the runs were dispatched from, and no public record shows the order\. A hash shows "
         r"that a file is unchanged, not when it was written: the hash in `results\.json` is computed by `compare\.py` when the comparison is built, after the data "
-        r"were in, and the per-job records do not carry it\. So the sets are described as planned before they were dispatched, on commit times a reader of this "
+        r"were in, and the per-job records do not carry it\. So the sets are described as planned, with the order unestablished, on commit times a reader of this "
         r"repository cannot check, and not as a pre-registration\. The d-sweep is better placed: every one of its result files stores the hash of its plan\."),
     row("replication/README: the status line and the plan bullet name the unpublished history", "the sentences, as worded", lambda: {},
-        r"planned in writing before any of them was dispatched \(the order rests on commit times in unpublished history; see \"What the plan does and does not show\"\)"),
+        r"planned in writing \(the order of plan and dispatch cannot be established from the records; see \"What the plan does and does not show\"\)"),
     row("replication/README: the plan bullet", "the sentence, as worded", lambda: {},
-        r"`PLAN\.md`: the plan, committed before the runs in the author's unpublished development history\. It fixes .*? Its sha256 is stored in `results\.json`, where "
-        r"`compare\.py` computes it when it builds that file\."),
+        r"`PLAN\.md`: the plan, committed in the author's unpublished development history within seconds of the dispatch\. It fixes .*? Its sha256 is stored in "
+        r"`results\.json`, where `compare\.py` computes it when it builds that file\."),
     row("replication/README: the two red combine jobs and the checker's sampling rule", "tests/data/s9_s10_provenance.json; the pooled files of the red runs; harness/criteria-v3.json",
         lambda: pick(exp_pool_check(), "two", "four", "r1", "r2", "mn", "j1", "j2"),
         r"(?P<two>Two) of the (?P<four>four) set-C combine jobs \(runs (?P<r1>\d+) and (?P<r2>\d+)\) ended red on `harness/pool_check\.py`, which disagreed with the "
@@ -4487,12 +4746,15 @@ DSWEEP_GUARD_ROWS = [
         r"On EPYC 7763, as compiled, matrix multiply costs (?P<r12>[\d.]+)x at d = (?P<d12>\d+), (?P<r36>[\d.]+)x at d = (?P<d36>\d+) \(the study's L1 size\) and "
         r"(?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), so the (?P<pm>[\d.]+)x of \"(?P=pm)x to (?P<ph>[\d.]+)x\" is not a floor for these loops "
         r"and the range holds at the study's sizes\."),
-    row("dsweep/README: the plan's history and what it does not show", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash",
-        lambda: pick(exp_prov_dsweep(), "br"),
+    row("dsweep/README: the plan's history and what it does not show",
+        "tests/data/s9_s10_provenance.json; tests/data/run_links_and_commits.json; the s10 records; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "pub", "br", "t1", "m", "t2"),
         r"drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code \(the review changed "
         r"the deciding statistic; the plan's own \"Changes made before any run\" lists every change\), and committed alone, before the code commit and before the "
-        r"first run, in the author's unpublished development history\. .*? The order before the runs is not checkable from public records\. On this repository the "
-        r"plan arrived in one commit together with the code, on the temporary branch `(?P<br>dsweep-smoke)`\."),
+        r"first run, in the author's unpublished development history\. .*? The order before the runs cannot be checked from that history, which is not published\. "
+        r"What the public repository holds is the plan file, byte for byte the one here, in commit (?P<pub>[0-9a-f]+) on the temporary branch `(?P<br>dsweep-smoke)`, "
+        r"dated (?P<t1>\d\d:\d\d) UTC, about (?P<m>\d+) minutes before the first job's recorded start \((?P<t2>\d\d:\d\d) UTC\) and in the same commit as the code, so "
+        r"whether the plan was written before the code is not observable there\."),
     row("dsweep/README: where the runs were dispatched from", "tests/data/s9_s10_provenance.json; the s10 records run.commit; .github/workflows/dsweep.yml",
         lambda: pick(exp_prov_dsweep(), "br", "c", "f", "g"),
         r"dispatched from a temporary branch of the public repository, `(?P<br>dsweep-smoke)` \(commit (?P<c>[0-9a-f]+)\).*?On that branch the d-sweep workflow file is "
@@ -4518,6 +4780,943 @@ ARM64_GUARD_ROWS = [
         r"It chose its own sizes under a plan committed before its code and the runs \(d = "),
 ]
 
+# ---- order of events, commits, run links and how to rerun -------------------------------------------
+
+def exp_pool_growth():
+    """The Xeon 6973P-C through the three kernel pools: absent from the 30-job pool, INCONCLUSIVE with 6 jobs, MAP with 7."""
+    pools = {p: {c["cpu_model"]: c for c in J(p)["cpus"]} for p in (POOLED_ORIGINAL, POOLED_S6, POOLED)}
+    key = next(k for k in pools[POOLED] if "6973P-C" in k)
+    assert key not in pools[POOLED_ORIGINAL], "the 30-job pool now holds the Xeon 6973P-C"
+    a, b = pools[POOLED_S6][key], pools[POOLED][key]
+    assert (a["jobs"], a["verdict"]["form"], b["jobs"], b["verdict"]["form"]) == (6, "inconclusive", 7, "map"), "the Xeon 6973P-C verdicts of the pools changed"
+    original = sum(c["jobs"] for c in pools[POOLED_ORIGINAL].values())
+    assert original == len(job_records("results/s4-run-*/results-*/results.json")), "the original pool and the s4 job records disagree on the job count"
+    return {"j6": str(a["jobs"]), "f6": a["verdict"]["form"].upper(), "j7": str(b["jobs"]), "f7": b["verdict"]["form"].upper(), "s4": str(original)}
+
+
+def exp_versions_range():
+    """The clang versions of the newer-compiler runs (versions/results/<run>/versions-<N>-*): the lowest and the highest."""
+    found = set()
+    for d in glob.glob(os.path.join(REPO, "versions", "results", "*", "versions-*")):
+        m = re.match(r"versions-(\d+)-", os.path.basename(d))
+        if m:
+            found.add(int(m.group(1)))
+    assert found == {19, 20, 21}, f"the newer-compiler runs hold clang {sorted(found)}; the texts say 19 to 21"
+    return {"lo": str(min(found)), "hi": str(max(found))}
+
+
+def exp_check_exit():
+    """README and DETAILS name the final line and the exit code of a run whose page step was skipped; scripts/check.py must say the same."""
+    with open(os.path.join(REPO, "scripts", "check.py"), encoding="utf-8") as f:
+        src = f.read()
+    line = re.search(r'^PASSED_WITH_SKIPS = "([^"]+)"$', src, re.M)
+    code = re.search(r"^EXIT_PASSED_WITH_SKIPS = (\d+)$", src, re.M)
+    assert line and code, "scripts/check.py no longer defines PASSED_WITH_SKIPS and EXIT_PASSED_WITH_SKIPS"
+    assert "ALL CHECKS PASSED" in src and line.group(1) != "ALL CHECKS PASSED"
+    return {"line": line.group(1), "code": code.group(1)}
+
+
+HALF_HOURS_LO = {1: "half an hour", 2: "one", 3: "an hour and a half", 4: "two", 5: "two and a half", 6: "three"}  # the first word of "one to two hours"
+HALF_HOURS_HI = {1: "half an hour", 2: "one hour", 3: "an hour and a half", 4: "two hours", 5: "two and a half hours", 6: "three hours",
+                 7: "three and a half hours", 8: "four hours"}
+
+
+def exp_ci_check_duration():
+    """README says how long `python scripts/check.py` takes on a CI runner. The typed range must cover the shortest and the longest scripts/check.py step of
+    the three most recent successful push runs of the ci workflow (tests/data/ci_check_step.json, read from the GitHub API) and be no wider than the
+    half-hour rounding of them: the shortest step to the nearest half hour (55 minutes is "one"), the longest up to the next half hour (95 minutes is
+    "two hours"). A range that stops at "one hour" does not cover a 95-minute step; one that runs to "three hours" is wider than any step read."""
+    runs = J("tests/data/ci_check_step.json")["runs"]
+    assert len(runs) == 3 and len({r["run_id"] for r in runs}) == 3, "the fixture holds three distinct runs"
+    when = lambda s: datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))  # noqa: E731
+    minutes = [(when(r["completed_at"]) - when(r["started_at"])).total_seconds() / 60 for r in runs]
+    assert all(m > 0 for m in minutes), f"step times: {minutes}"
+    lo, hi = round(min(minutes) / 30), math.ceil(max(minutes) / 30)
+    assert lo in HALF_HOURS_LO and hi in HALF_HOURS_HI, f"steps of {min(minutes):.0f} to {max(minutes):.0f} minutes are outside the words the README can use"
+    return {"lo": HALF_HOURS_LO[lo], "hi": HALF_HOURS_HI[hi]}
+
+
+def exp_font_dependent():
+    """README and DETAILS say how many page checks need the web fonts; scripts/check_site.py names them in FONT_DEPENDENT_CHECKS and in its
+    docstring, and each name is the start of a check message the script can print."""
+    with open(os.path.join(REPO, "scripts", "check_site.py"), encoding="utf-8") as f:
+        src = f.read()
+    m = re.search(r"^FONT_DEPENDENT_CHECKS = \(([^)\n]*)\)$", src, re.M)
+    assert m, "scripts/check_site.py no longer defines FONT_DEPENDENT_CHECKS as a one-line tuple"
+    names = re.findall(r'"([^"]+)"', m.group(1))
+    assert len(names) == len(set(names)) >= 1, f"FONT_DEPENDENT_CHECKS holds {names}"
+    docstring = squash(src.split('"""', 2)[1])
+    for n in names:
+        assert f'"{n}"' in docstring, f"the docstring of scripts/check_site.py does not name the font-dependent check {n!r} in quotation marks"
+    assert "first view" in src and all(n.split(": ", 1)[1] in src for n in names), "a font-dependent check name is no longer in the script"
+    return {"two": word(len(names))}
+
+
+def exp_pages_trigger():
+    """DETAILS says pages.yml publishes after the ci workflow succeeds on a push to main, or by hand; .github/workflows/pages.yml must say the same
+    (a workflow_run trigger on ci for the main branch, a manual trigger, no push trigger of its own and a success condition)."""
+    with open(os.path.join(REPO, ".github", "workflows", "pages.yml"), encoding="utf-8") as f:
+        text = f.read()
+    on = re.search(r"^on:\n((?:[ \t]+.*\n|\n)+)", text, re.M)
+    assert on, ".github/workflows/pages.yml has no `on:` block"
+    block = on.group(1)
+    assert re.search(r"^  workflow_run:\n(?:    .*\n)*?    workflows: \[(?P<w>[\w.-]+)\]", block, re.M), "pages.yml no longer runs after another workflow"
+    w = re.search(r"workflows: \[([\w.-]+)\]", block).group(1)
+    assert re.search(r"types: \[completed\]", block) and re.search(r"branches: \[main\]", block), "pages.yml no longer waits for a completed run on main"
+    assert re.search(r"^  workflow_dispatch:", block, re.M), "pages.yml can no longer be run by hand"
+    assert not re.search(r"^  push:", block, re.M), "pages.yml has a push trigger of its own again"
+    assert "github.event.workflow_run.conclusion == 'success'" in text, "pages.yml no longer publishes only after a successful run"
+    return {"w": w}
+
+
+def exp_holdout_run_ids():
+    """The run IDs PREREGISTRATION.md lists against the runs of the holdout records (the DETAILS paragraph says how many it lists)."""
+    with open(os.path.join(REPO, "results", "s5-holdout", "PREREGISTRATION.md"), encoding="utf-8") as f:
+        m = re.search(r"^Run IDs \([^)]*\): ([\d, ]+)\.\s*$", f.read(), re.M)
+    assert m, "PREREGISTRATION.md no longer has a `Run IDs (...): a, b, c.` line"
+    listed = sorted(x.strip() for x in m.group(1).split(","))
+    recorded = sorted({str(d["run"]["id"]) for d in job_records("results/s5-holdout/runs/*/results-*/results.json")})
+    assert listed == recorded, f"the plan lists {listed}, the holdout records come from runs {recorded}"
+    return {"k": word(len(listed))}
+
+
+def exp_runner_cores_rows():
+    c = exp_runner_cores()
+    return {**c, "n": exp_pool_growth()["s4"]}
+
+
+def exp_workflow_pins():
+    """Which workflows pin every action they use to a full commit, and how many still use a moving tag (read from .github/workflows)."""
+    pinned, moving = [], []
+    for path in sorted(glob.glob(os.path.join(REPO, ".github", "workflows", "*.yml"))):
+        with open(path, encoding="utf-8") as f:
+            refs = re.findall(r"^\s*(?:-\s*)?uses:\s*(?!\./)([^\s#]+)", f.read(), flags=re.M)
+        assert refs, f"{os.path.basename(path)}: no action found"
+        all_commits = all(re.fullmatch(r"[0-9a-f]{40}", r.partition("@")[2]) for r in refs)
+        (pinned if all_commits else moving).append(os.path.basename(path))
+    names = [f"`{n}`" for n in pinned]
+    return {"names": ", ".join(names[:-1]) + " and " + names[-1], "n": str(len(moving))}
+
+
+README_PROV_ROWS = [
+    row("README: which workflows pin their actions to a commit", ".github/workflows/*.yml uses: lines", exp_workflow_pins,
+        r"The workflows pin the GitHub actions they use to a commit in (?P<names>`[\w.-]+`(?:, `[\w.-]+`)* and `[\w.-]+`); the runs under `results/` ran before the pins "
+        r"and used the moving `v4` tags of `actions/checkout`, `actions/upload-artifact` and `actions/download-artifact`, and the other (?P<n>\d+) workflows still do\."),
+    row("README: the order of rule files, plans and expectations, and what the hashes show", "results/s5-holdout job records; site/data/holdout.json; tests/data/s9_s10_provenance.json",
+        lambda: {**pick(exp_holdout_order(), "s"), **exp_public_history()},
+        r"The rule files, plans and expectations were committed in the author's unpublished development history before the runs they govern, except the Arm plan "
+        r"\(committed after its runs were dispatched\), the holdout plan \((?P<s>\d+) seconds after the first recorded job start\) and the replication plan \(see the "
+        r"replication section below\)\. The public history begins on (?P<d>\d+ [A-Z][a-z]+ \d{4}), after the runs of `s1` to `s4`, the holdout and the rewrite, so for those "
+        r"that order cannot be checked from public records; the records of `s6`, `s7` and `s9` name public commits that hold the rule file as it is now\. "
+        r"The hashes stored in the result files show that the rule files did not change after the runs\. All versions are kept\."),
+    row("README: commits and run links in the records", "tests/data/run_links_and_commits.json; results/ run.commit and workflow_run_url fields; replication/results.json pools",
+        exp_run_links,
+        r"The `commit` field of a result record \(`run\.commit`; `source\.repo_sha` in the census records\) names the commit the run was dispatched from\. "
+        r"For `s1` to `s5` \(including the (?P<n4>\d+) `s4-run-\*` jobs, (?P=n4) of the (?P<p95>\d+) pooled jobs, and the (?P<nh>\d+) holdout jobs\), `mitigate`, `siblings`, "
+        r"`corpus`, `realworld`, `pgo`, the day-one runs and `versions` these are commits of the author's unpublished development history that this repository does not "
+        r"hold, so the code of those runs cannot be recovered from here\. The (?P<n8>\d+) Arm jobs \(`s8-arm-run-\*`\) name (?P<c8>[0-9a-f]+) on the temporary public "
+        r"branch `(?P<b8>arm-smoke)`, because the `runner` input they needed was not yet on the default branch \(its `measure\.yml` was byte for byte the default "
+        r"branch's at commit (?P<base>[0-9a-f]+), which has the `runner` input\); that branch is kept because the records name its commit\. The run links inside the "
+        r"records work for `s6` to `s10` \(their runs are in this repository's Actions list\) and return 404 for every older folder"),
+    row("README: how to rerun, the minimum number of jobs, the runner sizes and the compilers", "harness/criteria-v3.json minimum_jobs; run.runner.cores of every record; results/ run.toolchain; versions/install.sh",
+        lambda: {**pick(exp_repl_sets(), "mn"), "cl": timed_clang(), **pick(exp_runner_cores_rows(), "e", "l", "n"), **exp_versions_range()},
+        r"a verdict needs (?P<mn>\d+) or more jobs of one model, so one rerun will not reproduce the per-model verdicts by itself.*?The early runs \(`s1` to `s4`, including "
+        r"the original (?P<n>\d+)-job pool\) ran on (?P<e>\d)-vCPU runners and every later run, a rerun today, on (?P<l>\d) vCPUs.*?\(clang (?P<cl>[\d.]+) from Ubuntu's "
+        r"archive; `versions/install\.sh` takes whatever clang (?P<lo>\d+) to (?P<hi>\d+) apt\.llvm\.org then serves\)"),
+    row("README: the final line and the exit code of a check whose page step was skipped", "scripts/check.py PASSED_WITH_SKIPS and EXIT_PASSED_WITH_SKIPS", exp_check_exit,
+        r"the run ends `(?P<line>CHECKS PASSED, WITH SKIPPED STEPS)` with exit code (?P<code>\d+), not `ALL CHECKS PASSED`\."),
+    row("README: how long the check takes on a CI runner", "tests/data/ci_check_step.json (the scripts/check.py step of the three most recent successful push runs of ci, from the GitHub API)",
+        exp_ci_check_duration,
+        r"and takes roughly (?P<lo>[a-z ]+?) to (?P<hi>[a-z ]+?) on a CI runner \("),
+    row("README: which page checks need the web fonts", "scripts/check_site.py FONT_DEPENDENT_CHECKS and its docstring", exp_font_dependent,
+        r"without that access it answers those requests itself and runs on the system fonts; on the Windows system fonts it was tried with, every check passes except the (?P<two>two) "
+        r"\(`FONT_DEPENDENT_CHECKS` in `scripts/check_site\.py`\) that measure the hero's first view against the web fonts, so the run then fails instead of ending `ALL CHECKS PASSED` "
+        r"\(other systems' fonts were not tried\)"),
+    row("README: the replication plan's margin in the folder map", "the s9 job records' run.started_at; tests/data/s9_s10_provenance.json replication_plan",
+        exp_prov_replication_pick("sec"),
+        r"`replication/` the plan for the two replication sets \(committed in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's recorded start: "
+        r"see the replication section above\)"),
+]
+
+DETAILS_PROV_ROWS = [
+    row("details: the holdout's plan commit time against the first job start, the run IDs the plan lists, and the rule-file hash",
+        "results/s5-holdout job records run.started_at, run.id, run.criteria_sha256; results/s5-holdout/PREREGISTRATION.md run IDs; site/data/holdout.json",
+        lambda: {**exp_holdout_order(), **exp_holdout_run_ids()},
+        r"commit time in the author's unpublished development history \((?P<tc>[\d:]+) UTC on the author's clock\) is (?P<s>\d+) seconds after the first recorded job start "
+        r"\((?P<ts>[\d:]+) UTC\), so the records do not show that order\. The file lists the (?P<k>\w+) run IDs, so the commit that holds this version came after those runs "
+        r"were created\. What can be checked is the rule file: all (?P<n>\d+) holdout jobs record a `criteria_sha256` equal "
+        r"to the sha256 of `harness/criteria-v3\.json`; that `harness/pool\.py` was unchanged cannot be checked from the records\."),
+    row("details: when the public history begins, what the hashes show and which public commits hold the rule file", "tests/data/s9_s10_provenance.json public_history and rule_file_in_public_commits; the records' run.started_at and run.commit",
+        exp_public_history,
+        r"the public history begins on (?P<d>\d+ [A-Z][a-z]+ \d{4}), after the runs of `s1` to `s4`, the holdout and the rewrite, so for those that order cannot be checked "
+        r"from public records, and what can be checked is the hash: every result file stores the sha256 of the rule file it was judged under, which shows that the file did "
+        r"not change after the runs\. The records of `s6`, `s7` and `s9` name public commits that hold the rule file as it is now\."),
+    row("details: the run links that work and the commits the records name", "tests/data/run_links_and_commits.json; results/ records",
+        exp_run_links,
+        r"The links work for the records in `results/s6-run-\*/` and `results/s7-run-\*/` \((?P<r67>\w+) runs\), `results/s8-arm-run-\*/` \((?P<r8>\w+)\), "
+        r"`results/s9-arm-run-\*/` and `results/s9-run-\*/` \((?P<r9>\w+)\) and `results/s10-dsweep-run-\*/` \((?P<r10>\w+)\).*?the code that produced the (?P<n4>\d+) "
+        r"`s4-run-\*` jobs, (?P=n4) of the (?P<p95>\d+) pooled jobs, and the (?P<nh>\d+) holdout jobs cannot be recovered from here\. The (?P<n8>\d+) Arm jobs "
+        r"\(`results/s8-arm-run-\*/`\) name (?P<c8>[0-9a-f]+) on the temporary public branch `(?P<b8>arm-smoke)`.*?at commit (?P<base>[0-9a-f]+)\)\. The d-sweep jobs name "
+        r"(?P<c10>[0-9a-f]+) on `(?P<b10>dsweep-smoke)`"),
+    row("details: the pool grew after the verdicts of the smaller pool were known", "results/s4-pooled, s6-pooled, s7-pooled pooled.json (Xeon 6973P-C entries)", exp_pool_growth,
+        r"they differ for the Xeon 6973P-C \(no verdict with the (?P<s4>\d+) jobs, (?P<f6>[A-Z]+) with (?P<j6>\d+) jobs in the 75-job pool, (?P<f7>[A-Z]+) with (?P<j7>\d+) "
+        r"jobs in the 95-job pool\)"),
+    row("details: the runner size changed once", "run.runner.cores of every result record; results/s4-pooled", exp_runner_cores_rows,
+        r"the early runs \(`s1` to `s4`, with the original (?P<n>\d+)-job pool\) ran on (?P<e>\d) vCPUs and the holdout and every later run, Arm runs and reruns included, on "
+        r"(?P<l>\d) \(`run\.runner\.cores` in every result file\)"),
+    row("details: the final line and the exit code of a check whose page step was skipped", "scripts/check.py PASSED_WITH_SKIPS and EXIT_PASSED_WITH_SKIPS", exp_check_exit,
+        r"the run ends `(?P<line>CHECKS PASSED, WITH SKIPPED STEPS)` with exit code (?P<code>\d+), not `ALL CHECKS PASSED`"),
+    row("details: which page checks need the web fonts", "scripts/check_site.py FONT_DEPENDENT_CHECKS and its docstring", exp_font_dependent,
+        r"without that access it answers those requests itself and runs on the system fonts; on the Windows system fonts it was tried with, every check passes except the (?P<two>two) "
+        r"\(`FONT_DEPENDENT_CHECKS` in `scripts/check_site\.py`\) that measure the hero's first view against the web fonts, so the run then fails instead of ending `ALL CHECKS PASSED` "
+        r"\(other systems' fonts were not tried\)"),
+    row("details: the margins of the holdout and replication plans in the list of exceptions", "the holdout and s9 job records' run.started_at; tests/data/s9_s10_provenance.json",
+        lambda: {"s": exp_holdout_order()["s"], **{"r": exp_prov_replication_pick("sec")()["sec"]}},
+        r"the holdout plan \((?P<s>\d+) seconds after the first recorded job start\) and the replication plan \((?P<r>\d+) seconds before it, inside the dispatch lag\)"),
+    row("details: when the page is published", ".github/workflows/pages.yml on: block", exp_pages_trigger,
+        r"`\.github/workflows/pages\.yml` publishes `site/` after the `(?P<w>ci)` workflow succeeds on a push to `main`, or when it is run by hand"),
+]
+
+ARM64_PROV_ROWS = [
+    row("arm64: the runs, the temporary branch and the commit the records name", "tests/data/run_links_and_commits.json; results/s8-arm-run-*/ run.commit; the arm-smoke measure.yml hash",
+        exp_run_links,
+        r"The (?P<n8>\d+) result records \(`results/s8-arm-run-\*/`\) name its commit, (?P<c8>[0-9a-f]+), in `run\.commit`; no other public branch holds that commit\. "
+        r"The `measure\.yml` there was byte for byte the default branch's file at commit (?P<base>[0-9a-f]+), which has the `runner` input\."),
+    row("arm64: the temporary branch is named in the section", "tests/data/run_links_and_commits.json arm_smoke", exp_run_links,
+        r"dispatched from a temporary branch of the public repository, `(?P<b8>arm-smoke)`, because the `runner` input they needed was not yet in `measure\.yml` "
+        r"on the default branch\."),
+]
+
+# ---- limits, columns and the PGO paragraph ----------------------------------------------
+
+NUMBER_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+
+
+def pgo_cpu(d, key):
+    return next(c for c in d["cpus"] if key in c["cpu_model"])
+
+
+def pgo_report_counts(cpu_full):
+    """(higher, lower, same) rows of the PGO against non-PGO comparison, from the summary lines of pgo/report.md."""
+    with open(os.path.join(REPO, "pgo", "report.md"), encoding="utf-8") as f:
+        text = f.read()
+    m = re.search(rf"^- {re.escape(cpu_full)}: PGO higher: (\d+) \(.*?\); PGO lower: (\d+) \(.*?\); no difference detected: (\d+) \(", text, re.M)
+    assert m, f"pgo/report.md has no comparison summary line for {cpu_full}"
+    return tuple(int(x) for x in m.groups())
+
+
+def pgo_not_compared(cpu_full):
+    with open(os.path.join(REPO, "pgo", "report.md"), encoding="utf-8") as f:
+        return re.search(rf"^- {re.escape(cpu_full)}: not compared: (\d+) \(", f.read(), re.M) is not None
+
+
+def pgo_nonpgo_readings(cpu_full):
+    """{row: non-PGO reading} from the first table of the CPU model's section of pgo/report.md."""
+    with open(os.path.join(REPO, "pgo", "report.md"), encoding="utf-8") as f:
+        text = f.read()
+    sec = text.split(f"### {cpu_full}", 1)[1].split("\n### ", 1)[0]
+    out = {}
+    for ln in sec.splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) == 8 and cells[0] not in ("row", "---"):
+            out[cells[0]] = cells[3]
+    return out
+
+
+def exp_pgo_head():
+    d = J("results/pgo-pooled/pgo.json")
+    rw = J("results/realworld-pooled/realworld.json")
+    non = {k: next(c for c in rw["cpus"] if k in c["cpu_model"])["jobs"] for k in ("7763", "9V74")}
+    assert non["9V74"] == d["minimum_jobs"], "the EPYC 9V74 non-PGO pool is no longer at the minimum number of jobs"
+    assert all(len(c["rows"]) == 8 for c in d["cpus"]), "a CPU model of the PGO file does not hold the eight rows"
+    jobs = {k: pgo_cpu(d, k)["jobs"] for k in ("7763", "9V74", "8573C", "8370C")}
+    assert len(d["cpus"]) == 4 and len(d["inputs"]) == sum(jobs.values()), "the PGO file's inputs and per-model jobs disagree"
+    runs = d["runs"]
+    return {"ids": ", ".join(runs[:-1]) + " and " + runs[-1], "tot": str(sum(jobs.values())), "a": str(jobs["7763"]), "b": str(jobs["9V74"]),
+            "c": str(jobs["8573C"]), "e": str(jobs["8370C"]), "n7": str(non["7763"]), "n9": str(non["9V74"])}
+
+
+def exp_pgo_rows():
+    d = J("results/pgo-pooled/pgo.json")
+    c7, c9 = pgo_cpu(d, "7763"), pgo_cpu(d, "9V74")
+    r7, r9 = ({r["row"]: r for r in c["rows"]} for c in (c7, c9))
+    fast = lambda r: r["pairs"]["fast"]["time"]["ratio"]  # noqa: E731
+    rd = lambda r: r["reading"]["reading"]  # noqa: E731
+    assert rd(r7["lightgbm_default"]) == "not detectable" and rd(r7["fmt"]) == "detectably faster", "the 7763 readings of the first and last row changed"
+    assert all(rd(r7[n]) == "detectably slower" for n in ("lightgbm_multiclass", "lightgbm_linear", "draco", "tinydnn")), "a 7763 row is no longer detectably slower"
+    assert all(rd(r7[n]) == "not detectable" for n in ("spectra", "meshopt")), "Spectra or meshoptimizer is detectable on the 7763"
+    slower9 = sorted(n for n, r in r9.items() if rd(r) == "detectably slower")
+    assert slower9 == ["draco", "lightgbm_linear", "lightgbm_multiclass"], f"the 9V74 rows that are detectably slower changed: {slower9}"
+    both = [r9[n]["pairs"][col]["time"]["ratio"] for n in slower9 for col in ("fast", "aligned")]
+    asc = [fast(r9[n]) for n in slower9]
+    h7, l7, s7 = pgo_report_counts(c7["cpu_model"])
+    h9, l9, s9 = pgo_report_counts(c9["cpu_model"])
+    return {"dflt": f"{fast(r7['lightgbm_default']):.3f}", "amp": f"{r7['lightgbm_default']['reading']['at_most_pct']:.2f}",
+            "mc": f"{fast(r7['lightgbm_multiclass']):.3f}", "ln": f"{fast(r7['lightgbm_linear']):.3f}", "dr": f"{fast(r7['draco']):.3f}",
+            "td": f"{fast(r7['tinydnn']):.3f}", "l7": NUMBER_WORDS[l7], "h7": NUMBER_WORDS[h7], "s7": NUMBER_WORDS[s7],
+            "n3": NUMBER_WORDS[len(slower9)], "lo": f"{min(both):.3f}", "hi": f"{max(both):.3f}", "clo": f"{min(asc):.3f}", "chi": f"{max(asc):.3f}",
+            "l9": NUMBER_WORDS[l9], "h9": NUMBER_WORDS[h9], "s9": NUMBER_WORDS[s9]}
+
+
+def exp_pgo_tail():
+    d = J("results/pgo-pooled/pgo.json")
+    for key in ("7763", "9V74"):
+        c = pgo_cpu(d, key)
+        dflt = next(r for r in c["rows"] if r["row"] == "lightgbm_default")
+        assert dflt["reading"]["reading"] == "not detectable", f"LightGBM default is detectable under PGO on {key}"
+        assert pgo_nonpgo_readings(c["cpu_model"])["lightgbm_default"] == "slower", f"LightGBM default was not detectably slower without PGO on {key}"
+    for key in ("8573C", "8370C"):
+        assert pgo_not_compared(pgo_cpu(d, key)["cpu_model"]), f"the Xeon {key} now has a non-PGO counterpart"
+    vn = vf = total = 0
+    for prog, modes in d["pgo_context"].items():
+        nl = {x["location"]: x["vectorized"] for x in modes["none"]["census_lost_locations"]}
+        fl = {x["location"]: x["vectorized"] for x in modes["fast"]["census_lost_locations"]}
+        vn += sum(1 for k in nl if nl[k] > 0)
+        vf += sum(1 for k in nl if fl.get(k, 0) > 0)
+        total += len(nl)
+    return {"vn": str(vn), "lt": str(total), "vf": str(vf)}
+
+
+@lru_cache(maxsize=None)
+def x86_pool_dirs():
+    """The job folders the 95-job kernel pool lists (results.json, details.json and asm/ sit in each)."""
+    base = os.path.dirname(os.path.join(REPO, POOLED))
+    return [os.path.normpath(os.path.join(base, os.path.dirname(i["path"]))) for i in J(POOLED)["inputs"]]
+
+
+def read_text_file(path):
+    with open(path, "rb") as f:
+        return f.read()
+
+
+@lru_cache(maxsize=None)
+def x86_k01_identical():
+    """The number of jobs whose forward-sum listings (default and aligned build) are byte for byte the same in NONE and FAST; every job must agree."""
+    n = 0
+    for d in x86_pool_dirs():
+        for suffix in ("", "_a64"):
+            a = read_text_file(os.path.join(d, "asm", f"k01_sum_fwd.none{suffix}.s"))
+            b = read_text_file(os.path.join(d, "asm", f"k01_sum_fwd.fast{suffix}.s"))
+            assert a == b, f"the forward sum is not the same machine code in NONE and FAST in {d} ({suffix or 'default'} build)"
+        n += 1
+    assert n == len(J(POOLED)["inputs"])
+    return n
+
+
+def element_loads(text):
+    return len(re.findall(r"^\s*[0-9a-f]+:\s+mov\s+-0x[0-9a-f]+\(%rax,%\w+,4\),%", text, re.M | re.I))
+
+
+@lru_cache(maxsize=None)
+def x86_reverse_unrolling():
+    """(element loads in the no-vectorize listing, in the FAST listing) of the reverse loop: the same in every job."""
+    seen = set()
+    for d in x86_pool_dirs():
+        nv = element_loads(read_text_file(os.path.join(d, "asm", "k04_rev.novec.s")).decode("utf-8"))
+        fa = element_loads(read_text_file(os.path.join(d, "asm", "k04_rev.fast.s")).decode("utf-8"))
+        seen.add((nv, fa))
+    assert len(seen) == 1, f"the reverse listings differ between jobs: {seen}"
+    return seen.pop()
+
+
+def exp_gather():
+    mn = J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]
+    models = [c for c in J(POOLED)["cpus"] if c["jobs"] >= mn]
+    assert len(models) == 5, f"{len(models)} CPU models have {mn} or more jobs; the README says five"
+    vals = []
+    for c in models:
+        g = next(x for x in c["cells"] if x["cell_id"] == "k06_gather.L1")
+        assert g["class"] == "off_axis", "the gather cell is no longer off the SIMD axis"
+        vals += [g["as_compiled"]["ratio"], g["aligned"]["ratio"]]
+    for d in x86_pool_dirs():
+        rec = json.loads(read_text_file(os.path.join(d, "results.json")))
+        for cell in rec["cells"]:
+            if cell["kernel"] == "k06_gather":
+                assert not cell["vectorized_none"]["vectorized"] and not cell["vectorized_fast"]["vectorized"], f"the gather is vectorized in {d}"
+    return {"glo": f1(min(vals)), "ghi": f1(max(vals))}
+
+
+def exp_decomposition():
+    nv, fa = x86_reverse_unrolling()
+    assert fa == 1 and nv > 4 * fa, f"the reverse listings no longer show the four-fold unrolling of the scalar loop (no-vectorize loads {nv}, FAST loads {fa})"
+    return {"an": f1(arm_cpu()["positive"]["k04_rev.L1"]["ratio"]), "af": f1(arm_ratio("k04_rev.L1"))}
+
+
+def exp_cover_numbers():
+    """What the placement exemption left out and what is left, from the 95-job pool's verdicts, and the margins of the two words nearest the limit."""
+    mn = J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]
+    cpus = [c for c in J(POOLED)["cpus"] if c["jobs"] >= mn]
+    by = {k: next(c for c in cpus if k in c["cpu_model"]) for k in ("7763", "9V45", "9V74", "8573C", "6973P-C")}
+
+    def exempt(c):
+        return sorted(p["cell_id"] for p in c["verdict"]["placement_sensitive"])
+
+    def judged(c):
+        fw = [x["cell_id"] for x in c["cells"] if x["kernel"] in FORWARD and x["size_class"] in ("L1", "L2")]
+        return [cid for cid in fw if cid not in exempt(c)]
+    amd = [by[k] for k in ("7763", "9V45", "9V74")]
+    assert {len(exempt(c)) for c in amd} == {3} and {tuple(judged(c)) for c in amd} == {("k01_sum_fwd.L1", "k01_sum_fwd.L2", "k03_stencil.L2")}, "the AMD exemptions changed"
+    assert exempt(by["6973P-C"]) == ["k02_add_fwd.L1", "k03_stencil.L1"] and exempt(by["8573C"]) == ["k02_add_fwd.L2"], "the Intel exemptions changed"
+    assert all(len([x for x in c["cells"] if x["kernel"] in FORWARD and x["size_class"] in ("L1", "L2")]) == 6 for c in cpus)
+    sten = next(p for p in by["7763"]["verdict"]["placement_sensitive"] if p["cell_id"] == "k03_stencil.L1")
+    add69 = next(p for p in by["6973P-C"]["verdict"]["placement_sensitive"] if p["cell_id"] == "k02_add_fwd.L1")
+    add85 = next(x for x in by["8573C"]["cells"] if x["cell_id"] == "k02_add_fwd.L1")
+    assert "k02_add_fwd.L1" not in exempt(by["8573C"]) and f2(add85["as_compiled"]["ratio"]) == f2(add85["aligned"]["ratio"]), "the Xeon 8573C add changed"
+    sten69 = next(x for x in by["6973P-C"]["cells"] if x["cell_id"] == "k03_stencil.L2")["aligned"]["ci95"][1]
+    arm_hi = arm_cell("k02_add_fwd.L2")["aligned"]["ci95"][1]
+    limit = 1 + by["6973P-C"]["verdict"]["forward_limit_pct"] / 100
+    assert max(abs(sten69 - limit), abs(arm_hi - limit)) < 0.002, "the two words nearest the limit are no longer within 0.002 of it"
+    jobs = x86_k01_identical()
+    assert jobs == len(J(POOLED)["inputs"])
+    return {"amd": "3", "six": "6", "x69": str(len(exempt(by["6973P-C"]))), "x85": str(len(exempt(by["8573C"]))), "jd": "3", "jobs": str(jobs),
+            "sc": f3(sten["ratio"]), "sa": f3(sten["aligned_ratio"]), "ac2": f2(add69["ratio"]), "aa2": f2(add69["aligned_ratio"]),
+            "ac3": f3(add69["ratio"]), "aa3": f3(add69["aligned_ratio"]), "xc2": f2(add85["as_compiled"]["ratio"]),
+            "xc3": f3(add85["as_compiled"]["ratio"]), "xa3": f3(add85["aligned"]["ratio"]), "tol": "0.002", "lim": f2(limit), "h1": f3(sten69), "h2": f3(arm_hi)}
+
+
+@lru_cache(maxsize=None)
+def early_ram_cells():
+    """{cell: [ratio per job]} of the RAM-sized cells, which exist only in the early runs; and the number of jobs and runs that hold them."""
+    out = {"k04_rev.RAM": [], "k05_stride2.RAM": []}
+    jobs, runs = 0, set()
+    early = ("s2-run-", "s3-run-", "s3-audit-run-")
+    for p in sorted(glob.glob(os.path.join(REPO, "results", "*", "**", "results.json"), recursive=True)):
+        run = os.path.relpath(p, os.path.join(REPO, "results")).replace("\\", "/").split("/")[0]
+        raw = read_text_file(p)
+        if not run.startswith(early):
+            assert b".RAM" not in raw, f"{p} holds a RAM-sized cell: the texts say they exist only in the early runs"
+            continue
+        rec = json.loads(raw)
+        ram = [c for c in rec.get("cells", []) if str(c.get("cell_id", "")).endswith(".RAM")]
+        if ram:
+            jobs += 1
+            runs.add(run)
+            for c in ram:
+                if c["cell_id"] in out:
+                    out[c["cell_id"]].append(c["ratio"])
+    return out, jobs, len(runs)
+
+
+def exp_ram():
+    out, jobs, runs = early_ram_cells()
+    assert jobs == 13 and runs == 4 and all(len(v) == 13 for v in out.values()), f"RAM cells in {jobs} jobs, {runs} runs"
+    lost = exp_lost_bullet()
+    return {"rj": str(jobs), "rr": "four", "rl": f1(min(out["k04_rev.RAM"])), "rh": f1(max(out["k04_rev.RAM"])), "sl": f1(min(out["k05_stride2.RAM"])),
+            "sh": f1(max(out["k05_stride2.RAM"])), "lo": lost["lo"], "hi": lost["hi"]}
+
+
+def exp_program_floor():
+    rw = J("results/realworld-pooled/realworld.json")
+    c7 = next(c for c in rw["cpus"] if "7763" in c["cpu_model"])
+    c45 = next(c for c in rw["cpus"] if "9V45" in c["cpu_model"])
+    row_ = lambda c, n: next(r for r in c["rows"] if r["row"] == n)  # noqa: E731
+    for name in ("realworld/build.py", "pgo/build_pgo.py"):
+        src = read_text_file(os.path.join(REPO, name)).decode("utf-8")
+        hits = [m.start() for m in re.finditer(r"-DNDEBUG", src)]
+        assert hits and all(src[max(0, h - 3):h] == "no " for h in hits), f"{name} no longer says the programs are built without -DNDEBUG"
+    return {"aamax": f2(max(r["pairs"]["aa"]["time"]["half_width_pct"] for r in c7["rows"])),
+            "fmt": pct1(row_(c7, "fmt")["pairs"]["layout"]["time"]["ratio"]), "sp": pct1(row_(c45, "spectra")["pairs"]["layout"]["time"]["ratio"])}
+
+
+def exp_aa_extra():
+    n = 0
+    for d in x86_pool_dirs():
+        det = json.loads(read_text_file(os.path.join(d, "details.json")))
+        assert "k02_add_fwd.L2" in det["aa_extra"], f"{d} holds no L2 A/A"
+        n += 1
+    assert b"aa_extra" not in read_text_file(os.path.join(REPO, POOLED)), "the pooled file now holds the L2 A/A: update the text that says it is not pooled"
+    return {}
+
+
+def exp_google_quote():
+    """The words in quotation marks are the stored quotation (checked by hand against the cited post on Oct 18 2026: it is the start of the sentence there); under 15 words."""
+    claim = J("site/data/index.json")["claim"]
+    assert len(claim["quote"].split()) < 15, "the quotation is 15 words or longer"
+    assert claim["quote"] == f"Hardening libc++ resulted in an average {f2(claim['google_pct'])}% performance impact", "claim.quote and claim.google_pct disagree"
+    return {"q": claim["quote"], "v": f2(claim["google_pct"])}
+
+
+GROUP2_README_ROWS = [
+    row("question: the quotation from Google's post", "site/data/index.json claim.quote and claim.google_pct", exp_google_quote,
+        r"Google wrote that \"(?P<q>Hardening libc\+\+ resulted in an average (?P<v>[\d.]+)% performance impact)\" across its services"),
+    row("README top: the gather clause", "results/s7-pooled/pooled.json k06_gather.L1 (models with 3 or more jobs); the job records' vectorization flags", exp_gather,
+        r"A gather through an index, which neither build vectorizes, costs (?P<glo>[\d.]+)x to (?P<ghi>[\d.]+)x at L1 depending on the CPU model, so the cost is not only a SIMD effect\."),
+    row("found: the rest of the reverse cost, the unrolling and the Arm split", "asm/k04_rev.novec.s and k04_rev.fast.s of the 95 jobs; results/s8-arm-pooled k04_rev.L1 positive and as compiled",
+        exp_decomposition,
+        r"and also the four-fold unrolling that the scalar loop without the check has and the checked one lacks \(read from the listings; inferred, not separated, and not a stable "
+        r"share: on Neoverse-N2 the no-vectorize build takes (?P<an>[\d.]+)x and the checked build (?P<af>[\d.]+)x for reverse\)\."),
+    row("trust: what MAP and INCONCLUSIVE cover", "results/s7-pooled/pooled.json verdict.placement_sensitive and cells; asm/k01_sum_fwd.* of the 95 jobs; results/s8-arm-pooled", exp_cover_numbers,
+        r"\*\*What MAP and INCONCLUSIVE cover\.\*\* Each word is a statement about the forward in-cache cells left after one exemption that the rule file "
+        r"`harness/criteria-v3\.json` sets \(it was fixed before the first pooled run, in the author's unpublished development history, though after the earlier runs were known\): a cell is "
+        r"left out when the hot loops of the two builds sit differently in memory and the ratio between its as-compiled and aligned results has an interval that excludes 1\. "
+        r"The rule has no minimum size for that difference and does not ask whether the cost goes away when the loops are aligned; aligning to 64 bytes removes one source of "
+        r"placement variation, not all of it \(the stencil at L1 on EPYC 7763 is (?P<sc>[\d.]+)x as compiled and (?P<sa>[\d.]+)x aligned\)\. The exemption left out (?P<amd>\d) of "
+        r"the (?P<six>\d) forward cells on each AMD model, (?P<x69>\d) on the Xeon 6973P-C and (?P<x85>\d) on the Xeon 8573C, each listed with its ratios in the model's verdict "
+        r"line in `results/s7-pooled/pooled\.json`\. On each AMD model the (?P<jd>\d) judged cells are the forward sum at L1 and L2, which compiles to identical machine code in "
+        r"both builds \(the same in all (?P<jobs>\d+) jobs, so it measures noise, not the check\), and the stencil at L2\. The Xeon 6973P-C's forward add at L1 "
+        r"\((?P<ac2>[\d.]+)x as compiled, (?P<aa2>[\d.]+)x aligned\) is among the cells left out, and the Xeon 8573C's \((?P<xc2>[\d.]+)x in both columns\) is judged, so the two "
+        r"Intel words do not rank those models by cost\. The 6973P-C's MAP and the Arm INCONCLUSIVE each rest on one cell within (?P<tol>[\d.]+) of the (?P<lim>[\d.]+) limit "
+        r"\((?P<h1>[\d.]+) and (?P<h2>[\d.]+)\)"),
+    row("trust: floors, sizes and builds, the A/A at L2", "details.json aa_extra of the 95 jobs; results/s7-pooled/pooled.json (holds no aa_extra)", exp_aa_extra,
+        r"The same A/A at L2 is timed in every job \(stored as `aa_extra` in each job's `details\.json`\) but is not pooled for the x86 models, so their forward passes at L2 are "
+        r"not shown to be resolved to 2%"),
+    row("trust: floors, sizes and builds, programs, RAM and NDEBUG", "results/realworld-pooled/realworld.json pairs.aa and pairs.layout; early results.json RAM cells; realworld/build.py, pgo/build_pgo.py",
+        lambda: {**exp_program_floor(), **exp_ram()},
+        r"is at most (?P<aamax>[\d.]+)% on EPYC 7763, while building the same program without checks at `-falign-loops=64` moves it by (?P<fmt>[\d.]+)% for \{fmt\} on EPYC 7763 "
+        r"and by (?P<sp>[\d.]+)% for Spectra on EPYC 9V45, so a program effect smaller than that is not separated from code placement\. RAM-sized working sets were timed in "
+        r"(?P<rj>\d+) early jobs only: there reverse took (?P<rl>[\d.]+)x to (?P<rh>[\d.]+)x and stride-2 (?P<sl>[\d.]+)x to (?P<sh>[\d.]+)x, far less than in cache, and they were "
+        r"not re-timed in the pooled runs, so the (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x is for data that fits in the cache\. The programs were built without `-DNDEBUG`"),
+]
+
+GROUP2_DETAILS_ROWS = [
+    row("details: the placement exemption, what it left out and what is left", "results/s7-pooled/pooled.json verdict.placement_sensitive and cells; asm/k01_sum_fwd.* of the 95 jobs; results/s8-arm-pooled",
+        exp_cover_numbers,
+        r"That is (?P<amd>\d) of the (?P<six>\d) forward in-cache cells on each AMD model, (?P<x69>\d) on the Xeon 6973P-C and (?P<x85>\d) on the Xeon 8573C in the (?P<jobs>\d+)-job pool, "
+        r"each listed with its ratios in the model's verdict line in `results/s7-pooled/pooled\.json` \(`harness/criteria-v3\.json`, `placement_sensitive`\)\. MAP or INCONCLUSIVE is a "
+        r"statement about the cells that are left\. The rule has no minimum size for the difference and does not ask whether the cost goes away when the loops are aligned\. The "
+        r"cells left are, on each AMD model, the forward sum at L1 and L2, whose machine code is identical in the two builds in all (?P=jobs) jobs \(so they measure noise, not the "
+        r"check\), and the stencil at L2\. The Xeon 6973P-C's forward add at L1 \((?P<ac3>[\d.]+) as compiled, (?P<aa3>[\d.]+) aligned\) is left out, while the Xeon 8573C's "
+        r"\((?P<xc3>[\d.]+) as compiled, (?P<xa3>[\d.]+) aligned\) is judged; that is why only one of the two has a verdict, and the two Intel words do not rank the models by cost\. "
+        r"Aligning loops to 64 bytes removes one source of placement variation, not all of it: the stencil at L1 on EPYC 7763 is (?P<sc>[\d.]+) as compiled and (?P<sa>[\d.]+) aligned\. "
+        r"Several words rest on margins of a few thousandths against the (?P<lim>[\d.]+) limit \(the Xeon 6973P-C's stencil at L2 ends at (?P<h1>[\d.]+), the Arm forward add at L2 at "
+        r"(?P<h2>[\d.]+);"),
+    row("details: RAM-sized cells exist in 13 early jobs only", "early results.json RAM cells (results/s2-run-*, s3-run-*, s3-audit-run-*); no other results.json holds one", exp_ram,
+        r"RAM-size cells exist only in (?P<rj>\d+) early jobs \((?P<rr>\w+) runs, in `results/s2-run-\*`, `results/s3-run-\*` and `results/s3-audit-run-\*`\): there the reverse "
+        r"loop cost (?P<rl>[\d.]+)x to (?P<rh>[\d.]+)x and stride-2 (?P<sl>[\d.]+)x to (?P<sh>[\d.]+)x, far less than in cache and different by CPU model, and the cells were not "
+        r"re-timed in the pooled runs, so the (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x is for data that fits in the cache\."),
+    row("details: the real-program floor, layout shifts and NDEBUG", "results/realworld-pooled/realworld.json pairs.aa and pairs.layout; realworld/build.py, pgo/build_pgo.py", exp_program_floor,
+        r"built without `-DNDEBUG` \(the programs' own `assert` checks are active in both builds; release builds differ, and the size of that difference was not tested\).*?"
+        r"The A/A floor of these readings is that of an identical binary \(at most (?P<aamax>[\d.]+)% on EPYC 7763\), while the same program built without checks at "
+        r"`-falign-loops=64` differs from the default build by (?P<fmt>[\d.]+)% for \{fmt\} on EPYC 7763 and by (?P<sp>[\d.]+)% for Spectra on EPYC 9V45 "
+        r"\(`pairs\.layout` in `results/realworld-pooled/realworld\.json`\)"),
+    row("details: what pool_check.py recomputes and how closely", "harness/pool_check.py SAMPLE_CELLS, PLACEMENT_CELLS, B, BOUND_TOL_WIDTH, BOUND_TOL_RATIO; harness/criteria-v3.json minimum_jobs",
+        exp_pool_check_sample,
+        r"`harness/pool_check\.py` independently recomputes a sample of the pooled numbers, not all of them: for each CPU model with (?P<mn>\d+) or more jobs, the A/A, "
+        r"the layout A/A, (?P<cells>\w+) named cells and (?P<pl>\w+) placement statistics\. It uses its own code, generator and (?P<b>[\d,]+) resamples, so its interval "
+        r"bounds only have to agree with the stored ones within a Monte Carlo tolerance \((?P<w>\d+)% of the interval's width plus (?P<r>[\d.]+)% of the ratio\); "
+        r"`scripts/check\.py` re-runs `harness/pool\.py` for all the rest"),
+    row("details: the PGO column, runs and jobs", "results/pgo-pooled/pgo.json runs, cpus, inputs; results/realworld-pooled/realworld.json jobs", exp_pgo_head,
+        r"\*\*PGO column \(`pgo/`, six runs: (?P<ids>[\d, and]+), on build run \d+\)\.\*\* All eight rows \(six workloads and two controls\) rebuilt with clang "
+        r"instrumented profile-guided optimization, each mode profiled separately, (?P<tot>\d+) distinct jobs pooled per CPU model \(EPYC 7763 (?P<a>\d+), EPYC 9V74 "
+        r"(?P<b>\d+), Xeon 8573C (?P<c>\d+), Xeon 8370C (?P<e>\d+)\)\. EPYC 7763 \(non-PGO (?P<n7>\d+) jobs\) and EPYC 9V74 \(non-PGO (?P<n9>\d+) jobs, the minimum\) "
+        r"have a reading on both sides"),
+    row("details: the PGO ratios and the comparison with the non-PGO pool", "results/pgo-pooled/pgo.json cpus[].rows[].pairs and reading; pgo/report.md summary lines", exp_pgo_rows,
+        r"On EPYC 7763, PGO FAST/NONE as compiled: LightGBM default (?P<dflt>[\d.]+) \(not detectable, at most (?P<amp>[\d.]+)%\), multiclass (?P<mc>[\d.]+), linear "
+        r"(?P<ln>[\d.]+), Draco (?P<dr>[\d.]+), tiny-dnn (?P<td>[\d.]+) \(the last four detectably slower\), Spectra and meshoptimizer not detectable, \{fmt\} faster; "
+        r"against the non-PGO ratios PGO was lower in (?P<l7>\w+) row, higher in (?P<h7>\w+) and not detectably different in (?P<s7>\w+)\. On EPYC 9V74, (?P<n3>\w+) rows "
+        r"with lost loops stay detectably slower under PGO \((?P<lo>[\d.]+) to (?P<hi>[\d.]+) across the two columns; as compiled (?P<clo>[\d.]+) to (?P<chi>[\d.]+)\); "
+        r"PGO was lower in (?P<l9>\w+) row, higher in (?P<h9>\w+) and not different in (?P<s9>\w+)\."),
+    row("details: what PGO leaves, the census locations and the Xeons", "results/pgo-pooled/pgo.json pgo_context census_lost_locations; pgo/report.md", exp_pgo_tail,
+        r"\(LightGBM default dropped to not detectable on both models\), and almost all of the census's lost loops stay lost \((?P<vn>\d+) of (?P<lt>\d+) locations "
+        r"vectorized with checks off, (?P<vf>\d+) with checks on\)\. Limits: the training input is the timed input, which flatters PGO; instrumented profiles only, no "
+        r"sampling profiles, no link-time optimization; the two Xeon models have no non-PGO counterpart, so neither is read\."),
+]
+
+# ---- DETAILS prose tied to data: census, mitigation, versions, holdout, layout, lostloops --------
+
+def mit_shape(shape):
+    return next(s for s in J("site/data/mitigate.json")["shapes"] if s["shape"] == shape)
+
+
+def mit_ratios(shape, variants, cpus=None, sizes=("L1", "L2")):
+    """Every job's FAST/original-aligned ratio of the named rewrites (the stored per-CPU, per-size lists)."""
+    out = []
+    for v in mit_shape(shape)["variants"]:
+        if v["variant"] in variants:
+            for cpu, per in v["per_cpu"].items():
+                if cpus is None or cpu in cpus:
+                    for size in sizes:
+                        out.extend(r["ratio"] for r in per.get(size, []))
+    assert out, f"no ratios for {shape} {variants} {cpus} {sizes}"
+    return out
+
+
+def mit_pair(values):
+    return {"lo": f2(min(values)), "hi": f2(max(values))}
+
+
+def exp_mitigation_summary():
+    """The rewrite figures that DETAILS.md and mitigate/README.md type, from site/data/mitigate.json (per-job ratios)."""
+    m = J("site/data/mitigate.json")
+    assert [s["shape"] for s in m["shapes"]] == ["reverse", "stride-2", "gather", "matrix multiply"], "the four kernels changed"
+    rev_one = statistics.median(mit_ratios("reverse", ("pre", "span"), ("EPYC 7763", "EPYC 9V74")))
+    rev45 = mit_ratios("reverse", ("pre", "span"), ("EPYC 9V45",))
+    row_ptr = mit_ratios("matrix multiply", ("rowptr",))
+    spans1 = mit_ratios("matrix multiply", ("span", "transform"), None, ("L1",))
+    spans2 = mit_ratios("matrix multiply", ("span", "transform"), None, ("L2",))
+    il2 = mit_ratios("stride-2", ("span_il2",))
+    raw2 = mit_ratios("stride-2", ("raw",))
+    s2pre = statistics.median(mit_ratios("stride-2", ("pre",), ("EPYC 7763", "EPYC 9V74")))
+    tr1 = mit_ratios("matrix multiply", ("transform",), None, ("L1",))
+    tr2 = mit_ratios("matrix multiply", ("transform",), None, ("L2",))
+    g_orig = mit_ratios("gather", ("orig",), None, ("L1",))
+    g1 = mit_ratios("gather", ("pre", "span"), None, ("L1",))
+    g2 = mit_ratios("gather", ("pre", "span"), None, ("L2",))
+    jobs = m["jobs"]
+    usable = [j for j in jobs if j["usable"]]
+    assert m["usable_cpus"] == ["EPYC 7763"] and len(usable) == m["usable_jobs"] and len(jobs) == m["job_count"]
+    return {
+        "one": f2(rev_one), "lo45": f2(min(rev45)), "hi45": f2(max(rev45)),
+        "rpl": f2(min(row_ptr)), "rph": f2(max(row_ptr)), "rp1": f2(statistics.median(row_ptr)),
+        "sp1l": f2(min(spans1)), "sp1h": f2(max(spans1)), "sp2l": f2(min(spans2)), "sp2h": f2(max(spans2)),
+        "ill": f2(min(il2)), "ilh": f2(max(il2)), "rawl": f2(min(raw2)), "rawh": f2(max(raw2)),
+        "five": f0(s2pre),
+        "tr1l": f2(min(tr1)), "tr1h": f2(max(tr1)), "tr2l": f2(min(tr2)), "tr2h": f2(max(tr2)),
+        "gol": f2(min(g_orig)), "goh": f2(max(g_orig)), "g1l": f2(min(g1)), "g1h": f2(max(g1)),
+        "g2l": f2(min(g2)), "g2h": f2(max(g2)),
+        "go1": f1(min(g_orig)), "go2": f1(max(g_orig)), "g1m": f1(statistics.median(g1)), "g21": f1(min(g2)), "g22": f1(max(g2)),
+        "clamp": f1(max(mit_ratios("gather", ("clamp",)))), "valid": f1(max(mit_ratios("gather", ("validate",)))),
+        "k": str(len(m["shapes"])), "eight": str(len(m["shapes"]) * 2), "aa": f"{m['aa_max_pct']:.0f}",
+        "u": str(m["usable_jobs"]), "n": str(m["job_count"]),
+        "pct_lo": f0((min(rev45) - 1) * 100), "pct_hi": f0((max(rev45) - 1) * 100),
+        "models": "EPYC 7763, 9V45 and 9V74" if m["cpus"] == ["EPYC 7763", "EPYC 9V74", "EPYC 9V45"] else "?",
+        "intel": str(len(jobs) - sum(1 for j in jobs if j["cpu_short"].startswith("EPYC"))),
+    }
+
+
+def mitigate_raw_jobs():
+    """The twelve raw job records of the mitigation runs: (run id, job, CPU, usable, stride-2 L1 A/A half-width in %)."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(REPO, "results", "mitigate-run-*", "*", "results.json"))):
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+        aa = {k: {sc: v["half_width_pct"] for sc, v in kk["aa"].items()} for k, kk in d["kernels"].items()}
+        out.append((d["run"]["id"], d["run"]["job"], d["run"]["cpu_model"], all(x <= 2.0 for k in aa.values() for x in k.values()),
+                    aa["m05_stride2"]["L1"]))
+    return out
+
+
+def exp_mitigation_jobs():
+    raw = mitigate_raw_jobs()
+    usable = [r for r in raw if r[3]]
+    assert len(raw) == J("site/data/mitigate.json")["job_count"], "the raw job records and the summary disagree on the job count"
+    assert len({r[0] for r in usable}) == 1 and all("7763" in r[2] for r in usable), "the usable jobs are no longer one run on EPYC 7763"
+    above = [r for r in raw if r[4] > 2.0]
+    return {"u": str(len(usable)), "n": str(len(raw)), "run": usable[0][0], "j1": usable[0][1], "j2": usable[1][1],
+            "five": str(len(above)), "mx": f2(max(r[4] for r in raw))}
+
+
+def exp_details_mitigation():
+    s = exp_mitigation_summary()
+    return {k: s[k] for k in ("k", "one", "lo45", "hi45", "rpl", "rph", "sp1l", "sp1h", "ill", "ilh")}
+
+
+def exp_details_mitigate_rule():
+    s = exp_mitigation_summary()
+    assert s["intel"] == "0", f"{s['intel']} of the mitigation jobs ran on a CPU that is not an EPYC; the text says no Intel model was drawn"
+    return {"eight": s["eight"], "aa": s["aa"], "u": s["u"], "n": s["n"], "models": s["models"],
+            "pl": s["pct_lo"], "ph": s["pct_hi"]}
+
+
+def summary_of(*keys):
+    return lambda: pick(exp_mitigation_summary(), *keys)
+
+
+def exp_details_census():
+    c = J("site/data/corpus.json")
+    c1, c2 = c["census1"]["totals"], c["census2"]["totals"]
+    projects = c["census2"]["projects"]
+    names = {p["name"] for p in projects}
+    assert {"stockfish", "entt"} <= names, f"the numeric census no longer includes Stockfish and EnTT: {sorted(names)}"
+    assert c2["projects_with_a_lost_loop"] == sum(1 for p in projects if p["lost"] > 0), "projects_with_a_lost_loop disagrees with the project rows"
+    assert c2["lost"] == sum(p["lost"] for p in projects) and c2["none"]["vectorized"] == sum(p["vectorized"] for p in projects)
+    lgbm = next(p for p in projects if p["name"] == "lightgbm")
+    return {
+        "libs": str(c1["projects"]), "lost1": str(c1["lost"]), "vec1": thousands(c1["none"]["vectorized"]),
+        "projs": str(c2["projects"]), "lost2": str(c2["lost"]), "vec2": thousands(c2["none"]["vectorized"]),
+        "loc": str(c2["lost_unique_locations"]), "locof": str(c2["none"]["vectorized_unique"]),
+        "lgbm": str(lgbm["lost"]), "rest": str(c2["lost"] - lgbm["lost"]),
+        "restof": thousands(c2["none"]["vectorized"] - lgbm["vectorized"]),
+        "none": str(c2["projects"] - c2["projects_with_a_lost_loop"]),
+    }
+
+
+def exp_details_versions_timed():
+    v = J("site/data/versions.json")
+    tcs = sorted(v["toolchains"], key=lambda t: t["version"])
+    assert [t["version"] for t in tcs] == [19, 20, 21] and all(t["form"] == "INCONCLUSIVE" for t in tcs), "the timed toolchains or their forms changed"
+    assert v["summary"]["matmul_vectorized_both_all"] is True and v["summary"]["reverse_holds_all"] and v["summary"]["stride2_holds_all"]
+    cells = [(t["version"], c["cpu_short"], x) for t in tcs for c in t["cpus"] for x in c["cells"]]
+    rev = [x["ratio"] for _, _, x in cells if x["kernel"] == "k04_rev"]
+    s2 = [x["ratio"] for _, _, x in cells if x["kernel"] == "k05_stride2"]
+    assert (min(rev), max(rev)) == (v["summary"]["reverse_all"]["min"], v["summary"]["reverse_all"]["max"]), "the summary's reverse range is not the cells' range"
+    assert (min(s2), max(s2)) == (v["summary"]["stride2_all"]["min"], v["summary"]["stride2_all"]["max"])
+    enough = [e["cpu_short"] for e in v["summary"]["enough"]]
+    assert enough == ["EPYC 7763"] * 3, f"models with 3 or more jobs on each toolchain (one entry per toolchain): {enough}"
+    jobs7763 = [next(c["jobs"] for c in t["cpus"] if c["cpu_short"] == "EPYC 7763") for t in tcs]
+    others = {c["jobs"] for t in tcs for c in t["cpus"] if c["cpu_short"] != "EPYC 7763"}
+    assert others <= {1, 2}, f"the other models drew {sorted(others)} jobs"
+    m7 = [(ver, x) for ver, cpu, x in cells if cpu == "EPYC 7763"]
+    rev7 = [x["ratio"] for _, x in m7 if x["kernel"] == "k04_rev"]
+    rev21 = [x["ratio"] for ver, x in m7 if x["kernel"] == "k04_rev" and ver == 21]
+    s27 = [x["ratio"] for _, x in m7 if x["kernel"] == "k05_stride2"]
+    mm = {x["size"]: x["ratio"] for ver, x in m7 if x["kernel"] == "k08_matmul" and ver == 19}
+    return {
+        "run": v["run_id"], "v1": tcs[0]["clang"], "v2": tcs[1]["clang"], "v3": tcs[2]["clang"], "jobs": str(v["summary"]["jobs"]),
+        "rlo": f1(min(rev)), "rhi": f1(max(rev)), "slo": f1(min(s2)), "shi": f1(max(s2)),
+        "j1": str(jobs7763[0]), "j2": str(jobs7763[1]), "j3": str(jobs7763[2]),
+        "mlo": f1(min(rev7)), "mhi": f1(max(rev7)), "c21lo": f1(min(rev21)), "c21hi": f1(max(rev21)),
+        "mslo": f1(min(s27)), "mshi": f1(max(s27)), "m1": f2(mm["L1"]), "m2": f2(mm["L2"]),
+        "add": f2(next(x["ratio"] for ver, x in m7 if x["cell_id"] == "k02_add_fwd.L1" and ver == 19)),
+        "a18": f1(next(x["clang18"] for ver, x in m7 if x["cell_id"] == "k02_add_fwd.L1" and ver == 19)),
+        "mod": str(len(v["toolchains"])),
+    }
+
+
+def exp_details_holdout_compare():
+    rows = {r["cpu_short"]: r for r in J("site/data/holdout.json")["rows"]}
+    r7, r9, r45, rx = rows["EPYC 7763"], rows["EPYC 9V74"], rows["EPYC 9V45"], rows["Xeon 8573C"]
+    assert r7["original"]["jobs"] == r7["holdout"]["jobs"], "7763 no longer has the same job count on both sides"
+    assert r7["original"]["form"] == r7["holdout"]["form"] == r9["original"]["form"] == r9["holdout"]["form"] == "map"
+    assert (r45["original"]["form"], r45["holdout"]["form"]) == ("map", "inconclusive")
+    assert not rx["original"]["enough"] and not rx["holdout"]["enough"], "the Xeon 8573C has enough jobs on a side now"
+    return {"j7": str(r7["original"]["jobs"]), "o9": str(r9["original"]["jobs"]), "h9": str(r9["holdout"]["jobs"]),
+            "mo": f2(r7["original"]["lost"]["median"]), "mh": f2(r7["holdout"]["lost"]["median"]),
+            "o45": str(r45["original"]["jobs"]), "h45": str(r45["holdout"]["jobs"])}
+
+
+def layout_cpu(short):
+    return next(c for c in J("site/data/layout.json")["cpus"] if c["cpu_short"] == short)
+
+
+def layout_row(short, kernel, size):
+    return next(r for r in layout_cpu(short)["rows"] if r["kernel"] == kernel and r["size"] == size)
+
+
+def exp_details_layout_frame():
+    L = J("site/data/layout.json")
+    assert L["residues"] == [0, 16, 32, 48] and L["mode"] == "coarse" and L["rules"]["min_jobs"] == 3
+    assert sorted(c["cpu_short"] for c in L["cpus"] if not c["enough"]) == ["Xeon 6973P-C", "Xeon 8573C"], "the models below the minimum changed"
+    assert all(c["jobs"] < L["rules"]["min_jobs"] for c in L["cpus"] if not c["enough"])
+    sums = [r for c in L["cpus"] if c["enough"] for r in c["rows"] if r["kernel"] == "k01_sum_fwd"]
+    assert all(r["verdict"] == "ROBUST" for r in sums), "the forward sum is not robust on every model with enough jobs"
+
+    def rev(short):
+        rows = [r for r in layout_cpu(short)["rows"] if r["kernel"] == "k04_rev"]
+        return f1(min(r["min"] for r in rows)), f1(max(r["max"] for r in rows))
+
+    out = {"p": str(L["placements"]), "a": str(layout_cpu("EPYC 7763")["jobs"]), "b": str(layout_cpu("EPYC 9V74")["jobs"]),
+           "c": str(layout_cpu("EPYC 9V45")["jobs"]), "d": str(layout_cpu("Xeon 8573C")["jobs"]), "e": str(layout_cpu("Xeon 6973P-C")["jobs"]),
+           "rlo": f1(L["reverse"]["min"]), "rhi": f1(L["reverse"]["max"]),
+           "flo": f3(min(r["min"] for r in sums)), "fhi": f3(max(r["max"] for r in sums))}
+    out["a1"], out["a2"] = rev("EPYC 7763")
+    out["b1"], out["b2"] = rev("EPYC 9V74")
+    out["c1"], out["c2"] = rev("EPYC 9V45")
+    assert (out["rlo"], out["rhi"]) == (min(out["a1"], out["b1"], out["c1"]), max(out["a2"], out["b2"], out["c2"])), "the reverse range is not the three models' union"
+    return out
+
+
+def exp_details_layout_stencil():
+    L = J("site/data/layout.json")
+    s7 = layout_row("EPYC 7763", "k03_stencil", "L1")
+    s45 = layout_row("EPYC 9V45", "k03_stencil", "L1")
+    s74 = layout_row("EPYC 9V74", "k03_stencil", "L2")
+    inconclusive = [(c["cpu_short"], r["kernel"], r["size"]) for c in L["cpus"] if c["cpu_short"].startswith("EPYC") for r in c["rows"] if r["verdict"] == "INCONCLUSIVE"]
+    assert inconclusive == [("EPYC 9V45", "k03_stencil", "L1")], f"the inconclusive EPYC cells are {inconclusive}"
+    assert s7["verdict"] == "PLACEMENT_DEPENDENT" and s74["verdict"] == "MIXED" and s74["n_cost"] == 1
+    return {"med": f3(s7["median"]), "nc": str(s7["n_cost"]), "np": str(s7["n_placements"]), "ps": str(s7["n_pass"]),
+            "aa": f2(s45["aa_half_width_pct"]), "lim": f"{L['rules']['aa_half_width_max_pct']:.1f}", "mx": f3(s74["max"])}
+
+
+def exp_details_lostloops():
+    base = os.path.join(REPO, "results")
+    runs = sorted(glob.glob(os.path.join(base, "lostloops-live-*")))
+    assert len(runs) == 1, f"the live-test result folders are {runs}"
+    outs = sorted(glob.glob(os.path.join(runs[0], "lostloops-live-*", "out-*", "comparison.json")))
+    names = []
+    for path in outs:
+        with open(path, encoding="utf-8") as f:
+            c = json.load(f)
+        assert c["pass"] is True, f"{path}: the comparison with the census lists does not pass"
+        names.append(c["project"])
+    assert sorted(names) == ["leveldb", "lightgbm", "spectra"], f"projects of the live test: {names}"
+    return {"run": os.path.basename(runs[0]).split("-")[-1], "n": word(len(names)), "clang": timed_clang()}
+
+
+def exp_details_realworld():
+    d, rows, groups = realworld()
+    t = d["timing"]
+    workloads = [n for n, r in rows.items() if not r["control"]]
+    projects = {rows[n]["project"] for n in workloads}
+    lgbm = [n for n in workloads if rows[n]["project"] == "LightGBM"]
+    assert t["jobs"] == sum(groups[c]["jobs"] for c in groups), "the model groups do not add up to the distinct jobs"
+    assert [g["cpu_short"] for g in t["groups"]] == ["EPYC 7763", "EPYC 9V45", "EPYC 9V74"] and d["minimum_jobs"] == 3
+
+    def cols(cpu, name):
+        v = groups[cpu]["rows"][name]
+        return v["fast"]["ratio"], v["aligned"]["ratio"]
+
+    def slower_pct(cpu):
+        values = [r for n in slower_rows(cpu) for r in cols(cpu, n)]
+        return pct1(min(values)), pct1(max(values))
+
+    def at_most(cpu, name):
+        v = groups[cpu]["rows"][name]
+        assert v["reading"] == "not detectable", f"{cpu} {name} is {v['reading']}"
+        return f1(v["at_most_pct"])
+
+    s74, s45 = sorted(slower_rows("EPYC 9V74")), sorted(slower_rows("EPYC 9V45"))
+    assert s74 == ["draco", "lightgbm_default", "lightgbm_linear", "lightgbm_multiclass"], f"EPYC 9V74 slower rows: {s74}"
+    assert s45 == ["draco", "lightgbm_default", "lightgbm_multiclass"], f"EPYC 9V45 slower rows: {s45}"
+    assert sorted(slower_rows("EPYC 7763")) == ["draco", "lightgbm_default", "lightgbm_linear", "lightgbm_multiclass", "tinydnn"]
+    for cpu in groups:
+        for c in ("meshopt",):
+            assert groups[cpu]["rows"][c]["reading"] == "not detectable", f"{cpu}: the meshoptimizer control is {groups[cpu]['rows'][c]['reading']}"
+        assert groups[cpu]["rows"]["fmt"]["reading"] in ("not detectable", "detectably faster"), f"{cpu}: the {{fmt}} control is slower"
+    lines = {n: rows[n]["lines_none"] for n in workloads}
+    for n in ("lightgbm_default", "lightgbm_multiclass", "draco", "tinydnn"):
+        assert rows[n]["lines_none"] < 1 and rows[n]["lines_fast"] < 1, f"{n}: the lost loops' lines are no longer under 1% of the instructions"
+    fmt7 = cols("EPYC 7763", "fmt")
+    out = {
+        "jobs": str(t["jobs"]), "runs": str(len(d["runs"])), "j7": str(groups["EPYC 7763"]["jobs"]), "j45": str(groups["EPYC 9V45"]["jobs"]),
+        "j74": str(groups["EPYC 9V74"]["jobs"]), "min": str(d["minimum_jobs"]), "w3": word(len(lgbm)), "six": word(len(workloads)), "four": word(len(projects)),
+        "n7": word(len(slower_rows("EPYC 7763"))), "p7": word(len({rows[n]["project"] for n in slower_rows("EPYC 7763")})),
+        "n74": word(len(s74)), "n45": word(len(s45)),
+        "sp7": at_most("EPYC 7763", "spectra"), "td74": at_most("EPYC 9V74", "tinydnn"), "sp74": at_most("EPYC 9V74", "spectra"),
+        "ln45": at_most("EPYC 9V45", "lightgbm_linear"), "td45": at_most("EPYC 9V45", "tinydnn"), "sp45": at_most("EPYC 9V45", "spectra"),
+        "ln1": f3(cols("EPYC 9V45", "lightgbm_linear")[0]), "ln2": f3(cols("EPYC 9V45", "lightgbm_linear")[1]),
+        "td1": f2(cols("EPYC 9V45", "tinydnn")[0]), "td2": f2(cols("EPYC 9V45", "tinydnn")[1]),
+        "fl": pct1(2 - max(fmt7)), "fh": pct1(2 - min(fmt7)),
+        "cl": f4(min(lines.values())), "ch": f1(max(lines.values())), "tf": f0(rows["tinydnn"]["funcs_none"]),
+        "ne": str(len(t["expect"])), "nh": str(sum(1 for e in t["expect"] if e["held"])),
+    }
+    out["lo7"], out["hi7"] = slower_pct("EPYC 7763")
+    out["lo74"], out["hi74"] = slower_pct("EPYC 9V74")
+    out["lo45"], out["hi45"] = slower_pct("EPYC 9V45")
+    return out
+
+
+def exp_details_programs():
+    p = J("site/data/index.json")["programs"]
+    rows = p["rows"]
+    assert len(rows) == 9
+    j = [(r["cpu_short"], r["run_label"], r["programs"]["json"]) for r in rows]
+    above = [x for x in j if x[2]["ci95"][0] > 1]
+    assert [(a[0], a[1]) for a in above] == [("EPYC 7763", "S3 full run"), ("EPYC 7763", "S3 full run"), ("Xeon 8370C", "S3 audit run")], \
+        "the json rows with an interval wholly above 1 are not the two 7763 rows of the full run and the 8370C row of the audit run"
+    assert all(r["programs"]["fmt"]["ci95"][0] <= 1 for r in rows) and all(r["programs"]["fmt"]["ci95"][1] <= 1.05 for r in rows)
+    first, second, third = (a[2] for a in above)
+    assert pct1(second["ci95"][0]) == pct1(third["ci95"][0]), "the second and third lower ends no longer round to the same percent"
+    repro = next(x for x in j if x[0] == "EPYC 7763" and x[1] == "S3 reproduction run")[2]
+    return {
+        "alo": f1(p["at_most_pct"]["min"]), "ahi": f1(p["at_most_pct"]["max"]), "flo": f1(p["aa_pct"]["min"]), "fhi": f1(p["aa_pct"]["max"]),
+        "k": str(len(above)), "n": str(len(rows)), "six": word(len(rows) - len(above)),
+        "l1": pct1(first["ci95"][0]), "a1": f2(first["aa_pct"]), "l2": pct1(second["ci95"][0]), "a2": f2(second["aa_pct"]), "a3": f2(third["aa_pct"]),
+        "p1": f3(first["ratio"]), "p2": f3(second["ratio"]), "i1l": f3(first["ci95"][0]), "i1h": f3(first["ci95"][1]),
+        "i2l": f3(second["ci95"][0]), "i2h": f3(second["ci95"][1]), "b1": f2(first["aa_pct"]), "b2": f2(second["aa_pct"]),
+        "p3": f3(third["ratio"]), "i3l": f3(third["ci95"][0]), "i3h": f3(third["ci95"][1]), "b3": f2(third["aa_pct"]),
+        "rp": f3(repro["ratio"]), "rl": f3(repro["ci95"][0]), "rh": f3(repro["ci95"][1]),
+    }
+
+
+GROUP3_DETAILS_ROWS = [
+    row("details: the real-program paragraph, jobs and readings per model", "site/data/realworld.json timing.groups (every workload and CPU model), rows (Cachegrind lines and functions), timing.expect", exp_details_realworld,
+        r"The workloads are LightGBM with (?P<w3>\w+) option sets \(default, multiclass, linear\), Draco, tiny-dnn and Spectra, picked because they contain lost loops; "
+        r"meshoptimizer and \{fmt\} are controls without any\. Pooled per CPU model over (?P<jobs>\d+) distinct jobs in (?P<runs>\d+) runs: AMD EPYC 7763 (?P<j7>\d+) jobs, "
+        r"EPYC 9V45 (?P<j45>\d+) jobs, EPYC 9V74 (?P<j74>\d+) jobs \((?P<min>\d+) is the minimum for a reading\)\. The result differs by model\. "
+        r"On EPYC 7763, (?P<n7>\w+) of the (?P<six>\w+) workloads \((?P<p7>\w+) of the (?P<four>\w+) projects\) ran detectably slower with the checks on, by "
+        r"(?P<lo7>[\d.]+)% to (?P<hi7>[\d.]+)% across the as-compiled and aligned columns; Spectra was not detectable \(at most (?P<sp7>[\d.]+)%\)\. "
+        r"On EPYC 9V74, (?P<n74>\w+) of six workloads \(LightGBM default, multiclass and linear, Draco\) were detectable, (?P<lo74>[\d.]+)% to (?P<hi74>[\d.]+)%; "
+        r"tiny-dnn \(at most (?P<td74>[\d.]+)%\) and Spectra \(at most (?P<sp74>[\d.]+)%\) were not\. "
+        r"On EPYC 9V45, (?P<n45>\w+) of six workloads \(LightGBM default and multiclass, Draco\) were detectable, (?P<lo45>[\d.]+)% to (?P<hi45>[\d.]+)%; "
+        r"LightGBM linear \(at most (?P<ln45>[\d.]+)%, and its two columns disagree: (?P<ln1>[\d.]+) as compiled, (?P<ln2>[\d.]+) aligned\), "
+        r"tiny-dnn \(at most (?P<td45>[\d.]+)%, and its two columns disagree: (?P<td1>[\d.]+) as compiled, (?P<td2>[\d.]+) aligned\) and Spectra \(at most (?P<sp45>[\d.]+)%\) were not\. "
+        r"So \"five of six workloads\" holds on EPYC 7763 only\. On every model the meshoptimizer control was not detectable and the \{fmt\} control was faster or not detectable "
+        r"\(on 7763 (?P<fl>[\d.]+)% to (?P<fh>[\d.]+)% faster, a placement effect that was not explained\)\. "
+        r"Cachegrind puts the lost loops' own lines at (?P<cl>[\d.]+)% to (?P<ch>[\d.]+)% of executed instructions, so for LightGBM \(default and multiclass\), Draco and tiny-dnn "
+        r"\(under 1% on the lines; tiny-dnn's functions hold (?P<tf>\d+)%, so for it this is weaker\).*?"
+        r"three AMD CPU models only \((?P=j7), (?P=j45) and (?P=j74) jobs\).*?"
+        r"Of the (?P<ne>\d+) expectations written before any run, in the author's unpublished development history, (?P<nh>\d+) held"),
+    row("details: the whole-program columns, json and fmt", "site/data/index.json programs (rows, at_most_pct, aa_pct)", exp_details_programs,
+        r"json and fmt \(earlier runs, S3\) are \"consistent with at most (?P<alo>[\d.]+)% to (?P<ahi>[\d.]+)%\", each next to its own A/A floor "
+        r"\((?P<flo>[\d.]+)% to (?P<fhi>[\d.]+)%\); that wording is an upper bound only where the interval includes 1\. "
+        r"In (?P<k>\d+) of the (?P<n>\d+) json job rows the interval lies wholly above 1, so a small slowdown is indicated in those rows, not only an upper bound "
+        r"\(only for the first does the lower end of the interval, (?P<l1>[\d.]+)% above 1, also clear that job's own A/A floor of (?P<a1>[\d.]+)%; "
+        r"for the second and third the lower end, (?P<l2>[\d.]+)% above 1, lies below their floors of (?P<a2>[\d.]+)% and (?P<a3>[\d.]+)%\): "
+        r"EPYC 7763 twice in the S3 full run \(point ratios (?P<p1>[\d.]+) and (?P<p2>[\d.]+), intervals (?P<i1l>[\d.]+) to (?P<i1h>[\d.]+) and (?P<i2l>[\d.]+) to (?P<i2h>[\d.]+), "
+        r"A/A (?P<b1>[\d.]+)% and (?P<b2>[\d.]+)%\) and Xeon 8370C once in the audit run \((?P<p3>[\d.]+), (?P<i3l>[\d.]+) to (?P<i3h>[\d.]+), A/A (?P<b3>[\d.]+)%\)\. "
+        r"The other (?P<six>\w+) json rows, including the 7763 reproduction run \((?P<rp>[\d.]+), (?P<rl>[\d.]+) to (?P<rh>[\d.]+)\), and no fmt row have an interval wholly above 1\."),
+    row("details: the census bullet", "site/data/corpus.json census1 and census2 totals and projects", exp_details_census,
+        r"In (?P<libs>\d+) libraries \(parsers, JSON/YAML/XML, compression, logging and a few others\): (?P<lost1>\d+) of (?P<vec1>[\d,]+) vectorized loops lost under FAST\. "
+        r"In (?P<projs>\d+) numeric, physics, graphics, machine-learning and compression projects \(including Stockfish and EnTT\), listed before compiling, in the author's unpublished development history "
+        r"\(\[corpus/PLAN2\.md\]\(\.\./corpus/PLAN2\.md\)\): (?P<lost2>\d+) of (?P<vec2>[\d,]+) lost, at (?P<loc>\d+) of (?P<locof>\d+) distinct source locations\. "
+        r"(?P<lgbm>\d+) of the (?P=lost2) are in LightGBM \(without it, (?P<rest>\d+) of (?P<restof>[\d,]+)\), and (?P<none>\d+) of the (?P=projs) projects lose none\."),
+    row("details: what to change, the four rewrites", "site/data/mitigate.json shapes[].variants[].per_cpu (every job's ratio)", exp_details_mitigation,
+        r"\(measured on (?P<k>\d+) kernels; \[mitigate/README\.md\]\(\.\./mitigate/README\.md\)\):\s+"
+        r"- Reverse loop: one up-front size check, or a `std::span` taken once with `first\(n\)`, brings back SIMD with hardening still on: "
+        r"(?P<one>[\d.]+)x on EPYC 7763 and 9V74, (?P<lo45>[\d.]+)x to (?P<hi45>[\d.]+)x on 9V45\.\s+"
+        r"- Matrix multiply: raw row pointers behind one up-front size check: (?P<rpl>[\d.]+)x to (?P<rph>[\d.]+)x\. "
+        r"Row spans keep every access checked and cost (?P<sp1l>[\d.]+)x to (?P<sp1h>[\d.]+)x at L1\.\s+"
+        r"- Stride-2: a span plus `#pragma clang loop interleave_count\(2\)`, (?P<ill>[\d.]+)x to (?P<ilh>[\d.]+)x\."),
+    row("details: no rewrite is called better, the rule and the jobs", "site/data/mitigate.json (jobs, usable_jobs, aa_max_pct, cpus); the 9V45 reverse ratios", exp_details_mitigate_rule,
+        r"a job counts only if all (?P<eight>\d+) of its A/A controls are at most (?P<aa>\d+)%, and only (?P<u>\d+) of (?P<n>\d+) jobs met that \(both on EPYC 7763\)\. "
+        r"The mitigation timings are measurements on AMD only \((?P<models>EPYC 7763, 9V45 and 9V74); no Intel model was drawn in (?P=n) jobs\), "
+        r"and EPYC 9V45 charges the reverse rewrites (?P<pl>\d+)% to (?P<ph>\d+)% for a reason not found"),
+    row("details: the timed newer toolchains", "site/data/versions.json toolchains and summary; tests recompute the ranges from the cells",
+        lambda: pick(exp_details_versions_timed(), "run", "v1", "v2", "v3", "jobs", "rlo", "rhi", "slo", "shi", "j1", "j2", "j3", "mlo", "mhi",
+                     "c21lo", "c21hi", "mslo", "mshi", "m1", "m2"),
+        r"\*\*Newer clang and libc\+\+, timed\*\* \(`versions/`, run (?P<run>\d+)\)\. Clang and libc\+\+ (?P<v1>[\d.]+), (?P<v2>[\d.]+) and (?P<v3>[\d.]+) from apt\.llvm\.org, "
+        r"the same harness and eight loops, (?P<jobs>\d+) jobs in one run\. The reverse and stride-2 loops lose SIMD under FAST on every toolchain and CPU model that ran: "
+        r"reverse (?P<rlo>[\d.]+)x to (?P<rhi>[\d.]+)x and stride-2 (?P<slo>[\d.]+)x to (?P<shi>[\d.]+)x over all rows; on EPYC 7763, the one model with 3 or more jobs "
+        r"on each toolchain \((?P<j1>\d+), (?P<j2>\d+) and (?P<j3>\d+)\), reverse (?P<mlo>[\d.]+)x to (?P<mhi>[\d.]+)x \((?P<c21lo>[\d.]+)x to (?P<c21hi>[\d.]+)x under clang 21\) "
+        r"and stride-2 (?P<mslo>[\d.]+)x to (?P<mshi>[\d.]+)x\. Matrix multiply is vectorized in both builds on all three and costs (?P<m1>[\d.]+)x at L1 and (?P<m2>[\d.]+)x at L2 on EPYC 7763"),
+    row("details: the timed newer toolchains, the forward add and the forms", "site/data/versions.json EPYC 7763 k02_add_fwd.L1 (clang 19 and clang 18 columns); toolchain forms; other models' job counts",
+        lambda: pick(exp_details_versions_timed(), "a18", "add"),
+        r"The forward add's (?P<a18>[\d.]+)x as-compiled cost on EPYC 7763 under clang 18 is not seen \((?P<add>[\d.]+)x\)\. "
+        r"Every toolchain's form is INCONCLUSIVE under the written rule \(`versions/PLAN\.md`, committed before the run, in the author's unpublished development history\): matrix multiply misses the forward limit, "
+        r"and the other CPU models drew 1 or 2 jobs\."),
+    row("details: holdout against the original pool", "site/data/holdout.json rows (jobs, forms, medians)", exp_details_holdout_compare,
+        r"EPYC 7763 \((?P<j7>\d+) jobs both times\) and 9V74 \((?P<o9>\d+) vs (?P<h9>\d+)\) gave MAP both times with nearly the same costs "
+        r"\(7763: median (?P<mo>[\d.]+)x vs (?P<mh>[\d.]+)x\); EPYC 9V45 was MAP with (?P<o45>\d+) jobs and INCONCLUSIVE with (?P<h45>\d+); "
+        r"the Xeon 8573C drew too few jobs both times\."),
+    row("details: layout sweep, placements, jobs and the reverse loop", "site/data/layout.json cpus, rows, reverse, kernels", exp_details_layout_frame,
+        r"Coarse mode: (?P<p>\d+) placements \(the kernel function moved by 0, 16, 32 and 48 bytes, so the hot loop starts at those offsets modulo 64\), "
+        r"the placements the compiler can produce itself, not a full sweep\. Four kernels \(forward sum, forward add, stencil, reverse\), sizes L1 and L2, pooled per CPU model: "
+        r"EPYC 7763 (?P<a>\d+) jobs, EPYC 9V74 (?P<b>\d+), EPYC 9V45 (?P<c>\d+), Xeon 8573C (?P<d>\d+) and Xeon 6973P-C (?P<e>\d+) "
+        r"\(the two Xeon models are below the minimum of 3 jobs: inconclusive\)\. The reverse loop stays (?P<rlo>[\d.]+)x to (?P<rhi>[\d.]+)x at every placement "
+        r"on the three EPYC models \(7763: (?P<a1>[\d.]+)x to (?P<a2>[\d.]+)x; 9V74: (?P<b1>[\d.]+)x to (?P<b2>[\d.]+)x; 9V45: (?P<c1>[\d.]+)x to (?P<c2>[\d.]+)x\)\. "
+        r"The forward sum is robust everywhere \((?P<flo>[\d.]+) to (?P<fhi>[\d.]+)\)\."),
+    row("details: layout sweep, the stencil", "site/data/layout.json rows k03_stencil (EPYC 7763 L1, EPYC 9V45 L1, EPYC 9V74 L2); rules.aa_half_width_max_pct", exp_details_layout_stencil,
+        r"The stencil at L1 on 7763 is placement-dependent \(median (?P<med>[\d.]+), (?P<nc>\d+) of (?P<np>\d+) placements cost, (?P<ps>\d+) pass\); "
+        r"on 9V45 its L1 cell is the only inconclusive EPYC cell \(A/A half-width (?P<aa>[\d.]+)%, above the (?P<lim>[\d.]+)% limit\); "
+        r"on 9V74 its L2 cell is MIXED \(one placement at (?P<mx>[\d.]+)\)\."),
+    row("details: the lostloops tool, run live", "results/lostloops-live-*/ comparison.json (pass, project); the timed clang version", exp_details_lostloops,
+        r"\*\*The lostloops tool, run live \(`tools/lostloops/`, run (?P<run>\d+), Ubuntu clang (?P<clang>[\d.]+)\)\.\*\* On leveldb, Spectra and LightGBM at the census's pinned commits "
+        r"its lists matched the census exactly\. One run on (?P<n>three) projects, not a general guarantee\."),
+]
+
+MITIGATE_ROWS = [
+    row("mitigate: reverse", "site/data/mitigate.json reverse pre and span (every job)", summary_of("one", "lo45", "hi45"),
+        r"\*\*Reverse: yes\.\*\*.*?\*\*(?P<one>[\d.]+)x\*\* of the\s+unchecked original on EPYC 7763 and 9V74, and \*\*(?P<lo45>[\d.]+)x to (?P<hi45>[\d.]+)x\*\* on EPYC 9V45"),
+    row("mitigate: stride-2", "site/data/mitigate.json stride-2 pre, span_il2, raw", summary_of("five", "ill", "ilh", "rawl", "rawh"),
+        r"`REQUIRE\(a\.size\(\)/2 >= n\)` changes nothing \((?P<five>\d+)x\)\..*?brings it to \*\*(?P<ill>[\d.]+)x to (?P<ilh>[\d.]+)x\*\*\. "
+        r"Raw `data\(\)` pointers behind one check: \*\*(?P<rawl>[\d.]+)x to (?P<rawh>[\d.]+)x\*\*"),
+    row("mitigate: matrix multiply headline", "site/data/mitigate.json matrix multiply rowptr, span, transform",
+        lambda: {**pick(exp_mitigation_summary(), "sp1l", "sp1h", "sp2l", "sp2h"), "rp1": exp_mitigation_summary()["rp1"]},
+        r"\*\*Matrix multiply: only with raw row pointers behind one check \((?P<rp1>[\d.]+)x everywhere\)\.\*\* The rewrites that keep\s+every access under hardening "
+        r"\(row spans\) stay at \*\*(?P<sp1l>[\d.]+)x to (?P<sp1h>[\d.]+)x at L1\*\* and \*\*(?P<sp2l>[\d.]+)x to (?P<sp2h>[\d.]+)x at L2\*\*"),
+    row("mitigate: gather", "site/data/mitigate.json gather orig, pre, span", summary_of("gol", "goh", "g1l", "g1h", "g2l", "g2h"),
+        r"Moving only `c\[i\]`'s check up front cuts\s+(?P<gol>[\d.]+)x to (?P<goh>[\d.]+)x down to \*\*(?P<g1l>[\d.]+)x to (?P<g1h>[\d.]+)x at L1\*\* "
+        r"\((?P<g2l>[\d.]+)x to (?P<g2h>[\d.]+)x at L2\)"),
+    row("mitigate: the rule applied", "site/data/mitigate.json usable_jobs, job_count; the 9V45 reverse ratios", summary_of("u", "n", "lo45", "hi45"),
+        r"jobs usable under the whole-job A/A rule \((?P<u>\d+) of (?P<n>\d+) jobs\)\. On EPYC 9V45 the reverse rewrites sit at (?P<lo45>[\d.]+)x to (?P<hi45>[\d.]+)x with"),
+    row("mitigate: advice, gather and matrix multiply", "site/data/mitigate.json gather orig, pre, span, clamp, validate; matrix multiply rowptr, transform",
+        summary_of("go1", "go2", "g1m", "g21", "g22", "clamp", "valid", "rpl", "rph", "tr1l", "tr1h", "tr2l", "tr2h"),
+        r"cuts the cost from (?P<go1>[\d.]+)x to (?P<go2>[\d.]+)x down to (?P<g1m>[\d.]+)x at L1, about (?P<g21>[\d.]+)x to (?P<g22>[\d.]+)x at L2\. .*?a branch-free clamp is slower\s+than the check "
+        r"\(up to (?P<clamp>[\d.]+)x\), and a validation pass costs a second read \(up to (?P<valid>[\d.]+)x\)\..*?"
+        r"\(overflow-checked\): (?P<rpl>[\d.]+)x to (?P<rph>[\d.]+)x on every CPU drawn\..*?"
+        r"`std::transform` over the row, (?P<tr1l>[\d.]+)x to (?P<tr1h>[\d.]+)x at L1 and (?P<tr2l>[\d.]+)x to\s+(?P<tr2h>[\d.]+)x at L2\."),
+    row("mitigate: the usable jobs and the stride-2 A/A", "results/mitigate-run-*/*/results.json (kernels[].aa half_width_pct)", exp_mitigation_jobs,
+        r"A job is usable only if \*\*all 8\*\* of its A/A half-widths \(4 kernels x 2 sizes\) are at most 2%\. That held in\s+\*\*(?P<u>\d+) of (?P<n>\d+) jobs\*\*, "
+        r"both on EPYC 7763 \(run (?P<run>\d+), jobs (?P<j1>\d+) and (?P<j2>\d+)\)\. The stride-2 L1 A/A was above 2% in (?P<five>\d+) of (?P=n)\s+jobs, up to (?P<mx>[\d.]+)%"),
+]
+
+ROWS.extend(README_PROV_ROWS)
+ROWS.extend(GROUP2_README_ROWS)
+DETAILS_ROWS.extend(GROUP3_DETAILS_ROWS)
+DETAILS_ROWS.extend(DETAILS_PROV_ROWS)
+DETAILS_ROWS.extend(GROUP2_DETAILS_ROWS)
+ARM64_ROWS.extend(ARM64_PROV_ROWS)
 ROWS.extend(README_NEW_ROWS)
 ROWS.extend(README_GUARD_ROWS)
 DETAILS_ROWS.extend(DETAILS_NEW_ROWS)
@@ -4526,6 +5725,54 @@ ARM64_ROWS.extend(ARM64_NEW_ROWS)
 ARM64_ROWS.extend(ARM64_GUARD_ROWS)
 REPLICATION_ROWS.extend(REPLICATION_GUARD_ROWS)
 DSWEEP_ROWS.extend(DSWEEP_GUARD_ROWS)
+
+
+def exp_dsweep_records_claim():
+    """dsweep/PLAN.md (never edited) says its public repository's history is one squashed sync commit and that the first public push should hold the plan
+    alone; the provenance record shows more than one public commit and the plan arriving in the same public commit as the code."""
+    with open(os.path.join(REPO, "dsweep", "PLAN.md"), encoding="utf-8") as f:
+        plan = squash(f.read())
+    assert "whose history is one squashed sync commit" in plan and "The first public push should contain this file alone, before the workflow and the code" in plan, (
+        "dsweep/PLAN.md no longer says what the README says it says")
+    p = prov()
+    assert p["public_history"]["commits_on_main_when_read"] > 1, "the provenance record no longer shows a public history of more than one commit"
+    assert {"dsweep/PLAN.md", "dsweep/sweep.py", "dsweep/analyze.py"} <= set(p["dsweep_public"]["paths_in_that_commit"]), "the plan no longer reaches the public history with the code"
+    return {}
+
+
+def exp_pool_steps_typed():
+    """site/data/index.json pooled.steps: the three sizes of the kernel pool (original, plus the ten later runs, plus the two newest) against the pooled files, and
+    the jobs of the last two runs (the step from the second to the third)."""
+    steps = J("site/data/index.json")["pooled"]["steps"]
+    jobs = [s["jobs"] for s in steps]
+    assert len(jobs) == 3, f"index.json pooled.steps holds {len(jobs)} pools"
+    assert jobs == [pooled_jobs(original=True), pooled_jobs(pool=POOLED_S6), pooled_jobs()], f"index.json pooled.steps {jobs} against the pooled files"
+    newest = newest_runs()
+    assert newest["runs"] == 2 and jobs[2] - jobs[1] == newest["returned"], f"the last two runs returned {newest['returned']} jobs; the pool grew by {jobs[2] - jobs[1]}"
+    return {"a": str(jobs[0]), "b": str(jobs[1]), "c": str(jobs[2]), "last": str(newest["returned"])}
+
+
+def exp_pool_size_now():
+    """The size of the pool that the README says a laptop was not re-timed with: the last step of index.json pooled.steps, which is the pool the page uses."""
+    jobs = J("site/data/index.json")["pooled"]["steps"][-1]["jobs"]
+    assert jobs == pooled_jobs(), f"index.json pooled.steps ends at {jobs}, the pooled file has {pooled_jobs()}"
+    return {"n": str(jobs)}
+
+
+DETAILS_ROWS.append(row("details: the pool grew from 30 to 75 to 95 jobs, and the jobs of the last two runs", "site/data/index.json pooled.steps; results/s4-pooled, s6-pooled and s7-pooled pooled.json; results/s7-run-* folders",
+                        exp_pool_steps_typed,
+                        r"The kernel pool also grew from (?P<a>\d+) to (?P<b>\d+) to (?P<c>\d+) jobs by further runs requested after the verdicts of the smaller pool were known, "
+                        r"with no stopping rule written beforehand \(the (?P<last>\d+) jobs of the last two runs were dispatched"))
+ROWS.append(row("README: the pool a laptop was not re-timed with", "site/data/index.json pooled.steps (the last step); results/s7-pooled/pooled.json",
+                exp_pool_size_now, r"\(a laptop was not re-timed with the (?P<n>\d+)-job pool\)"))
+DSWEEP_ROWS.append(row("dsweep/README: the plan's Records section calls the public history one squashed commit with a plan-first push; neither was so",
+                       "dsweep/PLAN.md (read); tests/data/s9_s10_provenance.json public_history and dsweep_public", exp_dsweep_records_claim,
+                       r"The plan's own \"Records\" section describes the public history as one squashed sync commit and says the first public push should hold the plan alone; "
+                       r"neither was so, since the public history has more than one commit and the plan reached it together with the code\. "
+                       r"The plan is not edited, because its hash is stored in every result file\."))
+DETAILS_ROWS.append(row("details: the d-sweep plan's Records section calls the public history one squashed commit with a plan-first push; neither was so",
+                        "dsweep/PLAN.md (read); tests/data/s9_s10_provenance.json public_history and dsweep_public", exp_dsweep_records_claim,
+                        r"The plan's own \"Records\" section calls the public history one squashed sync commit with the plan pushed alone first; neither was so\."))
 
 # Rows whose typed number is wrong against the data: label -> reason. None at the time of writing.
 # Add a row here (the test then needs to keep failing, strict) instead of editing the data to fit.
@@ -4586,13 +5833,17 @@ if pytest is not None:
     @pytest.mark.parametrize("row", [_param(r) for r in DSWEEP_ROWS])
     def test_dsweep_number(row):
         check_row(row, dsweep_text(), "dsweep/README.md")
+
+    @pytest.mark.parametrize("row", [_param(r) for r in MITIGATE_ROWS])
+    def test_mitigate_number(row):
+        check_row(row, mitigate_text(), "mitigate/README.md")
 else:
     def test_readme_numbers_all_rows():
         failures = []
         for rows, text, doc in ((ROWS, readme_text(), "README.md"), (DETAILS_ROWS, details_text(), "readme-parts/DETAILS.md"),
                                 (SIBLINGS_ROWS, siblings_text(), "siblings/README.md"), (CESWEEP_ROWS, cesweep_text(), "ce-sweep/README.md"),
                                 (ARM64_ROWS, arm64_text(), "arm64/README.md"), (REPLICATION_ROWS, replication_text(), "replication/README.md"),
-                                (DSWEEP_ROWS, dsweep_text(), "dsweep/README.md")):
+                                (DSWEEP_ROWS, dsweep_text(), "dsweep/README.md"), (MITIGATE_ROWS, mitigate_text(), "mitigate/README.md")):
             for row in rows:
                 try:
                     check_row(row, text, doc)
@@ -4633,7 +5884,7 @@ def test_dsweep_readme_words_table_matches_the_data():
 
 
 GUARDED_DOCS = {"README.md": readme_text, "readme-parts/DETAILS.md": details_text, "arm64/README.md": arm64_text,
-                "replication/README.md": replication_text, "dsweep/README.md": dsweep_text}
+                "replication/README.md": replication_text, "dsweep/README.md": dsweep_text, "gaps/GAPS.md": gaps_text}
 
 
 def guarded_sentences():
@@ -4666,6 +5917,88 @@ def test_the_guarded_sentence_list_covers_the_listed_caveats():
     entries = guarded_sentences()
     assert {e["doc"] for e in entries} == set(GUARDED_DOCS), "a document has no guarded sentence"
     assert len({(e["doc"], e["sentence"]) for e in entries}) == len(entries), "a sentence is listed twice"
+
+
+NIST_SETUP_WORDS = ("Dell Precision T5400", "Xeon X5450", "Linux", "Turbo Boost", "SpeedStep", "frequency scaling", "63 runs per cell")
+
+
+def test_the_related_work_table_does_not_call_the_nist_study_bare_metal():
+    """The NIST paper's Table 1 names a Dell Precision T5400 PC with two Xeon X5450 CPUs under Linux, and the paper uses "bare metal" only for
+    a measurement it proposes as future work. It calls the machine neither a server nor a workstation."""
+    row = next(ln for ln in gaps_text().splitlines() if ln.startswith("| Flater and Guthrie (NIST)"))
+    assert all(w in row for w in NIST_SETUP_WORDS), f"the NIST row no longer names the setup: {[w for w in NIST_SETUP_WORDS if w not in row]}"
+    assert "bare" not in row.lower(), "the NIST row calls its setup bare metal"
+    assert not re.search(r"\b(?:server|workstation)\b", row, re.I), "the NIST row calls the machine a server or a workstation; the paper's Table 1 says PC"
+
+
+def test_the_nist_setup_reads_the_same_in_gaps_and_in_the_page_data():
+    """gaps/GAPS.md (the reading notes) and site/data/related.json (what the page prints) describe the NIST machine in the same words: the model,
+    the CPUs, Linux, no Turbo Boost, no frequency scaling, SpeedStep off, 63 runs per cell, and neither says server, workstation or bare metal."""
+    row = next(ln for ln in gaps_text().splitlines() if ln.startswith("| Flater and Guthrie (NIST)"))
+    nist = next(s for s in J("site/data/related.json")["sources"] if s["id"] == "nist")
+    for name, text in (("gaps/GAPS.md", row), ("site/data/related.json", nist["measured"] + " " + nist["m_short"])):
+        assert all(w in text for w in NIST_SETUP_WORDS), f"{name} no longer names the NIST setup: {[w for w in NIST_SETUP_WORDS if w not in text]}"
+        assert not re.search(r"\b(?:server|workstation)\b|bare[\s-]*metal|dual[\s-]*(?:socket|die|processor|cpu)", text, re.I), (
+            f"{name} calls the NIST machine a server, a workstation, bare metal or dual-socket (the paper's Table 1 says 2 x Xeon X5450 in a Dell Precision T5400 PC)")
+        assert "a PC with two Xeon X5450 CPUs" in text or name == "gaps/GAPS.md", f"{name} no longer says 'a PC with two Xeon X5450 CPUs'"
+
+
+def test_the_acm_queue_row_says_it_could_not_be_rechecked():
+    row = next(ln for ln in gaps_text().splitlines() if ln.startswith("| Dionne, Rebert"))
+    read = row.split("|")[3]  # the "what was read" cell
+    assert "HTTP 403" in read and "unconfirmed" in read
+    assert '"' not in read, "the cell quotes the article in quotation marks; it paraphrases (the figures are unconfirmed)"
+
+
+LICENCE_FILE_NAMES = re.compile(r"^(licen[cs]e|copying|unlicense|notice)(\.[a-z]+)?$", re.IGNORECASE)
+
+
+def licence_files():
+    """Licence-looking files in the repository root and in tools/lostloops/ (the places a reader would look for one)."""
+    found = []
+    for folder in ("", "tools/lostloops"):
+        base = os.path.join(REPO, folder)
+        found += [os.path.join(folder, n) for n in os.listdir(base) if LICENCE_FILE_NAMES.match(n) and os.path.isfile(os.path.join(base, n))]
+    return sorted(found)
+
+
+def test_the_readme_says_there_is_no_licence_file_and_there_is_none():
+    """The README states that no licence file exists. Adding one is the author's decision and must come with a changed sentence, so this fails until
+    both are done together; the sentence itself is guarded in tests/data/guarded_sentences.json."""
+    assert "no licence file" in readme_text()
+    assert licence_files() == [], f"the README says there is no licence file, but these exist: {licence_files()}"
+
+
+def test_the_llvm_excerpts_carry_a_notice_that_matches_the_folder():
+    """investigate/vectorizer/matmul/llvm-src/NOTICE says what the 19 files are: 14 excerpts that each start with the licence header line, 3 GitHub API
+    answers, one list of matching lines and one list of hashes. The counts and the licence name are checked against the folder."""
+    folder = os.path.join(REPO, "investigate", "vectorizer", "matmul", "llvm-src")
+    with open(os.path.join(folder, "NOTICE"), encoding="utf-8") as f:
+        notice = squash(f.read())
+    names = sorted(n for n in os.listdir(folder) if n != "NOTICE")
+    header = "// LLVM is licensed under Apache-2.0 with LLVM exceptions."
+    excerpts = []
+    for n in names:
+        with open(os.path.join(folder, n), encoding="utf-8") as f:
+            if f.readline().startswith(header):
+                excerpts.append(n)
+    assert len(names) == 19 and "What the 19 files are" in notice, f"{len(names)} files in llvm-src/ (NOTICE says 19): {names}"
+    assert len(excerpts) == 14 and "14 files (" in notice, f"{len(excerpts)} files start with the licence header (NOTICE says 14)"
+    api = [n for n in names if n.endswith(".json")]
+    assert len(api) == 3 and "3 files (commit_39b0cbe69c.json, commit_b6a8f5486b.json and commit_in_tag.json)" in notice
+    assert "Apache License 2.0 with LLVM Exceptions" in notice and "https://github.com/llvm/llvm-project" in notice
+    assert "indvars_predicate_traps.txt" in notice and "collectLoopUniforms_sha256.txt" in notice
+    for n in excerpts:  # the 14 are exactly the files the NOTICE describes by pattern
+        assert n.endswith(".cpp.txt") or n.startswith(("legality_", "x86_")), f"{n} starts with the LLVM header but the NOTICE does not describe it"
+
+
+def test_the_lostloops_texts_do_not_invite_copying_or_vendoring():
+    """No licence is granted (see the README's last section), so the tool's README and its example workflow must not tell a reader to copy or vendor it."""
+    for rel in ("tools/lostloops/README.md", "tools/lostloops/example-workflow.yml"):
+        with open(os.path.join(REPO, rel), encoding="utf-8") as f:
+            text = f.read()
+        hits = re.findall(r"(?i)\b(copy this (?:folder|file)|copy it into|vendor it|copy tools/lostloops)", text)
+        assert not hits, f"{rel} invites a reader to copy or vendor the tool: {hits}"
 
 
 def test_the_replication_pooled_files_list_every_job_of_their_runs():
@@ -4766,7 +6099,19 @@ def test_every_intel_model_loses_the_same_loops():
 # ---- every repository path the prose cites must exist -----------------------------------------------
 
 CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md", "arm64/README.md", "ce-sweep/README.md",
-          "replication/README.md", "dsweep/README.md")
+          "replication/README.md", "dsweep/README.md", "corpus/README.md", "mitigate/README.md", "realworld/README.md",
+          "investigate/vectorizer/matmul/README.md", "investigate/vectorizer/reverse-stride2/README.md", "gaps/GAPS.md", "gaps/GAPS-2.md",
+          "tools/lostloops/README.md")
+# Documents that also name their own files by a bare name, relative to the document's folder (`lostloops.py`, `evidence/`): a span that is only a
+# Python file name or a folder name is resolved there. Other bare names in these documents are outputs of the tool (report.md, compile_commands.json).
+FOLDER_RELATIVE = ("tools/lostloops/README.md",)
+# A document that is not in the public export (the export removes it). It is checked wherever it exists; any other document of CITING that is
+# missing is a failure.
+CITING_NOT_EXPORTED = ("gaps/GAPS-2.md",)
+
+
+def citing_present():
+    return [d for d in CITING if os.path.exists(os.path.join(REPO, d)) or d not in CITING_NOT_EXPORTED]
 # Planning documents that are not published. The note appended to DETAILS.md in the public export names them on purpose,
 # saying that they do not exist in the repository, so they are not counted as broken citations.
 UNPUBLISHED = {"docs/PLAN.md", "docs/SPEC.md", "docs/skeptic.md"}
@@ -4775,27 +6120,382 @@ CITED_ROOTS = ("results/", "dayone/", "investigate/", "tests/", "harness/", "sib
                "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/", "replication/", "dsweep/")
 
 
-def cited_paths(doc):
-    """Repository-relative paths a document names in backticks, and the files its Markdown links point at (relative to the document)."""
-    with open(os.path.join(REPO, doc), encoding="utf-8") as f:
-        text = f.read()
+GH_WORKFLOW_RUN = re.compile(r"gh workflow run ([\w.-]+\.ya?ml)")
+PYTHON_IN_FOLDER = re.compile(r"`python3? ([\w./-]+\.py)(?: [^`]*)?` in `([^`]+/)`")
+FENCE = re.compile(r"^```[^\n]*\n(.*?)^```[ \t]*$", re.S | re.M)
+
+
+def tokens_that_name_paths(span):
+    """The whitespace-separated pieces of a command or code span that start at a folder of the repository. A piece with a placeholder
+    (<>{}|$=) is not a path; one with a * is a pattern that must match something."""
+    for tok in span.split():
+        tok = tok.strip("\"'(),;:").rstrip("\"'),;:.")  # "corpus/projects.json)." in a comment names corpus/projects.json
+        if tok.startswith(CITED_ROOTS) and tok not in UNPUBLISHED and not re.search(r"[<>{}|$=]", tok):
+            yield tok
+
+
+def cited_paths_in(text, doc):
+    """(shown, repository-relative path) for every path a text names: in backticked spans and in fenced blocks, command words included
+    (split on whitespace); `gh workflow run X.yml` names a workflow file; `python X.py` in `folder/` names folder/X.py; and the files its
+    Markdown links point at (relative to doc, which is the document's own path)."""
     out = []
-    for span in re.findall(r"`([^`\n]+)`", text):
-        span = span.strip().rstrip(".,;:")
-        if span.startswith(CITED_ROOTS) and span not in UNPUBLISHED and not re.search(r"[\s*<>{}|$=]", span):
-            out.append((span, span))
-    for target in re.findall(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)", text):
+    spans = []
+    for block in FENCE.findall(text):
+        spans.append(block)
+    prose = FENCE.sub("", text)
+    spans += re.findall(r"`([^`\n]+)`", prose)
+    for span in spans:
+        for tok in tokens_that_name_paths(span):
+            if "*" in tok or "?" in tok:
+                # "NN" in a pattern stands for a two-digit number (kernels/kNN_*.cpp)
+                hit = sorted(glob.glob(os.path.join(REPO, tok.replace("NN", "[0-9][0-9]"))))
+                out.append((tok, os.path.relpath(hit[0], REPO).replace("\\", "/") if hit else tok))
+            else:
+                out.append((tok, tok))
+        for wf in GH_WORKFLOW_RUN.findall(span):
+            out.append((f"gh workflow run {wf}", f".github/workflows/{wf}"))
+    for script, folder in PYTHON_IN_FOLDER.findall(prose):
+        out.append((f"{folder}{script}", f"{folder}{script}"))
+    if doc in FOLDER_RELATIVE:
+        for span in re.findall(r"`([^`\n]+)`", prose):
+            if re.fullmatch(r"[\w-]+(?:\.py|/)", span):
+                out.append((span, os.path.join(os.path.dirname(doc), span).replace("\\", "/")))
+    for target in re.findall(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)", prose):
         if not re.match(r"[a-z]+:", target):
             out.append((target, os.path.normpath(os.path.join(os.path.dirname(doc), target)).replace("\\", "/")))
     return out
 
 
+def cited_paths(doc):
+    with open(os.path.join(REPO, doc), encoding="utf-8") as f:
+        return cited_paths_in(f.read(), doc)
+
+
+def cited_exists(doc, rel):
+    """A cited path exists relative to the repository root or, for the documents in FOLDER_RELATIVE (a tool's README that mixes both
+    styles: `tests/fake_clang.py` is in the tool's folder, `corpus/projects.json` at the root), relative to the document's folder."""
+    return os.path.exists(os.path.join(REPO, rel)) or (doc in FOLDER_RELATIVE and os.path.exists(os.path.join(REPO, os.path.dirname(doc), rel)))
+
+
+def missing_cited(text, doc="README.md"):
+    return sorted({shown for shown, rel in cited_paths_in(text, doc) if not cited_exists(doc, rel)})
+
+
+def test_cited_paths_sees_commands_with_spaces_and_fenced_blocks():
+    """A path that sits inside a command is checked: the old guard skipped any span that contained a space."""
+    assert missing_cited("`python replication/compare.py --verify`") == []
+    assert missing_cited("`python replication/compare.pyy --verify`") == ["replication/compare.pyy"]
+    assert missing_cited("```\npython dsweep/analize.py --verify results/s10-dsweep-run-*\n```\n") == ["dsweep/analize.py"]
+    assert missing_cited("```\npython dsweep/analyze.py --verify results/s10-dsweep-run-*\n```\n") == []
+    assert missing_cited("`python harness/pool.py <out.json> <run folders>`") == []
+
+
+def test_cited_paths_sees_workflow_names_and_patterns():
+    assert missing_cited("```\ngh workflow run measure.yml -R <you>/third-of-a-percent\n```\n") == []
+    assert missing_cited("```\ngh workflow run measur.yml -R <you>/third-of-a-percent\n```\n") == ["gh workflow run measur.yml"]
+    assert missing_cited("`results/s10-dsweep-run-*`") == []
+    assert missing_cited("`results/s99-dsweep-run-*`") == ["results/s99-dsweep-run-*"]
+
+
+def test_cited_paths_resolves_bare_names_in_a_tool_folder():
+    """tools/lostloops/README.md names its own files by a bare name; they are looked up in its folder, and an output file name is not a path."""
+    doc = "tools/lostloops/README.md"
+    assert missing_cited("(`lostloops.py`, `ll_optrecord.py`, `ll_classify.py` and `evidence/` stay together); it writes `report.md`", doc) == []
+    assert missing_cited("`tests/fake_clang.py` and `corpus/projects.json` and `mitigate/README.md`", doc) == [], "both styles of path resolve for this document"
+    assert missing_cited("`tests/fake_claang.py`", doc) == ["tests/fake_claang.py"]
+    assert missing_cited("`tests/fake_clang.py`", "README.md") == ["tests/fake_clang.py"], "the folder-relative style is for the listed documents only"
+    assert missing_cited("```\n# the pin is in corpus/projects.json).\n```\n", doc) == []
+    assert missing_cited("(`lostloop.py` and `evidence/`)", doc) == ["lostloop.py"]
+    assert missing_cited("(`lostloops.py` and `evidance/`)", doc) == ["evidance/"]
+    assert missing_cited("`lostloops.py`", "README.md") == [], "a bare name is resolved only in the documents listed in FOLDER_RELATIVE"
+
+
+def test_cited_paths_sees_a_script_named_for_a_folder():
+    assert missing_cited("(`python check.py` in `investigate/vectorizer/matmul/`)") == []
+    assert missing_cited("(`python chek.py` in `investigate/vectorizer/matmul/`)") == ["investigate/vectorizer/matmul/chek.py"]
+
+
+# A path a document names only to say that the file was never created (the sentence has to keep saying so, in these words).
+NOT_CREATED = {("gaps/GAPS.md", "harness/criteria-v4-confirm.json"): "no separate v4 file was created"}
+
+
+def missing_in_doc(doc):
+    """The paths a document names that do not exist, apart from the ones it names to say they were not created."""
+    missing = sorted({shown for shown, rel in cited_paths(doc) if not cited_exists(doc, rel)})
+    with open(os.path.join(REPO, doc), encoding="utf-8") as f:
+        text = squash(f.read())
+    for (d, path), phrase in NOT_CREATED.items():
+        if d == doc and path in missing:
+            assert phrase in text, f"{doc} names {path} but no longer says '{phrase}'"
+            missing.remove(path)
+    return missing
+
+
+def test_the_not_created_files_are_not_there():
+    """If a file the documents say was never created appears, the sentence that says so has to change."""
+    for (d, path), phrase in NOT_CREATED.items():
+        assert not os.path.exists(os.path.join(REPO, path)), f"{path} exists now; {d} says: {phrase}"
+
+
 if pytest is not None:
-    @pytest.mark.parametrize("doc", CITING)
+    @pytest.mark.parametrize("doc", citing_present())
     def test_cited_paths_exist(doc):
-        missing = [shown for shown, rel in cited_paths(doc) if not os.path.exists(os.path.join(REPO, rel))]
-        assert not missing, f"{doc} names paths that do not exist in the repository: {sorted(set(missing))}"
+        missing = missing_in_doc(doc)
+        assert not missing, f"{doc} names paths that do not exist in the repository: {missing}"
 else:
     def test_cited_paths_exist_all():
-        missing = {doc: sorted({shown for shown, rel in cited_paths(doc) if not os.path.exists(os.path.join(REPO, rel))}) for doc in CITING}
+        missing = {doc: missing_in_doc(doc) for doc in citing_present()}
         assert not any(missing.values()), f"documents name paths that do not exist: { {d: m for d, m in missing.items() if m} }"
+
+
+# ---- statements about the order of events: each names the unpublished history or links to the account of it ---------------------
+
+# Something committed, written, fixed, registered, listed, set or planned before something else (or beforehand), "in advance", or pre-registered.
+# The file name PREREGISTRATION.md is a name and not a claim. The page has the same scan in scripts/check_site.py (ORDER_CLAIMS_JS).
+# A full stop inside a file name or a number (PLAN2.md, 1.02) does not end the stretch between the verb and "before": "committed in PLAN2.md before
+# the first compile" is a claim. A full stop followed by a space does.
+ORDER_CLAIM = re.compile(r"\b(?:committed|written|fixed|registered|listed|set|planned)\b(?:[^.]|\.(?=\w)){0,40}\bbefore(?:hand)?\b|\bin advance\b|pre-?regist(?!ration\.md)", re.I)
+ORDER_QUALIFIER = re.compile(r"the author(?:'|’)s unpublished development history|#prov-full", re.I)
+ORDER_DOCS = {"README.md": readme_text, "readme-parts/DETAILS.md": details_text}
+# The folder documents are scanned too: every Markdown file under these folders (not under a results/ folder, which holds the records) and
+# the exported day-one results note. What is left out is the plans: PLAN.md, PLAN2.md and the like are the records themselves, may not be edited
+# (the result files store the hash of several of them) and say in their own words when they were written; the folder documents, README.md and
+# the details page are where the order is attributed. The list is built from the tree, so a new document is scanned without being added here,
+# and the export (which drops a few private notes and cuts gaps/GAPS.md after its first section) is scanned the same way.
+ORDER_FOLDERS = ("arm64", "ce-sweep", "corpus", "dsweep", "environment", "gaps", "investigate", "layout-sweep", "mitigate", "pgo", "realworld",
+                 "replication", "robustness", "siblings", "tools", "variants", "versions")
+ORDER_EXTRA_DOCS = ("docs/dayone-results.md",)
+ORDER_RECORD_NAME = re.compile(r"^PLAN[\w.\-]*\.md$")
+ORDER_SKIP_DIRS = ("results", ".git", "node_modules", "__pycache__")
+
+
+def order_folder_docs():
+    """(scanned, left out): the folder documents under ORDER_FOLDERS that are scanned, and the plan files that are left out, as repository paths."""
+    scanned, left_out = [], []
+    for folder in ORDER_FOLDERS:
+        for base, dirs, names in os.walk(os.path.join(REPO, folder)):
+            dirs[:] = [d for d in dirs if d not in ORDER_SKIP_DIRS]
+            for n in names:
+                if n.lower().endswith(".md"):
+                    rel = os.path.relpath(os.path.join(base, n), REPO).replace(os.sep, "/")
+                    (left_out if ORDER_RECORD_NAME.match(n) else scanned).append(rel)
+    scanned += [d for d in ORDER_EXTRA_DOCS if os.path.exists(os.path.join(REPO, d))]
+    return sorted(scanned), sorted(left_out)
+
+
+ORDER_FOLDER_DOCS, ORDER_PLAN_FILES = order_folder_docs()
+
+
+def order_doc_text(doc):
+    """The text of a scanned document: README.md and the details page through the readers that honour README_PATH and DETAILS_PATH, the others from the tree."""
+    if doc in ORDER_DOCS:
+        return ORDER_DOCS[doc]()
+    with open(os.path.join(REPO, *doc.split("/")), encoding="utf-8") as f:
+        return f.read()
+
+
+# A unit that states an order without the qualifier and is allowed to: (document, words of the unit) -> why. Each entry must still be needed.
+ORDER_CLAIM_EXCEPTIONS = {
+    ("readme-parts/DETAILS.md", "so this later data is not a pre-registered test either"):
+        "a negation: it says the later runs were not planned before the data was known, so it states no order that needs a source",
+    ("investigate/vectorizer/reverse-stride2/README.md", "is set once, before the label"):
+        "assembly: a register is set once before a loop label; no order of events in the project is stated",
+    ("gaps/GAPS.md", "must be written as a pre-registered rule file before any run"):
+        "a requirement in the table of proposed steps, written before the step was taken; it states what the step needs, not that an order happened",
+    ("gaps/GAPS.md", "Pre-registration practice; NIST's fixed design"):
+        "names a research practice as the source of a gap; it is a title, not an order of events in this project",
+    ("gaps/GAPS.md", "say so in advance"):
+        "an instruction for a later report, in the table of proposed steps; it states no order that happened",
+    ("gaps/GAPS.md", "written before the run; training on the test input flatters PGO"):
+        "an item of the next steps 'as planned when this file was written': the expectation was still to be written when the note was made",
+    ("gaps/GAPS.md", "the rule registered before the run."):
+        "an item of the next steps 'as planned when this file was written': the rule was still to be registered when the note was made",
+}
+# Entries whose text is in a section that the exported copy of gaps/GAPS.md does not have (it keeps the related-work section only): in that copy
+# the unit is absent and the entry is not needed there; in a tree that has the section the entry must still be needed.
+ORDER_EXCEPTIONS_NOT_EXPORTED = {
+    ("gaps/GAPS.md", "must be written as a pre-registered rule file before any run"),
+    ("gaps/GAPS.md", "Pre-registration practice; NIST's fixed design"),
+    ("gaps/GAPS.md", "say so in advance"),
+    ("gaps/GAPS.md", "written before the run; training on the test input flatters PGO"),
+    ("gaps/GAPS.md", "the rule registered before the run."),
+}
+
+
+def order_units(text):
+    """The paragraphs, list items (each bullet and sub-bullet), table rows and headings of a Markdown text, one string each."""
+    cur, out = [], []
+    for line in text.replace("\r\n", "\n").split("\n"):
+        if not line.strip():
+            if cur:
+                out.append("\n".join(cur))
+            cur = []
+        elif re.match(r"\s*(?:[-*]|\d+\.)\s", line) or line.startswith(("|", "#")):
+            if cur:
+                out.append("\n".join(cur))
+            cur = [line]
+        else:
+            cur.append(line)
+    if cur:
+        out.append("\n".join(cur))
+    return [squash(u) for u in out]
+
+
+def bare_order_claims(doc, text):
+    """The units of a text that state an order and name neither the author's unpublished development history nor the account of it (#prov-full)."""
+    found = []
+    for unit in order_units(text):
+        m = ORDER_CLAIM.search(unit)
+        if m and not ORDER_QUALIFIER.search(unit):
+            if any(d == doc and snippet in unit for (d, snippet) in ORDER_CLAIM_EXCEPTIONS):
+                continue
+            found.append(unit[max(0, m.start() - 60):m.end() + 60])
+    return found
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("doc", sorted(ORDER_DOCS) + ORDER_FOLDER_DOCS)
+    def test_order_statements_name_the_unpublished_history(doc):
+        bare = bare_order_claims(doc, order_doc_text(doc))
+        assert not bare, (f"{doc} states that something was committed, written, fixed, registered, listed, set or planned before something else, "
+                          f"in advance or pre-registered, without naming the author's unpublished development history in the same paragraph or bullet "
+                          f"(the order cannot be checked from this repository's records); name it, link #prov-full, say what the records show, or list the unit "
+                          f"in ORDER_CLAIM_EXCEPTIONS with a reason: {bare}")
+else:
+    def test_order_statements_name_the_unpublished_history():
+        bare = {doc: bare_order_claims(doc, order_doc_text(doc)) for doc in sorted(ORDER_DOCS) + ORDER_FOLDER_DOCS}
+        assert not any(bare.values()), f"order statements without the unpublished history named: {bare}"
+
+
+def test_the_order_scan_reaches_the_folder_documents_and_leaves_out_only_the_plans():
+    """The folder documents that state results are in the scan (the list is read from the tree, so this fails if a walk or a skip rule drops them),
+    and the only files left out are the plans, whose names start with PLAN."""
+    must_scan = {"arm64/README.md", "ce-sweep/README.md", "corpus/README.md", "docs/dayone-results.md", "dsweep/README.md", "gaps/GAPS.md",
+                 "investigate/FINDINGS.md", "mitigate/README.md", "pgo/report.md", "realworld/README.md", "replication/README.md",
+                 "robustness/report.md", "siblings/README.md", "tools/lostloops/README.md", "variants/RESULTS.md",
+                 "investigate/vectorizer/reverse-stride2/README.md"}
+    assert must_scan <= set(ORDER_FOLDER_DOCS), f"the order scan lost: {sorted(must_scan - set(ORDER_FOLDER_DOCS))}"
+    assert ORDER_PLAN_FILES and all(ORDER_RECORD_NAME.match(os.path.basename(p)) for p in ORDER_PLAN_FILES), f"the left-out files are not all plans: {ORDER_PLAN_FILES}"
+    assert not [p for p in ORDER_FOLDER_DOCS if ORDER_RECORD_NAME.match(os.path.basename(p))], "a plan is in the scan"
+    assert not any(p.split("/")[0] in ("results", "learn", "site") or "results" in p.split("/")[:-1] for p in ORDER_FOLDER_DOCS), "the records are in the scan"
+    for name in ("PLAN.md", "PLAN2.md", "PLAN-arm.md"):
+        assert ORDER_RECORD_NAME.match(name), f"{name} is a plan"
+    for name in ("README.md", "MATMUL-EXPLAINED.md", "report.md", "RESULTS.md", "MYPLAN.md", "PLAN.txt"):
+        assert not ORDER_RECORD_NAME.match(name), f"{name} is not a plan file"
+
+
+def test_the_order_scan_sees_the_claim_class_and_the_exceptions_are_still_needed():
+    """The scan flags each wording of the class, accepts the qualifier or the link to the account, and does not read a file name as a claim;
+    each listed exception still sits in a unit that needs it."""
+    q = "in the author's unpublished development history"
+    for claim in ("the plan was committed before the first run", "rules written before the runs", "fixed in advance", "registered in advance", "set beforehand",
+                  "listed in its plan before the first compile", "it is pre-registered", "the plan was planned before it", "a preregistration"):
+        assert bare_order_claims("README.md", f"- The test: {claim}.\n"), f"not flagged: {claim}"
+        assert not bare_order_claims("README.md", f"- The test: {claim}, {q}.\n"), f"qualifier not accepted: {claim}"
+        assert not bare_order_claims("README.md", f"- The test: {claim} ([account](details.html#prov-full)).\n"), f"link not accepted: {claim}"
+        assert bare_order_claims("README.md", f"- The test: {claim}.\n- Another bullet {q}.\n"), f"a qualifier in the next bullet counts: {claim}"
+    assert not bare_order_claims("README.md", "plan: results/s5-holdout/PREREGISTRATION.md\n"), "a file name is read as a claim"
+    # a full stop inside a file name does not end the stretch between the verb and "before"; one followed by a space does
+    assert bare_order_claims("corpus/README.md", "- Its list was committed in [PLAN2.md](PLAN2.md) before the first compile.\n"), "a dotted file name hides the claim"
+    assert bare_order_claims("corpus/README.md", "- The threshold 1.02 was fixed in v1.0 before the runs.\n"), "a dotted number hides the claim"
+    assert not bare_order_claims("corpus/README.md", "- The list was committed. Before the first compile nothing ran.\n"), "a sentence end is crossed"
+    for (doc, snippet), why in ORDER_CLAIM_EXCEPTIONS.items():
+        assert why.strip() and len(why) > 20, f"the exception {snippet!r} has no reason"
+        assert doc in ORDER_DOCS or doc in ORDER_FOLDER_DOCS, f"the exception {snippet!r} names a document that is not scanned: {doc}"
+        units = [u for u in order_units(order_doc_text(doc)) if snippet in u]
+        if not units and (doc, snippet) in ORDER_EXCEPTIONS_NOT_EXPORTED:
+            assert doc == "gaps/GAPS.md" and "## 1. Gaps" not in order_doc_text(doc), f"the exception {snippet!r} is missing from a tree that has the section it belongs to"
+            continue
+        assert units and all(ORDER_CLAIM.search(u) and not ORDER_QUALIFIER.search(u) for u in units), f"the exception {snippet!r} ({why}) is not needed any more: remove it"
+    assert ORDER_EXCEPTIONS_NOT_EXPORTED <= set(ORDER_CLAIM_EXCEPTIONS), "a not-exported entry is not an exception"
+
+
+# Folder documents whose real text is used to show that the scan bites: the qualifier is taken out of every order statement that carries it, and
+# the statements must then be flagged. gaps/GAPS.md is among them in a tree that has its notes (the exported copy has none that state an order).
+ORDER_TAMPER_DOCS = ("arm64/README.md", "corpus/README.md", "gaps/GAPS.md", "mitigate/README.md", "dsweep/README.md", "realworld/README.md",
+                     "docs/dayone-results.md", "robustness/report.md", "pgo/report.md")
+
+
+def without_the_qualifier(text):
+    """The text with the unpublished history left out of each unit (units are rejoined with blank lines, so each stays its own unit)."""
+    return "\n\n".join(ORDER_QUALIFIER.sub("", unit) for unit in order_units(text))
+
+
+def test_taking_the_qualifier_out_of_a_folder_document_is_caught():
+    """Each folder document that qualifies an order statement is flagged once the qualifier is taken out, and is clean as it stands."""
+    bitten = []
+    for doc in ORDER_TAMPER_DOCS:
+        if doc not in ORDER_FOLDER_DOCS:
+            continue
+        text = order_doc_text(doc)
+        qualified = [u for u in order_units(text) if ORDER_CLAIM.search(u) and ORDER_QUALIFIER.search(u)]
+        if not qualified:
+            continue
+        assert not bare_order_claims(doc, text), f"{doc} is not clean as it stands: {bare_order_claims(doc, text)}"
+        flagged = bare_order_claims(doc, without_the_qualifier(text))
+        assert len(flagged) >= len(qualified), f"{doc}: {len(qualified)} qualified order statements, only {len(flagged)} flagged without the qualifier"
+        bitten.append(doc)
+    assert len(bitten) >= 3, f"the tamper reached only {bitten}"
+    if "gaps/GAPS.md" in ORDER_FOLDER_DOCS and "## 1. Gaps" in order_doc_text("gaps/GAPS.md"):
+        assert "gaps/GAPS.md" in bitten, "gaps/GAPS.md has no qualified order statement to take out"
+
+
+def test_an_order_statement_added_to_a_folder_document_is_caught():
+    """'registered in advance' (and the other wordings of the class) appended to a real folder document is flagged, and only the added unit is."""
+    for doc in ("mitigate/README.md", "arm64/README.md", "gaps/GAPS.md", "robustness/report.md"):
+        if doc not in ORDER_FOLDER_DOCS:
+            continue
+        text = order_doc_text(doc)
+        assert not bare_order_claims(doc, text), f"{doc} is not clean as it stands"
+        for added in ("A later rule was registered in advance.", "The list was committed before the first compile.", "It is pre-registered."):
+            flagged = bare_order_claims(doc, text.rstrip("\n") + "\n\n- " + added + "\n")
+            assert len(flagged) == 1 and added.rstrip(".") in flagged[0], f"{doc}: {added!r} gave {flagged}"
+
+
+PRE_PLANNED = re.compile(r"pre[-\s]?planned", re.I)
+
+
+def pre_planned_files():
+    """Every text file under site/, README.md, readme-parts/ and every README*.md or RESULTS.md of a folder (the top-level results/ is left out: those files are the records)."""
+    found = []
+    for base, dirs, names in os.walk(REPO):
+        rel_base = os.path.relpath(base, REPO)
+        dirs[:] = [d for d in dirs if d not in (".git", ".claude", "learn", "node_modules", "__pycache__") and not (rel_base == "." and d == "results")]
+        for n in names:
+            rel = os.path.normpath(os.path.join(rel_base, n))
+            in_site = rel.startswith("site" + os.sep) and n.lower().endswith((".html", ".js", ".css", ".json", ".md", ".svg", ".txt"))
+            doc = n.lower().startswith("readme") and n.lower().endswith(".md") or n == "RESULTS.md" or rel.startswith("readme-parts" + os.sep)
+            if in_site or doc:
+                found.append(rel.replace(os.sep, "/"))
+    return sorted(found)
+
+
+def test_no_document_or_page_text_calls_a_plan_pre_planned():
+    """The holdout's plan was committed 2 s after its first job started (see the details page), so no text under site/ and no README may call the run
+    pre-planned; the glossary says 'a fresh run, planned in writing'."""
+    files = pre_planned_files()
+    assert "site/index.html" in files and "README.md" in files and "readme-parts/DETAILS.md" in files and "arm64/README.md" in files, f"the scan lost files: {files[:8]}"
+    hits = []
+    for rel in files:
+        with open(os.path.join(REPO, rel), encoding="utf-8", errors="replace") as f:
+            hits += [f"{rel}: {m.group(0)}" for m in PRE_PLANNED.finditer(f.read())]
+    assert not hits, f"'pre-planned' appears: {hits[:5]}"
+    for text in ("a pre-planned run", "Pre-Planned", "a preplanned run", "a pre planned run"):
+        assert PRE_PLANNED.search(text), f"the pattern misses {text!r}"
+    assert not PRE_PLANNED.search("planned in writing"), "the pattern reads the glossary's own wording as a hit"
+
+
+def test_every_arm_record_stores_the_hash_of_the_rule_file():
+    """readme-parts/DETAILS.md says of the Arm runs: every record stores the sha256 of harness/criteria-v3.json as it is now, so no threshold was changed after them."""
+    with open(os.path.join(REPO, "harness", "criteria-v3.json"), "rb") as f:
+        digest = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+    files = sorted(glob.glob(os.path.join(REPO, "results", "s8-arm-run-*", "results-*", "results.json")))
+    assert len(files) == 30, f"{len(files)} Arm records"
+    wrong = []
+    for fp in files:
+        with open(fp, encoding="utf-8") as f:
+            d = json.load(f)
+        got = (d.get("run") or {}).get("criteria_sha256") or d.get("criteria_sha256")
+        if got != digest:
+            wrong.append(os.path.relpath(fp, REPO))
+    assert not wrong, f"records that do not store the hash of harness/criteria-v3.json as it is now: {wrong[:3]}"

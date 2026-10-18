@@ -71,7 +71,13 @@
 3. Saves screenshots (1280 and 390 wide: the first screen, Figure 1 with a selection, Figure 2, the
    middle of the paper, the appendix; the SAMPLE fixture; the worst case) to --shots (default: a
    temporary folder) and prints their paths.
-Exit code 0 only if every check passed. Needs the Python playwright package and its Chromium.
+Exit code 0 only if every check passed. Needs the Python playwright package and its Chromium. The pages ask Google Fonts for two
+typefaces; when fonts.googleapis.com does not answer (probed once at the start) the check answers those requests itself instead of
+reading the refusal as a page error, and runs on the system fonts. SITE_CHECK_FONTS=online|offline|auto forces it.
+Two checks need the web fonts and are expected to FAIL on the system fonts (FONT_DEPENDENT_CHECKS, below): the hero first-view checks at
+1440x900, "hero 4 at 1440x900: the whole finding" and "1440x900: the whole finding is in the first view", because the system fonts are taller and
+push the bottom of the hero race to about 921 px in a 900 px window. So a run that cannot reach the network is complete only with those two failing
+and nothing else (the last line says so); the full result, and the page lengths, are the run with the fonts online (the same as the CI runner).
 """
 import argparse
 import functools
@@ -94,11 +100,17 @@ DATA = os.path.join(SITE, "data")
 RW_NAMES_PY = {"lightgbm_default": "LightGBM (default)", "lightgbm_multiclass": "LightGBM (multiclass)", "lightgbm_linear": "LightGBM (linear)", "draco": "Draco", "tinydnn": "tiny-dnn", "spectra": "Spectra", "meshopt": "meshoptimizer (control)", "fmt": "{fmt} (control)"}
 # Phone page lengths at 390 px wide. The default (collapsed) page is the one that is capped: it is the page a reader meets.
 # The all-open length is a backstop only, so that the text behind the Details buttons cannot grow without anyone noticing.
-# Measured with the review fixes to section 6a (Arm): 7929 px by default, 23768 px with every section opened.
+# Last measured on Windows with the web fonts, after the related-work summary and one sentence of section 10 were shortened (by 157 px):
+# 7995 px by default, 23983 px with every section opened (it was 24140 before).
 # The backstop was 20632 + margin (21000) before the Arm column, 23750 for the column as first built (measured 23305),
-# and is 24200 now: 1.8% over the measurement, as before. The default cap has not moved.
+# and is 24200 now. It is not raised: text added to the main page is paid for by cutting text elsewhere. The default cap has not moved.
 PHONE_DEFAULT_CAP = 10500
 PHONE_ALL_OPEN_BACKSTOP = 24200
+# The checks that measure the hero's first view against the web fonts: on the system fonts (no network, SITE_CHECK_FONTS=offline) the race is
+# taller than a 900 px window and they fail by design. Each entry is the start of the check's message; README.md and readme-parts/DETAILS.md say
+# how many there are, and tests/test_readme_numbers.py ties that number to this tuple.
+FONT_DEPENDENT_CHECKS = ("hero 4 at 1440x900: the whole finding", "1440x900: the whole finding is in the first view")
+FONTS_BLOCKED = False  # set by main(): True when the font requests were answered locally
 NUM_TOKEN = re.compile(r"(?<![A-Za-z0-9_.])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?![A-Za-z0-9_])")
 TRANSFORMS = (
     lambda v: v,
@@ -159,6 +171,47 @@ def serve():
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
+
+
+# The pages load two typefaces from Google Fonts. A check run with no route to those hosts (offline, a firewall) read every blocked
+# request as a page error and failed dozens of checks that say nothing about the page. SITE_CHECK_FONTS picks what the browser does:
+#   auto (default)  probe fonts.googleapis.com once; if it does not answer, serve the font requests empty from here
+#   online          let the pages load the fonts (what a reader gets; needs the network)
+#   offline         always serve the font requests empty from here (no network, system fonts; line wraps differ from a run with the fonts)
+# No assertion changes: with the requests answered locally nothing fails, so there is no error to ignore.
+FONT_HOSTS = re.compile(r"https://fonts\.(googleapis|gstatic)\.com/")
+
+
+def fonts_reachable(timeout=4):
+    import urllib.request
+    try:
+        with urllib.request.urlopen("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono", timeout=timeout) as r:
+            return 200 <= r.status < 300
+    except Exception:
+        return False
+
+
+def _empty_font_response(route):
+    if "googleapis" in route.request.url:
+        route.fulfill(status=200, content_type="text/css", body="/* served empty by scripts/check_site.py: no request to a font host */")
+    else:
+        route.fulfill(status=204, body="")
+
+
+def block_font_hosts(browser):
+    """Every page and context the browser makes from now on gets its font requests answered locally."""
+    orig_page, orig_ctx = browser.new_page, browser.new_context
+
+    def new_page(**kw):
+        pg = orig_page(**kw)
+        pg.context.route(FONT_HOSTS, _empty_font_response)
+        return pg
+
+    def new_context(**kw):
+        c = orig_ctx(**kw)
+        c.route(FONT_HOSTS, _empty_font_response)
+        return c
+    browser.new_page, browser.new_context = new_page, new_context
 
 
 def walk_numbers(obj, nums, toks):
@@ -439,6 +492,15 @@ def pick_loop(pg, kern):
         pg.wait_for_timeout(250)
 
 
+def pick_cpu(pg, slug):
+    """Choose the hero's CPU model the way a reader does at this width: tap its tab, or, where the five tabs give way to the quiet line
+    'Measured on ...' (variant 4 up to 640 px), choose it from that line's menu."""
+    if pg.evaluate("getComputedStyle(document.getElementById('race-cpu')).display") == "none":
+        pg.select_option("#race-cpu-sel", slug)
+    else:
+        pg.click(f'#race-cpu [data-cpu="{slug}"]')
+
+
 def hero_sig(pg):
     """What the hero draws right now: the canvas (variants 1 to 3) or the clipped bars (variant 4)."""
     return pg.evaluate("(() => { if (document.getElementById('race').dataset.hv === '4') return [...document.querySelectorAll('#race .ln-t > i')].map(i => getComputedStyle(i).clipPath).join('|'); return document.getElementById('race-cv').toDataURL(); })()")
@@ -490,10 +552,10 @@ def story_checks(browser, base, ck, index, pooled):
         ck.ok(f"{index['claim']['google_pct']:.2f}%" in txt and f"{fx(worst(dcpu['cpu_model']))}×" in txt and "one loop, a check of the same kind" in txt and "does not say which hardening mode" in txt and "neither confirms nor contradicts" in txt,
               f"{w}: the contrast band prints Google's {index['claim']['google_pct']:.2f}% and this study's slowest loop ({fx(worst(dcpu['cpu_model']))}×), 'one loop, a check of the same kind', the mode caveat and the neutral sentence")
         other = next(c for c in index["cpus"] if c["slug"] != index["default_cpu"] and c.get("enough"))
-        pg.click(f'#race-cpu [data-cpu="{other["slug"]}"]')
+        pick_cpu(pg, other["slug"])
         pg.wait_for_timeout(250)
         ck.ok(f"{fx(worst(other['cpu_model']))}×" in pg.inner_text("#band-worst"), f"{w}: the band's worst loop follows the CPU chip ({other['cpu_short']}: {fx(worst(other['cpu_model']))}×)")
-        pg.click(f'#race-cpu [data-cpu="{index["default_cpu"]}"]')
+        pick_cpu(pg, index["default_cpu"])
         pg.click('#mech-tiles [data-k="k04_rev"]')
         pg.click('#mech-chk [data-on="0"]')
         c0 = pg.inner_text("#mech-count")
@@ -564,11 +626,34 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         sw2 = pg.evaluate("+getComputedStyle(document.querySelector('#race-head .rh-on')).opacity")
         ck.ok(sw0[0] == "on" and sw0[1] == 1 and sw0[2] in ("none", "normal") and sw1[0] < 0.6 and "hidden" in sw1[1] and not sw1[2] and sw2 == 1,
               f"{w}x{h}: the figure's header changes with the switch: the 'on' chip is lit, then dimmed and marked '(hidden)' with the check off, then lit again ({sw0}, {sw1}, {sw2})")
-        cpu = pg.evaluate("""(() => { const g = document.getElementById('race-cpu'), l = document.querySelector('#race .cpu-l'), sel = g.querySelector('[aria-checked="true"]'), cs = getComputedStyle(g), ss = getComputedStyle(sel);
-            const lr = l.getBoundingClientRect();
-            return [l.textContent.trim(), g.getAttribute('aria-label'), cs.backgroundColor, ss.backgroundColor, parseFloat(cs.borderRadius) > 6, ss.boxShadow !== 'none', lr.width > 0 && getComputedStyle(l).display !== 'none', l.getAttribute('aria-hidden')]; })()""")
-        ck.ok(cpu[0] == "Measured on" and cpu[1] == "CPU model" and cpu[7] == "true" and cpu[2] != cpu[3] and cpu[4] and cpu[5] and (cpu[6] or (641 <= w <= 1040) or w <= 389),
-              f"{w}x{h}: the processor choice is a segmented control: a recessed rounded track with the chosen segment raised and a different colour, so the chosen name reads as a pressed button; 'Measured on' sits quietly beside it (beside the track on a phone) except from 641 to 1040 px and below 390 px, where there is no room, and the group is named 'CPU model' for a screen reader ({cpu})")
+        if w >= 641:
+            cpu = pg.evaluate("""(() => { const g = document.getElementById('race-cpu'), l = document.querySelector('#race .cpu-l'), sel = g.querySelector('[aria-checked="true"]'), cs = getComputedStyle(g), ss = getComputedStyle(sel);
+                const lr = l.getBoundingClientRect();
+                return [l.textContent.trim(), g.getAttribute('aria-label'), cs.backgroundColor, ss.backgroundColor, parseFloat(cs.borderRadius) > 6, ss.boxShadow !== 'none', lr.width > 0 && getComputedStyle(l).display !== 'none', l.getAttribute('aria-hidden')]; })()""")
+            ck.ok(cpu[0] == "Measured on" and cpu[1] == "CPU model" and cpu[7] == "true" and cpu[2] != cpu[3] and cpu[4] and cpu[5] and (cpu[6] or (641 <= w <= 1040)),
+                  f"{w}x{h}: the processor choice is a segmented control: a recessed rounded track with the chosen segment raised and a different colour, so the chosen name reads as a pressed button; 'Measured on' sits quietly beside it except from 641 to 1040 px, where there is no room, and the group is named 'CPU model' for a screen reader ({cpu})")
+        else:
+            # on a phone the five tabs are one quiet line: "Measured on" and the chosen model with a chevron, a menu on tap (the system's own picker)
+            cpus_ = [c for c in index["cpus"] if c["enough"]]
+            q = pg.evaluate("""(() => { const s = document.getElementById('race-cpu-sel'), l = document.querySelector('#race .cpu-l'), g = document.getElementById('race-cpu'), line = document.querySelector('#race .cpu-q'),
+                now = line.querySelector('.cpu-now'), chev = line.querySelector('.cpu-chev'), t = document.getElementById('cpu-now-t'), cs = getComputedStyle(s), ls = getComputedStyle(line), r = s.getBoundingClientRect(), lr = l.getBoundingClientRect(), nr = now.getBoundingClientRect(), lnr = line.getBoundingClientRect();
+                return [l.textContent.trim(), l.getAttribute('aria-hidden'), lr.width > 0 && getComputedStyle(l).display !== 'none', s.getAttribute('aria-label'), [...s.options].map(o => o.textContent.trim()), s.options[s.selectedIndex].textContent.trim(),
+                  Math.round(lnr.height), now.getAttribute('aria-hidden'), t.textContent.trim(), getComputedStyle(chev).backgroundImage.startsWith('url(') && chev.getBoundingClientRect().width > 0,
+                  ls.backgroundColor === 'rgba(0, 0, 0, 0)' && parseFloat(ls.borderTopWidth) === 0 && ls.boxShadow === 'none', getComputedStyle(g).display,
+                  lr.right <= nr.left + 1 && Math.abs((lr.top + lr.height / 2) - (nr.top + nr.height / 2)) < 12,
+                  r.left <= nr.left && r.right >= nr.right && r.top <= nr.top && r.bottom >= nr.bottom && cs.opacity === '0', Math.round(r.height)]; })()""")
+            ck.ok(q[0] == "Measured on" and q[1] == "true" and q[2] and q[3] == "CPU model" and q[4] == [c["cpu_short"] for c in cpus_] and q[5] == q[8] == next(c["cpu_short"] for c in cpus_ if c["slug"] == index["default_cpu"])
+                  and q[6] >= 44 and q[14] >= 44 and q[7] == "true" and q[9] and q[10] and q[11] == "none" and q[12] and q[13],
+                  f"{w}x{h}: on a phone the processor choice is one quiet line: 'Measured on' and the chosen model with a chevron on a plain background (no tabs, no fill, no border, no shadow), 44 px tall, with the system's own menu named 'CPU model' laid invisibly over the whole line so a tap anywhere on it opens the picker; the menu lists every model, and the line shows the chosen one ({q})")
+            pg.focus("#race-cpu-sel")
+            pg.keyboard.press("ArrowDown")
+            pg.wait_for_timeout(250)
+            kb = pg.evaluate("[S.cpu, document.getElementById('race-cpu-sel').value, document.querySelector('#race-cpu [aria-checked=\"true\"]').dataset.cpu, document.getElementById('cpu-now-t').textContent.trim(), document.querySelector('#race-cpu [aria-checked=\"true\"]').textContent.trim()]")
+            ck.ok(kb[0] != index["default_cpu"] and kb[0] == kb[1] == kb[2] and kb[3] == kb[4],
+                  f"{w}x{h}: the quiet line works from the keyboard (the arrow key changes the model, the race follows, the line shows the new name, the hidden tabs agree) ({kb})")
+            pick_cpu(pg, index["default_cpu"])
+            pg.wait_for_timeout(200)
+            ck.ok(pg.evaluate("S.cpu") == index["default_cpu"] and pg.input_value("#race-cpu-sel") == index["default_cpu"] and pg.inner_text("#cpu-now-t") == next(c["cpu_short"] for c in cpus_ if c["slug"] == index["default_cpu"]), f"{w}x{h}: choosing the default model from the menu puts it back, and the line shows its name again")
         wip0 = pg.evaluate("(() => { const b = document.getElementById('wip-btn'), n = document.getElementById('wip-note'); return [b.tagName, b.getAttribute('aria-expanded'), n.hidden, b.textContent.trim()]; })()")
         pg.click("#wip-btn")
         wip1 = pg.evaluate("""(() => { const n = document.getElementById('wip-note'), r = n.getBoundingClientRect(), b = document.getElementById('wip-btn');
@@ -1066,10 +1151,10 @@ def hero_variant_checks(browser, base, ck, index, pooled):
             ck.ok(pg.get_attribute("#race-sw", "aria-checked") == "true", f"{tag}: and back on")
             # CPU choice
             sel = pg.evaluate("S.sel")
-            pg.click(f'#race-cpu button[data-cpu="{other["slug"]}"]')
+            pick_cpu(pg, other["slug"])
             w2 = want(opc, sel)
             ck.ok(w2 is None or pg.inner_text("#race-ratio") == w2, f"{tag}: one click on {other['cpu_short']} prints that model's pooled ratio ({pg.inner_text('#race-ratio')} vs {w2})")
-            pg.click(f'#race-cpu button[data-cpu="{index["default_cpu"]}"]')
+            pick_cpu(pg, index["default_cpu"])
             # honesty
             ck.ok("Illustration" in pg.inner_text("#race-cap") and "measurement" in pg.inner_text("#race-cap"), f"{tag}: the caption says the animation is an illustration and the number is the measurement")
             # one run, then rest
@@ -1491,7 +1576,7 @@ def phone_checks(browser, base, ck, index):
     for c in index["cpus"]:
         if not c["enough"]:
             continue
-        pg.click(f'#race-cpu [data-cpu="{c["slug"]}"]')
+        pick_cpu(pg, c["slug"])
         pg.wait_for_timeout(150)
         box = pg.evaluate("(() => { const e = document.getElementById('cpu-verdict'), r = e.getBoundingClientRect(); return [e.textContent.trim(), r.width, r.height]; })()")
         ctl = pg.evaluate("(() => { const c = document.querySelector('#controls .ctl'); return [getComputedStyle(c).display, c.getBoundingClientRect().height]; })()")
@@ -1546,11 +1631,12 @@ def phone_checks(browser, base, ck, index):
             seen = False
             for _ in range(8):  # the hint appears about 1.7 s after the page starts and stays for 9 s
                 pg.wait_for_timeout(500)
-                got = pg.evaluate("""() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h);
-                    if (h.hidden || cs.display === 'none' || +cs.opacity < 0.5) return null;
+                got = pg.evaluate("""() => { const sub = document.querySelector('#race-sw .sw-sub'), hint = document.getElementById('sw-hint'),
+                      h = getComputedStyle(sub).display !== 'none' ? sub : hint, cs = getComputedStyle(h);  /* up to 640 px (variant 4) the line under the switch's label does the hint's work */
+                    if (h === hint && (h.hidden || cs.display === 'none' || +cs.opacity < 0.5)) return null;
                     const a = h.getBoundingClientRect(), sw = document.getElementById('race-sw').getBoundingClientRect();
                     return [h.innerText.trim(), a.right <= sw.right + 0.5 && a.left >= sw.left - 0.5,
-                      ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
+                      ['#race-replay', '#race-cpu', '#race-cpu-sel', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
                       const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; })]; }""")
                 if got is not None:
                     seen = True
@@ -1559,24 +1645,28 @@ def phone_checks(browser, base, ck, index):
                         clash.append((v, w, got[2], "outside its switch" if not got[1] else ""))
                     break
             pg.close()
-    ck.ok(not clash, f"the 'flip the check' hint never overlaps the Replay button, the CPU buttons, the caption or the readout, and stays inside its switch, in any hero variant at 1440, 1024, 800, 390 or 340 px ({clash[:3]})")
-    # the hint says what to do, in words that fit the width: the first move and its action on a wide screen, the first move on a mid-size one,
-    # what a tap does on a phone (the pill is the button), and the first move again below 341 px where the pill has no room for more
-    want = {(4, 1440): "Start here: flip it off", (4, 1024): "Start here", (4, 800): "Start here", (4, 390): "Tap to turn off", (4, 340): "Start here"}
+    ck.ok(not clash, f"the 'flip the check' hint never overlaps the Replay button, the CPU buttons or menu, the caption or the readout, and stays inside its switch, in any hero variant at 1440, 1024, 800, 390 or 340 px ({clash[:3]})")
+    # the hint says what to do, in words that fit the width: the first move and its action on a wide screen, the first move on a mid-size one;
+    # on a phone (up to 640 px) the switch is a settings row and the plain sentence under its label says what a tap changes
+    tap_off = "Tap to turn off and see each loop without it."
+    want = {(4, 1440): "Start here: flip it off", (4, 1024): "Start here", (4, 800): "Start here", (4, 390): tap_off, (4, 340): tap_off}
     ck.ok(all(said.get(k) == t for k, t in want.items()),
-          f"hero 4: the hint beside the switch reads 'Start here: flip it off' at 1440, 'Start here' at 1024 and 800, 'Tap to turn off' at 390 and 'Start here' at 340 px ({ {k: said.get(k) for k in want} })")
+          f"hero 4: the hint beside the switch reads 'Start here: flip it off' at 1440 and 'Start here' at 1024 and 800 px; on a phone the sentence under the switch's label reads '{tap_off}' at 390 and at 340 px ({ {k: said.get(k) for k in want} })")
     # the second move: after the first use the hint is gone while the check is on, and while the check is off it asks for the way back
-    # ("the check is off" is a dead end otherwise: every row reads 1.00x and the only instruction is the small readout line), inside its switch
-    back_want = {1440: "Now flip it on", 1024: "Flip it on", 800: "Flip it on", 390: "Tap to turn on", 340: "Turn on"}
+    # ("the check is off" is a dead end otherwise: every row reads 1.00x and the only instruction is the small readout line), inside its switch;
+    # on a phone the sentence under the label stays and flips with the state (it says what a tap changes in either state)
+    tap_on = "Tap to turn on and see each loop with it."
+    back_want = {1440: "Now flip it on", 1024: "Flip it on", 800: "Flip it on", 390: tap_on, 340: tap_on}
     back_bad = []
     for w, text in back_want.items():
         pg = browser.new_page_plain(viewport={"width": w, "height": 900})
         pg.goto(f"{base}#hero=4", wait_until="networkidle")
         wait_ready(pg)
         pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
-        probe = """() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h), a = h.getBoundingClientRect(), sw = document.getElementById('race-sw').getBoundingClientRect();
+        probe = """() => { const sub = document.querySelector('#race-sw .sw-sub'), hint = document.getElementById('sw-hint'), h = getComputedStyle(sub).display !== 'none' ? sub : hint,
+              cs = getComputedStyle(h), a = h.getBoundingClientRect(), sw = document.getElementById('race-sw').getBoundingClientRect();
             return { shown: !h.hidden && cs.display !== 'none' && +cs.opacity > 0.5, text: h.innerText.trim(), inside: a.right <= sw.right + 0.5 && a.left >= sw.left - 0.5,
-              clash: ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
+              clash: ['#race-replay', '#race-cpu', '#race-cpu-sel', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
                 const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; }) }; }"""
         pg.wait_for_timeout(900)
         pg.click("#race-sw")                    # first use: the check is off
@@ -1588,10 +1678,11 @@ def phone_checks(browser, base, ck, index):
         pg.keyboard.press("c")                  # the key does the same as the switch
         pg.wait_for_timeout(700)
         off2 = pg.evaluate(probe)
-        if not (off["shown"] and off["text"] == text and off["inside"] and not off["clash"] and not on["shown"] and off2["shown"] and off2["text"] == text):
+        on_ok = (on["shown"] and on["text"] == tap_off and on["inside"]) if w <= 640 else not on["shown"]
+        if not (off["shown"] and off["text"] == text and off["inside"] and not off["clash"] and on_ok and off2["shown"] and off2["text"] == text):
             back_bad.append((w, off, on["shown"], off2["text"]))
         pg.close()
-    ck.ok(not back_bad, f"hero 4: after the first use the hint is gone while the check is on, and while it is off asks 'Now flip it on' (1440), 'Flip it on' (1024, 800), 'Tap to turn on' (390), 'Turn on' (340), inside its switch and off every other control, also after the C key ({back_bad[:2]})")
+    ck.ok(not back_bad, f"hero 4: after the first use the hint is gone while the check is on, and while it is off asks 'Now flip it on' (1440) or 'Flip it on' (1024, 800); on a phone (390, 340) the sentence under the label flips with the state ('{tap_off}' with the check on, '{tap_on}' with it off), inside its switch and off every other control, also after the C key ({back_bad[:2]})")
 
 
 def wording_checks(browser, base, ck, index):
@@ -2231,6 +2322,7 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     blind_held = [k for k in blind_ if k["prediction"]["class_held"]]
     seen_plc = [ARM_SHORT_NAMES[k["kernel"]] for k in plc if k["kernel"] in seen_names]
     ck.ok(f"named the class of {len(pred)} loops, and {len(held)} of {len(pred)} held" in pl and len(seen_names) == 2
+          and "was committed after a two-kernel smoke run and before the full runs had finished, by commit times in the author’s unpublished development history." in pl
           and f"Not all of those were blind: the smoke run had already timed {join_and([ARM_SHORT_NAMES[n_] for n_ in seen_names])} on this core (the plan quotes both figures), so those two predictions were made with the result in view, and {len(blind_held)} of the {len(blind_)} others held" in pl
           and join_and([ARM_SHORT_NAMES[k["kernel"]] for k in plm]) in pl and "did not (flagged placement-sensitive at L1)" in pl and "It made no prediction for gather and histogram" in pl
           and seen_plc and f"{join_and(seen_plc)} had been timed in the smoke run when that was written" in pl and "that prediction was not blind" not in pl
@@ -2346,6 +2438,50 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
 
 REP_NUM_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
 REP_SAY = {"none": "not drawn", "few": "too few jobs", "map": "a map", "holds": "a small cost everywhere", "inc": "inconclusive"}
+
+
+def utc_text_py(s):
+    return s.replace("T", " ").replace("Z", " UTC")
+
+
+def utc_clock_py(s):
+    return s[11:19] + " UTC"
+
+
+LONG_MONTHS_PY = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+
+def long_date_py(s):
+    return f"{int(s[8:10])} {LONG_MONTHS_PY[int(s[5:7]) - 1]} {s[:4]}"
+
+
+def prov_history_py(P):
+    """The sentence that says when the public history begins and what that leaves unchecked (site/app.js renderProvenance), from index.json's provenance."""
+    return (f"The public history begins on {long_date_py(P['public_history']['first_commit_utc'])}, after the runs of s1 to s4, the holdout and the rewrite, "
+            "so for those that order cannot be checked from public records.")
+
+
+def min_sec_py(n):
+    m, s = divmod(n, 60)
+    u = lambda k, w: f"{k} {w}{'' if k == 1 else 's'}"  # noqa: E731
+    return (f"{u(m, 'minute')} {u(s, 'second')}" if s else u(m, "minute")) if m else u(s, "second")
+
+
+def prov_replication_py(P):
+    """The replication plan's order of events as the page words it (site/app.js provReplication), from index.json's provenance."""
+    R = P["replication"]
+    lags = [R["first_run_lag_s"]] + [v for v in R["arm_run_lags_s"].values() if v < 120]
+    return (f"the commit time, {utc_text_py(R['plan_commit_utc'])}, is {R['margin_s']} seconds before the first record’s start ({utc_clock_py(R['first_record_start_utc'])}), "
+            f"and a run’s first record starts {min(lags)} to {max(lags)} seconds after the run is created (the first of these runs and two of the three Arm runs of the day before), "
+            "so the margin lies within the range of the start lags and the order cannot be shown (the commit time is read on the author’s clock, the run times on GitHub’s and the runner’s).")
+
+
+def prov_dsweep_py(P):
+    """The d-sweep plan's public record as the page words it (site/app.js provDsweep)."""
+    D = P["dsweep"]
+    return (f"The public record is the temporary branch {D['branch']}: its commit {D['commit']} holds the plan file (the stored hash) together with the sweep code, "
+            f"with the commit time {utc_clock_py(D['commit_utc'])} ({D['commit_utc'][:10]}), {min_sec_py(D['gap_s'])} before the first record started ({utc_clock_py(D['first_record_start_utc'])}); "
+            "whether the plan was written before the code cannot be seen there.")
 
 
 def num_word_py(n):
@@ -2747,16 +2883,17 @@ def replication_checks(browser, base, ck, index, allowed, saved, shots):
     thin = max(q6["earlier_closest_forward"]["margin"], am["earlier"]["aligned_hi_over_limit"])
     red = [i for i in ("39012986182", "39013000285") if i in P["x86"]["replication"]["run_ids"]]  # the two combine runs that went red on pool_check (they ran in the second x86-64 set)
     want_what = (f"Why a second set, and how it is read. Two readings rested on a forward cell whose interval ended within {thin:.4f} of the limit, the Arm core’s and the Xeon 6973P-C’s, so more runs were requested. "
-                 "The plan (replication/PLAN.md) was written before the runs were dispatched, in the author’s unpublished development history; no public record shows that order, and the hash stored with the comparison shows the file’s integrity, not when it was written. "
+                 f"The plan (replication/PLAN.md) was committed in the author’s unpublished development history, by the author’s account before the runs were dispatched, and this repository cannot show that order: {prov_replication_py(index['provenance'])} "
+                 "The hash stored with the comparison shows the file’s integrity, not when it was written. "
                  f"It fixes the reading: each set is pooled on its own, by the same code under the same rule file ({crit['file']}), and for each cell it asks whether the second set’s pooled aligned ratio lies inside the first set’s 95% interval, reported as a share, whatever comes out. "
-                 f"The pooling code, the statistics and the rule file were not changed after a result; one consistency check (harness/pool_check.py) was changed afterwards to sample only models with at least {crit['minimum_jobs']} jobs, "
+                 f"The rule file was not changed after a result (every record stores its hash), and by the author’s account neither were the pooling code and the statistics; one consistency check (harness/pool_check.py) was changed afterwards to sample only models with at least {crit['minimum_jobs']} jobs, "
                  f"after {num_word_py(len(red))} combine runs ({join_and_py(red)}) went red on it for models with fewer, and no verdict uses such a model. "
                  f"{cap_py(X['names']['replication'])} is {len(P['x86']['replication']['run_ids'])} more x86-64 runs ({P['x86']['replication']['jobs']} jobs), drawn by GitHub from the same pool of machines; "
                  f"{AR['names']['replication']} is {len(P['arm']['replication']['run_ids'])} more Arm runs ({P['arm']['replication']['jobs']} jobs). "
                  "The pooled forms of the two sets together are secondary: the sets were requested after a borderline reading, so the stopping point depended on the data, and they never replace a set read alone. "
                  "The earlier pools’ stored verdicts are unchanged. No further runs will be made for these questions.")
     ck.ok(txt["rep-what"] == want_what and len(red) == 2,
-          f"details, 'Why a second set', word for word: the plan written before the dispatch in unpublished history with no public record of the order and a hash that shows integrity only; what the plan asks (the second set's aligned ratio inside the first set's interval, as a share, whatever comes out); the one consistency check changed afterwards and the two red runs by id; set sizes from the data; the pooled forms secondary; no further runs ({first_diff(txt['rep-what'], want_what)})")
+          f"details, 'Why a second set', word for word: the plan committed before the dispatch in unpublished history, with the commit time, the margin to the first record's start and the start lag, all from the records (the margin lies within the range of the lags, so the order cannot be shown, and the three clocks are named) and a hash that shows integrity only; what the plan asks (the second set's aligned ratio inside the first set's interval, as a share, whatever comes out); the one consistency check changed afterwards and the two red runs by id; set sizes from the data; the pooled forms secondary; no further runs ({first_diff(txt['rep-what'], want_what)})")
     alx = [rep_aligned(r) for r in R["rows"] if r["arch"] == "x86" and r["inside"]]
     ala = [rep_aligned(r) for r in R["rows"] if r["arch"] == "arm" and r["inside"]]
     cells_n = rows[0]["inside"]["checked"] // 2
@@ -2962,14 +3099,14 @@ def dsweep_checks(browser, base, ck, index, allowed, saved, shots):
     want_q = (f"The question. On {A['cpu_short']}, matrix multiply keeps its NEON loop in both builds and the checked build still costs {A['published']['L1']:.3f}× at L1 (d = {A['ladder']['study_l1_d']}). "
               "The listing shows compares and selects before the NEON loop and a checked scalar loop for the leftover elements, which the matrix-multiply paragraph above reads as a set-up cost paid once per inner call (an inner call is one run of the innermost loop over d elements); that reading was inferred, and this sweep tests it. "
               f"Three accounts are written in the plan (dsweep/PLAN.md, sha256 {D['plan_sha256'][:8]}…). It was drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code, which changed the deciding statistic, "
-              "and committed alone, before the code commit and before the first run, in the author’s unpublished development history. On the public repository it arrived in one commit together with the code; the hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs, "
-              "but the order before the runs is not checkable from public records. "
+              "and committed alone, before the code commit and before the first run, in the author’s unpublished development history, which this repository does not contain and so cannot show that order. "
+              f"{prov_dsweep_py(index['provenance'])} The hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs. "
               "H1, a fixed extra cost per inner call, predicts the same extra time per inner call at every d. H2, a cost per element, predicts extra time in proportion to d. “Falls” is extra time that is smaller at the longer rows. "
               f"The rule reads the fixed share of the extra time at the study size, fitted over the L1-resident row lengths that leave the same remainder modulo {A['ladder']['modulus']} as the study size (d = {fitA[0]} to {fitA[1]} on {A['cpu_short']}): "
               f"H1 when the share and its 95% interval lie inside {Rl['h1_share_band'][0]} to {Rl['h1_share_band'][1]}, H2 inside −0.2 to 0.2, “falls” above {Rl['falls_share_above']}, anything else “neither”. "
               "It is applied twice, to the code as compiled and with every hot loop aligned to 64 bytes; when the two disagree the word is “neither” and both are stated.")
     ck.ok(q == want_q and "before any run" not in q and "written first" not in q,
-          f"details, the question, word for word: the plan's account of its own history (drafted before the code, revised twice, committed alone before the first run in unpublished history, one public commit with the code, order not checkable from public records, hash shows no edit after the runs), the two accounts and 'falls', the rule's bands from the data, the fit ladder, both columns, and that disagreement gives 'neither' with both words stated ({first_diff(q, want_q)})")
+          f"details, the question, word for word: the plan's account of its own history (drafted before the code, revised twice, committed alone before the first run in unpublished history, the public record a commit of the branch dsweep-smoke with the code and its time against the first record's start, hash shows no edit after the runs), the two accounts and 'falls', the rule's bands from the data, the fit ladder, both columns, and that disagreement gives 'neither' with both words stated ({first_diff(q, want_q)})")
     ck.ok(abs(Rl["h2_share_band"][0] + 0.2) < 1e-9 and abs(Rl["h2_share_band"][1] - 0.2) < 1e-9 and Rl["h1_share_band"] == [0.8, 1.2] and Rl["falls_share_above"] == 1.2 and Rl["minimum_jobs"] == 3,
           "the rule's bands in the data are the ones the plan wrote (H1 0.8 to 1.2, H2 -0.2 to 0.2, falls above 1.2, 3 jobs)")
     ran = txt["ds-ran"]
@@ -3196,6 +3333,1170 @@ def dsweep_checks(browser, base, ck, index, allowed, saved, shots):
     ck.ok(not errors_p, "the sweep, 390 and 320: no console errors" + ("" if not errors_p else f": {errors_p[:3]}"))
 
 
+PROV_GROUPS = {  # the groups of result records the page's provenance account counts (site/data/index.json provenance), by glob
+    "early": ["results/s1-run-*/results.json", "results/s2-run-*/results.json", "results/s3-run-*/results-*/results.json",
+              "results/s3-audit-run-*/results-*/results.json", "results/s4-run-*/results-*/results.json", "results/s4-smoke-*/results-*/results.json"],
+    "holdout": ["results/s5-holdout/runs/*/results-*/results.json"],
+    "rewrite": ["results/mitigate-run-*/mitigate-*/results.json"],
+    "s6": ["results/s6-run-*/results-*/results.json"],
+    "s7": ["results/s7-run-*/results-*/results.json"],
+    "arm": ["results/s8-arm-run-*/results-*/results.json"],
+    "s9": ["results/s9-run-*/results-*/results.json", "results/s9-arm-run-*/results-*/results.json"],
+    "dsweep": ["results/s10-dsweep-run-*/dsweep-*/dsweep.json"],
+}
+
+
+def _parse_utc(s):
+    import datetime
+    return datetime.datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(datetime.timezone.utc)
+
+
+ORDER_CLAIMS_JS = """(raw) => {
+  // The claim class: something committed, written, fixed, registered, listed, set or planned before something else (or beforehand), in advance,
+  // or pre-registered. The file name PREREGISTRATION.md is a name and not a claim. It is read in every element, not in a list of block tags:
+  // the deepest element whose text matches is taken, and its sentence block (a paragraph, list item, table cell, caption, term or chip) is the
+  // unit that must carry the qualifier. `raw` is the served HTML text (read as a document, no script run): the text a reader gets without script.
+  const BLOCK = 'p, li, dd, dt, td, th, caption, figcaption, summary, blockquote, h2, h3, h4, .tcap, .w-chip';
+  const re = /\\b(?:committed|written|fixed|registered|listed|set|planned)\\b[^.]{0,40}\\bbefore(?:hand)?\\b|\\bin advance\\b|pre-?regist(?!ration\\.md)/i;
+  const root = raw ? new DOMParser().parseFromString(raw, 'text/html') : document;
+  const says = (n) => re.test(n.textContent);
+  const deepest = [...root.body.querySelectorAll('*')].filter((n) => !/^(SCRIPT|STYLE)$/.test(n.tagName) && says(n) && ![...n.children].some(says));
+  return [...new Set(deepest.map((n) => n.closest(BLOCK) || n))].map((b) => ({
+    id: b.id || '', chip: b.classList.contains('w-chip'),
+    text: b.textContent.replace(/\\s+/g, ' ').trim(),
+    qualified: /unpublished development history/.test(b.textContent) || !!b.querySelector('a[href$="#prov-full"]')}));
+}"""
+
+
+def provenance_checks(browser, base, ck, index):
+    """What the page says about the order of events and about where the result records came from: every statement is
+    tied to the records (recounted here from results/, not read from index.json), to the times in the two recorded
+    fixtures, and to the words the page prints (word for word); the old flat wording is gone from both pages."""
+    print("== provenance: what the public record shows, and what it cannot")
+    P = index["provenance"]
+    crit = os.path.join(REPO, index["criteria"]["file"])
+    with open(crit, "rb") as f:
+        crit_sha = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+    recs, firsts = {}, {}
+    for gid, pats in PROV_GROUPS.items():
+        files = sorted(x for p in pats for x in glob.glob(os.path.join(REPO, p)))
+        docs = []
+        for x in files:
+            with open(x, encoding="utf-8") as fh:
+                d = json.load(fh)
+            r = dict(d["run"] if isinstance(d.get("run"), dict) else d)
+            r.setdefault("criteria_sha256", d.get("criteria_sha256"))  # the d-sweep records keep it beside `run`, the others inside it
+            docs.append(r)
+        recs[gid] = (files, docs)
+        firsts[gid] = min((r["started_at"] for r in docs if r.get("started_at")), default=None)
+    groups = {g["id"]: g for g in P["groups"]}
+    ck.ok(list(groups) == list(PROV_GROUPS) and all(groups[g]["records"] == len(recs[g][0]) > 0 for g in PROV_GROUPS),
+          "provenance: the groups of records and their counts are the ones in results/ ("
+          + ", ".join(f"{g} {len(recs[g][0])}" for g in PROV_GROUPS) + ")")
+    pub_first = P["first_public_run_id"]
+    ids = lambda g: [int(re.search(r"/runs/(\d+)$", r.get("workflow_run_url") or r.get("url") or "").group(1)) for r in recs[g][1] if (r.get("workflow_run_url") or r.get("url"))]  # noqa: E731
+    open_groups = [g for g in PROV_GROUPS if ids(g) and all(i >= pub_first for i in ids(g))]
+    shut_groups = [g for g in PROV_GROUPS if ids(g) and all(i < pub_first for i in ids(g))]
+    ck.ok(open_groups == ["s6", "s7", "arm", "s9", "dsweep"] and shut_groups == ["early", "holdout", "rewrite"]
+          and all(groups[g]["links"] == {"records": len(ids(g)), "open": len(ids(g)) if g in open_groups else 0} for g in PROV_GROUPS)
+          and all("third-of-a-percent-public" in r["workflow_run_url"] for r in recs["holdout"][1]),
+          "provenance: the run links open only for the records of s6 to s10 (run ids from the public repository's first run on; the earlier groups' ids come before it, and the holdout's links name the earlier, now private, repository)")
+    cm = lambda g: sum(1 for r in recs[g][1] if (r.get("criteria_sha256") or "") == crit_sha)  # noqa: E731
+    s4_records = len(glob.glob(os.path.join(REPO, "results/s4-run-*/results-*/results.json"))) + len(glob.glob(os.path.join(REPO, "results/s4-smoke-*/results-*/results.json")))
+    ck.ok(all(groups[g]["criteria_match"] == cm(g) for g in PROV_GROUPS)
+          and all(cm(g) == len(recs[g][0]) for g in ("holdout", "s6", "s7", "arm", "s9", "dsweep"))
+          and cm("early") == s4_records and cm("early") < len(recs["early"][0]) and cm("rewrite") == 0,
+          "provenance: every record of s4 to s10 stores the hash of the rule file now in the repository (s4 and its smoke run inside the first group), none of s1 to s3 and none of the rewrite runs does")
+    own = {g: sorted({(r.get("commit") or "")[:7] for r in recs[g][1]}) for g in PROV_GROUPS}
+    where = {c["commit"]: c["where"] for g in P["groups"] for c in g["commits"]}
+    ck.ok(all(sorted(c["commit"] for c in groups[g]["commits"]) == own[g] and sum(c["records"] for c in groups[g]["commits"]) == len(recs[g][0]) for g in PROV_GROUPS)
+          and all(where[c] is None for g in ("early", "holdout", "rewrite") for c in own[g])
+          and {c: where[c] for g in ("s6", "s7", "s9") for c in own[g]} == {"293b6b9": "main", "60f487d": "main", "32ab03c": "main"}
+          and own["arm"] == ["6176991"] and where["6176991"] == "arm-smoke" and own["dsweep"] == ["8c874ec"] and where["8c874ec"] == "dsweep-smoke",
+          "provenance: the commit each group's records stamp, and where the public repository holds it (s6, s7, s9 on main; the Arm and d-sweep runs on the kept branches arm-smoke and dsweep-smoke; every other stamped commit absent)")
+    # the recorded times against the two fixtures written when they were read (tests/data)
+    with open(os.path.join(REPO, "tests", "data", "s8_arm_timeline.json"), encoding="utf-8") as f:
+        tl = json.load(f)
+    with open(os.path.join(REPO, "tests", "data", "s9_s10_provenance.json"), encoding="utf-8") as f:
+        pv = json.load(f)
+    arm_lag = {}
+    for rid, d in ((r["id"], r) for r in recs["arm"][1]):
+        arm_lag[str(rid)] = min(arm_lag.get(str(rid), d["started_at"]), d["started_at"])
+    fx_lag = {str(r["run"]): int((_parse_utc(arm_lag[str(r["run"])]) - _parse_utc(r["created_at"])).total_seconds()) for r in tl["full_runs"]}
+    R = P["replication"]
+    plan_utc = _parse_utc(pv["replication_plan"]["author_date"]).strftime("%Y-%m-%dT%H:%M:%SZ")
+    s9_first = min(r["started_at"] for r in recs["s9"][1])
+    first_run = min((r for r in recs["s9"][1] if str(r["id"]) == "39012918474"), key=lambda r: r["started_at"])["started_at"]
+    start_lags = [R["first_run_lag_s"]] + [v for v in R["arm_run_lags_s"].values() if v < 120]  # the lags the page states, as it states them (the queued third Arm run is left out and said so)
+    ck.ok(fx_lag == {k: v for k, v in R["arm_run_lags_s"].items()} and R["plan_commit_utc"] == plan_utc and R["first_record_start_utc"] == s9_first
+          and R["margin_s"] == int((_parse_utc(s9_first) - _parse_utc(plan_utc)).total_seconds()) and R["first_run_lag_s"] == int((_parse_utc(first_run) - _parse_utc(R["first_run_created_utc"])).total_seconds())
+          and min(start_lags) <= R["margin_s"] <= max(start_lags),
+          f"provenance: the replication plan's commit time ({plan_utc}), the first record's start and the start lags equal the records and tests/data (margin {R['margin_s']} s, lags {sorted(R['arm_run_lags_s'].values())} and {R['first_run_lag_s']} s); the margin lies within the range of the start lags ({min(start_lags)} to {max(start_lags)} s), so the order of the commit and the dispatch cannot be shown")
+    Dp = P["dsweep"]
+    ds_first = min(r["started_at"] for r in recs["dsweep"][1])
+    ck.ok(Dp["commit_utc"] == pv["dsweep_public"]["date"] and pv["dsweep_public"]["first_commit_with_plan_and_code"] == Dp["commit"]
+          and Dp["first_record_start_utc"] == ds_first and Dp["gap_s"] == int((_parse_utc(ds_first) - _parse_utc(Dp["commit_utc"])).total_seconds()) > 0
+          and Dp["branch"] == pv["dsweep_branch"]["branch"] and Dp["plan_sha256_equal"] is True,
+          f"provenance: the d-sweep plan's public commit {Dp['commit']} and its time equal tests/data/s9_s10_provenance.json, and precede the first record's start by {Dp['gap_s']} s")
+    # when the public history begins: the fixture (read from the GitHub API), and the records: every record of the earlier groups started before
+    # the first public commit and every record of the later groups after it, so the sentence "after the runs of s1 to s4, the holdout and the
+    # rewrite" is a statement about the records, not a remark
+    PH, phf = P["public_history"], pv["public_history"]
+    every = [r.get("started_at") for g in PROV_GROUPS for r in recs[g][1]]
+    before = max(r["started_at"] for g in ("early", "holdout", "rewrite") for r in recs[g][1])
+    after = min(r["started_at"] for g in ("s6", "s7", "arm", "s9", "dsweep") for r in recs[g][1])
+    ck.ok(all(every) and PH == {"first_commit": phf["first_commit"], "first_commit_utc": phf["author_date"]} and before < phf["author_date"] < after
+          and phf["author_date"][:10] == "2026-10-14",
+          f"provenance: the public history begins with {phf['first_commit']} at {phf['author_date']} (tests/data), after the last record of s1 to s4, the holdout and the rewrite started ({before}) and before the first of s6 to s10 ({after})")
+    # the rule file in the public commits the later records stamp: the fixture's blob hash is the hash of the file as it is now
+    rf = pv["rule_file_in_public_commits"]
+    with open(crit, "rb") as f:
+        raw = f.read().replace(b"\r\n", b"\n")
+    blob = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+    stamped = {c for g in ("s6", "s7", "s9") for c in own[g]}
+    ck.ok(rf["file"] == index["criteria"]["file"] and rf["git_blob_sha1"] == blob and stamped and stamped <= set(rf["commits"]) and phf["first_commit"] in rf["commits"],
+          f"provenance: the rule file as it is now is the blob {blob[:7]} that the public commits {', '.join(rf['commits'])} hold, and the commits the records of s6, s7 and s9 stamp ({', '.join(sorted(stamped))}) are among them")
+    with open(os.path.join(DATA, "holdout.json"), encoding="utf-8") as f:
+        H = json.load(f)
+    hs = min(r["started_at"] for r in recs["holdout"][1])
+    gap = int((_parse_utc(H["preregistration_committed_utc"]) - _parse_utc(H["first_job_start_utc"])).total_seconds())
+    ck.ok(H["first_job_start_utc"] == hs and H["jobs"] == len(recs["holdout"][0]) and H["jobs_with_rule_hash"] == cm("holdout") == H["jobs"] and H["rule_file"] == index["criteria"]["file"]
+          and gap > 0,
+          f"provenance: the holdout's plan commit time ({H['preregistration_committed_utc']}) is {gap} s AFTER the first holdout job started ({hs}), so the records do not show the plan came first; every one of the {H['jobs']} jobs records the rule file's hash")
+    # the page
+    page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    page.goto(base, wait_until="networkidle")
+    wait_ready(page)
+    dp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    total = sum(g["records"] for g in P["groups"])
+    matched = sum(g["criteria_match"] for g in P["groups"])
+    gone = sum(groups[g]["records"] for g in ("early", "holdout", "rewrite"))
+    in_main = sum(groups[g]["records"] for g in ("s6", "s7", "s9"))
+    linked = sum(g["links"]["records"] for g in P["groups"])
+    opened = sum(g["links"]["open"] for g in P["groups"])
+    want_prov = [
+        "The rule files, plans and expectations named on this page were committed in the author’s unpublished development history before the runs they govern. "
+        f"{prov_history_py(P)} The hashes stored in the result files show that the rule files did not change after the runs: "
+        f"{matched} of the {total} result records store the sha256 of {index['criteria']['file']} as it is now, all the records of s4 to s10 and none of the older ones (s1 to s3, judged under earlier versions of the rules) or of the rewrite runs (judged under their own rule file).",
+        f"The commit stamped in a record names the code that produced it. The {gone} records of s1 to s4, the holdout and the rewrite runs name commits of the unpublished history that this repository does not contain, so the code at those commits cannot be recovered from it; "
+        f"the {in_main} records of s6, s7 and s9 name commits in this repository’s history, which hold the rule file as it is now. The {groups['arm']['records']} Arm records name {own['arm'][0]} and the {groups['dsweep']['records']} d-sweep records name {own['dsweep'][0]}, "
+        f"commits on the temporary public branches {where[own['arm'][0]]} and {where[own['dsweep'][0]]}, which are kept for that reason.",
+        f"Run links in the records open only for the runs of s6 to s10 ({opened} of {linked} links): the earlier runs were made before this repository existed, in repositories that are not public. "
+        f"The commit and run facts here were read from the GitHub API on {P['read_on']}."]
+    got_prov = dp.evaluate("[...document.querySelectorAll('#prov-full p')].map(p => p.innerText.replace(/\\s+/g, ' ').trim())")
+    ck.ok(got_prov == want_prov, f"details, 'What the public record shows', word for word: the order cannot be checked here, the hash count, the commits and where they are, the run links, the date the facts were read ({first_diff(' | '.join(got_prov), ' | '.join(want_prov))})")
+    # the text the details page holds before its script runs (what a reader sees without the script) gives the same account of the public history
+    with open(os.path.join(SITE, "details.html"), encoding="utf-8") as f:
+        static_prov = re.search(r'<dd id="prov-full"><p>(.*?)</p></dd>', f.read(), re.S)
+    static_text = _squash(html.unescape(static_prov.group(1))) if static_prov else ""
+    want_static = ("The rule files, plans and expectations were committed in the author’s unpublished development history before the runs they govern. "
+                   + prov_history_py(P).rstrip(".") + "; what the result records show is listed here when the page loads.")
+    ck.ok(static_text == want_static,
+          f"details, 'What the public record shows', the text served before the script runs: the same account of the public history ({first_diff(static_text, want_static)})")
+    ck.ok(dp.evaluate("document.querySelector('#prov-full').previousElementSibling.textContent.trim()") == "What the public record shows"
+          and dp.evaluate("!!document.querySelector('#method-full #prov-full')"),
+          "details: the account sits in the method section under its own heading")
+    # the holdout paragraph
+    ho = dp.inner_text('[data-v="holdoutText"]').replace("\xa0", " ")
+    n_runs = {2: "Two", 3: "Three", 4: "Four"}[len(H["runs"])]
+    want_ho = (f"The plan for this run (PREREGISTRATION.md) carries the commit time {utc_text_py(H['preregistration_committed_utc'])}, from the author’s clock in unpublished development history; that is {gap} second{'' if gap == 1 else 's'} after the start of the first job it governs "
+               f"({utc_text_py(H['first_job_start_utc'])}), so the records do not show which came first. "
+               f"The file lists the {n_runs.lower()} run IDs, so the commit that holds this version came after those runs were created. "
+               f"What can be checked is that all {H['jobs_with_rule_hash']} of the {H['jobs']} jobs record the sha256 of the rule file as it is in this repository; nothing in the records shows that the pooling code (harness/pool.py) was unchanged. "
+               f"{n_runs} fresh runs ({H['jobs']} jobs) were pooled as the first runs were. Same pattern")
+    # the plan file names the run IDs: they are the three runs of the holdout records
+    with open(os.path.join(REPO, "results", "s5-holdout", "PREREGISTRATION.md"), encoding="utf-8") as f:
+        listed = re.search(r"^Run IDs \([^)]*\): ([\d, ]+)\.\s*$", f.read(), re.M)
+    listed = sorted(x.strip() for x in listed.group(1).split(",")) if listed else []
+    ck.ok(ho.startswith(want_ho) and "before its first run started" not in ho and "were fixed first" not in ho
+          and listed == sorted({str(r["id"]) for r in recs["holdout"][1]}) == sorted(str(x) for x in H["runs"]) and len(listed) == len(H["runs"]),
+          f"details, holdout: the plan's commit time is stated as {gap} s after the first job's start, so the order is not claimed; the plan file lists the {len(listed)} run IDs of the records, so its commit followed the runs' creation; only the rule-file hash match is claimed, and not that the pooling code was unchanged ({first_diff(ho[:len(want_ho)], want_ho)})")
+    # the other places that state an order
+    tuned, tuned_full = page.inner_text("#tuned").replace("\xa0", " "), dp.inner_text("#tuned-full").replace("\xa0", " ")
+    ck.ok(tuned.endswith("Every rule file was committed before the runs it judges, in the author’s unpublished development history (what the public record shows).")
+          and page.evaluate("document.querySelector('#tuned a').getAttribute('href')") == "details.html#prov-full"
+          and "in the author’s unpublished development history (these hashes name commits of that history, which this repository does not contain)" in tuned_full,
+          "main page 'tuned?' and details 'tuned?': a rule file committed before the runs, in the author's unpublished history (the details page adds that this repository does not contain it); the main page links the account")
+    cap = page.inner_text("#cpu-cap").replace("\xa0", " ")
+    mc = page.inner_text("#mit-caveat").replace("\xa0", " ")
+    rx = page.inner_text("#rw-expect").replace("\xa0", " ")
+    ck.ok("by rules written before these runs (in the author’s unpublished development history; what the public record shows)" in cap
+          and page.evaluate("document.querySelector('#cpu-cap a').getAttribute('href')") == "details.html#prov-full"
+          and "the rule committed before the first timed run (in the author’s unpublished development history)" in mc
+          and "expectations committed before any run (in the author’s unpublished development history), " in rx,
+          "main page: Table 1's caption, the rewrite caveat and the real-programs expectations each say the order rests on the author's unpublished development history")
+    # the pool's growth: the registered design and the runs added after the verdicts of the smaller pool were read, the sizes from the three pooled files
+    sizes = []
+    for pf in ("results/s4-pooled", "results/s6-pooled", "results/s7-pooled"):
+        with open(os.path.join(REPO, pf, "pooled.json"), encoding="utf-8") as fh:
+            pd = json.load(fh)
+        sizes.append((len(pd["runs"]), len(pd["inputs"])))
+    steps_text = _squash(dp.inner_text("#pool-steps").replace("\xa0", " "))
+    want_steps = (f"The pool grew while the data were being read. The registered design was {num_word_py(sizes[0][0])} runs of {index['criteria']['jobs_per_run']} jobs ({sizes[0][1]} jobs). "
+                  f"{cap_py(num_word_py(sizes[1][0] - sizes[0][0]))} more full runs ({sizes[1][1]} jobs in all), then {num_word_py(sizes[2][0] - sizes[1][0])} more ({sizes[2][1]}), were added after the verdicts of the earlier pool had been read, "
+                  "with no written stopping rule. The verdicts of each pool, under several interval methods, are in the robustness report.")
+    ck.ok(sizes == [(3, 30), (13, 75), (15, 95)] and steps_text == want_steps and dp.evaluate("document.querySelector('#pool-steps a').textContent") == "robustness report"
+          and index["pooled"]["steps"] == [{"source": s, "runs": r, "jobs": j} for s, (r, j) in zip(("results/s4-pooled/pooled.json", "results/s6-pooled/pooled.json", "results/s7-pooled/pooled.json"), sizes)],
+          f"details, limits: the pool grew from {sizes[0][1]} to {sizes[1][1]} to {sizes[2][1]} jobs (sizes read from the three pooled files) by runs added after the verdicts of the smaller pool were read, with no written stopping rule, and the verdicts of each pool are in the robustness report ({first_diff(steps_text, want_steps)})")
+    mcf = dp.inner_text("#mit-caveat-full").replace("\xa0", " ")
+    hist = dp.inner_text("#tuned-full").replace("\xa0", " ")
+    hist_p = dp.evaluate("[...document.querySelectorAll('p')].filter((p) => p.querySelector('[data-v=\"v3Written\"]')).map((p) => ({text: p.textContent.replace(/\\s+/g, ' '), link: [...p.querySelectorAll('a')].map((a) => a.getAttribute('href'))}))")
+    ck.ok("That rule, committed before the first timed run (in the author’s unpublished development history), would call a rewrite" in mcf
+          and len(hist_p) == 1 and hist_p[0]["link"] == ["#prov-full"] and "These orders rest on the author’s unpublished development history (what the public record shows)." in hist_p[0]["text"]
+          and "in the author’s unpublished development history (these hashes name commits of that history" in hist,
+          "details: the rewrite caveat and the rule history each say that the order they state rests on the author's unpublished development history (the history paragraph links the account)")
+    old = ["no public record shows that order", "before its first run started", "is not checkable from public records", "The rules and the code that pools jobs were fixed first",
+           "public repository is one commit", "repository is a single commit", "repository has one commit"]
+    texts = [page.inner_text("body"), dp.inner_text("body")]
+    ck.ok(not any(o in t for t in texts for o in old), "both pages: the earlier flat wordings of the order (the holdout 'before its first run started', the replication's 27-second 'no public record' and the d-sweep's 'not checkable') are gone")
+    # every sentence block (paragraph, list item, table cell, caption, term, chip) that says something was committed, written, fixed, registered, listed, set or
+    # planned before something else, or beforehand, in advance, or pre-registered, says in the same block that this rests on the author's unpublished development
+    # history, or links to the account of it (#prov-full). Read four ways per page: as the reader gets it, with every section opened (the widgets build their chips),
+    # and as served, before any script runs (the text a reader without script gets).
+    hits = {"main page": page.evaluate(ORDER_CLAIMS_JS), "details page": dp.evaluate(ORDER_CLAIMS_JS)}
+    for name, url, wait in (("main page", base, wait_ready), ("details page", base + "details.html", wait_details)):
+        full = browser.new_page(viewport={"width": 1280, "height": 900})  # the wrapper opens every section
+        full.goto(url, wait_until="networkidle")
+        wait(full)
+        hits[name + ", every section opened"] = full.evaluate(ORDER_CLAIMS_JS)
+        hits[name + ", served text"] = full.evaluate(ORDER_CLAIMS_JS, full.evaluate("async (u) => (await fetch(u)).text()", url))
+        full.close()
+    bare = {n: [h["text"][:110] for h in hs if not h["qualified"]] for n, hs in hits.items()}
+    seen_ids = {n: {h["id"] for h in hs} for n, hs in hits.items()}
+    ck.ok(all(hits[n] for n in hits) and not any(bare.values())
+          and {"cpu-cap", "tuned", "mit-caveat", "rw-expect"} <= seen_ids["main page"] and {"tuned-full", "mit-caveat-full"} <= seen_ids["details page"]
+          and {"cpu-cap", "tuned", "mit-caveat"} <= seen_ids["main page, served text"],
+          f"both pages: each statement that something was committed, written, fixed, registered, listed, set or planned before the runs (or beforehand, in advance, pre-registered) names the author's unpublished development history or links to the account of it; "
+          f"{', '.join(f'{len(hs)} in the {n}' for n, hs in hits.items())}; without: {bare}")
+    page.close()
+    dp.close()
+
+
+def _squash(t):
+    return re.sub(r"\s+", " ", t or "").strip()
+
+
+def _miss(got, want):
+    """Where a page text stops matching the sentence that contains it; empty when the sentence is in it."""
+    return "" if want in got else first_diff(got, want)
+
+
+def range_x_py(lo, hi):
+    a, b = fx_py(lo), fx_py(hi)
+    return f"{a}×" if a == b else f"{a}–{b}×"
+
+
+def claims_scope_checks(browser, base, ck, index):
+    """Each count and range the page prints says which jobs, columns and sets it covers, and the scope is recomputed here from
+    results/ and the data files (not read back from the page's own code): the Intel count and what it leaves out, and the
+    column of the programs' cost range."""
+    print("== claims: the scope of each count and range")
+    IF = index["intel_forward"]
+    tails = ["8573C", "6973P-C", "8370C"]
+    shorts = {t: next(c for c in IF["cpus"] if c.endswith(t)) for t in tails}
+    set_c = []
+    for f in sorted(glob.glob(os.path.join(REPO, "results", "s9-run-*", "results-*", "results.json"))):
+        with open(f, encoding="utf-8") as fh:
+            d = json.load(fh)
+        m = d["run"]["runner"]["cpu_model"].upper()
+        if "INTEL" not in m:
+            continue
+        cell = next(q for q in d["cells"] if q["cell_id"] == "k02_add_fwd.L1")
+        set_c.append((shorts[next(t for t in tails if t in m)], cell["aligned"]["ratio"]))
+    per_c = {c: sum(1 for s, _ in set_c if s == c) for c in sorted({s for s, _ in set_c})}
+    SC = IF["set_c"]
+    ck.ok(SC["jobs"] == len(set_c) > 0 and SC["per_cpu"] == per_c and abs(SC["aligned"]["min"] - min(v for _, v in set_c)) < 1e-12
+          and abs(SC["aligned"]["max"] - max(v for _, v in set_c)) < 1e-12 and not any("s9-run-" in j["source"] for j in IF["jobs"]),
+          f"the Intel rows (n = {len(IF['jobs'])}) leave out the {len(set_c)} Intel jobs of replication set C ({per_c}), which the data counts beside them ({SC['aligned']['min']:.4f} to {SC['aligned']['max']:.4f} aligned in the same cell)")
+    page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    page.goto(base, wait_until="networkidle")
+    wait_ready(page)
+    dp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    n_by = {c: sum(1 for j in IF["jobs"] if j["cpu_short"] == c) for c in IF["cpus"]}
+    counts = join_and_py([f"{c} in {jobs_py(n)}" for c, n in n_by.items()])
+    c_counts = join_and_py([f"{c} in {jobs_py(n)}" for c, n in per_c.items()])
+    rng_if = f"{fx_py(IF['aligned']['min'])}–{fx_py(IF['aligned']['max'])}"
+    want_note = (f"on the {len(IF['cpus'])} Intel models drawn ({counts}; earlier runs included, replication set C’s {len(set_c)} Intel jobs not counted), "
+                 f"the forward add at L1 cost {rng_if}× aligned in every job.")
+    note = _squash(page.text_content("#cpu-note"))
+    ck.ok(want_note in note, f"Table 1's note counts the Intel jobs it covers ({len(IF['jobs'])}) and says it leaves out the {len(set_c)} of replication set C {_miss(note, want_note)}")
+    want_p = (f"aligned in every one of {len(IF['jobs'])} jobs, in the earlier runs, the early trial run and the pooled runs. "
+              f"The {len(set_c)} Intel jobs of replication set C ({c_counts}; Figure 8 in section 1) are not among these {len(IF['jobs'])}; "
+              f"in the same cell they cost {range_x_py(min(v for _, v in set_c), max(v for _, v in set_c))} aligned.")
+    ip = _squash(dp.text_content("#intel-p"))
+    ck.ok(want_p in ip and ip.count("replication set C") == 1, f"section 6 (details) gives the same scope: {len(IF['jobs'])} jobs, and the set C Intel jobs and their range named once {_miss(ip, want_p)}")
+    # the programs' cost range: both columns, as everywhere else on the page
+    with open(os.path.join(DATA, "realworld.json"), encoding="utf-8") as f:
+        rw = json.load(f)
+    T = rw["timing"]
+    main_g = next(g for g in T["groups"] if g["cpu_model"] == T["main_cpu"])
+    small = [d["row"] for d in rw["rows"] if not d["control"] and d["lines_none"] < 1 and main_g["rows"][d["row"]]["reading"] == "detectably slower"]
+    rs = [main_g["rows"][n][c]["ratio"] for n in small for c in ("fast", "aligned")]
+    lo, hi = f"{(min(rs) - 1) * 100:.1f}%", f"{(max(rs) - 1) * 100:.1f}%"
+    shr = _squash(page.text_content("#rw-share"))
+    want_s = f"yet FAST costs them {lo} to {hi} across the two columns: consistent"
+    elsewhere = f"{T['slow_min'] * 100 - 100:.1f}% to {T['slow_max'] * 100 - 100:.1f}%"
+    ck.ok(len(small) >= 2 and want_s in shr and f"{lo} to {hi}" == elsewhere and elsewhere in _squash(page.text_content("#rw-finding")),
+          f"section 7: the cost beside the instruction share is the range over both columns ({lo} to {hi}), the same range as the pooled range given in the finding {_miss(shr, want_s)}")
+    # working sets larger than the cache: recounted from every results file that holds a RAM cell
+    def cpu_tag(model):
+        m = re.search(r"EPYC\s+(\S+)", model)
+        return f"EPYC {m.group(1)}" if m else "Xeon " + re.search(r"(\d{4}\w*(?:-C)?)", model).group(1).upper()
+    ram_jobs = []
+    for pat in ("results/*/results.json", "results/*/*/results.json"):
+        for f in sorted(glob.glob(os.path.join(REPO, pat))):
+            with open(f, encoding="utf-8") as fh:
+                d = json.load(fh)
+            cells = {c["cell_id"]: c for c in d.get("cells", [])}
+            if any(c.get("size_class") == "RAM" for c in cells.values()):
+                ram_jobs.append((cpu_tag(d["run"]["runner"]["cpu_model"]), cells))
+    rj = lambda cid: [c[cid]["ratio"] for _, c in ram_jobs]  # noqa: E731
+    pairs, spread = {}, {}
+    for key, cid in (("rev", "k04_rev.RAM"), ("stride2", "k05_stride2.RAM")):
+        dis = tot = 0
+        top = None
+        for m in sorted({t for t, _ in ram_jobs}):
+            cs = [c[cid] for t, c in ram_jobs if t == m]
+            for i in range(len(cs)):
+                for k in range(i + 1, len(cs)):
+                    tot += 1
+                    dis += cs[i]["ci95"][1] < cs[k]["ci95"][0] or cs[k]["ci95"][1] < cs[i]["ci95"][0]
+            if len(cs) > 1:
+                sp = (max(c["ratio"] for c in cs) / min(c["ratio"] for c in cs) - 1) * 100
+                if top is None or sp > top[0]:
+                    top = (sp, m)
+        pairs[key], spread[key] = (int(dis), tot), top
+    RM = index["ram_early"]
+    ck.ok(RM["jobs"] == len(ram_jobs) == 13 and RM["rev"] == {"min": min(rj("k04_rev.RAM")), "max": max(rj("k04_rev.RAM"))}
+          and RM["stride2"] == {"min": min(rj("k05_stride2.RAM")), "max": max(rj("k05_stride2.RAM"))}
+          and RM["rev_l2"] == {"min": min(rj("k04_rev.L2")), "max": max(rj("k04_rev.L2"))}
+          and (RM["pairs"]["rev"]["disjoint"], RM["pairs"]["rev"]["total"]) == pairs["rev"] and (RM["pairs"]["stride2"]["disjoint"], RM["pairs"]["stride2"]["total"]) == pairs["stride2"]
+          and abs(RM["spread"]["rev"]["pct"] - spread["rev"][0]) < 1e-9 and RM["spread"]["rev"]["cpu_short"] == spread["rev"][1],
+          f"the RAM-sized cells in index.json equal a recount of the {len(ram_jobs)} results files that hold them (reverse {min(rj('k04_rev.RAM')):.3f} to {max(rj('k04_rev.RAM')):.3f}, stride-2 {min(rj('k05_stride2.RAM')):.3f} to {max(rj('k05_stride2.RAM')):.3f}; same-model pairs with disjoint intervals {pairs})")
+    rng = lambda lo, hi: range_x_py(lo, hi)  # noqa: E731
+    want_ram = (f"A RAM-sized working set was timed only in the {len(ram_jobs)} early jobs (as compiled) and not in the pooled runs. "
+                f"There the reverse loop cost {rng(min(rj('k04_rev.RAM')), max(rj('k04_rev.RAM')))} and the stride-2 loop {rng(min(rj('k05_stride2.RAM')), max(rj('k05_stride2.RAM')))}, depending on the CPU model, "
+                f"against {rng(min(rj('k04_rev.L2')), max(rj('k04_rev.L2')))} for the reverse loop at the L2 size in the same jobs. "
+                f"Jobs of one CPU model differed by up to {spread['rev'][0]:.0f}% (the reverse loop on the {spread['rev'][1]}), and in {pairs['rev'][0]} of the {pairs['rev'][1]} pairs of such jobs the reverse loop’s intervals did not overlap "
+                f"(stride-2: {pairs['stride2'][0]} of {pairs['stride2'][1]}). Out of cache the cost was smaller in these jobs and differed by CPU model, so the headline range holds for data that fits in cache only.")
+    want_ram_short = (f"The headline range is for data that fits in cache. RAM-sized data, timed only in the {len(ram_jobs)} early jobs, cost reverse "
+                      f"{rng(min(rj('k04_rev.RAM')), max(rj('k04_rev.RAM')))}, stride-2 {rng(min(rj('k05_stride2.RAM')), max(rj('k05_stride2.RAM')))}, by CPU model.")
+    got_ram = _squash(dp.text_content("#limits-full"))
+    cannot = _squash(page.text_content("#cannot"))
+    ck.ok(want_ram in got_ram and want_ram_short in cannot and "did not reproduce between the first runs" not in got_ram
+          and max(rj("k04_rev.RAM")) < min(rj("k04_rev.L2")),
+          f"limits: the out-of-cache sentence gives the recounted ranges, the same-model spread and the pairs that disagree, on the details page and in the main page's limits box, and says the headline range is for data that fits in cache ({_miss(got_ram, want_ram)}{_miss(cannot, want_ram_short)})")
+    # related work: the NIST row says what the paper's hardware table says (a Dell Precision T5400 with two Xeon X5450 CPUs under Linux; the
+    # paper calls it a PC, never a server or a workstation, and uses 'bare metal' only for a measurement it proposes), and the
+    # ACM Queue row says how its text was read, because its address answers a scripted fetch with HTTP 403
+    with open(os.path.join(DATA, "related.json"), encoding="utf-8") as f:
+        rel = json.load(f)
+    rsrc = {x["id"]: x for x in rel["sources"]}
+    nist, queue = rsrc["nist"], rsrc["queue"]
+    bare = re.compile(r"bare[\s-]*metal", re.I)
+    rel_blob = json.dumps(rel, ensure_ascii=False)
+    got_list = _squash(dp.text_content("#rel-list"))
+    got_main = _squash(page.text_content("#related"))
+    got_sum = _squash(page.text_content("#rel-summary"))
+    nist_words = ["a PC with two Xeon X5450 CPUs", "Dell Precision T5400", "Xeon X5450", "Turbo Boost unsupported", "SpeedStep off", "63 runs per cell", "Linux"]
+    not_the_papers = re.compile(r"\b(?:server|workstation)\b|dual[\s-]*(?:socket|die|processor|cpu)", re.I)  # "dual-socket" is an inference from "2 x Xeon X5450", not the paper's word
+    ck.ok(not bare.search(rel_blob) and not bare.search(got_list) and not bare.search(got_main)
+          and not not_the_papers.search(nist["measured"] + " " + nist["m_short"] + " " + nist["differs"])
+          and all(w in nist["measured"] for w in nist_words) and "a PC with two Xeon X5450 CPUs" in nist["m_short"]
+          and nist["differs"].startswith("A dedicated machine with frequency scaling off")
+          and _squash(nist["measured"]) in got_list and _squash(nist["m_short"]) in got_main and _squash(nist["differs"]) in got_list,
+          f"related work: the NIST row names the paper's setup ({', '.join(nist_words)}), calls the machine neither a server nor a workstation (the paper says PC) and nowhere says 'bare metal', in the data, on the main page and on the details page ({_miss(got_list, _squash(nist['measured']))})")
+    unconfirmed = re.compile(r"(?:not confirmed|unconfirmed) from a (?:saved )?copy")
+    how_read = lambda t: all(w in t for w in ("read in a browser", "HTTP 403", "scripted fetch")) and unconfirmed.search(t) is not None  # noqa: E731
+    ck.ok(how_read(queue["measured"]) and queue["measured"].startswith("As reported") and how_read(rel["summary"])
+          and _squash(queue["measured"]) in got_list and _squash(rel["summary"]) in got_sum
+          and 100 <= len(got_sum.split()) <= 190,
+          f"related work: the ACM Queue row and the summary say the article was read in a browser and that its address returned HTTP 403 to a scripted fetch, so its figures are not confirmed from a saved copy ({_miss(got_list, _squash(queue['measured']))}{_miss(got_sum, _squash(rel['summary']))}; {len(got_sum.split())} words)")
+    page.close()
+    dp.close()
+
+
+def missed_forward_py(c, pooled):
+    """The Python twin of missedForward() in site/app.js: the judged forward cells of a model that break the written rule (aligned point ratio or interval end above the limit)."""
+    pc = next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])
+    lim = 1 + pc["verdict"]["forward_limit_pct"] / 100
+    ps = {q["cell_id"] for q in c["placement_sensitive"]}
+    return [x for x in pc["cells"] if x["class"] == "kept" and x["size_class"] in ("L1", "L2") and x["cell_id"] not in ps and x["aligned"]
+            and (x["aligned"]["ratio"] > lim or x["aligned"]["ci95"][1] > lim)]
+
+
+def placement_scope_checks(browser, base, ck, index):
+    """What the placement exemption does and does not settle, said where the labels are: Table 1's caption, the alignment tooltip and
+    Figure 7's caption, and the details paragraph that names the largest cell it leaves out, the cell judged instead, the example
+    where the aligned column still differs, and the margins. Every number is recomputed from index.json and the pooled file."""
+    print("== placement: the exemption, the alignment claim and the margins")
+    with open(os.path.join(REPO, index["pooled"]["source"]), encoding="utf-8") as f:
+        pooled = json.load(f)
+    good = [c for c in index["cpus"] if c["enough"]]
+    allps = [(c, q) for c in good for q in c["placement_sensitive"]]
+    big_c, big_q = max(allps, key=lambda cq: cq[1]["aligned_ratio"])
+    judged = [(c, next(x for x in missed_forward_py(c, pooled) if x["cell_id"] == big_q["cell_id"])) for c in good
+              if any(x["cell_id"] == big_q["cell_id"] for x in missed_forward_py(c, pooled))]
+    ex_c, ex_q = max(((c, q) for c, q in allps if q["cell_id"] == "k03_stencil.L1"), key=lambda cq: abs(cq[1]["aligned_ratio"] - cq[1]["ratio"]))
+    narrow = []
+    for c in good:
+        cc = close_calls(c, pooled)
+        if cc:
+            lim = lim_of(c, pooled)
+            i, hi, left = min(cc, key=lambda q: abs(q[1] - lim))
+            narrow.append((c, abs(hi - lim), left))
+    lim_big = lim_of(big_c, pooled)
+    ck.ok(big_q["aligned_ratio"] > lim_big and judged and all(x["aligned"]["ratio"] > lim_of(c, pooled) and x["aligned"]["ratio"] < big_q["aligned_ratio"] for c, x in judged)
+          and all(c["form"] == "inconclusive" for c, _ in judged) and big_c["form"] != "inconclusive" and narrow
+          and abs(ex_q["aligned_ratio"] - ex_q["ratio"]) > 0.04,
+          f"placement: the data behind the paragraph hold: the largest cell left out ({big_c['cpu_short']} {big_q['cell_id']}, {big_q['aligned_ratio']:.3f}) is above the limit and above the "
+          f"cell judged instead ({[(c['cpu_short'], round(x['aligned']['ratio'], 3)) for c, x in judged]}), whose model is inconclusive while the first has a verdict; the stencil at L1 differs between columns by more than 0.04 on {ex_c['cpu_short']}; narrow models {[c['cpu_short'] for c, _, _ in narrow]}")
+    bare = lambda cid: cell_name_py(cid).replace("the ", "", 1)  # noqa: E731
+    verdict_of = lambda c: "is inconclusive" if c["form"] == "inconclusive" else "has a verdict"  # noqa: E731
+    p1 = (f"The exemption sets no limit on the size of the effect it leaves out. The largest cell it leaves out is {cell_name_py(big_q['cell_id'])} on the {big_c['cpu_short']}, {fx_py(big_q['aligned_ratio'])}× aligned, "
+          f"and the {big_c['cpu_short']} {verdict_of(big_c)}"
+          + (f"; the {join_and_py([f'{c['cpu_short']}’s {bare(big_q['cell_id'])}, {fx_py(x['aligned']['ratio'])}× aligned and not flagged,' for c, x in judged])} is judged, misses the limit, and the {judged[0][0]['cpu_short']} {verdict_of(judged[0][0])}" if judged else "")
+          + ". The labels in Table 1 therefore describe the cells left after the exemption, not every forward cell; the cells left out and their aligned ratios are listed beside each label (Table 1, and Table 2 below).")
+    p2 = (f"Aligning every hot loop to a 64-byte boundary removes one source of code-placement variation, not all of it: it fixes only where each hot loop starts, and the loop’s length, the position of its inner branches and of the code around it are left as compiled. "
+          f"The {bare(ex_q['cell_id'])} on the {ex_c['cpu_short']} shows that the column still matters: {fx_py(ex_q['ratio'])}× as compiled, {fx_py(ex_q['aligned_ratio'])}× aligned.")
+    bits = join_and_py([(f"{m:.4f} above it on the {c['cpu_short']} (a cell left out as placement-sensitive, which would miss the limit if counted)" if left else f"{m:.4f} below it on the {c['cpu_short']}") for c, m, left in narrow])
+    p3 = (f"Several words rest on small margins. {'On the model' if len(narrow) == 1 else 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies {bits}. "
+          "The intervals resample jobs and understate the spread between runs (“Run to run”, section 8), so these words can change with the jobs drawn or the seed. "
+          "How the verdicts move with the interval method is in the robustness report and, for the Arm pool, how the stored verdict sits among other seeds is in the seed-sensitivity file.")
+    page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    page.goto(base, wait_until="networkidle")
+    wait_ready(page)
+    dp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    got = dp.evaluate("[...document.querySelectorAll('#ps-scope p')].map(p => p.textContent.replace(/\\s+/g, ' ').trim())")
+    ck.ok(got == [p1, p2, p3], f"details, section 3: what the exemption does and does not settle, word for word ({first_diff(' | '.join(got), ' | '.join([p1, p2, p3]))})")
+    links = dp.evaluate("[...document.querySelectorAll('#ps-scope p a')].map(a => [a.textContent, a.getAttribute('href')])")
+    repo = index["repo"]["base"]
+    want_links = [["“Run to run”, section 8", "#method-full"], ["robustness report", f"{repo}/blob/main/robustness/report.md"], ["seed-sensitivity file", f"{repo}/blob/main/arm64/seed-sensitivity.json"]]
+    ck.ok(links == want_links and os.path.exists(os.path.join(REPO, "robustness", "report.md")) and os.path.exists(os.path.join(REPO, "arm64", "seed-sensitivity.json"))
+          and dp.evaluate("!!document.getElementById('method-full')"),
+          f"details, section 3: the links go to the Run to run entry, the robustness report and the seed-sensitivity file, which exist ({links})")
+    cap = _squash(page.text_content("#cpu-cap"))
+    tip = _squash(page.text_content("#col-tip"))
+    armcap = _squash(page.evaluate("document.getElementById('arm-cap').textContent"))
+    ck.ok("Placement-sensitive cells (section 3) are left out of the 2% test, with no limit on their size, and shown in their own column; the pattern describes only the cells left." in cap,
+          f"Table 1's caption says the exemption sets no limit on the size of the cells it leaves out and the pattern describes only the cells left ({_miss(cap, 'Placement-sensitive cells (section 3) are left out of the 2%')})")
+    ck.ok(tip == "Aligned: every hot loop starts on a 64-byte boundary. That removes one source of code-placement variation, not all of it (section 3). As compiled: the binary exactly as clang emitted it."
+          and "Aligned: every hot loop starts on a 64-byte boundary in both builds. That removes one source of code-placement variation, not all of it (details, section 3). As compiled: the binaries exactly as clang emitted them." in armcap,
+          "the alignment tooltip and Figure 7's caption say the 64-byte alignment removes one source of code-placement variation, not all of it")
+    ck.ok(all("cannot sway the result" not in _squash(p.text_content("body")) for p in (page, dp)) and "where the code happens to land" not in _squash(page.text_content("body")),
+          "both pages: 'cannot sway the result' is gone")
+    page.close()
+    dp.close()
+
+
+def pages_workflow_checks(browser, base, ck, index):
+    """The live page is published only after the ci workflow has passed on the commit (a push that the offline checks reject
+    does not reach readers); the workflow still runs by hand."""
+    print("== pages workflow: deploys only after a green ci run")
+    import yaml
+    with open(os.path.join(REPO, ".github", "workflows", "pages.yml"), encoding="utf-8") as f:
+        pg = yaml.safe_load(f)
+    with open(os.path.join(REPO, ".github", "workflows", "ci.yml"), encoding="utf-8") as f:
+        ci = yaml.safe_load(f)
+    on = pg.get("on", pg.get(True))  # YAML 1.1 reads the bare key `on` as the boolean True
+    job = pg["jobs"]["deploy"]
+    steps = job["steps"]
+    checkout = next(s for s in steps if str(s.get("uses", "")).startswith("actions/checkout@"))
+    ck.ok(set(on) == {"workflow_run", "workflow_dispatch"} and "push" not in on and "pull_request" not in on
+          and on["workflow_run"] == {"workflows": [ci["name"]], "types": ["completed"], "branches": ["main"]},
+          f"pages.yml: runs after the '{ci['name']}' workflow completes on main (and by hand), never on a bare push")
+    cond = job.get("if", "")
+    ck.ok("github.event.workflow_run.conclusion == 'success'" in cond and "github.event_name == 'workflow_dispatch'" in cond
+          and cond.count("||") == 1 and "always()" not in cond,
+          "pages.yml: the deploy job runs only for a successful ci run, or by hand")
+    ck.ok("github.event.workflow_run.head_sha" in str(checkout.get("with", {}).get("ref", "")),
+          "pages.yml: the page deployed is the commit whose ci run passed")
+    ck.ok(any(str(s.get("uses", "")).startswith("actions/deploy-pages@") for s in steps) and (ci.get("on") or ci.get(True)).get("push") is not None,
+          "pages.yml deploys the site folder, and ci.yml still runs on a push to main (what pages.yml waits for)")
+
+
+SCROLLER_JS = """() => [...document.querySelectorAll('.tablewrap')].map(w => ({
+    id: w.id || (w.querySelector('table') || {}).id || w.previousElementSibling?.id || '#' + [...document.querySelectorAll('.tablewrap')].indexOf(w),
+    dims: [w.scrollWidth, w.clientWidth, w.scrollHeight, w.clientHeight], visible: w.offsetParent !== null,
+    over: w.scrollWidth > w.clientWidth + 1 || w.scrollHeight > w.clientHeight + 1, sideways: w.scrollWidth > w.clientWidth + 1,
+    tabindex: w.getAttribute('tabindex'), role: w.getAttribute('role'), label: w.getAttribute('aria-label') || '', made: w.dataset.reach || null }))"""
+
+
+def access_checks(browser, base, ck, index):
+    """Without JavaScript both pages say what is missing; with it, every table box that scrolls can be reached and named from the
+    keyboard, at the widths where tables overflow, and a box that fits is not made a tab stop."""
+    print("== access: no-JavaScript note, scrollable table boxes reachable from the keyboard")
+    lost = index["page"]["lost"]
+    ctx = browser.new_context(java_script_enabled=False, viewport={"width": 1280, "height": 900})
+    for name, url in (("main page", base), ("details page", base + "details.html")):
+        pg = ctx.new_page()
+        pg.goto(url, wait_until="load")
+        note = _squash(pg.inner_text(".ns-note")) if pg.locator(".ns-note").count() else ""
+        ck.ok(note.startswith("JavaScript is off.") and "data files (site/data/*.json)" in note and "numbers are missing" in note and pg.locator(".ns-note").first.is_visible(),
+              f"{name} with JavaScript off: a visible note says the sentences and tables are filled in from the data files and their numbers are missing ({note[:60]!r})")
+        pg.close()
+    pg = ctx.new_page()
+    pg.goto(base, wait_until="load")
+    gist = _squash(pg.inner_text("#result .gist"))
+    ck.ok(f"take {lost['min']:.1f} to {lost['max']:.1f}× as long at the study’s sizes" in gist, f"main page with JavaScript off: the Result gist still carries the headline range from the data ({gist[:80]!r})")
+    pg.close()
+    ctx.close()
+    seen = {"main": 0, "details": 0}
+    for w_, h_ in ((768, 1024), (1024, 768), (1440, 900), (390, 844)):
+        for key, url, ready in (("main", base, wait_ready), ("details", base + "details.html", wait_details)):
+            pg = browser.new_page(viewport={"width": w_, "height": h_})
+            pg.goto(url, wait_until="networkidle")
+            ready(pg)
+            pg.wait_for_timeout(400)
+            boxes = pg.evaluate(SCROLLER_JS)
+            vis = [b for b in boxes if b["visible"]]
+            # a box that scrolls is a focusable region with a name (boxes that carry that markup in the page or in their widget keep it; the others get it while they overflow)
+            bad = [b for b in vis if b["over"] and not (b["tabindex"] == "0" and b["role"] == "region" and len(b["label"]) >= 5)]
+            extra = [b for b in vis if not b["over"] and b["made"]]
+            seen[key] += sum(1 for b in vis if b["over"]) if w_ in (768, 1024) else 0
+            ck.ok(len(vis) >= 3 and not bad and not extra,
+                  f"{key} page at {w_} px: each of the {len(vis)} table boxes that scrolls ({sum(1 for b in vis if b['over'])}) is a named, focusable region and the others are left alone"
+                  + ("" if not (bad or extra) else f": missing {[(b['id'], b['dims']) for b in bad][:4]}, needless {[(b['id'], b['dims']) for b in extra][:4]}"))
+            if w_ in (768, 1024):
+                side = pg.evaluate("""() => { const w = [...document.querySelectorAll('.tablewrap')].find(x => x.offsetParent !== null && x.scrollWidth > x.clientWidth + 1 && x.getAttribute('tabindex') === '0');
+                    if (!w) return null; w.scrollLeft = 0; w.focus(); return [document.activeElement === w, w.id || w.querySelector('table').id]; }""")
+                if side:
+                    pg.keyboard.press("ArrowRight")
+                    pg.keyboard.press("ArrowRight")
+                    moved = pg.evaluate("document.activeElement.scrollLeft")
+                    ck.ok(side[0] and moved > 0, f"{key} page at {w_} px: a table box ({side[1]}) takes focus and the arrow keys scroll it sideways (scrolled {moved:.0f} px)")
+            pg.close()
+    pg = browser.new_page(viewport={"width": 768, "height": 1024})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_timeout(300)
+    at768 = pg.evaluate("(() => { const w = document.getElementById('cpu-table').closest('.tablewrap'); return [w.getAttribute('tabindex'), w.getAttribute('role'), w.getAttribute('aria-label')]; })()")
+    pg.set_viewport_size({"width": 1440, "height": 900})
+    pg.wait_for_timeout(500)
+    at1440 = pg.evaluate("(() => { const w = document.getElementById('cpu-table').closest('.tablewrap'); return [w.getAttribute('tabindex'), w.getAttribute('role'), w.getAttribute('aria-label')]; })()")
+    pg.close()
+    ck.ok(at768[0] == "0" and at768[1] == "region" and at768[2] == "Table 1, scrollable" and at1440 == [None, None, None],
+          f"Table 1's box becomes a named focusable region when the window is narrow ({at768}) and stops being a tab stop when it is widened again ({at1440})")
+    ck.ok(seen["main"] >= 1 and seen["details"] >= 1,
+          f"the keyboard checks are not empty: tables that scroll sideways exist at 768 and 1024 px on the main page ({seen['main']}) and the details page ({seen['details']})")
+
+
+def _settle_scroll(pg, ms=1500):
+    """Wait until the window has stopped scrolling (the page scrolls smoothly) and return the final scroll position."""
+    return pg.evaluate("""(ms) => new Promise(res => { let last = -1, still = 0; const t0 = performance.now();
+        const tick = () => { const y = scrollY; still = Math.abs(y - last) < 0.5 ? still + 1 : 0; last = y;
+            if (still >= 6 || performance.now() - t0 > ms) res(y); else requestAnimationFrame(tick); }; tick(); })""", ms)
+
+
+def nav_checks(browser, base, ck, index):
+    """The details page is 54,000 to 67,000 px long: its Contents row has to stay in view while the reader scrolls, and a jump from it
+    must land the section's heading below the row, not under it."""
+    print("== ux: the details page keeps its Contents row in view")
+    for w_, h_ in ((390, 844), (1440, 900)):
+        pg = browser.new_page(viewport={"width": w_, "height": h_})
+        pg.goto(base + "details.html", wait_until="networkidle")
+        wait_details(pg)
+        pg.wait_for_timeout(300)
+        total = pg.evaluate("document.documentElement.scrollHeight")
+        tops = []
+        for frac in (0.1, 0.4, 0.75, 0.97):
+            pg.evaluate("(y) => window.scrollTo({top: y, behavior: 'instant'})", int(total * frac))
+            pg.wait_for_timeout(120)
+            tops.append(pg.evaluate("(() => { const r = document.querySelector('.dnav-bar').getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), scrollY]; })()"))
+        ck.ok(total > 20000 and all(-1 <= t[0] <= 1 and 20 <= t[1] <= 90 for t in tops),
+              f"details page at {w_} px: the Contents row is at the top of the window after scrolling to 10, 40, 75 and 97% of its {total} px ({[(t[2], t[0], t[1]) for t in tops]})")
+        pg.evaluate("window.scrollTo({top: document.documentElement.scrollHeight * 0.6, behavior: 'instant'})")
+        pg.wait_for_timeout(120)
+        link = pg.locator(".dnav a:not(.dgo)").nth(2)
+        href = link.get_attribute("href")
+        link.click()
+        y = _settle_scroll(pg)
+        pg.wait_for_timeout(300)
+        land = pg.evaluate("(h) => { const t = document.querySelector(h); const b = document.querySelector('.dnav-bar').getBoundingClientRect(); const r = (t.querySelector('h2, h3') || t).getBoundingClientRect(); return [Math.round(r.top), Math.round(b.bottom)]; }", href)
+        ck.ok(land[0] >= land[1] - 2 and land[0] < h_ * 0.5,
+              f"details page at {w_} px: the Contents link {href} from deep in the page lands its heading ({land[0]} px from the top) below the Contents row (bottom {land[1]} px)")
+        pg.close()
+
+
+def textsize_checks(browser, base, ck, index):
+    """A reader who sets the text to 125, 150 or 200% on a phone still gets a page that does not scroll sideways, a title that is not
+    cut off, a top bar that fits and a Contents menu that opens inside the window. (The hero race on the main page has fixed lane
+    columns and runs 2 to 12 px past a 390 or 320 px window at 200%: that case is not asserted for the main page.)"""
+    print("== ux: larger text on a phone")
+    cases = [("main page", "", w_, z) for w_ in (390, 320) for z in (125, 150)] + [("main page", "", 390, 200)] \
+        + [("details page", "details.html", w_, z) for w_ in (390, 320) for z in (125, 150, 200)]
+    for name, rel, w_, z in cases:
+        pg = browser.new_page(viewport={"width": w_, "height": 800})
+        pg.add_init_script(f"document.addEventListener('DOMContentLoaded', () => {{ document.documentElement.style.fontSize = '{z}%'; }})")
+        pg.goto(base + rel, wait_until="networkidle")
+        (wait_ready if not rel else wait_details)(pg)
+        pg.wait_for_timeout(500)
+        m = pg.evaluate("""() => { const h = document.querySelector('h1').getBoundingClientRect(), h1 = document.querySelector('h1'), bar = document.querySelector('.bar');
+            return {W: innerWidth, doc: document.documentElement.scrollWidth, h1: [Math.round(h.left), Math.round(h.right), h1.scrollWidth - h1.clientWidth],
+                    bar: bar ? [bar.scrollWidth - bar.clientWidth, Math.round(bar.getBoundingClientRect().height)] : null,
+                    fs: parseFloat(getComputedStyle(document.documentElement).fontSize)}; }""")
+        if name == "main page" and z == 200:
+            # the hero race is outside what is asserted at 200%: check the bar and the Contents menu only
+            fits_page = True
+        else:
+            fits_page = m["doc"] <= m["W"] + 1
+        ok = fits_page and m["h1"][0] >= 0 and m["h1"][1] <= m["W"] + 1 and m["h1"][2] <= 1 and (m["bar"] is None or m["bar"][0] <= 1)
+        ck.ok(ok and m["fs"] >= 16 * z / 100 - 0.5,
+              f"{name} at {w_} px with the text at {z}%: no sideways page scroll (page {m['doc']} of {m['W']} px), the title is inside the window (h1 {m['h1'][0]} to {m['h1'][1]}), the top bar fits ({m['bar']})")
+        if rel == "":
+            pg.click(".toc-btn")
+            pg.wait_for_timeout(150)
+            ol = pg.evaluate("(() => { const r = document.querySelector('.toc ol').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.height)]; })()")
+            ck.ok(ol[0] >= -1 and ol[1] <= w_ + 1 and ol[2] > 40,
+                  f"main page at {w_} px with the text at {z}%: the Contents menu opens inside the window ({ol[0]} to {ol[1]} px of {w_})")
+        pg.close()
+
+
+_MARKS_JS = """() => { const nm = e => e.tagName.toLowerCase() + '.' + String(e.className).trim().replace(/\\s+/g, '.');
+    const out = []; [...document.querySelectorAll('body *')].forEach((e, i) => { const s = getComputedStyle(e), b = e.getBoundingClientRect();
+        if (s.display === 'none' || s.visibility === 'hidden' || b.width < 1 || b.height < 1 || e.closest('svg') || e.tagName === 'CANVAS') return;
+        const own = [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+        if ((s.backgroundColor !== 'rgba(0, 0, 0, 0)' || s.backgroundImage !== 'none') && !own && b.width <= 140 && b.height <= 60)
+            out.push([i, nm(e) + (e.className ? '' : ' < ' + nm(e.parentElement) + ' < ' + nm(e.parentElement.parentElement))]); });
+    return out; }"""
+_DRAWN_JS = """(idx) => { const all = [...document.querySelectorAll('body *')], bad = {};
+    idx.forEach(([i, name]) => { const s = getComputedStyle(all[i]);
+        const border = ['Top', 'Right', 'Bottom', 'Left'].some(d => parseFloat(s['border' + d + 'Width']) > 0 && s['border' + d + 'Style'] !== 'none');
+        const outline = parseFloat(s.outlineWidth) > 0 && s.outlineStyle !== 'none';
+        if (!(s.forcedColorAdjust === 'none' || border || outline)) bad[name] = (bad[name] || 0) + 1; });
+    return bad; }"""
+
+
+def forced_colors_checks(browser, base, ck, index):
+    """Under forced colours (a Windows contrast theme) the browser paints every background in the canvas colour. A mark that is only a
+    coloured box (a bar, a dot, a switch track, a legend chip) has to keep its colour or gain a border or outline, or it disappears and
+    only the text is left. Found by comparing each painted, text-free mark in the normal rendering with the same element under forced colours."""
+    print("== ux: forced colours")
+    for name, rel in (("main page", ""), ("details page", "details.html")):
+        pg = browser.new_page(viewport={"width": 1280, "height": 900})
+        pg.goto(base + rel, wait_until="networkidle")
+        (wait_ready if not rel else wait_details)(pg)
+        pg.wait_for_timeout(1500)
+        pg.emulate_media(forced_colors="none")
+        idx = pg.evaluate(_MARKS_JS)
+        pg.emulate_media(forced_colors="active")
+        pg.wait_for_timeout(300)
+        bad = pg.evaluate(_DRAWN_JS, idx)
+        ck.ok(len(idx) >= (200 if not rel else 50) and not bad,
+              f"{name} under forced colours: each of the {len(idx)} painted marks (bars, dots, switch, legend chips) keeps its colour or an outline" + ("" if not bad else f": would vanish {dict(list(bad.items())[:6])}"))
+        if not rel:
+            sel = pg.evaluate("(() => { const r = document.querySelector('#rows .row[aria-selected=\"true\"]'); if (!r) return null; const s = getComputedStyle(r), b = getComputedStyle(r, '::before'); return [s.outlineStyle, parseFloat(s.outlineWidth), b.forcedColorAdjust]; })()")
+            ck.ok(sel is not None and sel[0] != "none" and sel[1] >= 2 and sel[2] == "none",
+                  f"main page under forced colours: the selected row in Figure 1 is marked by an outline and its edge bar keeps a system colour ({sel})")
+        pg.close()
+
+
+def tooltip_checks(browser, base, ck, index):
+    """Both tooltips stay inside the window: the help box next to 'aligned / as compiled' (opened by its ? button) at every width from
+    a phone to a wide desktop, and the box that follows the pointer over the Figure 1 dots."""
+    print("== ux: tooltips stay inside the window")
+    out = []
+    for w_, h_ in ((320, 700), (390, 844), (641, 800), (680, 900), (768, 1024), (900, 800), (1024, 768), (1240, 800), (1280, 900), (1440, 900), (1920, 1080)):
+        pg = browser.new_page(viewport={"width": w_, "height": h_})
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        pg.evaluate("document.querySelector('#col-hint').scrollIntoView({block: 'center'})")
+        pg.wait_for_timeout(250)
+        pg.click("#col-hint")
+        pg.wait_for_timeout(250)
+        r = pg.evaluate("(() => { const r = document.getElementById('col-tip').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.top), Math.round(r.bottom), getComputedStyle(document.getElementById('col-tip')).opacity]; })()")
+        out.append((w_, r))
+        pg.close()
+    bad = [(w_, r) for w_, r in out if r[0] < 0 or r[1] > w_ or r[2] < 0 or r[4] != "1"]
+    ck.ok(not bad, f"the help box beside 'aligned / as compiled' opens inside the window at all {len(out)} widths from 320 to 1920 px" + ("" if not bad else f": outside at {bad[:3]}"))
+    seen = 0
+    badtip = []
+    for w_, h_ in ((390, 844), (768, 1024), (1024, 768), (1280, 900)):
+        pg = browser.new_page(viewport={"width": w_, "height": h_})
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        pg.evaluate("document.querySelector('#fig1').scrollIntoView()")
+        pg.wait_for_timeout(300)
+        for hnd in pg.query_selector_all("#rows .mk-hit"):
+            bb = hnd.bounding_box()
+            if not bb or bb["width"] == 0:
+                continue
+            pg.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
+            pg.wait_for_timeout(40)
+            r = pg.evaluate("(() => { const t = document.getElementById('tip'); if (t.hidden) return null; const r = t.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.top), Math.round(r.bottom)]; })()")
+            if r:
+                seen += 1
+                if r[0] < 0 or r[1] > w_ or r[2] < 0 or r[3] > h_:
+                    badtip.append((w_, r))
+        pg.mouse.move(2, 2)
+        pg.close()
+    ck.ok(seen >= 40 and not badtip, f"the box that follows the pointer over the Figure 1 dots stays inside the window ({seen} hovers at 390, 768, 1024 and 1280 px)" + ("" if not badtip else f": outside {badtip[:3]}"))
+
+
+def dialog_checks(browser, base, ck, index):
+    """The machine-code slide-over is a modal dialog: it says so, Tab and Shift+Tab stay inside it however many times they are pressed
+    (it ends in a <summary>, which its own handler does not count), and Escape gives focus back to the control that opened it."""
+    print("== ux: the machine-code dialog")
+    ACT = "(() => { const a = document.activeElement; return [a ? a.tagName.toLowerCase() + '#' + a.id + ':' + [...document.querySelectorAll('#asm-panel *')].indexOf(a) : null, !!(a && a.closest('#asm-panel'))]; })()"
+    for w_, h_ in ((1280, 900), (390, 844)):
+        pg = browser.new_page(viewport={"width": w_, "height": h_})
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        pg.wait_for_timeout(500)
+        opener = pg.locator(".rr-name").first
+        opener_id = opener.get_attribute("id")
+        opener.click()
+        pg.wait_for_timeout(600)
+        modal = pg.evaluate("[document.getElementById('asm-panel').hidden, document.getElementById('asm-panel').getAttribute('role'), document.getElementById('asm-panel').getAttribute('aria-modal')]")
+        def walk(n):
+            seen, outside = [], []
+            for _ in range(n):
+                pg.keyboard.press("Tab")
+                a = pg.evaluate(ACT)
+                seen.append(a[0])
+                if not a[1]:
+                    outside.append(a[0])
+            pg.keyboard.press("Shift+Tab")
+            return seen, outside, pg.evaluate(ACT)[1]
+        seen1, out1, back1 = walk(30)          # the "Full listing and commands" part is closed: only the Close button and its summary can take focus
+        pg.locator("#asm-panel summary").first.click()
+        pg.wait_for_timeout(300)
+        seen2, out2, back2 = walk(30)          # opened: its links and Copy buttons join, and Tab still never leaves the dialog
+        ck.ok(modal == [False, "dialog", "true"] and not out1 and not out2 and back1 and back2 and len(set(seen1)) >= 2 and len(set(seen2)) >= 4,
+              f"machine-code dialog at {w_} px: it is marked aria-modal, 30 presses of Tab stay inside it with the listing closed ({len(set(seen1))} controls) and open ({len(set(seen2))} controls), and Shift+Tab does too"
+              + ("" if not (out1 or out2) else f" (left for {(out1 + out2)[:3]})") + ("" if modal == [False, 'dialog', 'true'] else f" ({modal})"))
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(500)
+        after = pg.evaluate("document.activeElement.id")
+        ck.ok(after == opener_id, f"machine-code dialog at {w_} px: Escape closes it and focus returns to the control that opened it (#{after})")
+        pg.close()
+
+
+def names_checks(browser, base, ck, index):
+    """Accessible names, as the browser computes them: a section heading is its own words (the permalink inside it does not leak into
+    the name), and the twelve 'Details' buttons each say which section they open, before and after a click."""
+    print("== ux: accessible names")
+    pg = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_timeout(500)
+    heads = pg.evaluate("[...document.querySelectorAll('.body section[id] > h2')].map(h => [h.getAttribute('aria-label') || '', h.querySelector('.secno') ? h.querySelector('.secno').textContent : '', h.querySelector('.pil') ? h.querySelector('.pil').getAttribute('aria-label') : null])")
+    leaked = pg.get_by_role("heading", level=2, name=re.compile("Link to")).count()
+    ck.ok(len(heads) >= 10 and leaked == 0 and all(h[0] and h[0].startswith(h[1]) and h[2] and h[2].startswith("Link to section: ") and h[2][len("Link to section: "):] in h[0] for h in heads),
+          f"main page: each of the {len(heads)} section headings is named by its own words, and the permalink inside it names the section ({heads[0][0]!r} and {heads[0][2]!r}; {leaked} headings with a name that contains 'Link to')")
+    btns = pg.evaluate("[...document.querySelectorAll('.sec-more')].map(b => [b.textContent.trim(), b.getAttribute('aria-label')])")
+    names = [b[1] for b in btns]
+    byrole = pg.get_by_role("button", name=re.compile(r"^Details: ")).count()
+    ck.ok(len(btns) >= 10 and len(set(names)) == len(names) and all(b[1] and b[1].startswith(b[0] + ": ") for b in btns) and byrole == len(btns),
+          f"main page: the {len(btns)} section buttons have {len(set(names))} different accessible names, each starting with the visible text ({btns[0][1]!r}; {byrole} found by role and name)")
+    first = pg.locator(".sec-more").first
+    first.click()
+    pg.wait_for_timeout(200)
+    after = first.get_attribute("aria-label")
+    ck.ok(after and after.startswith("Hide details: ") and after[len("Hide details: "):] == names[0][len("Details: "):],
+          f"main page: after a click the first section button is named {after!r}, matching its visible text")
+    pg.close()
+
+
+_CONTRAST_JS = """() => {
+  const parse = c => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) return [0, 0, 0, 1]; const p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
+  const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+  const bgOf = e => { let acc = [255, 255, 255]; const chain = []; for (let a = e; a; a = a.parentElement) { const c = parse(getComputedStyle(a).backgroundColor); chain.push(c); if (c[3] >= 0.99) break; }
+    for (let i = chain.length - 1; i >= 0; i--) { const c = chain[i]; acc = [0, 1, 2].map(k => c[k] * c[3] + acc[k] * (1 - c[3])); } return acc; };
+  const opOf = e => { let o = 1; for (let a = e; a; a = a.parentElement) o *= parseFloat(getComputedStyle(a).opacity); return o; };
+  let checked = 0; const bad = {};
+  document.querySelectorAll('body *').forEach(e => {
+    if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+    const s = getComputedStyle(e), b = e.getBoundingClientRect(); if (s.display === 'none' || s.visibility === 'hidden' || b.width < 1 || b.height < 1) return;
+    if (e.closest('svg, canvas, script, style, noscript')) return;
+    const fg = parse(s.color), bg = bgOf(e), o = opOf(e) * fg[3]; if (o < 0.1) return;   // a hidden-until-hover tip or permalink is not text on screen
+    checked++;
+    const mix = [0, 1, 2].map(i => fg[i] * o + bg[i] * (1 - o));
+    const cr = (Math.max(lum(mix), lum(bg)) + .05) / (Math.min(lum(mix), lum(bg)) + .05);
+    const px = parseFloat(s.fontSize), large = px >= 24 || (px >= 18.66 && parseInt(s.fontWeight) >= 700);
+    if (cr < (large ? 3 : 4.5)) { const k = e.tagName.toLowerCase() + '.' + String(e.className).trim().replace(/\\s+/g, '.').slice(0, 36) + ' (' + cr.toFixed(2) + ', opacity ' + o.toFixed(2) + ')'; bad[k] = (bad[k] || 0) + 1; }
+  });
+  return {checked, bad}; }"""
+
+_TARGETS_JS = """() => { const out = {}; const cells = {n: 0};
+  document.querySelectorAll('button, a[href], select, input, summary, [role=button], [role=radio], [role=option], [role=switch], [role=tab], [tabindex="0"]').forEach(e => {
+    const s = getComputedStyle(e), b = e.getBoundingClientRect(); if (s.display === 'none' || s.visibility === 'hidden' || b.width === 0 || b.height === 0) return;
+    if (e.tagName === 'A' && s.display === 'inline') return;                       // a link inside running text is exempt
+    let w = b.width, h = b.height; const a = getComputedStyle(e, '::after');
+    if (a.content !== 'none' && a.position === 'absolute') { const l = parseFloat(a.left), r = parseFloat(a.right), t = parseFloat(a.top), bt = parseFloat(a.bottom);
+      if (!isNaN(l) && !isNaN(r)) w = b.width - l - r; if (!isNaN(t) && !isNaN(bt)) h = b.height - t - bt; const ww = parseFloat(a.width), hh = parseFloat(a.height); if (!isNaN(ww) && ww > w) w = ww; if (!isNaN(hh) && hh > h) h = hh; }
+    if (w < 24 - 0.5 || h < 24 - 0.5) { if (e.classList.contains('ce-cell')) { cells.n++; return; }
+      const k = e.tagName.toLowerCase() + '.' + String(e.className).trim().replace(/\\s+/g, '.').slice(0, 30) + ' ' + Math.round(w) + 'x' + Math.round(h) + ' "' + (e.textContent || '').trim().slice(0, 20) + '"'; out[k] = (out[k] || 0) + 1; } });
+  return {bad: out, cells: cells.n}; }"""
+
+
+def contrast_target_checks(browser, base, ck, index):
+    """Text keeps 4.5:1 (3:1 for large text) against what is behind it, including text that is faded by opacity, and every control is a
+    target of at least 24 by 24 px (WCAG 2.5.8; links inside running text are exempt). The one declared exception is the census grid of
+    compiler versions: a dense grid of 14 px cells with one tab stop and the arrow keys, whose every cell is also a row of the table behind it."""
+    print("== ux: contrast and target size")
+    for name, rel, w_ in (("main page", "", 1280), ("main page", "", 390), ("details page", "details.html", 1280), ("details page", "details.html", 390)):
+        pg = browser.new_page(viewport={"width": w_, "height": 900})
+        pg.goto(base + rel, wait_until="networkidle")
+        (wait_ready if not rel else wait_details)(pg)
+        pg.wait_for_timeout(1500)
+        c = pg.evaluate(_CONTRAST_JS)
+        ck.ok(c["checked"] > 300 and not c["bad"], f"{name} at {w_} px: each of the {c['checked']} pieces of text passes 4.5:1 (3:1 when large)" + ("" if not c["bad"] else f": below {dict(list(c['bad'].items())[:5])}"))
+        t = pg.evaluate(_TARGETS_JS)
+        ck.ok(not t["bad"], f"{name} at {w_} px: every control is at least 24 x 24 px (the census grid's {t['cells']} cells are the declared exception)" + ("" if not t["bad"] else f": smaller {dict(list(t['bad'].items())[:5])}"))
+        pg.close()
+
+
+def _static_text(name):
+    """The text a reader of the served file sees before any script runs: tags removed (inline ones without a gap), entities
+    decoded, scripts and styles dropped, whitespace squashed. The no-script paragraphs are included."""
+    with open(os.path.join(SITE, name), encoding="utf-8") as f:
+        raw = f.read()
+    body = raw[raw.index("<body"):]
+    body = re.sub(r"<script\b.*?</script>|<style\b.*?</style>", " ", body, flags=re.S)
+    body = re.sub(r"</?(?:span|b|em|i|code|a|strong|sub|sup|abbr|mark|kbd|output)\b[^>]*>", "", body)
+    return _squash(html.unescape(re.sub(r"<[^>]+>", " ", body)))
+
+
+def _head_meta(name):
+    """{key: content} of the <meta> tags (by property or name) and the <link rel=canonical> of a served page."""
+    with open(os.path.join(SITE, name), encoding="utf-8") as f:
+        head = f.read().split("</head>")[0]
+    out = {m.group(1): html.unescape(m.group(2)) for m in re.finditer(r'<meta (?:property|name)="([^"]+)" content="([^"]*)"', head)}
+    can = re.search(r'<link rel="canonical" href="([^"]+)"', head)
+    out["canonical"] = can.group(1) if can else None
+    return out
+
+
+def pinned_text_checks(browser, base, ck, index):
+    """The sentences the page's claims rest on, and the numbers typed into them, are pinned to the files they come from. A flipped
+    caveat ('neither confirms nor refutes' -> 'confirms'), a swapped scope word ('no profile-guided optimization in the main timing'),
+    a verdict word, or a typed number ('0.82 to 1.06', 'at most 2%', 'an 8x loop', '96 functions') no longer passes unseen: each phrase
+    below is required word for word in the served text, and every number in one is recomputed from site/data/ or the rule files.
+    Change a phrase here together with the page. Also the meta tags and the Google link, which no rendered check reads."""
+    print("== pinned text: caveats, scope words, typed numbers, meta tags and the source link")
+    idx, det = _static_text("index.html"), _static_text("details.html")
+    with open(os.path.join(DATA, "related.json"), encoding="utf-8") as f:
+        rel = json.load(f)
+    with open(os.path.join(DATA, "realworld.json"), encoding="utf-8") as f:
+        rw = json.load(f)
+    with open(os.path.join(DATA, "corpus.json"), encoding="utf-8") as f:
+        corpus = json.load(f)
+    with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f:
+        ver = json.load(f)
+    pg = index["page"]
+    cr = index["criteria"]
+    google = next(x for x in rel["sources"] if x["id"] == "google")
+    lines_none = [r["lines_none"] for r in rw["rows"] if not r["control"]]
+    libcxx_major = re.search(r"libc\+\+-(\d+)-dev", index["toolchain"]["libcxx_package"]).group(1)
+    a35, b30 = (float(x) for x in re.search(r"from ([\d.]+)% to ([\d.]+)%", google["measured"]).groups())
+    fwd = f"({fx_py(pg['forward']['aligned']['min'])} to {fx_py(pg['forward']['aligned']['max'])}×)"
+    lost_hi = round(pg["lost"]["max"])
+    # (page text, phrase, minimum occurrences, why it is pinned)
+    pins = [
+        (idx, "This study neither confirms nor refutes the average", 1, "the Google verdict sentence"),
+        (idx, "No Google service was measured here.", 1, "scope of the Google comparison"),
+        (idx, "says the cost stays small without it", 1, "what the Google post says about PGO"),
+        (idx, "(an inference, not something this study tested)", 1, "the explanation of the average is labelled an inference"),
+        (idx, "a handful of performance-critical code paths still use explicitly unsafe accesses", 1, "the Google post's own caveat"),
+        (idx, "no profile-guided optimization in the main timing", 2, "the PGO scope of the main timing"),
+        (idx, "by rules written before these runs", 1, "the rule order claim (the public record is stated beside it)"),
+        (idx, f"libc++ {libcxx_major}’s vector iterators are not checked in FAST mode", 1, "why std::transform over reverse iterators is unsafe"),
+        (idx, "Timed on few jobs (aligned)", 1, "the toolchain table's coverage"),
+        (idx, "four 32-bit integers", 1, "what one SSE2 instruction holds"),
+        (idx, fwd, 2, f"the forward range of the aligned column in the no-script line and the Result gist (index.json page.forward.aligned)"),
+        (idx, f"stayed at most {cr['forward_ci_hi_floor_pct']:g}% above 1× (aligned, interval included)", 1, "Table 1's forward rule (criteria forward_ci_hi_floor_pct)"),
+        (idx, f"are left out of the {cr['forward_ci_hi_floor_pct']:g}% test", 1, "Table 1's exemption (criteria forward_ci_hi_floor_pct)"),
+        (idx, f"interval above {cr['lost_ci_lo_min_ratio']:g}× in both columns", 1, "Table 1's lost-loop rule (criteria lost_ci_lo_min_ratio)"),
+        (idx, f"hold about {round(min(lines_none))} to {round(max(lines_none))}% of the instructions", 1, "the lost loops' instruction share (realworld.json lines_none, programs only)"),
+        (idx, f"compiled into {corpus['examples'][0]['count']} functions counts {corpus['examples'][0]['count']} times", 1, "Figure 4's example (corpus.json examples[0].count)"),
+        (idx, f"from {a35:.2f}% to {b30:.2f}%", 1, "Google's one-check fix (related.json, the post)"),
+        (idx, google["name"], 1, "the Google post's date (related.json)"),
+        (idx, f"{lost_hi}× loop", 2, "the heading and the sentence that put the average beside the slowest loop (page.lost.max)"),
+        (det, "The mechanism is compile-only.", 1, "the pass-level evidence is compile-only"),
+        (det, "the main timing used no profile-guided optimization", 1, "the PGO scope of the main timing"),
+    ]
+    bad = [(why, ph) for text, ph, n, why in pins if text.count(ph) < n]
+    ck.ok(not bad, f"{len(pins)} load-bearing phrases and typed numbers are in the served text, word for word, each recomputed from the data where it states one"
+          + ("" if not bad else f" (missing: {'; '.join(f'{ph!r} [{why}]' for why, ph in bad[:3])})"))
+    # the same, for sentences that live in the scripts (the per-loop captions, the mechanism text) rather than the HTML
+    srcs = {n: open(os.path.join(SITE, n), encoding="utf-8").read() for n in ("race.js", "app.js")}
+    mm = ver["summary"]["matmul_main"]["L1"]
+    js_pins = [
+        ("race.js", "the compiler removes the check altogether", 1, "k01's caption"),
+        ("race.js", "the check runs only on the leftover elements", 2, "k02's and k03's captions"),
+        ("race.js", "Not vectorized in either build, so there is no SIMD to lose", 2, "k06's and k07's captions"),
+        ("race.js", f"keep SIMD yet cost {mm['min']:.1f}× at L1 (EPYC 7763, timed); 23.1 and trunk lose it (compile-only)", 1, "k08's caption (versions.json summary.matmul_main)"),
+        ("app.js", "found no iteration count for it (observed)", 1, "the reverse-loop mechanism is observed"),
+        ("app.js", "clang vectorized exactly when every exit had a count (observed); that the count is what it needs is inferred", 1, "what the 29 compiled loops show and what they do not"),
+        ("app.js", "Clang 19 to 21 price those compares at almost nothing and vectorize the loop (observed); that a change in clang 19 is the reason is inferred", 1, "the newer-clang finding and its inferred cause"),
+    ]
+    badj = [(why, ph) for f, ph, n, why in js_pins if srcs[f].count(ph) < n]
+    ck.ok(not badj and abs(mm["min"] - mm["max"]) < 0.01,
+          f"{len(js_pins)} captions and mechanism sentences in race.js and app.js are pinned word for word, the matrix-multiply figure from versions.json ({mm['min']:.2f} to {mm['max']:.2f})"
+          + ("" if not badj else f" (missing: {'; '.join(f'{ph!r} [{why}]' for why, ph in badj[:3])})"))
+    # meta tags, the Google link and the canonical addresses
+    pages_url = "https://" + index["repo"]["base"].split("github.com/")[1].split("/")[0].lower() + ".github.io/" + index["repo"]["base"].rstrip("/").split("/")[-1] + "/"
+    mi, md = _head_meta("index.html"), _head_meta("details.html")
+    alt_want = f"drawn as {fx_py(pg['lost']['max'])} times as long"
+    gl = []
+    for n in ("index.html", "details.html"):
+        with open(os.path.join(SITE, n), encoding="utf-8") as f:
+            gl += re.findall(r'href="(https://security\.googleblog\.com[^"]*)"', f.read())
+    ck.ok(f"({fx_py(index['claim']['google_pct'])}%)" in mi["description"]
+          and alt_want in mi["og:image:alt"] and alt_want in md["og:image:alt"] and "work in progress" in md["og:image:alt"].lower()
+          and mi["og:url"] == pages_url == mi["canonical"] and md["og:url"] == pages_url + "details.html" == md["canonical"]
+          and mi["og:image"] == pages_url + "og.png" == md["og:image"] == mi["twitter:image"] == md["twitter:image"]
+          and mi["twitter:card"] == md["twitter:card"] == "summary_large_image" and (md["og:image:width"], md["og:image:height"]) == ("1200", "630")
+          and google["url"] == index["claim"]["url"] and all(u == google["url"] for u in gl),
+          f"meta tags: the description's {fx_py(index['claim']['google_pct'])}% and the share card's '{alt_want}' equal the data; both pages declare their own canonical address "
+          f"and share card from the repository name ({pages_url}); every link to the Google post ({len(gl)} in the served HTML) is the address in index.json and related.json")
+    # the citation text: a bare % starts a comment in LaTeX, and the figure is the data's
+    cp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    cp.goto(base, wait_until="networkidle")
+    wait_ready(cp)
+    cite = cp.text_content("#cmd-cite")
+    cp.close()
+    want_cite = f"Google's {index['claim']['google_pct']:.2f}\\% average}}"
+    ck.ok(want_cite in cite and not re.search(r"(?<!\\)%", cite) and cite.count("{") == cite.count("}"),
+          f"the BibTeX text escapes the percent sign and prints the data's figure ({want_cite!r})")
+    # the matrix-multiply account on the details page types the compiler's own cost numbers; they come from the saved compiler logs
+    mmd = os.path.join(REPO, "investigate", "vectorizer", "matmul")
+    with open(os.path.join(mmd, "derived", "tables.md"), encoding="utf-8") as f:
+        tab_a = f.read().split("## B.")[0]
+    with open(os.path.join(mmd, "derived", "cost-table.md"), encoding="utf-8") as f:
+        ctab = f.read()
+    with open(os.path.join(mmd, "README.md"), encoding="utf-8") as f:
+        mm_readme = f.read()
+    rows_a = {}
+    for ln in tab_a.splitlines():
+        cells = [x.strip() for x in ln.strip().strip("|").split("|")]
+        if len(cells) == 10 and re.match(r"(?:\d+\.\d+\.\d+|trunk)$", cells[0]):
+            rows_a[cells[0]] = cells
+    sec18 = re.search(r"^## clang 18\.1\.0 .*?(?=^## |\Z)", ctab, flags=re.M | re.S).group(0)
+    cmp18 = {int(x) for x in re.findall(r"`%cmp\.i\d+ = icmp [^`]*` \| 1 \| (\d+) \|", sec18)}
+    sums18 = re.search(r"\*\*sum\*\* \| \*\*(\d+)\*\* \| \*\*(\d+)\*\*", sec18)
+    tgt = {k: int(re.search(rf"\| {re.escape(k)} \| (\d+) \|", mm_readme).group(1)) for k in ("`x86-64` (SSE2)", "`x86-64-v2` (SSE4.2)", "`x86-64-v3` (AVX2)")}
+    unit, v2u, v3u = list(tgt.values())
+    scalar, vec4 = int(sums18.group(1)), int(sums18.group(2))
+    uni = {v: rows_a.get(v, [""] * 10) for v in ("19.1.0", "20.1.0", "21.1.0")}
+    mm_want = [
+        f"prices each of the two bounds-check compares at {unit} units at width 4, which puts the four-wide loop at {vec4} units against {4 * scalar} for four scalar iterations",
+        f"{unit} at the baseline, {v2u} with SSE4.2, {v3u} with AVX2",
+        "Clang 19 to 21 find the exit compares uniform, price each at 1 and vectorize the loop",
+        "Clang 22 vectorizes it by another route; clang 23.1 and trunk reject it again as an early-exit loop with stores",
+    ]
+    mm_ok = (cmp18 == {unit} and rows_a.get("18.1.0", [""] * 10)[7] == f"{unit}/{unit}" and rows_a["18.1.0"][3].startswith("not vectorized")
+             and all(r[7] == "1/1" and r[8] == "yes" and r[3].startswith("vectorized") for r in uni.values())
+             and rows_a["22.1.0"][3].startswith("vectorized") and rows_a["23.1.0"][3].startswith("not vectorized") and rows_a["trunk"][3].startswith("not vectorized"))
+    miss = [w for w in mm_want if w not in det]
+    ck.ok(mm_ok and not miss, f"details, matrix-multiply account: the cost numbers typed into it ({unit} units per compare at width 4, {vec4} against {4 * scalar}, {unit}/{v2u}/{v3u} by target, 1 on clang 19 to 21) "
+          f"and the per-version outcomes equal the saved compiler logs (derived/tables.md, cost-table.md, README F6)" + ("" if not miss else f" (missing: {miss[0]!r})"))
+    # the job counts typed into the real-programs caveat are the pooled timing groups'
+    gj = [g["jobs"] for g in rw["timing"]["groups"]]
+    want_jobs = f"three AMD CPU models ({gj[0]}, {gj[1]} and {gj[2]} jobs;"
+    ck.ok(len(gj) == 3 and want_jobs in det and all(g["enough"] for g in rw["timing"]["groups"]),
+          f"details, caveats: the real-programs job counts per CPU model ({gj[0]}, {gj[1]}, {gj[2]}) equal realworld.json timing.groups")
+    # the GCC version typed into the toolchain sentence is the one the sibling variants are named after
+    with open(os.path.join(DATA, "siblings.json"), encoding="utf-8") as f:
+        sib_txt = f.read()
+    gcc_major = sorted({m.group(1) for m in re.finditer(r'"label": "GCC (\d+) -O[23], assertions"', sib_txt)})
+    ck.ok(len(gcc_major) == 1 and f"GCC {gcc_major[0]} with assertions costs up to" in idx,
+          f"section 6, toolchain sentence: the GCC major version typed in it ({gcc_major}) is the one in siblings.json's variant labels")
+    # the footer note on both pages is a claim about the network: each page asks only its own host and the two font hosts
+    from urllib.parse import urlparse
+    font_note = "The pages load two typefaces from Google Fonts, so Google sees each visit; they make no other third-party request."
+    seen = {}
+    for name in ("index.html", "details.html"):
+        np_ = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+        got = set()
+        np_.on("request", lambda r, got=got: got.add(urlparse(r.url).netloc))
+        np_.goto(base + name, wait_until="networkidle")
+        if name == "index.html":
+            wait_ready(np_)
+            np_.click('#rows [data-k="k04_rev"]')
+        else:
+            wait_details(np_)
+        np_.wait_for_timeout(600)
+        seen[name] = {h for h in got if h}
+        np_.close()
+    own = urlparse(base).netloc
+    extra = {n: sorted(h - {own, "fonts.googleapis.com", "fonts.gstatic.com"}) for n, h in seen.items()}
+    ck.ok(idx.count(font_note) == 1 and det.count(font_note) == 1 and not any(extra.values()),
+          f"both footers say the pages load two typefaces from Google Fonts and make no other third-party request; each page, loaded and used, asks only its own host and the font hosts"
+          + ("" if not any(extra.values()) else f" (other hosts: {extra})"))
+
+
+BAKED_NAMES = ["googlePct", "clang", "lostMin", "lostMax", "avx2Short", "intelRange", "c2Lost", "c2Vec", "fixMin", "fixMax", "rwSlowMin", "rwSlowMax",
+               "jobsPerRun", "nRuns", "minJobs", "nJobs"]
+# the one baked span that stays empty on purpose: the main page's headline line sits in the hero block, which is changed in its own files
+BAKED_EMPTY_OK = {("intelRange", "headline")}
+_SPANS_JS = """(names) => [...document.querySelectorAll('[data-v]')].filter(e => names.includes(e.dataset.v) && !e.closest('noscript'))
+    .map(e => [e.dataset.v, e.textContent.trim(), (e.closest('[id]') || {}).id || ''])"""
+_CLS_JS = """() => { window.__cls = 0; window.__shifts = [];
+  new PerformanceObserver(l => { for (const e of l.getEntries()) { if (e.hadRecentInput) continue; window.__cls += e.value; window.__shifts.push(e.value); } }).observe({type: 'layout-shift', buffered: true}); }"""
+
+
+def layout_stability_checks(browser, base, ck, index):
+    """The page does not jump while it fills in. (1) The numbers that sit in the first screens are in the served HTML, and the script
+    writes back the same text: a span that starts empty and ends up four words long moves every line after it. (2) The details page, cold,
+    on a throttled CPU and without web fonts, shifts by less than 0.1 in total (the CLS threshold for 'good') at three widths."""
+    print("== layout stability: baked numbers equal the rendered ones, and the details page does not jump")
+    for name, ready in (("", wait_ready), ("details.html", wait_details)):
+        off = browser.new_context(java_script_enabled=False).new_page()
+        off.goto(base + name, wait_until="load")
+        baked = off.evaluate(_SPANS_JS, BAKED_NAMES)
+        off.close()
+        on = browser.new_context().new_page()
+        on.goto(base + name, wait_until="networkidle")
+        ready(on)
+        on.wait_for_timeout(500)
+        shown = on.evaluate(_SPANS_JS, BAKED_NAMES)
+        on.close()
+        bad = [(b, s) for b, s in zip(baked, shown) if b[1] != s[1] and not (b[1] == "" and (b[0], b[2]) in BAKED_EMPTY_OK)]
+        ck.ok(len(baked) == len(shown) >= 10 and not bad and sum(1 for b in baked if b[1]) >= 10,
+              f"{name or 'index.html'}: the {len(baked)} numeric spans in the first screens and sections ({', '.join(BAKED_NAMES[:5])}, ...) carry the shown text in the served HTML"
+              f"{'' if not bad else ' (differ: ' + '; '.join(f'{b[0]} in #{b[2]} is {b[1]!r}, shown {s[1]!r}' for b, s in bad[:4]) + ')'}")
+    for w, h in ((1440, 900), (768, 1024), (390, 844)):
+        ctx = browser.new_context(viewport={"width": w, "height": h})
+        ctx.route(re.compile(r"https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.abort())
+        pg = ctx.new_page()
+        pg.add_init_script("(" + _CLS_JS + ")()")
+        ctx.new_cdp_session(pg).send("Emulation.setCPUThrottlingRate", {"rate": 4})
+        pg.goto(base + "details.html", wait_until="networkidle")
+        wait_details(pg)
+        pg.wait_for_timeout(2000)
+        cls, n = pg.evaluate("[window.__cls, window.__shifts.length]")
+        ctx.close()
+        ck.ok(cls < 0.1, f"details page at {w}x{h}, cold, CPU 4x slower, no web fonts: layout shift {cls:.3f} in {n} shifts (under 0.1)")
+
+
+def ref_link_checks(browser, base, ck, index):
+    """A link to a reference or its citation (index.html#ref-queue, #cite-queue) lands on first load, with the section that holds it
+    open: the reference list and the related-work table are built by the script after the browser has made its first jump, and
+    the script that follows the hash runs before they exist. Run with scroll anchoring off, as in Chromium on the Linux runner."""
+    print("== reference links: #ref-... and #cite-... land on a fresh load")
+    no_anchor = "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '*{overflow-anchor:none !important}'; document.head.append(s); })"
+    probe = """(f) => { const t = document.getElementById(f); if (!t) return null; const r = t.getBoundingClientRect();
+      const e = document.elementFromPoint(Math.min(innerWidth - 2, r.left + Math.min(r.width, 40) / 2), r.top + Math.min(r.height, 20) / 2);
+      return {top: Math.round(r.top), h: Math.round(r.height), shown: !!e && t.contains(e)}; }"""
+    for w, h in ((1440, 900), (390, 844)):
+        got = {}
+        for frag in ("ref-queue", "cite-queue", "ref-google", "cite-google"):
+            ctx = browser.new_context(viewport={"width": w, "height": h})
+            pg = ctx.new_page()
+            pg.add_init_script(no_anchor)
+            pg.goto(base + "#" + frag, wait_until="networkidle")
+            wait_ready(pg)
+            pg.wait_for_timeout(900)
+            got[frag] = pg.evaluate(probe, frag)
+            ctx.close()
+        bad = {f: r for f, r in got.items() if not r or not r["shown"] or not (0 <= r["top"] < h * 0.6)}
+        ck.ok(not bad, f"index.html#ref-... and #cite-... land on a fresh load at {w}x{h}, the target visible in the top of the window ({got})")
+
+
+def live_region_checks(browser, base, ck, index):
+    """Screen readers read a polite live region whole each time it changes. Figure 2 used to be one (about 4,000 characters per
+    selection); now a one-line region announces the selected loop's headline and a pointer preview is not announced. No live
+    region on the main page holds more than 600 characters."""
+    print("== live regions: Figure 2 announces one line, none is long")
+    pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
+    pg.goto(base, wait_until="networkidle")
+    wait_ready(pg)
+    pg.wait_for_function("document.querySelectorAll('#rows [data-k]').length === 8", timeout=15000)
+    pg.click('#rows [data-k="k04_rev"]')
+    pg.wait_for_function("document.querySelector('#fig2-body .f2-big')", timeout=15000)
+    pg.wait_for_function("!document.querySelector('#fig2-body .f2-why.muted')", timeout=20000)
+    got = pg.evaluate("""() => ({live: document.getElementById('fig2-live').textContent, big: document.querySelector('#fig2-body .f2-big').textContent,
+        name: document.querySelector('#fig2-body .f2-head').childNodes[0].textContent, cpu: document.querySelector('#fig2-body .f2-cpu .nw').textContent,
+        fig2Live: document.getElementById('fig2').hasAttribute('aria-live'), inside: !!document.querySelector('#fig2 [aria-live]:not(#fig2-live)'),
+        longest: Math.max(...[...document.querySelectorAll('[aria-live]:not([aria-live=off]), [role=status], [role=alert]')].map(e => e.textContent.trim().length))})""")
+    want = f"{got['name']}: {got['big']} as long with the check on, at the smallest data size, {got['cpu']}. The machine code is below."
+    before = got["live"]
+    pg.hover('#rows [data-k="k08_matmul"]')
+    pg.wait_for_timeout(700)
+    after = pg.evaluate("document.getElementById('fig2-live').textContent")
+    pg.close()
+    ck.ok(got["live"] == want and not got["fig2Live"] and not got["inside"] and after == before and got["longest"] <= 600,
+          f"Figure 2 is not a live region; its one-line announcement is the headline ({got['live']!r}), a pointer preview changes nothing, and the longest live region on the page has {got['longest']} characters (at most 600)")
+
+
+def print_checks(browser, base, ck, index):
+    """A printed copy (or a PDF) has the text of the page, not only what the reader had opened. Folded sections and closed
+    <details> blocks print as if open, and the buttons that open them do not print. Fresh load, nothing opened, print media.
+    The closed blocks are listed on screen first (only those the page shows at all: Figure 2's listing is not on a narrow page until
+    a row is tapped) and each one's longest line of text must then be in the printed text."""
+    print("== print: folded sections and closed details print their text")
+    collect = """() => {
+        const norm = (s) => s.replace(/\\s+/g, ' ').trim();
+        const out = [];
+        for (const d of document.querySelectorAll('details:not([open])')) {
+            if (!d.checkVisibility()) continue;
+            let best = '';
+            const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
+            for (let n = w.nextNode(); n; n = w.nextNode()) {
+                const p = n.parentElement;
+                if (!p || p.closest('summary, .scroll-hint, script, style, [hidden]')) continue;
+                let shown = true;
+                for (let e = p; e && e !== d; e = e.parentElement) if (getComputedStyle(e).display === 'none') { shown = false; break; }
+                const t = norm(n.textContent);
+                if (shown && t.length > best.length) best = t;
+            }
+            if (best.length >= 30) out.push(best.slice(0, 40));
+        }
+        return out;
+    }"""
+    probe = """(heads) => {
+        const norm = (s) => s.replace(/\\s+/g, ' ').trim();
+        const all = norm(document.body.innerText);
+        const bodies = [...document.querySelectorAll('.sec-body')];
+        const miss = heads.filter(t => !all.includes(t));
+        const buttons = [...document.querySelectorAll('.sec-more')].filter(b => getComputedStyle(b).display !== 'none');
+        return {bodies: bodies.length, hiddenBodies: bodies.filter(b => getComputedStyle(b).display === 'none').length,
+                missing: miss.slice(0, 2), missingN: miss.length, buttons: buttons.length};
+    }"""
+    for name in ("index.html", "details.html"):
+        pg = browser.new_page_plain(viewport={"width": 794, "height": 1123})
+        pg.goto(base + name, wait_until="networkidle")
+        if name == "index.html":
+            pg.wait_for_function("document.querySelectorAll('#rows .row').length > 0", timeout=20000)
+            pg.wait_for_function(FIG2_READY, timeout=10000)
+        else:
+            wait_details(pg)
+        pg.wait_for_timeout(500)
+        heads = pg.evaluate(collect)
+        pg.emulate_media(media="print")
+        pg.wait_for_timeout(300)
+        r = pg.evaluate(probe, heads)
+        pg.close()
+        ck.ok(r["hiddenBodies"] == 0 and r["buttons"] == 0 and r["missingN"] == 0 and len(heads) >= 3 and (name == "details.html" or r["bodies"] >= 10),
+              f"{name}, print media from a fresh load: {r['bodies']} folded section bodies, {r['hiddenBodies']} hidden; {r['buttons']} Details buttons print; "
+              f"{len(heads) - r['missingN']} of {len(heads)} closed details blocks print their text" + ("" if not r["missingN"] else f" (missing: {r['missing']})"))
+
+
+def ux_checks(browser, base, ck, index):
+    print_checks(browser, base, ck, index)
+    layout_stability_checks(browser, base, ck, index)
+    ref_link_checks(browser, base, ck, index)
+    live_region_checks(browser, base, ck, index)
+    nav_checks(browser, base, ck, index)
+    contrast_target_checks(browser, base, ck, index)
+    names_checks(browser, base, ck, index)
+    textsize_checks(browser, base, ck, index)
+    forced_colors_checks(browser, base, ck, index)
+    tooltip_checks(browser, base, ck, index)
+    dialog_checks(browser, base, ck, index)
+
+
+FOCUSED = {"provenance": provenance_checks, "claims": claims_scope_checks, "pages": pages_workflow_checks, "access": access_checks, "placement": placement_scope_checks, "ux": ux_checks, "stability": layout_stability_checks, "text": pinned_text_checks, "refs": ref_link_checks, "live": live_region_checks, "print": print_checks}  # check groups that take (browser, base, ck, index) and can run alone with --only
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # messages may quote page text
@@ -3205,6 +4506,8 @@ def main():
     ap.add_argument("--shots", default=None, help="folder for the screenshots (default: a temporary folder)")
     ap.add_argument("--quick", action="store_true", help="select every row on the default CPU model only")
     ap.add_argument("--arm-only", action="store_true", help="run only the Arm column's checks (to iterate on section 6a and 6d; the full run is the one that counts)")
+    ap.add_argument("--only", action="append", default=[], choices=sorted(FOCUSED),
+                    help="run only the named focused check group(s) (to iterate; the full run is the one that counts)")
     a = ap.parse_args()
     ck = Checker()
     print("== site data equals a fresh build")
@@ -3230,8 +4533,27 @@ def main():
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=["--mute-audio", "--disable-speech-api", "--autoplay-policy=user-gesture-required"])
+            mode = os.environ.get("SITE_CHECK_FONTS", "auto").lower()
+            if mode not in ("auto", "online", "offline"):
+                print(f"   FAIL SITE_CHECK_FONTS must be auto, online or offline, not {mode!r}")
+                return 2
+            block = mode == "offline" or (mode == "auto" and not fonts_reachable())
+            global FONTS_BLOCKED
+            FONTS_BLOCKED = block
+            print(f"== fonts: SITE_CHECK_FONTS={mode}; " + ("the font requests are answered locally (no network, system fonts): line wraps can differ from a run with the fonts"
+                                                          if block else "the pages load their fonts from Google Fonts"))
+            if block:
+                block_font_hosts(browser)
             browser.new_page_plain = browser.new_page
             browser.new_page = lambda **kw: (lambda pg: (pg.add_init_script("window.__OPEN_ALL__ = true"), pg)[1])(browser.new_page_plain(**kw))
+            if a.only:
+                try:
+                    for name in a.only:
+                        FOCUSED[name](browser, base, ck, index)
+                finally:
+                    browser.close()
+                print("FOCUSED CHECKS PASSED (not the full run)" if not ck.failures else f"FOCUSED CHECKS FAILED ({len(ck.failures)})")
+                return 0 if not ck.failures else 1
             if a.arm_only:
                 try:
                     arm_checks(browser, base, ck, index, allowed, saved, shots)
@@ -3679,7 +5001,7 @@ def main():
                       "section 7: the lost loops' small instruction share beside the measured cost, worded as consistent with checks elsewhere, no mechanism claimed")
                 ex = page.inner_text("#rw-expect")
                 miss = [e for e in T["expect"] if not e["held"]]
-                ck.ok(f"Of the {len(T['expect'])} expectations committed before any run, {len(held)} held" in ex and all(m_["row"] and f"{m_['fast']:.3f}" in ex for m_ in miss),
+                ck.ok(f"Of the {len(T['expect'])} expectations committed before any run (in the author’s unpublished development history), {len(held)} held" in ex and all(m_["row"] and f"{m_['fast']:.3f}" in ex for m_ in miss),
                       "section 7: how many of the expectations written before any run held, and each miss named with its measured ratios")
                 lim = page.inner_text("#rw-limits")
                 ck.ok(all(x in lim for x in ("profile-guided optimization", "shared virtual machines", "one toolchain", "not a sample of Google", "neither confirms nor contradicts")),
@@ -4122,7 +5444,7 @@ def main():
                       "section 7: the lost loops' small instruction share beside the measured cost, worded as consistent with checks elsewhere, no mechanism claimed")
                 ex = page.inner_text("#rw-expect")
                 miss = [e for e in T["expect"] if not e["held"]]
-                ck.ok(f"Of the {len(T['expect'])} expectations committed before any run, {len(held)} held" in ex and all(m_["row"] and f"{m_['fast']:.3f}" in ex for m_ in miss),
+                ck.ok(f"Of the {len(T['expect'])} expectations committed before any run (in the author’s unpublished development history), {len(held)} held" in ex and all(m_["row"] and f"{m_['fast']:.3f}" in ex for m_ in miss),
                       "section 7: how many of the expectations written before any run held, and each miss named with its measured ratios")
                 lim = page.inner_text("#rw-limits")
                 ck.ok(all(x in lim for x in ("profile-guided optimization", "shared virtual machines", "one toolchain", "not a sample of Google", "neither confirms nor contradicts")),
@@ -4380,6 +5702,13 @@ def main():
                 hero_image_checks(browser, base, ck, index)
                 phone_checks(browser, base, ck, index)
                 wording_checks(browser, base, ck, index)
+                provenance_checks(browser, base, ck, index)
+                claims_scope_checks(browser, base, ck, index)
+                pages_workflow_checks(browser, base, ck, index)
+                access_checks(browser, base, ck, index)
+                placement_scope_checks(browser, base, ck, index)
+                ux_checks(browser, base, ck, index)
+                pinned_text_checks(browser, base, ck, index)
                 arm_checks(browser, base, ck, index, allowed, saved, shots)
                 replication_checks(browser, base, ck, index, allowed, saved, shots)
                 dsweep_checks(browser, base, ck, index, allowed, saved, shots)
@@ -4415,7 +5744,7 @@ def main():
                 small = page.evaluate(TAP_JS)
                 ck.ok(not small, f"390: every visible link and button on the main page is at least 32 px tall ({small[:4]})")
                 hit = page.evaluate("""() => { const bad = [];
-                    for (const e of document.querySelectorAll('#race button, #race [role=radio], #race [role=switch], #cpu-seg button, #col-seg button, .w-chip, .bar a, .bar button')) {
+                    for (const e of document.querySelectorAll('#race button, #race select, #race [role=radio], #race [role=switch], #cpu-seg button, #col-seg button, .w-chip, .bar a, .bar button')) {
                       if (e.closest('details:not([open])')) continue; e.scrollIntoView({ block: 'center', behavior: 'instant' }); const q = e.getBoundingClientRect(); if (q.width < 1) continue;
                       const x = q.left + q.width / 2, y = q.top + q.height / 2;
                       const at = (px, py) => { const t = document.elementFromPoint(px, py); return t && (t === e || e.contains(t) || t.closest('button,a,[role=radio],[role=switch]') === e); };
@@ -4585,6 +5914,10 @@ def main():
     for s in saved:
         print(f"   {s}")
     print("SITE CHECKS PASSED" if not ck.failures else f"SITE CHECKS FAILED ({len(ck.failures)})")
+    if FONTS_BLOCKED and ck.failures:
+        others = [f for f in ck.failures if not f.startswith(FONT_DEPENDENT_CHECKS)]
+        print(f"   system fonts: {len(ck.failures) - len(others)} of the {len(ck.failures)} failures are the checks that need the web fonts (FONT_DEPENDENT_CHECKS)"
+              + (", and nothing else failed" if not others else f"; {len(others)} other(s) failed"))
     return 0 if not ck.failures else 1
 
 

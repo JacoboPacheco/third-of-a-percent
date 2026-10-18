@@ -54,7 +54,7 @@ jobs:
           echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
           echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install clang-18, libc++-18, valgrind and numpy (Ubuntu noble apt)
         run: |
@@ -91,7 +91,7 @@ jobs:
       # Immediately after the sweep and before any check of the results: the folder is the result.
       - name: Upload results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dsweep-job-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
           path: out/
@@ -107,14 +107,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install numpy (Ubuntu noble apt)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-numpy
 
       - name: Download every job's results
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: dsweep-job-*
           path: matrix/
@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload pooled
         if: steps.have.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dsweep-pooled
           path: |

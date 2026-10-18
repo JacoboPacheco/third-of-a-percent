@@ -1,6 +1,6 @@
 # Replication sets B and C
 
-Status: work in progress (Oct 2026). Two sets of extra runs, planned in writing before any of them was dispatched (the order rests on commit times in unpublished history; see "What the plan does and does not show"), and the comparison with the pools they replicate. The pools the page and the README read are unchanged; the sets are reported beside them.
+Status: work in progress (Oct 2026). Two sets of extra runs, planned in writing (the order of plan and dispatch cannot be established from the records; see "What the plan does and does not show"), and the comparison with the pools they replicate. The pools the page and the README read are unchanged; the sets are reported beside them.
 
 ## Why
 
@@ -8,7 +8,7 @@ Two published verdicts rested on a thin margin: the Arm pool is INCONCLUSIVE bec
 
 ## What is here
 
-- `PLAN.md`: the plan, committed before the runs in the author's unpublished development history. It fixes the two sets (B: 30 Arm jobs in 3 runs; C: 40 x86-64 jobs in 4 runs), how each is analysed (the same `harness/pool.py`, the unchanged `harness/criteria-v3.json`) and what is reported. Its sha256 is stored in `results.json`, where `compare.py` computes it when it builds that file.
+- `PLAN.md`: the plan, committed in the author's unpublished development history within seconds of the dispatch. It fixes the two sets (B: 30 Arm jobs in 3 runs; C: 40 x86-64 jobs in 4 runs), how each is analysed (the same `harness/pool.py`, the unchanged `harness/criteria-v3.json`) and what is reported. Its sha256 is stored in `results.json`, where `compare.py` computes it when it builds that file.
 - `compare.py`: reads six pooled files and writes `results.json` (standard library only).
 - `results.json`: the comparison, never edited by hand. Per CPU model it holds the verdict form of the three pools and the cell behind a non-MAP form, the new points that lie inside the earlier interval, the named cells, the x86-64 headline range against set C and the models that could not be tested.
 
@@ -37,7 +37,7 @@ recomputes `results.json` from the six pooled files and fails on any difference,
 
 ## What the plan does and does not show
 
-`PLAN.md` was committed in the author's unpublished development history 27 seconds before the earliest job start recorded in the 70 job records (`run.started_at`; the commit time is from the author's machine and the start time from the runner, and the two clocks were not compared). The public repository did not hold the file at commit 32ab03c, the commit the runs were dispatched from, and no public record shows the order. A hash shows that a file is unchanged, not when it was written: the hash in `results.json` is computed by `compare.py` when the comparison is built, after the data were in, and the per-job records do not carry it. So the sets are described as planned before they were dispatched, on commit times a reader of this repository cannot check, and not as a pre-registration. The d-sweep is better placed: every one of its result files stores the hash of its plan.
+`PLAN.md` was committed in the author's unpublished development history 27 seconds before the earliest job start recorded in the 70 job records (`run.started_at`; the commit time is from the author's machine and the start time from the runner, and the two clocks were not compared). A run's first recorded start comes some seconds after the run is dispatched: in the two Arm runs of Oct 16 that started at once it was 25 and 29 seconds after the run was created (`tests/data/s8_arm_timeline.json`), and the third waited 674 seconds. The 27-second margin lies inside that lag, so the order of the plan commit and the dispatch cannot be established from the records. The public repository did not hold the file at commit 32ab03c, the commit the runs were dispatched from, and no public record shows the order. A hash shows that a file is unchanged, not when it was written: the hash in `results.json` is computed by `compare.py` when the comparison is built, after the data were in, and the per-job records do not carry it. So the sets are described as planned, with the order unestablished, on commit times a reader of this repository cannot check, and not as a pre-registration. The d-sweep is better placed: every one of its result files stores the hash of its plan.
 
 ## The combine step
 

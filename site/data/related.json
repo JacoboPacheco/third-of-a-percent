@@ -42,7 +42,7 @@
    "differs": "The same fleet, with its method; no loop shapes. This study\u2019s one PGO test (training input equal to the timed input, one CPU model) did not make the cost vanish in most rows; its census (the expensive shape is rare in general code) is consistent with few unsafe sites, a link not tested here.",
    "id": "queue",
    "m_short": "PGO critical; five services opted out; the unsafe-access API used in seven places",
-   "measured": "As reported: key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
+   "measured": "As reported, read in a browser (its address returned HTTP 403 to a scripted fetch when re-checked, so the figures are not confirmed from a saved copy): key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
    "name": "Dionne, Rebert, Shavrick, Varlamov, \u201cPractical Security in Production: Hardening the C++ Standard Library at Massive Scale\u201d, ACM Queue 23(5), 2025",
    "short": "ACM Queue sequel (2025)",
    "url": "https://queue.acm.org/detail.cfm?id=3773097"
@@ -67,10 +67,10 @@
   },
   {
    "d_short": "One forward shape; vectorization not analysed",
-   "differs": "Bare metal and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test.",
+   "differs": "A dedicated machine with frequency scaling off and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test.",
    "id": "nist",
-   "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, bare metal)",
-   "measured": "As reported: GCC 4.6.2 on one bare-metal Xeon with frequency scaling off, 63 runs per cell; vector.at(i) 0.881% (\u00b10.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
+   "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, a PC with two Xeon X5450 CPUs)",
+   "measured": "As reported: GCC 4.6.2 on a PC with two Xeon X5450 CPUs (a Dell Precision T5400) under Linux, with Turbo Boost unsupported, frequency scaling left out of the kernel and SpeedStep off, 63 runs per cell; vector.at(i) 0.881% (\u00b10.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
    "name": "Flater and Guthrie (NIST), \u201cA Case Study of Performance Degradation Attributable to Run-Time Bounds Checks on C++ Vector Access\u201d, J. Res. NIST 118, 2013",
    "short": "NIST (2013)",
    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4487316/"
@@ -118,5 +118,5 @@
    "url": "https://quick-bench.com/"
   }
  ],
- "summary": "Google\u2019s post reports an average 0.30% performance impact across its services, and says profile-guided optimization (PGO) improved performance further. Its 2025 sequel in ACM Queue, as reported, calls PGO critical, says only five services opted out entirely, and that the fine-grained unsafe-access API was used in just seven distinct places. The closest per-benchmark study, NADER (OOPSLA 2021, on Rust), reports 76.4% of benchmarks of top crates with little, no or negative cost from unchecked indexing; NIST (2013) reports vector.at(i) 0.881% slower than a C array on sequential writes. As reported, Mytkowicz and colleagues (2009) found that link order and environment size can reverse a measured speedup, and Stabilizer (2013) treats one binary as one sample of possible layouts; that is why this study times an aligned build and a layout A/A."
+ "summary": "Google\u2019s post reports an average 0.30% performance impact across its services, and says profile-guided optimization (PGO) improved performance further. Its 2025 sequel in ACM Queue, as reported (read in a browser; scripted fetches get HTTP 403, so unconfirmed from a copy), calls PGO critical. The closest per-benchmark study, NADER (OOPSLA 2021, on Rust), reports little, no or negative cost from unchecked indexing in 76.4% of benchmarks, and NIST (2013) vector.at(i) 0.881% slower than a C array on sequential writes. As reported, link order and environment size can reverse a measured speedup (Mytkowicz et al., 2009), hence the aligned build and the layout A/A here."
 }

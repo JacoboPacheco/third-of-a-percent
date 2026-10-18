@@ -210,6 +210,7 @@
 .arm-read .ar-src code { overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .arm-read { padding: 10px 10px 8px; }
+  .arm-read .ar-tbl tbody th { white-space: normal; } /* the model name wraps only when large text leaves no room: at 150% on a 320 px window the table ran 6 px past the edge */
   .arm-rows .row { min-height: 44px; }
 }
 
@@ -373,3 +374,34 @@ html[data-hv="4"] .hero .aud { width: 0; min-width: 100%; }
   #race[data-hv="4"] .sw-hint { font-size: .76rem; margin-left: 0; }
   #race[data-hv="4"] .sw-hint::before { content: none; }
 }
+
+/* ===== phone first: the switch row says what a tap changes, and the CPU choice is one quiet line =====
+   Up to 640 px the switch is a settings row (the label, the switch and its state on one line, a plain sentence under them that says what a tap
+   does and flips with the state), and the five CPU tabs give way to "Measured on EPYC 7763" with a menu. Wider screens keep the hint and the tabs. */
+.sw-sub, .cpu-q, .cpu-sel { display: none; }
+/* the two sentences share one cell, the one for the other state hidden, so the row is as tall as the longer of the two and never changes height when the switch flips */
+.sw-sub > span { grid-area: 1 / 1; }
+.sw-sub .s-off, #race-sw[aria-checked="false"] .sw-sub .s-on { visibility: hidden; }
+#race-sw[aria-checked="false"] .sw-sub .s-off { visibility: visible; }
+@media (max-width: 640px) {
+  html[data-hv="4"] .hero-in { gap: 10px; }
+  #race[data-hv="4"] .race-ctl .sw { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "l t b" "s s s"; align-items: center; column-gap: 10px; row-gap: 0; padding: 5px 16px 6px; border-radius: 22px; min-height: 46px; text-align: left; }
+  #race[data-hv="4"] .sw-l { grid-area: l; }
+  #race[data-hv="4"] .sw-t { grid-area: t; }
+  #race[data-hv="4"] .sw b { grid-area: b; min-width: 1.9em; text-align: left; }
+  #race[data-hv="4"] .sw-hint { display: none !important; }
+  #race[data-hv="4"] .sw-sub { display: grid; grid-area: s; font: 400 .84rem/1.25 var(--serif); color: var(--ink-2); white-space: normal; }
+  #race[data-hv="4"] .race-ctl .cpu-pick { gap: 6px; min-height: 44px; margin: -4px 0; } /* the menu keeps its 44 px box; the neighbours' row gaps absorb the overlap */
+  #race[data-hv="4"] .cpu-l { display: inline; font-size: .8rem; }
+  #race[data-hv="4"] #race-cpu { display: none; }
+  #race[data-hv="4"] .cpu-q { display: inline-flex; position: relative; align-items: center; min-height: 44px; padding: 0 8px 0 2px; border-radius: 8px; }
+  #race[data-hv="4"] .cpu-now { display: inline-flex; align-items: center; gap: 4px; font: 600 .86rem/1.2 var(--serif); color: var(--ink); white-space: nowrap; }
+  #race[data-hv="4"] .cpu-chev { display: block; width: 13px; height: 13px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%2344505f' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 13px 13px no-repeat; }
+  /* the system's own menu sits invisibly over the line, so the line is the tap target (44 px tall) and a thumb gets the phone's native picker */
+  #race[data-hv="4"] .cpu-sel { display: block; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; font-size: 16px; }
+  #race[data-hv="4"] .cpu-q:has(.cpu-sel:focus-visible) { outline: 2px solid var(--t-focus); outline-offset: 0; }
+}
+@media (max-width: 360px) { #race[data-hv="4"] .sw-sub { font-size: .8rem; } }
+
+/* larger text on a phone: the race's column header wraps rather than widening the page */
+@media (max-width: 640px) { .rh-t { white-space: normal; } }

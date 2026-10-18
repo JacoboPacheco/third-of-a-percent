@@ -1,12 +1,17 @@
 name: pages
 
 # Publishes the static page in site/ (no build step: the page reads site/data/*.json as committed).
-# Runs on every push to main, and by hand. (A path filter on site/ is not used: GitHub reads only the first 300 changed
-# files of a push, so a push that adds many result files can skip a filter on site/.) It deploys once GitHub Pages is enabled for the repository
+# It runs after the ci workflow has finished on a push to main, and only when ci succeeded, so a page that the
+# offline checks reject is never published by a push; the live page therefore trails a push by the length of the
+# ci run. It also runs by hand (workflow_dispatch), from the commit that is selected, without waiting for ci.
+# A path filter on site/ is not used: GitHub reads only the first 300 changed files of a push, so a push that adds
+# many result files can skip a filter on site/. It deploys once GitHub Pages is enabled for the repository
 # (Settings, Pages, Source: GitHub Actions); until then a run stops at the configure step.
 
 on:
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -21,12 +26,17 @@ concurrency:
 
 jobs:
   deploy:
+    # a workflow_run event fires for every finished ci run, whatever its result: publish only a successful one
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # the commit whose ci run passed (not whatever main points to when this run starts)
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 

@@ -462,6 +462,7 @@ function readout() {
     b.setAttribute('aria-label', `${SHORT_NAMES[b.dataset.k]}: ${ii.ratio == null ? 'not measured on this CPU model' : `${fx(ii.ratio)} times as long with the check on`}`);
   }
   for (const b of $('race-cpu').children) { const on = b.dataset.cpu === S.cpu; b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; }
+  const cs = $('race-cpu-sel'); if (cs) { if (cs.value !== S.cpu) cs.value = S.cpu; $('cpu-now-t').textContent = currentCpu().cpu_short; } // the phone's quiet line shows the same choice
   const sw = $('race-sw'); sw.setAttribute('aria-checked', R.on); $('race-sw-w').textContent = R.on ? 'on' : 'off';
   $('race').classList.toggle('is-on', R.on);
   $('race').dataset.role = i.cls;
@@ -573,6 +574,12 @@ function build(api) {
     cpus.append(b);
   }
   radioKeys(cpus, 'cpu', (s) => selectCpu(s));
+  const csel = $('race-cpu-sel'); // on a phone the five tabs give way to one quiet line, "Measured on EPYC 7763" with a menu: the same choice, native to a thumb
+  if (csel) {
+    csel.replaceChildren(...cpuList().map((c) => Object.assign(document.createElement('option'), { value: c.slug, textContent: c.cpu_short, title: `${c.cpu_model}: ${c.jobs} jobs pooled` })));
+    csel.value = S.cpu;
+    csel.addEventListener('change', () => selectCpu(csel.value));
+  }
   $('race-sw').addEventListener('click', () => { R.on = !R.on; show(); document.dispatchEvent(new Event('race-used')); });
   $('race-replay').addEventListener('click', () => play());
   $('race-name').addEventListener('click', (e) => api.openAsm(R.k, e.currentTarget));

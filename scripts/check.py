@@ -10,7 +10,9 @@
    harness/stats.py must equal the stored one, criteria_sha256 must match harness/criteria.json,
    and the verdict recomputed by harness/verdict.py must equal the stored verdict. Each program row's
    consistent_with_at_most_pct must equal harness/programs.py's rule and never sit below its A/A floor
-   (real runs; the SAMPLE fixture's made-up rows are exempt).
+   (real runs; the SAMPLE fixture's made-up rows are exempt). Each cell's stored trap counts (plain and aligned
+   builds) are recounted with harness/asm.py from the whole-function listings kept in asm/ beside results.json; a missing
+   listing fails, except in the two earliest runs (stages S1 and S2), which kept the diffs only.
    Stage S3: a run that names harness/criteria-v2.json in run.criteria_file is checked against that
    file's hash and rules; its loops-aligned pairs, layout A/A pairs and verdict_v1 (criteria.json)
    are recomputed too, and every combined.json (harness/combine.py) is recomputed from the
@@ -40,10 +42,18 @@
    every dsweep.json and dsweep-pooled.json (any edit of the plan after a run fails here); results/*dsweep-pooled/
    dsweep-pooled.json must list every dsweep.json of its run folders once and equal a fresh dsweep/analyze.py over them, with
    only the input-path strings ignored (floats to 1e-9 relative), as must each run's own copy.
-   The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps and skip cleanly when their results are absent.
+   The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps. Every step whose script or stored result is not in the repository FAILS the run (a deleted
+   checker or result folder does not make it greener); only the page step can be skipped, and then the exit code is 3.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
-   the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots).
-Exit code 0 only if every step passed.
+   the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots). It needs the playwright
+   package, Chromium and network access to the font hosts; without the package the step is replaced by
+   scripts/build_site_data.py --check and listed as skipped.
+Requirements: Python 3, numpy and PyYAML; if either package is missing the run stops at once, says which and prints the
+pip line (pytest is optional).
+Exit code 0 only if every step passed and none was skipped. A run in which every step that ran passed but one was
+skipped (the page was not driven) ends with the line "CHECKS PASSED, WITH SKIPPED STEPS" and exit code 3; a failure is
+"CHECKS FAILED" and exit code 1. It does not cover siblings/ (python siblings/summarize.py results/siblings-run-<id>), the
+compile-only vectorizer studies (investigate/vectorizer/*) or arm64/seeds.py --check --all; README.md names them.
 """
 import glob
 import hashlib
@@ -55,10 +65,15 @@ import os
 import sys
 import traceback
 
+PASSED_WITH_SKIPS = "CHECKS PASSED, WITH SKIPPED STEPS"
+EXIT_PASSED_WITH_SKIPS = 3
+REQUIRED_PACKAGES = (("numpy", "numpy"), ("yaml", "pyyaml"))
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "harness"))
 sys.path.insert(0, os.path.join(REPO, "tests"))
 
+import asm  # noqa: E402
 import combine  # noqa: E402
 import programs  # noqa: E402
 import schema  # noqa: E402
@@ -93,6 +108,13 @@ def run_tests():
 
 def close(a, b):
     return math.isclose(a, b, rel_tol=1e-12, abs_tol=1e-15)
+
+
+def missing_step(what):
+    """A step whose script or stored result is not in the repository is a failure, never a pass: the page and the README
+    quote what these steps recompute, so deleting a checker or a result folder must not make the run greener."""
+    print(f"   FAIL {what}: missing, so the step cannot run (a missing checker or result is a failure, not a pass)")
+    return False
 
 
 def file_sha(rel_path):
@@ -214,7 +236,7 @@ def check_holdout_result():
     base = os.path.join(REPO, "results")
     path = os.path.join(base, "s5-holdout", "RESULT.md")
     if not os.path.exists(path):
-        return True
+        return missing_step("results/s5-holdout/RESULT.md")
     with open(path, encoding="utf-8") as f:
         text = f.read()
     rows = {ln.split("|")[1].strip(): ln for ln in text.splitlines() if ln.startswith("| ") and "EPYC" in ln or "Xeon" in ln and ln.startswith("| ")}
@@ -246,7 +268,7 @@ def check_holdout_result():
     return not problems
 
 
-def check_pool_complete(base=None):
+def check_pool_complete(base=None, required=False):
     """Each pool pools every job of the run folders it names exactly once and nothing else, and contains every
     input of the earlier pools it builds on:
       results/s6-pooled/pooled.json  the 75-job intermediate pool: every job of every s4-run-* and s6-run-* folder,
@@ -262,7 +284,9 @@ def check_pool_complete(base=None):
                                             results/s8-arm-pooled and results/s9-arm-b-pooled
       results/s9-x86-ac-pooled/pooled.json  the first pool and set C: the s4-, s6-, s7- and s9-run-* jobs, including all of
                                             results/s7-pooled and results/s9-x86-c-pooled
-    `base` is the results folder (default: the repository's); the tests point it at a scratch copy."""
+    `base` is the results folder (default: the repository's); the tests point it at a scratch copy. With `required` (the
+    run of main()) a pool whose pooled.json is not there fails; without it the pool is skipped, which the scratch copies
+    of the tests rely on (each holds only the pools it is about)."""
     base = base or os.path.join(REPO, "results")
 
     def listed(rel):
@@ -279,6 +303,8 @@ def check_pool_complete(base=None):
              ("s9-x86-ac-pooled", ("s4-run-*", "s6-run-*", "s7-run-*", "s9-run-*"), ("s7-pooled", "s9-x86-c-pooled")))
     for rel, patterns, earlier in pools:
         if not os.path.exists(os.path.join(base, rel, "pooled.json")):
+            if required:
+                ok &= missing_step(f"results/{rel}/pooled.json")
             continue
         pooled = listed(rel)
         on_disk = [os.path.normpath(p) for pat in patterns
@@ -447,14 +473,15 @@ def check_dsweep_pools(base=None):
 
 def check_dsweep():
     """The d-sweep step of main(): every stored dsweep.json validated and its ratios recomputed from the raw samples
-    (dsweep/analyze.py --verify), the plan hash, and the pooled files re-pooled. 'none yet' while no sweep is stored."""
+    (dsweep/analyze.py --verify), the plan hash, and the pooled files re-pooled. A missing analysis script or no stored sweep fails."""
     import subprocess
     sweeps = sorted(set(glob.glob(os.path.join(REPO, "results", "**", "dsweep.json"), recursive=True)
                         + glob.glob(os.path.join(REPO, "dsweep", "**", "dsweep.json"), recursive=True)))
     analyze = os.path.join(REPO, "dsweep", "analyze.py")
-    if not os.path.exists(analyze) or not sweeps:
-        print("   none yet")
-        return True
+    if not os.path.exists(analyze):
+        return missing_step("dsweep/analyze.py")
+    if not sweeps:
+        return missing_step("results/*dsweep-run-*/**/dsweep.json (no stored d-sweep)")
     sys.stdout.flush()
     ok = subprocess.call([sys.executable, analyze, "--verify"] + sweeps) == 0
     ok &= check_dsweep_plan(sweeps, dsweep_pooled_files(os.path.join(REPO, "results")))
@@ -497,6 +524,43 @@ def check_pooled(path):
     return not problems
 
 
+# The two earliest runs (stages S1 and S2) kept only each cell's .diff, not the whole-function listings; every later run keeps
+# asm/<kernel>.{none,fast,none_a64,fast_a64}.s beside its results.json, and the SAMPLE fixture has no job folder at all.
+NO_LISTING_RUNS = ("s1-run-38119008371", "s2-run-38119607308")
+
+
+def check_trap_counts(path, doc, problems):
+    """Each cell's stored traps_none and traps_fast (and the aligned pair's) equal harness/asm.count_traps() over the listing
+    kept beside results.json (x86-64 ud2, AArch64 brk #0x1, and calls to __libcpp_verbose_abort). A listing that is missing,
+    or a count that differs, is a problem. Returns how many listings were recounted (0 for the fixture and the two early
+    runs that kept diffs only). It checks the stored counts against the stored listings; it does not rebuild or disassemble."""
+    run_dir = os.path.dirname(path)
+    if doc["sample"] or os.path.basename(run_dir) in NO_LISTING_RUNS:
+        return 0
+    counted, missing = {}, set()
+    n = 0
+    for c in doc["cells"]:
+        for stored, tag in ((c, ""), (c.get("aligned"), "_a64")):
+            if stored is None:
+                continue
+            for build in ("none", "fast"):
+                file = f"{c['kernel']}.{build}{tag}.s"
+                if file not in counted and file not in missing:
+                    listing = os.path.join(run_dir, "asm", file)
+                    if os.path.exists(listing):
+                        with open(listing, encoding="utf-8") as f:
+                            counted[file] = asm.count_traps(f.read().splitlines())
+                    else:
+                        missing.add(file)
+                        problems.append(f"asm/{file} is missing, so the traps_{build} of {c['kernel']} cannot be recounted")
+                if file in counted:
+                    n += 1
+                    if counted[file] != stored[f"traps_{build}"]:
+                        problems.append(f"{c['cell_id']}: stored {'aligned ' if tag else ''}traps_{build} {stored[f'traps_{build}']} "
+                                        f"differs from the {counted[file]} trap instructions in asm/{file}")
+    return n
+
+
 def check_results(path, criteria_sha=None):
     name = os.path.relpath(path, REPO).replace("\\", "/")
     problems = []
@@ -530,6 +594,7 @@ def check_results(path, criteria_sha=None):
     if not close(stats.half_width_pct(aa["ci95"]), aa["half_width_pct"]):
         problems.append("controls.aa.half_width_pct does not match its ci95")
     check_v2_parts(doc, problems)
+    recounted = check_trap_counts(path, doc, problems)
     v = verdict.compute(doc, verdict.load_criteria(os.path.join(REPO, crit_file)))
     if not verdict.same_verdict(doc["verdict"], v, doc):  # v1/v2 runs: form, numbers and why; the line is historical
         problems.append(f"stored verdict differs from the recomputed one: {v}")
@@ -537,14 +602,16 @@ def check_results(path, criteria_sha=None):
         print(f"   FAIL {name}: {pr}")
     if not problems:
         tag = "SAMPLE" if doc["sample"] else "real"
-        print(f"   ok   {name} ({tag}, {len(doc['cells'])} cells, {os.path.basename(crit_file)}): "
-              f"{v['form']}: {v['line']}")
+        print(f"   ok   {name} ({tag}, {len(doc['cells'])} cells, {os.path.basename(crit_file)}, "
+              f"{recounted} trap counts recounted from the listings): {v['form']}: {v['line']}")
     return not problems
 
 
 def results_files():
     """Every results.json under results/ that check_results() goes through (the x86-64 folders and the s8-arm-run-* jobs alike)."""
-    own_checker = ("mitigate-run-", "siblings-run-", "corpus-run-")  # these folders have their own checks, below
+    # these folders are not x86-64/Arm kernel runs and have another record format: mitigate-run-* and corpus-run-* are
+    # gone through by their own steps in main(); siblings-run-* has no step in this script (python siblings/summarize.py)
+    own_checker = ("mitigate-run-", "siblings-run-", "corpus-run-")
     return sorted(set(p for p in glob.glob(os.path.join(REPO, "results", "**", "results.json"), recursive=True)
                       if not any(os.path.relpath(p, os.path.join(REPO, "results")).startswith(s) for s in own_checker)))
 
@@ -555,7 +622,38 @@ def pooled_files():
                   if os.path.basename(os.path.dirname(p)) != "pooled")  # a workflow's own per-run copy, kept as downloaded
 
 
+def missing_packages():
+    """The pip names of the required packages that cannot be imported."""
+    missing = []
+    for module, pip_name in REQUIRED_PACKAGES:
+        try:
+            importlib.import_module(module)
+        except ImportError:
+            missing.append(pip_name)
+    return missing
+
+
+def finish(ok, skipped):
+    """The last line and the exit code: 1 if any step failed, 3 if every step that ran passed but some were skipped, else 0."""
+    if not ok:
+        print("CHECKS FAILED")
+        return 1
+    if skipped:
+        print(PASSED_WITH_SKIPS)
+        for s in skipped:
+            print(f"   skipped: {s}")
+        return EXIT_PASSED_WITH_SKIPS
+    print("ALL CHECKS PASSED")
+    return 0
+
+
 def main():
+    missing = missing_packages()
+    if missing:
+        print(f"MISSING PYTHON PACKAGES: {', '.join(missing)}. Install them with: pip install {' '.join(missing)}")
+        print("CHECKS FAILED")
+        return 1
+    skipped = []
     ok = run_tests()
     print("== results files (schema 1, recomputed intervals, criteria hash, recomputed verdict)")
     with open(os.path.join(REPO, "harness", "criteria.json"), "rb") as f:
@@ -575,15 +673,15 @@ def main():
     for path in combined:
         ok &= check_combined(path)
     if not combined:
-        print("   none yet")
+        ok &= missing_step("results/**/combined.json")
     print("== pooled files (criteria-v3: every job of a CPU model pooled, recomputed, independent sample)")
     pooled = pooled_files()
     for path in pooled:
         ok &= check_pooled(path)
     if not pooled:
-        print("   none yet")
+        ok &= missing_step("results/**/pooled.json")
     ok &= check_holdout_result()
-    ok &= check_pool_complete()
+    ok &= check_pool_complete(required=True)
     import subprocess
     print("== mitigation experiment (every ratio and interval recomputed from the raw samples)")
     mit = sorted(glob.glob(os.path.join(REPO, "results", "mitigate-run-*")))
@@ -591,56 +689,56 @@ def main():
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "mitigate", "summarize.py"), "--check"] + mit) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("results/mitigate-run-*")
     print("== real-project census (corpus/run_tests.py: unit tests and schema of every results/corpus-run-*)")
     if os.path.exists(os.path.join(REPO, "corpus", "run_tests.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "corpus", "run_tests.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("corpus/run_tests.py")
     print("== compile-only toolchain sweep (ce-sweep/check.py: schema, cache hashes and the matrix recomputed offline from saved responses)")
     if os.path.exists(os.path.join(REPO, "ce-sweep", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "ce-sweep", "check.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("ce-sweep/check.py")
     print("== lostloops tool (offline tests with saved compiler records and a stand-in compiler)")
     if os.path.exists(os.path.join(REPO, "tools", "lostloops", "run_tests.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "tools", "lostloops", "run_tests.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("tools/lostloops/run_tests.py")
     print("== lostloops live test (tools/lostloops-live/check.py: the stored comparisons recomputed from the stored reports)")
     if os.path.exists(os.path.join(REPO, "tools", "lostloops-live", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "tools", "lostloops-live", "check.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("tools/lostloops-live/check.py")
     print("== layout sweep (layout-sweep/check.py: tests, plan, every job and analysis recomputed from the raw samples)")
     if os.path.exists(os.path.join(REPO, "layout-sweep", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "layout-sweep", "check.py")]) == 0
     else:
-        print("   none yet")
-    print("== robustness (robustness/check.py: block-bootstrap sensitivity analysis recomputed from the stored samples; skips if absent)")
+        ok &= missing_step("layout-sweep/check.py")
+    print("== robustness (robustness/check.py: block-bootstrap sensitivity analysis recomputed from the stored samples; fails if absent)")
     if os.path.exists(os.path.join(REPO, "robustness", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "check.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("robustness/check.py")
     print("== Arm seed sensitivity (arm64/seeds.py --check: the stored seed's numbers, eight other seeds, two whole analyses and the "
-          "deciding cell's converged reading recomputed from the pool; the full recomputation is --check --all; skips if absent)")
+          "deciding cell's converged reading recomputed from the pool; the full recomputation is --check --all; fails if absent)")
     if os.path.exists(os.path.join(REPO, "arm64", "seeds.py")) and os.path.exists(os.path.join(REPO, "arm64", "seed-sensitivity.json")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "arm64", "seeds.py"), "--check"]) == 0
     else:
-        print("   none yet")
-    print("== replication (replication/compare.py --verify: replication/results.json recomputed from the six pooled files; skips if absent)")
+        ok &= missing_step("arm64/seeds.py and arm64/seed-sensitivity.json")
+    print("== replication (replication/compare.py --verify: replication/results.json recomputed from the six pooled files; fails if absent)")
     if os.path.exists(os.path.join(REPO, "replication", "compare.py")) and os.path.exists(os.path.join(REPO, "replication", "results.json")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "replication", "compare.py"), "--verify"]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("replication/compare.py and replication/results.json")
     print("== d-sweep (dsweep/analyze.py --verify: every stored dsweep.json validated and its numbers recomputed; the plan hash; "
           "the pooled files re-pooled and compared, input paths aside; none is stored until the sweep has run)")
     ok &= check_dsweep()
@@ -649,25 +747,25 @@ def main():
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "pgo", "check.py")]) == 0
     else:
-        print("   none yet")
-    print("== newer toolchains (versions/check.py: plan, criteria hash, workflow, analysis recomputed from the pooled files, tests; skips if absent)")
+        ok &= missing_step("pgo/check.py")
+    print("== newer toolchains (versions/check.py: plan, criteria hash, workflow, analysis recomputed from the pooled files, tests; fails if absent)")
     if os.path.exists(os.path.join(REPO, "versions", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "versions", "check.py")]) == 0
     else:
-        print("   none yet")
-    print("== measurement environment (environment/check.py: plan, workflow, analysis recomputed from the per-job records, tests; skips if absent)")
+        ok &= missing_step("versions/check.py")
+    print("== measurement environment (environment/check.py: plan, workflow, analysis recomputed from the per-job records, tests; fails if absent)")
     if os.path.exists(os.path.join(REPO, "environment", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "environment", "check.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("environment/check.py")
     print("== real programs (realworld/check.py: drivers, pins, probe records, tests; timings only once measured)")
     if os.path.exists(os.path.join(REPO, "realworld", "check.py")):
         sys.stdout.flush()
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "realworld", "check.py")]) == 0
     else:
-        print("   none yet")
+        ok &= missing_step("realworld/check.py")
     print("== the page (scripts/check_site.py --quick: site data rebuilt and compared, numbers against data, drawers, screenshots)")
     if os.path.isdir(os.path.join(REPO, "site")):
         import subprocess
@@ -675,12 +773,13 @@ def main():
         rc = subprocess.call([sys.executable, os.path.join(REPO, "scripts", "check_site.py"), "--quick"])
         if rc == 2:
             print("   skipped: the playwright package is missing, so the page was not driven")
+            skipped.append("the page was not driven (playwright is missing; pip install playwright, then playwright install chromium)")
             rc = subprocess.call([sys.executable, os.path.join(REPO, "scripts", "build_site_data.py"), "--check"])
         ok &= rc == 0
     else:
         print("   skipped: site/ is not built yet (stage S4)")
-    print("ALL CHECKS PASSED" if ok else "CHECKS FAILED")
-    return 0 if ok else 1
+        skipped.append("site/ is not built")
+    return finish(ok, skipped)
 
 
 if __name__ == "__main__":

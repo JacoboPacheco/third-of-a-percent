@@ -10,8 +10,8 @@ found almost none. **Census 2** (25 numeric, physics, graphics, machine-learning
 including Stockfish and EnTT: physics and game code, graphics and geometry,
 numeric/image/signal processing, machine learning, compression) was
 chosen to look where such loops are likely to live; its list, metrics and failure rule were
-committed in [PLAN2.md](PLAN2.md) before the first compile, and every change after that is logged
-there.
+committed in [PLAN2.md](PLAN2.md) before the first compile, in the author's unpublished development history,
+and every change after that is logged there.
 
 ## Census 1 + census 2, by category (baseline target)
 
@@ -22,7 +22,8 @@ at avx2: run 38273218567 (`results/corpus1-avx2-run-38273218567/`). The table is
 
 A loop counts once per function it was compiled into, so a template or header loop instantiated
 96 times counts 96 times. The "distinct source locations" columns count each file:line:column
-once per project; read the two side by side.
+once per project; read the two side by side. The column "of which in project code" counts the project's own files plus the
+census's own driver files (`corpus/drivers/`, written for header-only libraries); loops inside libc++'s headers are not in it.
 
 **Baseline (x86-64, SSE2), FAST vs NONE**
 
@@ -90,8 +91,8 @@ What the table says, and only that:
 **Not claimed.** No runtime cost: loops are counted, not timed, and how hot a lost loop is cannot
 be known at compile time (LightGBM's histogram code is hot in training, its metric loops are
 not; the census does not say which). Nothing about hardening being cheap or expensive in general,
-or about code outside these 44 projects: the selection is mine, written down before compiling,
-not a random sample of C++.
+or about code outside these 44 projects: the selection is mine, written down before compiling (in
+the author's unpublished development history), not a random sample of C++.
 
 ## Census 2 per project (baseline, FAST vs NONE)
 
@@ -222,8 +223,8 @@ in `lost_loops.json` of each results folder.
   into its code).
 - **Kernels, baseline**: exactly k04_rev, k05_stride2 and k08_matmul lost at their `// LOOP` line
   (reverse, strided, strided), k06/k07 in neither build, k01 to k03 in both (PASS).
-- **Kernels, avx2**: **FAIL as registered**. The pre-registered avx2 rule expected k08_matmul
-  lost; at `-march=x86-64-v3` it is vectorized in both builds. k04_rev and k05_stride2 are lost,
+- **Kernels, avx2**: **FAIL as registered**. The pre-registered avx2 rule (the order rests on
+  the author's unpublished development history) expected k08_matmul lost; at `-march=x86-64-v3` it is vectorized in both builds. k04_rev and k05_stride2 are lost,
   k06/k07 in neither, k01 to k03 in both. The rule was not changed after the fact. Census 1 at avx2
   shows the same.
 - **Evidence method**: each lost kernel loop shows the "vector[] index out of bounds" check inside

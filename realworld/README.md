@@ -4,7 +4,7 @@
 
 Pooling note: an earlier pooling counted each job twice (every job's result sat in the repository in two download copies), which doubled the job counts and narrowed the intervals; `pool_rw.py` now counts each distinct file once. Point ratios did not change.
 
-The plan, the rules for every claim and the expectations were committed before the first run:
+The plan, the rules for every claim and the expectations were committed before the first run, in the author's unpublished development history:
 [PLAN.md](PLAN.md) (changes after that are logged at its bottom).
 
 ## What is here

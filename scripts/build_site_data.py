@@ -8,7 +8,8 @@ Copied unchanged:
   pooled.json        results/s7-pooled/pooled.json (criteria-v3: every job of a CPU model pooled across
                      jobs and runs, two-level bootstrap intervals, both columns, instruction counts;
                      the jobs of results/s4-pooled plus those of the later runs of the same workflow;
-                     results/s6-pooled is the 75-job intermediate pool, kept and not read here)
+                     results/s6-pooled is the 75-job intermediate pool, kept; only its size is read here,
+                     for index.json pooled.steps)
   asm/<cpu>/         for each CPU model with enough jobs, the machine code of ONE of its jobs (the
                      none, fast, none_a64 and fast_a64 listings; the binaries are byte-identical across
                      jobs, which the pooled build control checks), plus builds.json extracted from that
@@ -16,7 +17,10 @@ Copied unchanged:
 Derived, never invented (every number is computed here from the files named, and --check recomputes it):
   index.json         what the first screen and the prose print: per-CPU summaries of pooled.json, the
                      whole-program rows of the S3 runs (S4 did not time programs), the day-one record
-                     and the criteria files' own 'written' lines
+                     and the criteria files' own 'written' lines; `provenance`: per group of runs the
+                     commits and rule-file hashes their records stamp, which of those commits and run links
+                     the public repository can show (a few facts read from the GitHub API on a stated date,
+                     kept as constants), and the order-of-events times the page states
   mitigate.json      mitigate/ results: per loop shape and rewrite, the aligned ratio range per CPU
                      model (cells over the 2% A/A limit left out, as mitigate/README.md does), the
                      safety test, the code of each variant copied from mitigate/src/
@@ -61,6 +65,9 @@ POOLED = "results/s7-pooled/pooled.json"
 # The first pooled measurement (3 runs, 30 jobs). The holdout (results/s5-holdout) was judged against this file,
 # so the holdout comparison keeps reading it; everything else on the page reads POOLED.
 POOLED_ORIGINAL = "results/s4-pooled/pooled.json"
+# The 75-job intermediate pool (ten more runs than the original three). Kept; read here only for the sizes of the pools in the history
+# of the pool's growth (index.json pooled.steps).
+POOLED_S6 = "results/s6-pooled/pooled.json"
 # The CPU model the first screen opens on (the race, the figure, the README image). It was the model with the most
 # jobs when the page was built, and it stays the opening view so that more jobs of another model do not move it;
 # if it is absent or has too few jobs, the model with the most jobs opens instead.
@@ -123,14 +130,12 @@ RELATED = {
     "gaps_file": "gaps/GAPS.md",
     "summary": (
         "Google’s post reports an average 0.30% performance impact across its services, and says profile-guided "
-        "optimization (PGO) improved performance further. Its 2025 sequel in ACM Queue, as reported, calls PGO critical, "
-        "says only five services opted out entirely, and that the fine-grained unsafe-access API was used in just "
-        "seven distinct places. The closest per-benchmark study, NADER (OOPSLA 2021, on Rust), "
-        "reports 76.4% of benchmarks of top crates with little, no or negative cost from unchecked indexing; NIST "
-        "(2013) reports vector.at(i) 0.881% slower than a C array on sequential writes. As reported, Mytkowicz and "
-        "colleagues (2009) found that link order and environment size can reverse a measured speedup, and Stabilizer "
-        "(2013) treats one binary as one sample of possible layouts; that is why this study times an aligned build and "
-        "a layout A/A."
+        "optimization (PGO) improved performance further. Its 2025 sequel in ACM Queue, as reported (read in a browser; "
+        "scripted fetches get HTTP 403, so unconfirmed from a copy), calls PGO critical. The closest per-benchmark "
+        "study, NADER (OOPSLA 2021, on Rust), reports little, no or negative cost from unchecked indexing in 76.4% "
+        "of benchmarks, and NIST (2013) vector.at(i) 0.881% slower than a C array on sequential writes. As reported, link order and "
+        "environment size can reverse a measured speedup (Mytkowicz et al., 2009), hence the aligned build and the "
+        "layout A/A here."
     ),
     "none_found": (
         "This search found no public per-loop measurement of libc++’s FAST mode (sources searched: the LLVM "
@@ -145,7 +150,7 @@ RELATED = {
          "differs": "A fleet average on production workloads; the post does not say whether the 0.30% includes PGO, a toolchain version or a hardening mode; no per-loop breakdown, machine code or controls a stranger can rerun. This study tests none of its numbers."},
         {"id": "queue", "m_short": "PGO critical; five services opted out; the unsafe-access API used in seven places", "d_short": "The same fleet; PGO tested here only with the timed input as training", "name": "Dionne, Rebert, Shavrick, Varlamov, “Practical Security in Production: Hardening the C++ Standard Library at Massive Scale”, ACM Queue 23(5), 2025", "short": "ACM Queue sequel (2025)",
          "url": "https://queue.acm.org/detail.cfm?id=3773097",
-         "measured": "As reported: key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
+         "measured": "As reported, read in a browser (its address returned HTTP 403 to a scripted fetch when re-checked, so the figures are not confirmed from a saved copy): key services were benchmarked; PGO was critical, letting the compiler move checks out of hot paths; only five services opted out entirely; the fine-grained unsafe-access API was used in just seven distinct places; a non-verbose mode cut the binary-size cost from 2% to under 0.5%.",
          "differs": "The same fleet, with its method; no loop shapes. This study’s one PGO test (training input equal to the timed input, one CPU model) did not make the cost vanish in most rows; its census (the expensive shape is rare in general code) is consistent with few unsafe sites, a link not tested here."},
         {"id": "carruth", "name": "Chandler Carruth, “Story-time: C++, bounds checking, performance, and compilers”, Nov 2024", "short": "Carruth (2024)",
          "url": "https://chandlerc.blog/posts/2024/11/story-time-bounds-checking/",
@@ -155,10 +160,10 @@ RELATED = {
          "url": "https://www.cs.princeton.edu/~npopescu/papers/nader.pdf",
          "measured": "As reported: 76.4% of benchmarks of top Rust crates show little, no or negative cost from unchecked indexing; 23.6% are more than 1% slower with checks and 11.8% more than 1% faster; brotli’s overhead 7.7%, 6.5% on an older rustc, 2.5% on Apple M1; about 200 benchmarks with 95% intervals.",
          "differs": "Rust, many real benchmarks, several machines. As reported, it attributes checks-make-it-faster results to code layout and inlining heuristics without controlling layout; this study controls layout on eight C++ loops."},
-        {"id": "nist", "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, bare metal)", "d_short": "One forward shape; vectorization not analysed", "name": "Flater and Guthrie (NIST), “A Case Study of Performance Degradation Attributable to Run-Time Bounds Checks on C++ Vector Access”, J. Res. NIST 118, 2013", "short": "NIST (2013)",
+        {"id": "nist", "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, a PC with two Xeon X5450 CPUs)", "d_short": "One forward shape; vectorization not analysed", "name": "Flater and Guthrie (NIST), “A Case Study of Performance Degradation Attributable to Run-Time Bounds Checks on C++ Vector Access”, J. Res. NIST 118, 2013", "short": "NIST (2013)",
          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4487316/",
-         "measured": "As reported: GCC 4.6.2 on one bare-metal Xeon with frequency scaling off, 63 runs per cell; vector.at(i) 0.881% (±0.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
-         "differs": "Bare metal and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test."},
+         "measured": "As reported: GCC 4.6.2 on a PC with two Xeon X5450 CPUs (a Dell Precision T5400) under Linux, with Turbo Boost unsupported, frequency scaling left out of the kernel and SpeedStep off, 63 runs per cell; vector.at(i) 0.881% (±0.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
+         "differs": "A dedicated machine with frequency scaling off and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test."},
         {"id": "readyset", "m_short": "Every check removed from one Rust program: within the noise", "d_short": "A whole program; no intervals or controls", "name": "Readyset, “How much does Rust’s bounds checking actually cost?”", "short": "Readyset (blog)",
          "url": "https://readyset.io/blog/bounds-checks",
          "measured": "As reported: a rustc patched to drop every bounds check; 1,227 checks per warm read; results well within the noise threshold; no hardware or run count stated.",
@@ -459,6 +464,46 @@ def s1_forward():
     return out
 
 
+RAM_EARLY_GLOBS = ["results/s2-run-*/results.json", "results/s3-run-*/results-*/results.json", "results/s3-audit-run-*/results-*/results.json"]
+
+
+def ram_early():
+    """The RAM-sized cells: timed only in the early jobs (S2, S3 and the S3 audit), as compiled, never in the pooled runs. The reverse and stride-2
+    loops' ranges, the reverse loop at the L2 size in the same jobs, how far jobs of one CPU model differ and how often two jobs of one model have
+    intervals that do not overlap. Fails if a results file outside those runs holds a RAM cell, so a later run cannot be left out silently."""
+    has_ram = lambda f: any(c.get("size_class") == "RAM" for c in load(f).get("cells", []))  # noqa: E731
+    files = sorted(f for g in RAM_EARLY_GLOBS for f in glob.glob(os.path.join(REPO, g)) if has_ram(f))
+    every = [f for pat in ("results/*/results.json", "results/*/*/results.json") for f in glob.glob(os.path.join(REPO, pat))]
+    for f in every:
+        if f not in files and "RAM" in open(f, encoding="utf-8").read() and has_ram(f):
+            raise AssertionError(f"{rel(f)} holds RAM cells but is not among the early runs the page describes")
+    jobs = []
+    for f in files:
+        doc = load(f)
+        cells = {c["cell_id"]: c for c in doc["cells"]}
+        assert all(c in cells for c in ("k04_rev.RAM", "k05_stride2.RAM", "k04_rev.L2")), rel(f)
+        jobs.append({"cpu_short": cpu_short(doc["run"]["runner"]["cpu_model"]), "cells": cells})
+    out = {"jobs": len(jobs), "cell": "as compiled", "rev": minmax([j["cells"]["k04_rev.RAM"]["ratio"] for j in jobs]),
+           "stride2": minmax([j["cells"]["k05_stride2.RAM"]["ratio"] for j in jobs]), "rev_l2": minmax([j["cells"]["k04_rev.L2"]["ratio"] for j in jobs]),
+           "pairs": {}, "spread": {}}
+    for cid, key in (("k04_rev.RAM", "rev"), ("k05_stride2.RAM", "stride2")):
+        dis = tot = 0
+        best = None
+        for m in sorted({j["cpu_short"] for j in jobs}):
+            cs = [j["cells"][cid] for j in jobs if j["cpu_short"] == m]
+            for i in range(len(cs)):
+                for k in range(i + 1, len(cs)):
+                    tot += 1
+                    dis += cs[i]["ci95"][1] < cs[k]["ci95"][0] or cs[k]["ci95"][1] < cs[i]["ci95"][0]
+            if len(cs) > 1:
+                sp = (max(c["ratio"] for c in cs) / min(c["ratio"] for c in cs) - 1) * 100
+                if best is None or sp > best["pct"]:
+                    best = {"pct": sp, "cpu_short": m, "jobs": len(cs)}
+        out["pairs"][key] = {"disjoint": int(dis), "total": tot}
+        out["spread"][key] = best
+    return out
+
+
 def intel_forward(pooled):
     """The forward add at L1, aligned, in every Intel job of the S3 runs, the S4 smoke run and the pooled runs, one row per
     job (no verdict; the pooled Intel models are listed in cpus[] with their own pooled numbers)."""
@@ -479,8 +524,20 @@ def intel_forward(pooled):
             if c and c.get("aligned"):
                 jobs.append({"source": rel(os.path.dirname(f)), "cpu_short": cpu_short(i["cpu_model"]),
                              "aligned": c["aligned"]["ratio"], "aa_pct": doc["controls"]["aa"]["half_width_pct"]})
+    # The Intel jobs of replication set C (the second x86-64 set, Figure 8) are not among the rows above: they are counted
+    # beside them so that the page can say what its count leaves out.
+    set_c = []
+    for f in sorted(glob.glob(os.path.join(REPO, "results", "s9-run-*", "results-*", "results.json"))):
+        doc = load(f)
+        if "INTEL" not in doc["run"]["runner"]["cpu_model"].upper():
+            continue
+        c = next((q for q in doc["cells"] if q["cell_id"] == "k02_add_fwd.L1"), None)
+        if c and c.get("aligned"):
+            set_c.append({"cpu_short": cpu_short(doc["run"]["runner"]["cpu_model"]), "aligned": c["aligned"]["ratio"]})
     return {"cell": "k02_add_fwd.L1", "jobs": jobs, "aligned": minmax([j["aligned"] for j in jobs]),
-            "cpus": sorted({j["cpu_short"] for j in jobs})}
+            "cpus": sorted({j["cpu_short"] for j in jobs}),
+            "set_c": {"jobs": len(set_c), "aligned": minmax([j["aligned"] for j in set_c]),
+                      "per_cpu": {m: sum(1 for j in set_c if j["cpu_short"] == m) for m in sorted({j["cpu_short"] for j in set_c})}}}
 
 
 # ---------------------------------------------------------------- what to change (mitigate/)
@@ -747,6 +804,104 @@ def fixture_pooled(fx):
                       "verdict": {"form": d["verdict"]["form"], "placement_sensitive": [], "off_axis": []}}]}
 
 
+# ---- what the public repository can and cannot show about the order of events and the origin of the result records
+# The scan of results/ below is derived. The facts here cannot be derived offline: they were read on PROVENANCE_READ
+# from the public repository's GitHub API (compare/main...<commit>, actions/runs, the contents of dsweep/PLAN.md on the
+# branch dsweep-smoke) and are a record of what was read, not a proof. A commit that the result records stamp and that
+# is not listed here is not in the public repository. check_site.py compares the times with
+# tests/data/s8_arm_timeline.json and tests/data/s9_s10_provenance.json.
+PROVENANCE_READ = "2026-10-18"
+PUBLIC_COMMITS = {"293b6b9": "main", "60f487d": "main", "32ab03c": "main", "6176991": "arm-smoke", "8c874ec": "dsweep-smoke"}
+PUBLIC_FIRST_RUN_ID = 38556089577   # the earliest Actions run of the public repository: an earlier run id cannot be one of its runs
+# the first commit of the public repository's history (read on PROVENANCE_READ; check_site.py compares it with tests/data/s9_s10_provenance.json
+# and requires every record of the earlier groups to have started before it)
+PUBLIC_HISTORY_FIRST = {"commit": "8674f5f", "utc": "2026-10-14T10:32:49Z"}
+# the replication's plan: the author date (UTC) of the commit that added replication/PLAN.md, in the author's unpublished
+# development history, and the creation time (public Actions record) of the first run it dispatched
+REPLICATION_PLAN_COMMIT_UTC = "2026-10-17T07:14:52Z"
+REPLICATION_FIRST_RUN = {"id": "39012918474", "created_utc": "2026-10-17T07:14:54Z"}
+# creation times (public Actions record) of the three Arm runs of 16 October: how long after its creation a run's first record starts
+DISPATCH_LAG_RUNS = {"38905055834": "2026-10-16T13:04:16Z", "38905081930": "2026-10-16T13:04:29Z", "38905108936": "2026-10-16T13:04:43Z"}
+# the d-sweep plan on the public repository: the first commit of the branch dsweep-smoke that held dsweep/PLAN.md (together with
+# the sweep code), its commit time, and that the plan file in it has the stored hash
+DSWEEP_PUBLIC = {"branch": "dsweep-smoke", "commit": "f7f7d48", "commit_utc": "2026-10-17T08:44:06Z", "plan_sha256_equal": True}
+PROVENANCE_GROUPS = [
+    ("early", "s1 to s4 and the audit",
+     ["results/s1-run-*/results.json", "results/s2-run-*/results.json", "results/s3-run-*/results-*/results.json",
+      "results/s3-audit-run-*/results-*/results.json", "results/s4-run-*/results-*/results.json",
+      "results/s4-smoke-*/results-*/results.json"]),
+    ("holdout", "s5, the holdout", ["results/s5-holdout/runs/*/results-*/results.json"]),
+    ("rewrite", "the rewrite runs", ["results/mitigate-run-*/mitigate-*/results.json"]),
+    ("s6", "s6", ["results/s6-run-*/results-*/results.json"]),
+    ("s7", "s7", ["results/s7-run-*/results-*/results.json"]),
+    ("arm", "s8, the Arm runs", ["results/s8-arm-run-*/results-*/results.json"]),
+    ("s9", "s9, the replication sets", ["results/s9-run-*/results-*/results.json", "results/s9-arm-run-*/results-*/results.json"]),
+    ("dsweep", "s10, the d-sweep", ["results/s10-dsweep-run-*/dsweep-*/dsweep.json"]),
+]
+
+
+def _utc_seconds(s):
+    import datetime
+    return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+def _record_starts(pattern):
+    """{run id: earliest run.started_at} over the records that match the pattern."""
+    out = {}
+    for f in sorted(glob.glob(os.path.join(REPO, pattern))):
+        r = load(f)["run"]
+        out[str(r["id"])] = min(out.get(str(r["id"]), r["started_at"]), r["started_at"])
+    return out
+
+
+def provenance_data():
+    """What the result records say about where they came from. Per group of runs: the number of records, the commits they
+    stamp (and where the public repository holds each), how many carry the hash of the rule file now in the repository,
+    how many run links can open (a link opens only for a run of this repository's Actions, whose ids start at
+    PUBLIC_FIRST_RUN_ID). Plus the order-of-events facts the page states for the replication and the d-sweep plans."""
+    crit_sha = sha(os.path.join(REPO, CRITERIA_FILE))
+    groups, first_start = [], {}
+    for gid, label, pats in PROVENANCE_GROUPS:
+        files = sorted(f for p in pats for f in glob.glob(os.path.join(REPO, p)))
+        commits, match, linked, opened, first = {}, 0, 0, 0, None
+        for f in files:
+            d = load(f)
+            r = d["run"] if isinstance(d.get("run"), dict) else d
+            c = (r.get("commit") or "")[:7]
+            commits[c] = commits.get(c, 0) + 1
+            match += (r.get("criteria_sha256") or d.get("criteria_sha256")) == crit_sha
+            url = r.get("workflow_run_url") or r.get("url") or ""
+            if url:
+                linked += 1
+                m = re.match(re.escape(REPO_BASE) + r"/actions/runs/(\d+)$", url)
+                opened += bool(m) and int(m.group(1)) >= PUBLIC_FIRST_RUN_ID
+            first = min(first, r["started_at"]) if first and r.get("started_at") else r.get("started_at") or first
+        first_start[gid] = first
+        groups.append({"id": gid, "label": label, "records": len(files),
+                       "commits": [{"commit": c, "records": n, "where": PUBLIC_COMMITS.get(c)} for c, n in sorted(commits.items())],
+                       "criteria_match": match, "links": {"records": linked, "open": opened}})
+    empty = [g["id"] for g in groups if not g["records"]]
+    assert not empty, f"no result records found for {empty}"
+    arm_starts = _record_starts("results/s8-arm-run-*/results-*/results.json")
+    assert set(arm_starts) == set(DISPATCH_LAG_RUNS), "the Arm runs changed: update DISPATCH_LAG_RUNS"
+    lags = {rid: int(_utc_seconds(arm_starts[rid]) - _utc_seconds(t)) for rid, t in DISPATCH_LAG_RUNS.items()}
+    rep_start = _record_starts("results/s9-arm-run-*/results-*/results.json")[REPLICATION_FIRST_RUN["id"]]
+    return {
+        "read_on": PROVENANCE_READ, "first_public_run_id": PUBLIC_FIRST_RUN_ID,
+        "public_history": {"first_commit": PUBLIC_HISTORY_FIRST["commit"], "first_commit_utc": PUBLIC_HISTORY_FIRST["utc"]},
+        "rule_file": {"file": CRITERIA_FILE, "sha256": crit_sha},
+        "groups": groups,
+        "replication": {
+            "plan_commit_utc": REPLICATION_PLAN_COMMIT_UTC, "first_record_start_utc": first_start["s9"],
+            "margin_s": int(_utc_seconds(first_start["s9"]) - _utc_seconds(REPLICATION_PLAN_COMMIT_UTC)),
+            "first_run_created_utc": REPLICATION_FIRST_RUN["created_utc"],
+            "first_run_lag_s": int(_utc_seconds(rep_start) - _utc_seconds(REPLICATION_FIRST_RUN["created_utc"])),
+            "arm_run_lags_s": lags},
+        "dsweep": {**DSWEEP_PUBLIC, "first_record_start_utc": first_start["dsweep"],
+                   "gap_s": int(_utc_seconds(first_start["dsweep"]) - _utc_seconds(DSWEEP_PUBLIC["commit_utc"]))},
+    }
+
+
 # ---------------------------------------------------------------- build
 def holdout_data(min_jobs):
     """The holdout run beside the original pooled runs: same rules, fresh draws (numbers read from both pooled.json)."""
@@ -772,9 +927,16 @@ def holdout_data(min_jobs):
         both = bool(o and h and o["enough"] and h["enough"])
         rows.append({"cpu_model": m, "cpu_short": cpu_short(m), "original": o, "holdout": h,
                      "reproduced": (o["form"] == h["form"]) if both else None})
+    # what the holdout's own records show about the order: when its first job started (run.started_at, the clock of the
+    # runner) and whether every job records the hash of the rule file now in the repository
+    docs = [load(os.path.join(REPO, os.path.dirname(HOLDOUT), i["path"])) for i in hold["inputs"]]
+    starts = sorted(d["run"]["started_at"] for d in docs)
+    rule_sha = sha(os.path.join(REPO, CRITERIA_FILE))
     return {"source": HOLDOUT, "original_source": POOLED_ORIGINAL, "preregistration": HOLDOUT_PREREG,
             "result": "results/s5-holdout/RESULT.md",
             "preregistration_committed_utc": stored_holdout_time() or git_time(HOLDOUT_PREREG),
+            "first_job_start_utc": starts[0],
+            "jobs_with_rule_hash": sum(1 for d in docs if d["run"]["criteria_sha256"] == rule_sha), "rule_file": CRITERIA_FILE,
             "criteria_sha256": hold["criteria_sha256"], "runs": hold["runs"], "jobs": len(hold["inputs"]),
             "rows": rows}
 
@@ -837,6 +999,9 @@ def build(out_dir):
                                         "original": rid in original_runs})
     index["pooled"]["original"] = {"source": POOLED_ORIGINAL, "runs": len(original_runs),
                                    "jobs": sum(r["jobs"] for r in index["pooled"]["runs"] if r["original"])}
+    # the sizes of the three pools in order (30, 75 and 95 jobs), each from its own pooled file: the kernel pool grew by further runs
+    index["pooled"]["steps"] = [{"source": src, "runs": len(d["runs"]), "jobs": len(d["inputs"])}
+                                for src, d in ((s, load(os.path.join(REPO, s))) for s in (POOLED_ORIGINAL, POOLED_S6, POOLED))]
     good = [c for c in index["cpus"] if c["enough"]]
     # The page-level ranges (the lost-loop range, the forward range) describe the CPU models whose pooled verdict
     # reached a form (map or holds-everywhere). A model with enough jobs and an inconclusive verdict is listed in
@@ -872,6 +1037,8 @@ def build(out_dir):
     index["programs"] = s3_programs()
     index["intel_forward"] = intel_forward(pooled)
     index["s1_forward"] = s1_forward()
+    index["provenance"] = provenance_data()
+    index["ram_early"] = ram_early()
     index["sections"] = {"mitigate": "data/mitigate.json", "siblings": "data/siblings.json", "corpus": "data/corpus.json",
                          "realworld": "data/realworld.json", "holdout": "data/holdout.json", "related": "data/related.json", "cesweep": "data/cesweep.json",
                          "layout": "data/layout.json", "pgo": "data/pgo.json",
