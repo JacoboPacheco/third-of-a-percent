@@ -23,10 +23,19 @@
 
 <main class="paper" id="top">
   <header class="front col">
+    <a class="crumb" href="index.html">&larr; Main page: the short version, an interactive chart</a>
     <h1>Third of a Percent: details</h1>
-    <p class="byline">The material behind <a href="index.html">the main page</a>, section by section. <a id="repo-link">Code and data</a>. Work in progress, October 2026: the results so far; they may still change.</p>
-    <p class="callout" id="details-purpose">This page holds the full tables and the checking material behind the main paper; it is not needed to follow the result.</p>
-    <nav class="dnav" aria-label="Sections on this page"><a href="#result-full">Result</a> <a href="#why-full">Why</a> <a href="#placement-full">Placement</a> <a href="#layout-full">Layout sweep</a> <a href="#census-full">Census</a> <a href="#mitigate-full">Rewrites</a> <a href="#siblings-full">Toolchains</a> <a href="#arm-full">Arm</a> <a href="#realworld-full">Real programs</a> <a href="#pgo-full">PGO column</a> <a href="#programs-full">Earlier programs</a> <a href="#method-full">Method</a> <a href="#related-full">Related work</a> <a href="#appendix-a">A: every cell</a> <a href="#appendix-b">B: every run</a> <a href="#appendix-c">C: toolchains per CPU</a> <a href="#appendix-d">D: census 2 projects</a></nav>
+    <p class="byline">This page holds the full tables, runs and checks of a study of what bounds checks in C++&rsquo;s standard library cost, loop by loop, for C++ engineers deciding whether to turn on libc++ hardening. <a id="repo-link">Code and data on GitHub</a>. Work in progress, October 2026: the results so far; they may still change.</p>
+    <div class="callout" id="details-purpose">
+      <p>Google reported that libc++&rsquo;s bounds checks cost <span data-v="googlePct"></span>% on average over whole services, a third of a percent: the title. This study times single loops, a different measurement. The cost depends on the loop.</p>
+      <p><b>The result</b>, loop by loop, on arrays that fit the processor&rsquo;s cache (<span data-v="clang"></span>, <code>-O2</code>):</p>
+      <ul>
+        <li><b><span data-v="lostMin"></span>&times; to <span data-v="lostMax"></span>&times; as long</b> at the study’s two in-cache sizes, with the bounds check on as with it off, for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction.</li>
+        <li><b>About the same, near 1&times;,</b> for forward loops on the AMD CPU models (one AVX2 exception, <span data-v="avx2Short"></span>&times;); <span class="nw"><span data-v="intelRange"></span>&times;</span> on Intel (forward add; section 1).</li>
+      </ul>
+    </div>
+    <nav class="dnav" aria-label="Sections on this page"><a class="dgo" href="#result-full">Read the full numbers<span aria-hidden="true"> &darr;</span></a><span class="dlabel">or jump to</span><a href="#placement-full">Code placement</a> <a href="#realworld-full">Real programs</a> <a href="#method-full">How it was measured</a> <a href="#appendix-a">Full data table</a></nav>
+    <details class="dall" id="dall"><summary>All sections</summary><div class="dall-list"><a href="#result-full">Result</a> <a href="#why-full">Why</a> <a href="#placement-full">Code placement</a> <a href="#layout-full">Layout sweep</a> <a href="#census-full">Census</a> <a href="#mitigate-full">Rewrites</a> <a href="#siblings-full">Toolchains</a> <a href="#arm-full">Arm</a> <a href="#realworld-full">Real programs</a> <a href="#pgo-full">PGO column</a> <a href="#programs-full">Earlier programs</a> <a href="#method-full">How it was measured</a> <a href="#related-full">Related work</a> <a href="#appendix-a">A: full data table</a> <a href="#appendix-b">B: every run</a> <a href="#appendix-c">C: toolchains per CPU</a> <a href="#appendix-d">D: census 2 projects</a></div></details>
   </header>
   <div class="col body">
     <section id="result-full">
@@ -43,6 +52,17 @@
       <p><span data-v="holdoutText"></span></p>
       <p class="tcap"><b><span data-v="holdoutCap"></span></b></p>
       <div class="tablewrap"><table class="tbl dense" id="holdout-table"><thead><tr><th scope="col">CPU model</th><th scope="col">First runs</th><th scope="col">Holdout</th><th scope="col" class="num">Lose SIMD, in cache: range, median</th><th scope="col">Reproduced</th></tr></thead><tbody></tbody></table></div>
+      <h3 id="replication-full">Replication: a second set of runs</h3>
+      <p id="rep-what"></p>
+      <p id="rep-count"></p>
+      <p id="rep-x86"></p>
+      <p id="rep-flips"></p>
+      <p id="rep-6973"></p>
+      <p id="rep-arm"></p>
+      <p id="rep-headline"></p>
+      <p class="tcap" id="rep-t-cap"><b>Table 14.</b> <span data-v="repCap"></span></p>
+      <div class="tablewrap boxed arm-wrap" tabindex="0" role="region" aria-label="Table 14, the replication per CPU model; scrolls sideways on a narrow screen, the model stays in view"><table class="tbl dense arm-tbl" id="rep-table" aria-describedby="rep-t-cap"><thead><tr><th scope="col">CPU model</th><th scope="col">First set</th><th scope="col">Second set</th><th scope="col">Both together (secondary)</th><th scope="col" class="num">Pooled ratios inside the first set’s interval (aligned alone)</th><th scope="col" class="num">Largest difference</th><th scope="col">Status</th></tr></thead><tbody></tbody></table></div>
+      <p class="small" id="rep-limits"></p>
     </section>
 
     <section id="why-full">
@@ -64,7 +84,7 @@
     </section>
 
     <section id="placement-full">
-      <h2><span class="secno">3</span>The control that changed the reading, in full</h2>
+      <h2><span class="secno">3</span>Code placement: the control that changed the reading, in full</h2>
       <p id="ps-sum"><span data-v="psSummary"></span></p>
       <p>One forward loop, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, it ran up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was. With the checks on, clang emits a shorter SIMD loop that handles <span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span> (<span data-v="k02Bytes"></span> bytes, starting at address <code data-v="k02Start"></code>). As placed, that loop is the slow one on these AMD cores; aligned, it runs faster than the unchecked one. Both builds&rsquo; hot loops cross a 64-byte boundary, so the crossing alone does not tell them apart; the hardware reason (presumably how the processor fetches small loops in 64-byte windows) is inferred, since the investigation had timings only, no hardware counters.</p>
       <p>Rebuilding both binaries with every hot loop aligned to 64 bytes (<code>-falign-loops=64</code>) removes the effect. That is why every figure offers the aligned build, and why the rules now call a forward loop <em>placement-sensitive</em> when two things hold: the pooled ratio of its two columns (as compiled &divide; aligned) has an interval that excludes 1, and its hot loop sits differently against the 64-byte windows in the two builds. Such a loop is shown and flagged but not used to judge the forward side. The full write-up is in <a data-href="findingsUrl" href="#" title="investigate/FINDINGS.md in the repository">the investigation&rsquo;s notes</a>.</p>
@@ -179,6 +199,35 @@
       <p id="arm-novec"></p>
       <p id="arm-plan"></p>
       <p class="small" id="arm-limits"></p>
+      <h3 id="dsweep-full">Matrix multiply: a row-length sweep</h3>
+      <p id="ds-q"></p>
+      <p id="ds-ran"></p>
+      <p id="ds-out"></p>
+      <figure class="fig ds-fig" id="fig-ds">
+        <div class="fig-title" id="ds-title">The extra time per inner call against the row length</div>
+        <div class="controls">
+          <div class="ctl">
+            <span class="ctl-label" id="ds-met-label">Show</span>
+            <div class="seg" id="ds-met-seg" role="radiogroup" aria-labelledby="ds-met-label">
+              <button type="button" role="radio" data-met="ns" aria-checked="true">time</button>
+              <button type="button" role="radio" data-met="instr" aria-checked="false">instructions</button>
+            </div>
+          </div>
+        </div>
+        <div class="ds-panels" id="ds-panels"></div>
+        <div class="ds-step" role="group" aria-label="Step through the row lengths of the chosen panel">
+          <button type="button" id="ds-prev">&larr; Shorter row</button>
+          <button type="button" id="ds-next">Longer row &rarr;</button>
+        </div>
+        <div class="ds-read" id="ds-read" aria-live="polite"></div>
+        <figcaption id="ds-cap"><b>Figure 9.</b> &hellip;</figcaption>
+      </figure>
+      <p id="ds-shape"></p>
+      <p id="ds-instr"></p>
+      <p id="ds-scope"></p>
+      <p class="tcap" id="ds-t-cap"><b>Table 15.</b> <span data-v="dsCap"></span></p>
+      <div class="tablewrap boxed arm-wrap" id="ds-t-wrap" tabindex="0" role="region" aria-label="Table 15, every row length timed in the row-length sweep; scrolls sideways on a narrow screen, the model and row length stay in view"></div>
+      <p class="small" id="ds-limits"></p>
     </section>
 
     <section id="realworld-full">
@@ -234,7 +283,7 @@
     </section>
 
     <section id="method-full">
-      <h2><span class="secno">8</span>Method, in full</h2>
+      <h2><span class="secno">8</span>How it was measured, in full</h2>
       <p>The rule history, in short:</p>
       <ol class="rule-list" id="rule-list"></ol>
       <dl class="method">
@@ -301,7 +350,7 @@
     </section>
 
     <section id="appendix-a" class="appendix">
-      <h2><span class="secno">A</span>Every cell, <span id="appa-cpu"></span></h2>
+      <h2><span class="secno">A</span>Full data table: every cell, <span id="appa-cpu"></span></h2>
       <p class="small">Every loop and size, pooled over this CPU model&rsquo;s jobs: ratio with its 95% interval, as compiled and aligned; the instruction-count ratio from Cachegrind for the aligned pair (instructions, not time); and the spread between jobs. Pick the CPU model: <span class="seg" id="cpu-seg" role="radiogroup" aria-label="CPU model"></span></p>
       <details class="more" id="appa-details">
         <summary>Show the table (<span id="appa-count"></span>)</summary>

@@ -28,6 +28,20 @@ Derived, never invented (every number is computed here from the files named, and
                      compiler remarks, check traps and NEON instruction counts of each kernel, and a short
                      x86-64 comparison read from the pool above. Additive: nothing else in this folder reads it
                      or changes because of it (tests/test_arm64_data.py builds without it and compares)
+  replication.json   the replication (replication/PLAN.md): replication/results.json, which replication/compare.py
+                     derives from the six pooled files of the earlier pools, the new sets B and C and the two
+                     secondary pools, reduced to what the page prints: one row per CPU model (verdict words,
+                     jobs, the share of points inside the earlier interval, the cause cell of a verdict that is not
+                     MAP), the cells behind each flip, the Arm cell, the lost-SIMD range, the models not testable.
+                     Additive: it reads none of the files above and changes none of them, except the sections entry
+                     of index.json (tests/test_replication.py builds without it and compares)
+  dsweep.json        the matrix-multiply d-sweep (dsweep/PLAN.md): results/s10-dsweep-pooled/dsweep-pooled.json, which
+                     dsweep/analyze.py writes from the per-job dsweep.json files, reduced to what the page prints: for each
+                     CPU model with at least the minimum number of jobs the word the pre-registered rule gave (and the
+                     word of each column), the fixed share with its interval, the A/A, the d ladder and one row per d
+                     (ratios and intervals in both columns, the excess in ns per inner call, the extra instructions, the
+                     placement flag); for the models below the minimum their job counts. Additive in the same way as
+                     replication.json (tests/test_dsweep_results.py builds without it and compares)
 scripts/check_site.py checks that every number printed on the page is in these files.
 """
 import argparse
@@ -876,7 +890,13 @@ def build(out_dir):
     if os.path.exists(os.path.join(REPO, ARM_POOLED)):  # the Arm column: its own file, read from nothing above except the x86 numbers it sets beside
         dump(arm64_data(index, pooled), os.path.join(out_dir, "arm64.json"))
         index["sections"]["arm64"] = "data/arm64.json"
-    fx = os.path.join(REPO, "results", "fixture.json")
+    if os.path.exists(os.path.join(REPO, REPLICATION)):  # the replication: its own file, read from replication/results.json only
+        dump(replication_data(), os.path.join(out_dir, "replication.json"))
+        index["sections"]["replication"] = "data/replication.json"
+    if os.path.exists(os.path.join(REPO, DSWEEP_POOLED)):  # the d-sweep: its own file, read from the pooled d-sweep file only
+        dump(dsweep_data(), os.path.join(out_dir, "dsweep.json"))
+        index["sections"]["dsweep"] = "data/dsweep.json"
+    fx =os.path.join(REPO, "results", "fixture.json")
     dump(fixture_pooled(fx), os.path.join(out_dir, "fixture", "pooled.json"))
     index["fixture"] = {"path": "data/fixture/pooled.json", "source": rel(fx), "source_sha256": sha(fx),
                         "cpu_model": load(fx)["run"]["runner"]["cpu_model"]}
@@ -1948,6 +1968,201 @@ def arm64_data(index, x86):
         "forward_instr": _arm_forward_instr(cells_in, res),
         "stored_diffs": _arm_stored_diffs(ks, job_dirs),
     }
+
+
+# ---------------------------------------------------------------- the replication (replication/PLAN.md, replication/results.json)
+REPLICATION = "replication/results.json"
+REPLICATION_PLAN = "replication/PLAN.md"
+REPLICATION_COMPARE = "replication/compare.py"
+
+
+def _repl_form(rec):
+    """One pool's reading of one CPU model as the page prints it: the cause of a verdict that is not MAP is kept as cell ids
+    and numbers (the stored sentence, which lists every cell above the limit, is left in replication/results.json)."""
+    if rec is None:
+        return None
+    forms = {}
+    for r in rec["per_run"]:
+        k = r["form"] or "too_few_jobs"
+        forms[k] = forms.get(k, 0) + 1
+    return {"jobs": rec["jobs"], "runs": rec["runs"], "enough": rec["enough"], "form": rec["form"], "stability": rec["stability"],
+            "run_forms": dict(sorted(forms.items())), "aa_half_width_pct": rec["aa_half_width_pct"],
+            "forward_limit_pct": rec["forward_limit_pct"], "placement_sensitive": rec["placement_sensitive"],
+            "closest_forward": rec["closest_forward"],
+            "cause": ({k: v for k, v in rec["cause"].items() if k != "why"} if rec["cause"] else None)}
+
+
+def _repl_names(row):
+    return {"cpu_model": row["cpu_model"], "cpu_short": cpu_short(row["cpu_model"]), "slug": slug(cpu_short(row["cpu_model"]))}
+
+
+def replication_data():
+    """site/data/replication.json: replication/results.json reduced to what the page prints. Nothing is computed here except the
+    per-run verdict counts, the row status words and the order of the rows; every number is read from the file
+    (replication/compare.py --verify ties that file to the six pooled files)."""
+    path = os.path.join(REPO, REPLICATION)
+    r = load(path)
+    assert r["schema"] == "replication-1", "replication/results.json has another schema"
+    assert r["plan_sha256"] == sha(os.path.join(REPO, REPLICATION_PLAN)), \
+        "replication/PLAN.md differs from the one replication/results.json was derived under"
+    assert r["criteria"]["sha256"] == sha(os.path.join(REPO, CRITERIA_FILE)), "replication/results.json was derived under other criteria"
+    rows = []
+    for arch in ("x86", "arm"):
+        a = r[arch]
+        for m in sorted(a["models"], key=lambda x: (-(x["earlier"]["jobs"] if x["earlier"] else 0), x["cpu_model"])):
+            ins = m["inside"]
+            rows.append({
+                "arch": arch, **_repl_names(m),
+                "earlier": _repl_form(m["earlier"]), "replication": _repl_form(m["replication"]), "secondary": _repl_form(m["secondary"]),
+                "testable": m["testable"], "same_form": m["same_form"],
+                "status": "not testable" if not m["testable"] else "same" if m["same_form"] else "flipped",
+                "inside": ({k: ins[k] for k in ("checked", "inside", "outside", "max_gap_pct", "max_abs_point_diff_pct",
+                                                "point_diff_under_1pct", "largest_point_diffs", "misses")} if ins else None)})
+    out_arch = {}
+    for arch in ("x86", "arm"):
+        a = r[arch]
+        out_arch[arch] = {
+            "names": a["names"], "totals": a["totals"],
+            "flips": [{"cpu_model": f["cpu_model"], "cpu_short": cpu_short(f["cpu_model"]), "slug": slug(cpu_short(f["cpu_model"])),
+                       "earlier_form": f["earlier_form"], "replication_form": f["replication_form"],
+                       "cells": [{"cell_id": c["cell_id"], **{k: c[k] for k in ("earlier", "replication", "secondary")}}
+                                 for c in f["cells"]]} for f in a["flips"]],
+            "not_testable": [{"cpu_model": n["cpu_model"], "cpu_short": cpu_short(n["cpu_model"]), "slug": slug(cpu_short(n["cpu_model"])),
+                              "earlier_jobs": n["earlier_jobs"], "replication_jobs": n["replication_jobs"],
+                              "earlier_form": n["earlier_form"], "secondary": _repl_form(n["secondary"])} for n in a["not_testable"]]}
+    arm = r["arm"]
+    out_arch["arm"]["model"] = _repl_names({"cpu_model": arm["model"]})
+    out_arch["arm"]["named_cells"] = [{"cell_id": c["cell_id"], "decides_earlier_verdict": c["decides_earlier_verdict"],
+                                       **{k: c[k] for k in ("earlier", "replication", "secondary")}} for c in arm["named_cells"]]
+    h = r["x86"]["headline"]
+    out_arch["x86"]["headline"] = {
+        "page_range": h["page_range"], "replication_judged_range": h["replication_judged_range"],
+        "replication_enough_range": h["replication_enough_range"], "outside_printed_range": h["outside_printed_range"],
+        "outside_stored_range": h["outside_stored_range"],
+        "earlier": [{**_repl_names(x), **{k: v for k, v in x.items() if k != "cpu_model"}} for x in h["earlier"]],
+        "replication": [{**_repl_names(x), **{k: v for k, v in x.items() if k != "cpu_model"}} for x in h["replication"]]}
+    q = r["questions"]
+    q2 = dict(q["xeon_6973pc"])
+    q2["secondary_cause"] = {k: v for k, v in q2["secondary_cause"].items() if k != "why"} if q2["secondary_cause"] else None
+    q2 = {**_repl_names({"cpu_model": q2["model"]}), **{k: v for k, v in q2.items() if k != "model"}}
+    return {
+        "note": "derived by scripts/build_site_data.py from " + REPLICATION + " (replication/compare.py derives that file from the six "
+                "pooled files named in `pools`); do not edit by hand. The separate sets are the result; the pooled forms are "
+                "secondary, because the sets were requested after a borderline reading, so the stopping point depended on the data.",
+        "plan": REPLICATION_PLAN, "plan_sha256": r["plan_sha256"], "source": REPLICATION, "source_sha256": sha(path),
+        "compare": REPLICATION_COMPARE, "criteria": {k: v for k, v in r["criteria"].items() if k not in ("sha256", "pooled_under_sha256")},
+        "pools": {arch: {role: {"path": p["path"], "sha256": p["sha256"], "jobs": p["jobs"], "runs": len(p["runs"]),
+                               "run_ids": p["runs"], "models_drawn": p["models_drawn"]} for role, p in r["pools"][arch].items()}
+                  for arch in ("x86", "arm")},
+        "rows": rows, "arch": out_arch,
+        "questions": {"arm_cell": q["arm_cell"], "xeon_6973pc": q2},
+    }
+
+
+# ---------------------------------------------------------------- the matrix-multiply d-sweep (dsweep/PLAN.md, results/s10-dsweep-*)
+DSWEEP_POOLED = "results/s10-dsweep-pooled/dsweep-pooled.json"
+DSWEEP_TABLE = "results/s10-dsweep-pooled/table.md"
+DSWEEP_PLAN = "dsweep/PLAN.md"
+DSWEEP_ANALYSIS = "dsweep/analyze.py"
+DSWEEP_COLUMNS = ("as_compiled", "aligned")
+DSWEEP_MODES = ("none", "fast", "none_a64", "fast_a64")
+
+
+def _ds_column(b, col):
+    """What the rule read for one column of one CPU model, and the word it gave."""
+    c = b["columns"][col]
+    ex = c["excess"]
+    return {"word": b["words"][col]["word"], "reason": b["words"][col]["reason"],
+            "share": ex["share"], "share_ci95": ex["share_ci95"],
+            "fixed": ex["fixed"], "fixed_ci95": ex["fixed_ci95"],
+            "per_element_at_d_max": ex["per_element_at_d_max"], "per_element_at_d_max_ci95": ex["per_element_at_d_max_ci95"],
+            "excess_at_d_min": ex["at_d_min"], "excess_at_d_max": ex["at_d_max"],
+            "growth": ex["growth"], "growth_ci95": ex["growth_ci95"], "undefined_fraction": ex["undefined_fraction"],
+            "excess_residual": ex["residual"]["median_max_relative_residual"],
+            "baseline_residual": c["baseline"]["median_max_relative_residual"],
+            "cost_threshold": c["cost_threshold"], "cost_unseen": c["cost_unseen"], "fit_ds": c["fit_ds"]}
+
+
+def _ds_rows(b):
+    """One row per d, in the order of the analysis: both columns (FAST/NONE with its 95% interval and the excess in ns per
+    inner call), the Cachegrind instruction counts (instructions, not time) and the placement statistic."""
+    ali = {r["d"]: r for r in b["columns"]["aligned"]["rows"]}
+    pla = {r["d"]: r for r in b["placement"]["rows"]}
+    ins = {r["d"]: r for r in b["instructions"]["rows"]}
+    rows = []
+    for r in b["columns"]["as_compiled"]["rows"]:
+        d = r["d"]
+        a = ali[d]
+        assert a["roles"] == r["roles"], f"d = {d}: the two columns disagree on the role"
+        rows.append({
+            "d": d, "roles": r["roles"], "d_mod_8": r["d_mod_8"], "working_set_bytes": r["working_set_bytes"],
+            "as_compiled": {"ratio": r["ratio"], "ci95": r["ci95"], "excess_ns_per_inner": r["excess_ns_per_inner"]},
+            "aligned": {"ratio": a["ratio"], "ci95": a["ci95"], "excess_ns_per_inner": a["excess_ns_per_inner"]},
+            "extra_instr_per_inner": ins[d]["extra_per_inner"], "instr_ratio": ins[d]["ratio"],
+            "placement_d": pla[d]["d_ratio"], "placement_d_ci95": pla[d]["ci95"], "placement_sensitive": pla[d]["sensitive"]})
+    return rows
+
+
+def dsweep_data():
+    """site/data/dsweep.json: the pooled d-sweep (results/s10-dsweep-pooled/dsweep-pooled.json, which dsweep/analyze.py
+    writes from the per-job dsweep.json files; scripts/check.py re-pools them and compares) reduced to what the page prints:
+    for each CPU model with at least the minimum number of jobs the word the pre-registered rule gave, the word of each
+    column, the fixed share with its interval, the A/A, the d ladder and one row per d; for the others the job count.
+    Nothing is computed here; the plan and criteria hashes must be those of the files as they stand."""
+    path = os.path.join(REPO, DSWEEP_POOLED)
+    p = load(path)
+    assert p["kind"] == "dsweep-pooled" and p["schema_version"] == 1, "results/s10-dsweep-pooled has another schema"
+    assert p["plan_sha256"] == sha(os.path.join(REPO, DSWEEP_PLAN)), \
+        "dsweep/PLAN.md differs from the plan the d-sweep was pooled under (it must never be edited after a run)"
+    assert p["criteria_sha256"] == sha(os.path.join(REPO, p["criteria_file"])), "the d-sweep was pooled under other criteria"
+    assert not p["incomplete_jobs"], "a d-sweep job began and left no result"
+    minimum = p["rule"]["minimum_jobs"]
+    # the facts of the jobs that the pooled file does not repeat: the runner's architecture and caches, the commit that ran
+    meta, per_run = {}, {}
+    for i in p["inputs"]:
+        d = load(os.path.normpath(os.path.join(os.path.dirname(path), i["path"])))
+        assert d["plan_sha256"] == p["plan_sha256"], f"{i['path']} was run under another plan"
+        run, rn = d["run"], d["run"]["runner"]
+        m = meta.setdefault(i["cpu_model"], {"arch": rn["arch"], "l1d_kib": rn["l1d_kib"], "l2_kib": rn["l2_kib"], "commits": set()})
+        assert (m["arch"], m["l1d_kib"], m["l2_kib"]) == (rn["arch"], rn["l1d_kib"], rn["l2_kib"]), f"{i['cpu_model']}: jobs on other machines"
+        m["commits"].add(run["commit"])
+        # no workflow-run address here: the served site carries none (scripts/check_site.py); the stored files keep theirs
+        pr = per_run.setdefault(i["run_id"], {"run_id": i["run_id"], "jobs": 0,
+                                              "models": {}, "commit": run["commit"], "started_at": run["started_at"]})
+        assert pr["commit"] == run["commit"], f"run {i['run_id']}: jobs from two commits"
+        pr["jobs"] += 1
+        pr["models"][i["cpu_model"]] = pr["models"].get(i["cpu_model"], 0) + 1
+    models, few = [], []
+    for b in sorted(p["cpus"], key=lambda x: (-x["jobs"], x["cpu_model"])):
+        m = meta[b["cpu_model"]]
+        head = {**_repl_names(b), "arch": m["arch"], "l1d_kib": m["l1d_kib"], "l2_kib": m["l2_kib"], "commits": sorted(m["commits"]),
+                "jobs": b["jobs"], "runs": len(b["runs"]), "run_ids": b["runs"]}
+        if b["jobs"] < minimum:
+            few.append({**head, "word": b["verdict"]["word"], "reason": b["verdict"]["reason"]})
+            continue
+        assert not b["problems"], f"{b['cpu_model']}: file problems in the d-sweep: {b['problems']}"
+        lad = b["ladder"]
+        models.append({
+            **head, "word": b["verdict"]["word"], "columns_agree": b["verdict"]["columns_agree"], "reason": b["verdict"]["reason"],
+            "columns": {c: _ds_column(b, c) for c in DSWEEP_COLUMNS},
+            "aa": b["aa"], "published": b.get("published"),
+            "ladder": {k: lad[k] for k in ("modulus", "residue", "min_d", "study_l1_d", "study_l2_d", "fit", "scan", "bridge", "mid_d")},
+            "builds": {mode: {"traps": b["builds"][mode]["traps"], "elements_per_pass": b["builds"][mode]["elements_per_pass"],
+                              "vectorization": b["builds"][mode]["vectorization"]["vectorized"],
+                              "width": b["builds"][mode]["vectorization"].get("width"), "hot_loop": b["builds"][mode]["hot_loop"]}
+                       for mode in DSWEEP_MODES},
+            "placement": {k: b["placement"][k] for k in ("mechanical", "hot_none", "hot_fast", "sensitive_ds")},
+            "instructions": {"label": b["instructions"]["label"], "jobs_agree": b["instructions"]["jobs_agree"],
+                             "fit": b["instructions"]["fit"]},
+            "rows": _ds_rows(b)})
+    return {
+        "note": "derived by scripts/build_site_data.py from " + DSWEEP_POOLED + " (dsweep/analyze.py writes that file from the "
+                "per-job dsweep.json files; scripts/check.py re-pools them and compares); do not edit by hand. The words are the "
+                "ones the rule fixed in " + DSWEEP_PLAN + " before the runs gave; instruction counts are instructions, not time.",
+        "plan": DSWEEP_PLAN, "plan_sha256": p["plan_sha256"], "analysis": DSWEEP_ANALYSIS, "source": DSWEEP_POOLED,
+        "source_sha256": sha(path), "table": DSWEEP_TABLE, "criteria_file": p["criteria_file"], "rule": p["rule"],
+        "resamples": p["resamples"], "seed_prefix": p["seed_prefix"], "jobs": len(p["inputs"]), "line": p["line"],
+        "runs": [per_run[k] for k in sorted(per_run)], "models": models, "too_few_jobs": few}
 
 
 def tree(root):

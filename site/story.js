@@ -134,19 +134,20 @@ function simdChip() {
   if (!b || !d) return;
   b.addEventListener('click', () => { const on = d.hidden; d.hidden = !on; b.setAttribute('aria-expanded', String(on)); });
 }
-function toggleHint() { // shown once, when the first run has finished; any use of the switch (or 9 s) ends it
+function toggleHint() { // shown from the start, beside the switch; the first use ends it, and while the check is off it asks for the second move
   const h = $('sw-hint'); if (!h) return;
-  let gone = false;
-  const end = () => { if (gone) return; gone = true; h.classList.remove('show'); setTimeout(() => { h.hidden = true; }, 220); };
-  document.addEventListener('race-used', end, { once: true });
-  setTimeout(() => { if (gone) return; h.hidden = false; requestAnimationFrame(() => h.classList.add('show')); setTimeout(end, 9000); }, 1700);
+  let timer = 0;
+  const hide = () => { h.classList.remove('show'); clearTimeout(timer); timer = setTimeout(() => { if (!h.classList.contains('show')) { h.hidden = true; h.classList.remove('back'); } }, 220); };
+  const ask = () => { clearTimeout(timer); h.classList.add('back'); h.hidden = false; requestAnimationFrame(() => h.classList.add('show')); };
+  document.addEventListener('race-used', () => { if ($('race-sw').getAttribute('aria-checked') === 'false') ask(); else hide(); });
+  h.hidden = false; requestAnimationFrame(() => h.classList.add('show'));
 }
 function openFolds() { // a link into a folded block opens it first
   const open = (t) => { for (let n = t; n; n = n.parentElement) if (n.tagName === 'DETAILS' && !n.open) n.open = true; };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#"]'); if (!a || a.getAttribute('href').length < 2) return;
     const t = document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)));
-    if (t) { open(t); if (a.id === 'bar-limits') { e.preventDefault(); t.scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'center' }); history.replaceState(null, '', '#cannot'); } }
+    if (t) { open(t); if (a.id === 'bar-limits' || a.classList.contains('toc-limits')) { e.preventDefault(); t.scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'center' }); history.replaceState(null, '', '#cannot'); } }
   });
   if (location.hash.length > 1) { const t = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (t) open(t); }
 }

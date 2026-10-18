@@ -28,6 +28,18 @@
    results/s8-arm-pooled/pooled.json (the Arm column: an AArch64 runner, its own pool, none of the x86-64 inputs)
    must list every job of every s8-arm-run-* folder once and nothing else; it, the run-level pooled.json of
    each s8-arm-run-* folder and every job's results.json there go through the same recomputations as the rest.
+   The replication (replication/PLAN.md): results/s9-arm-b-pooled and results/s9-x86-c-pooled (the new sets alone) and
+   the secondary pools results/s9-arm-ab-pooled and results/s9-x86-ac-pooled (the earlier pool and the new set together)
+   must list every job of the run folders they name (s9-arm-run-*, s9-run-*, and for the secondary pools the earlier
+   ones too) once and nothing else, and contain every job of the pools they extend; they and the run-level files are
+   recomputed like all pooled.json files. harness/pool_check.py samples only CPU models with at least the minimum
+   number of jobs (a model with fewer is listed as skipped). replication/compare.py --verify recomputes
+   replication/results.json from the six pooled files and demands it equal the stored file.
+   The matrix-multiply d-sweep (dsweep/PLAN.md): dsweep/analyze.py --verify validates every stored dsweep.json and
+   recomputes its ratios and intervals from the raw samples; the sha256 of dsweep/PLAN.md must be the plan_sha256 stored in
+   every dsweep.json and dsweep-pooled.json (any edit of the plan after a run fails here); results/*dsweep-pooled/
+   dsweep-pooled.json must list every dsweep.json of its run folders once and equal a fresh dsweep/analyze.py over them, with
+   only the input-path strings ignored (floats to 1e-9 relative), as must each run's own copy.
    The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps and skip cleanly when their results are absent.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
    the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots).
@@ -243,6 +255,13 @@ def check_pool_complete(base=None):
                                      including all of results/s4-pooled and results/s6-pooled
       results/s8-arm-pooled/pooled.json  the Arm column's pool: every job of every s8-arm-run-* folder and nothing else
                                      (an AArch64 runner; it shares no input with the x86-64 pools and does not need them)
+    and the four pools of the replication (replication/PLAN.md):
+      results/s9-arm-b-pooled/pooled.json   set B alone: every job of every s9-arm-run-* folder and nothing else
+      results/s9-x86-c-pooled/pooled.json   set C alone: every job of every s9-run-* folder and nothing else
+      results/s9-arm-ab-pooled/pooled.json  sets A and B: the s8-arm-run-* and s9-arm-run-* jobs, including all of
+                                            results/s8-arm-pooled and results/s9-arm-b-pooled
+      results/s9-x86-ac-pooled/pooled.json  the first pool and set C: the s4-, s6-, s7- and s9-run-* jobs, including all of
+                                            results/s7-pooled and results/s9-x86-c-pooled
     `base` is the results folder (default: the repository's); the tests point it at a scratch copy."""
     base = base or os.path.join(REPO, "results")
 
@@ -253,7 +272,11 @@ def check_pool_complete(base=None):
     # (pool folder, the run folders it pools, the earlier pools whose every input it must contain)
     pools = (("s6-pooled", ("s4-run-*", "s6-run-*"), ("s4-pooled",)),
              ("s7-pooled", ("s4-run-*", "s6-run-*", "s7-run-*"), ("s4-pooled", "s6-pooled")),
-             ("s8-arm-pooled", ("s8-arm-run-*",), ()))
+             ("s8-arm-pooled", ("s8-arm-run-*",), ()),
+             ("s9-arm-b-pooled", ("s9-arm-run-*",), ()),
+             ("s9-x86-c-pooled", ("s9-run-*",), ()),
+             ("s9-arm-ab-pooled", ("s8-arm-run-*", "s9-arm-run-*"), ("s8-arm-pooled", "s9-arm-b-pooled")),
+             ("s9-x86-ac-pooled", ("s4-run-*", "s6-run-*", "s7-run-*", "s9-run-*"), ("s7-pooled", "s9-x86-c-pooled")))
     for rel, patterns, earlier in pools:
         if not os.path.exists(os.path.join(base, rel, "pooled.json")):
             continue
@@ -271,7 +294,8 @@ def check_pool_complete(base=None):
             problems.append(f"{os.path.relpath(p, base)} is pooled but is not in an {kinds.replace(' and ', ' or ')} folder")
         for e in earlier:
             for p in sorted(set(listed(e)) - set(pooled)):
-                problems.append(f"{os.path.relpath(p, base)} is in the {'original' if e == 's4-pooled' else e.split('-')[0]} pool but not in this one")
+                label = "original" if e == "s4-pooled" else e[:-len("-pooled")]  # s6, s7, s8-arm, s9-arm-b, s9-x86-c
+                problems.append(f"{os.path.relpath(p, base)} is in the {label} pool but not in this one")
         for pr in problems:
             print(f"   FAIL results/{rel}/pooled.json: {pr}")
         if not problems:
@@ -279,6 +303,162 @@ def check_pool_complete(base=None):
             print(f"   ok   results/{rel}/pooled.json pools all {len(on_disk)} jobs of the {kinds} folders "
                   f"once each" + (f", including {incl}" if incl else ""))
         ok &= not problems
+    return ok
+
+
+# ---------------------------------------------------------------- the matrix-multiply d-sweep (dsweep/PLAN.md)
+DSWEEP_PLAN = "dsweep/PLAN.md"
+
+
+def lf_sha(rel_path):
+    """sha256 of a file with CRLF read as LF: dsweep/analyze.py hashes the plan this way, so a Windows and a Linux checkout agree."""
+    with open(os.path.join(REPO, rel_path), "rb") as f:
+        return hashlib.sha256(f.read().replace(bytes([13, 10]), bytes([10]))).hexdigest()
+
+
+def dsweep_run_files(base):
+    """Every per-job dsweep.json in the d-sweep run folders of `base` (results/*dsweep-run-*/<job folder>/dsweep.json)."""
+    return sorted(glob.glob(os.path.join(base, "*dsweep-run-*", "*", "dsweep.json")))
+
+
+def dsweep_pooled_files(base):
+    """The pooled d-sweep files: the pool of all runs (results/*dsweep-pooled/dsweep-pooled.json) and, kept as downloaded, each
+    run's own (results/*dsweep-run-*/dsweep-pooled/dsweep-pooled.json)."""
+    return (sorted(glob.glob(os.path.join(base, "*dsweep-pooled", "dsweep-pooled.json")))
+            + sorted(glob.glob(os.path.join(base, "*dsweep-run-*", "dsweep-pooled", "dsweep-pooled.json"))))
+
+
+def dsweep_norm(doc):
+    """A dsweep-pooled.json with its input paths cut to the last two components (job folder, file name). The paths are relative
+    to the folder the analysis was told to write to, which is not the same for the stored pool, a workflow's own copy
+    and a re-pool; nothing else of the file is changed."""
+    doc = json.loads(json.dumps(doc))
+    cut = lambda p: "/".join(p.replace("\\", "/").split("/")[-2:])  # noqa: E731
+    for i in doc["inputs"]:
+        i["path"] = cut(i["path"])
+    for c in doc["cpus"]:
+        c["inputs"] = [cut(p) for p in c["inputs"]]
+    return doc
+
+
+def dsweep_repool(files):
+    """dsweep/analyze.py over exactly `files`, written to a scratch folder: (the pooled document, or None and why)."""
+    import subprocess
+    import tempfile
+    t = tempfile.gettempdir()
+    # analyze.py writes the input paths relative to the --out folder, which needs the same drive on Windows
+    parent = None if os.path.splitdrive(t)[0].lower() == os.path.splitdrive(REPO)[0].lower() else REPO
+    with tempfile.TemporaryDirectory(dir=parent) as tmp:
+        out = os.path.join(tmp, "dsweep-pooled.json")
+        sys.stdout.flush()
+        r = subprocess.run([sys.executable, os.path.join(REPO, "dsweep", "analyze.py")] + list(files) + ["--out", out],
+                           capture_output=True, text=True)
+        if r.returncode != 0 or not os.path.exists(out):
+            return None, f"dsweep/analyze.py exited {r.returncode}: {(r.stdout + r.stderr).strip()[-300:]}"
+        with open(out, encoding="utf-8") as f:
+            return json.load(f), ""
+
+
+def check_dsweep_plan(sweeps, pools, plan=DSWEEP_PLAN):
+    """The plan (dsweep/PLAN.md) is the one every stored dsweep.json and every pooled d-sweep file was produced under: each stores
+    the plan's sha256, so any later edit of the plan, even of one word, shows here and makes the stored runs unusable."""
+    want = lf_sha(plan)
+    problems = []
+    for path in list(sweeps) + list(pools):
+        try:
+            name = os.path.relpath(path, REPO).replace("\\", "/")
+        except ValueError:  # another drive (a scratch copy in a test)
+            name = path
+        try:
+            with open(path, encoding="utf-8") as f:
+                have = json.load(f).get("plan_sha256")
+        except (OSError, ValueError) as e:
+            problems.append(f"{name}: unreadable ({e})")
+            continue
+        if have != want:
+            problems.append(f"{name}: stored plan_sha256 {str(have)[:12]} is not the hash of {plan} as it stands ({want[:12]}); "
+                            "the plan was edited after the run, or the file was not produced under it")
+    for pr in problems:
+        print(f"   FAIL {pr}")
+    if not problems:
+        print(f"   ok   {plan} (sha256 {want[:12]}) is the plan all {len(sweeps)} dsweep.json and {len(pools)} dsweep-pooled.json files were produced under")
+    return not problems
+
+
+def check_dsweep_pools(base=None):
+    """Each pooled d-sweep file is what dsweep/analyze.py gives for the files it names, with only the input paths ignored.
+    results/*dsweep-pooled/dsweep-pooled.json must list every per-job dsweep.json of the run folders it names once and nothing
+    else, and every dsweep.json in a d-sweep run folder must be in one such pool; each run's own copy (kept as downloaded,
+    results/*dsweep-run-*/dsweep-pooled/) is re-pooled from the jobs of its folder. Floats are compared to 1e-9 relative, as for the
+    other pooled files (a different numpy may differ in the last digits). `base` is the results folder (default: the repository's)."""
+    base = base or os.path.join(REPO, "results")
+    on_disk = [os.path.normpath(p) for p in dsweep_run_files(base)]
+    pools = sorted(glob.glob(os.path.join(base, "*dsweep-pooled", "dsweep-pooled.json")))
+    ok, in_a_pool = True, set()
+    if on_disk and not pools:
+        print("   FAIL there are dsweep.json files under results/ and no results/*dsweep-pooled/dsweep-pooled.json")
+        return False
+    for path in pools:
+        name = "results/" + os.path.relpath(path, base).replace("\\", "/")
+        with open(path, encoding="utf-8") as f:
+            stored = json.load(f)
+        listed =[os.path.normpath(os.path.join(os.path.dirname(path), i["path"])) for i in stored["inputs"]]
+        problems = []
+        if len(set(listed)) != len(listed):
+            problems.append("a job is listed twice")
+        for p in (x for x in listed if not os.path.isfile(x)):
+            problems.append(f"{os.path.relpath(p, base)} is listed but is not on disk")
+        runs = {os.path.dirname(os.path.dirname(p)) for p in listed}   # <run folder>/<job folder>/dsweep.json
+        for p in sorted(x for x in on_disk if os.path.dirname(os.path.dirname(x)) in runs and x not in listed):
+            problems.append(f"{os.path.relpath(p, base)} is on disk in a run folder this pool names but not pooled")
+        in_a_pool |= set(listed)
+        if not problems:
+            again, why = dsweep_repool(listed)
+            if again is None:
+                problems.append(why)
+            else:
+                diffs = same_doc(dsweep_norm(stored), dsweep_norm(again))
+                if diffs:
+                    problems.append("stored numbers differ from the recomputed ones: " + "; ".join(diffs[:5]))
+        for pr in problems:
+            print(f"   FAIL {name}: {pr}")
+        if not problems:
+            print(f"   ok   {name} equals dsweep/analyze.py over the {len(listed)} dsweep.json it lists (all those of its "
+                  f"{len(runs)} run folders; input paths aside): {stored['line']}")
+        ok &= not problems
+    for p in sorted(set(on_disk) - in_a_pool):
+        print(f"   FAIL {os.path.relpath(p, base)} is in no results/*dsweep-pooled/dsweep-pooled.json")
+        ok = False
+    for path in sorted(glob.glob(os.path.join(base, "*dsweep-run-*", "dsweep-pooled", "dsweep-pooled.json"))):
+        name = "results/" + os.path.relpath(path, base).replace("\\", "/")
+        run =os.path.dirname(os.path.dirname(path))
+        jobs = [p for p in dsweep_run_files(base) if os.path.dirname(os.path.dirname(p)) == run]
+        with open(path, encoding="utf-8") as f:
+            stored = json.load(f)
+        again, why = dsweep_repool(jobs) if jobs else (None, "no dsweep.json in the run folder")
+        diffs = same_doc(dsweep_norm(stored), dsweep_norm(again)) if again is not None else [why]
+        for d in diffs[:5]:
+            print(f"   FAIL {name}: {d}")
+        if not diffs:
+            print(f"   ok   {name} equals dsweep/analyze.py over the {len(jobs)} dsweep.json of its run folder (input paths aside)")
+        ok &= not diffs
+    return ok
+
+
+def check_dsweep():
+    """The d-sweep step of main(): every stored dsweep.json validated and its ratios recomputed from the raw samples
+    (dsweep/analyze.py --verify), the plan hash, and the pooled files re-pooled. 'none yet' while no sweep is stored."""
+    import subprocess
+    sweeps = sorted(set(glob.glob(os.path.join(REPO, "results", "**", "dsweep.json"), recursive=True)
+                        + glob.glob(os.path.join(REPO, "dsweep", "**", "dsweep.json"), recursive=True)))
+    analyze = os.path.join(REPO, "dsweep", "analyze.py")
+    if not os.path.exists(analyze) or not sweeps:
+        print("   none yet")
+        return True
+    sys.stdout.flush()
+    ok = subprocess.call([sys.executable, analyze, "--verify"] + sweeps) == 0
+    ok &= check_dsweep_plan(sweeps, dsweep_pooled_files(os.path.join(REPO, "results")))
+    ok &= check_dsweep_pools()
     return ok
 
 
@@ -455,6 +635,15 @@ def main():
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "arm64", "seeds.py"), "--check"]) == 0
     else:
         print("   none yet")
+    print("== replication (replication/compare.py --verify: replication/results.json recomputed from the six pooled files; skips if absent)")
+    if os.path.exists(os.path.join(REPO, "replication", "compare.py")) and os.path.exists(os.path.join(REPO, "replication", "results.json")):
+        sys.stdout.flush()
+        ok &= subprocess.call([sys.executable, os.path.join(REPO, "replication", "compare.py"), "--verify"]) == 0
+    else:
+        print("   none yet")
+    print("== d-sweep (dsweep/analyze.py --verify: every stored dsweep.json validated and its numbers recomputed; the plan hash; "
+          "the pooled files re-pooled and compared, input paths aside; none is stored until the sweep has run)")
+    ok &= check_dsweep()
     print("== PGO column (pgo/check.py: plan, build script, pooled file recomputed from the raw samples, report, tests)")
     if os.path.exists(os.path.join(REPO, "pgo", "check.py")):
         sys.stdout.flush()

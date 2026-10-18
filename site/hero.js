@@ -38,6 +38,7 @@ function chrome() {
     tick = false;
     const max = document.documentElement.scrollHeight - innerHeight;
     bar.classList.toggle('on', scrollY > innerHeight * 0.6);
+    document.documentElement.classList.toggle('scrolled', scrollY > 120); // the section dots appear once the reader has scrolled
     let on = null;
     // the section under the sticky bar (46 px) plus a small margin; a Contents jump lands a section's top at about 70 px
     for (const s of secs) if (s.getBoundingClientRect().top <= 100) on = s;

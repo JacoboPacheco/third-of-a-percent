@@ -1,0 +1,139 @@
+--- k03_stencil.none_a64.s
++++ k03_stencil.fast_a64.s
+@@ -1,23 +1,40 @@
+ <_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_>:
+-ldp	x8, x12, [x1]
+-sub	x11, x12, x8
+-asr	x9, x11, #2
+-cmp	x9, #0x3
++ldp	x8, x9, [x1]
++sub	x9, x9, x8
++asr	x9, x9, #2
++subs	x13, x9, #0x3
+ b.cc	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.lo, b.ul, b.last
+-sub	x13, x9, #0x2
+-ldr	x10, [x0]
+-cmp	x13, #0x8
++ldp	x10, x11, [x0]
++sub	x11, x11, x10
++asr	x11, x11, #2
++cmp	x11, #0x1
++csinc	x12, x11, xzr, hi	// hi = pmore
++sub	x11, x8, #0x4
++sub	x15, x12, #0x1
++cmp	x15, x13
++csel	x14, x15, x13, cc	// cc = lo, ul, last
++cmp	x14, #0x7
++b.ls	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.plast
++cmp	x15, x13
++add	x16, x10, #0x4
++csel	x13, x15, x13, cc	// cc = lo, ul, last
++lsl	x13, x13, #2
++add	x15, x8, x13
++add	x13, x10, x13
++add	x15, x15, #0xc
++add	x13, x13, #0x8
++cmp	x16, x15
++ccmp	x8, x13, #0x2, cc	// cc = lo, ul, last
+ b.cc	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.lo, b.ul, b.last
+-add	x14, x10, #0x4
+-cmp	x14, x12
+-b.cs	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.hs, b.nlast
+-add	x11, x10, x11
+-sub	x11, x11, #0x4
+-cmp	x8, x11
+-b.cs	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.hs, b.nlast
+-mov	w12, #0x1                   	// #1
+-mov	w11, #0x2                   	// #2
+-sub	x13, x8, #0x4
++add	x13, x14, #0x1
++mov	w14, #0x8                   	// #8
++add	x16, x10, #0x14
++ands	x15, x13, #0x7
++add	x17, x8, #0x10
++csel	x14, x14, x15, eq	// eq = none
++sub	x15, x13, x14
++add	x13, x15, #0x2
++add	x14, x15, #0x1
+ nop
+ nop
+ nop
+@@ -30,25 +47,24 @@
+ nop
+ nop
+ nop
+-nop
+-lsl	x14, x12, #2
+-mov	x12, x11
+-ldr	w17, [x8, x11, lsl #2]
+-add	x11, x11, #0x1
+-ldr	w15, [x13, x14]
+-ldr	w16, [x8, x14]
+-cmp	x9, x11
+-add	w15, w16, w15
+-add	w15, w15, w17
+-str	w15, [x10, x14]
++ldp	q0, q2, [x17, #-16]
++subs	x15, x15, #0x8
++ldur	q1, [x17, #-12]
++ldur	q3, [x17, #4]
++add	v0.4s, v1.4s, v0.4s
++add	v1.4s, v3.4s, v2.4s
++ldur	q2, [x17, #-8]
++ldur	q3, [x17, #8]
++add	x17, x17, #0x20
++add	v0.4s, v0.4s, v2.4s
++add	v1.4s, v1.4s, v3.4s
++stp	q0, q1, [x16, #-16]
++add	x16, x16, #0x20
+ b.ne	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
+-ret
+-and	x14, x13, #0xfffffffffffffff8
+-add	x15, x10, #0x14
+-add	x16, x8, #0x10
+-orr	x11, x14, #0x2
+-orr	x12, x14, #0x1
+-mov	x17, x14
++b	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++mov	w14, #0x1                   	// #1
++mov	w13, #0x2                   	// #2
++add	x12, x12, #0x1
+ nop
+ nop
+ nop
+@@ -63,20 +79,19 @@
+ nop
+ nop
+ nop
+-ldp	q0, q2, [x16, #-16]
+-subs	x17, x17, #0x8
+-ldur	q1, [x16, #-12]
+-ldur	q3, [x16, #4]
+-add	v0.4s, v1.4s, v0.4s
+-add	v1.4s, v3.4s, v2.4s
+-ldur	q2, [x16, #-8]
+-ldur	q3, [x16, #8]
+-add	x16, x16, #0x20
+-add	v0.4s, v0.4s, v2.4s
+-add	v1.4s, v1.4s, v3.4s
+-stp	q0, q1, [x15, #-16]
+-add	x15, x15, #0x20
++cmp	x12, x13
++b.eq	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.none
++lsl	x14, x14, #2
++ldr	w18, [x8, x13, lsl #2]
++mov	x15, x13
++add	x13, x13, #0x1
++ldr	w16, [x11, x14]
++ldr	w17, [x8, x14]
++cmp	x9, x13
++add	w16, w17, w16
++add	w16, w16, w18
++str	w16, [x10, x14]
++mov	x14, x15
+ b.ne	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
+-cmp	x13, x14
+-b.ne	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>  // b.any
+-b	<_Z16kern_k03_stencilRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_+off>
++ret
++brk	#0x1

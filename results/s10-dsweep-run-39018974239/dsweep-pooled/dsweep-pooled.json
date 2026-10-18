@@ -1,0 +1,1606 @@
+{
+ "kind": "dsweep-pooled",
+ "schema_version": 1,
+ "plan_sha256": "0b0d8a90b6e2c7f716928f4c3e0f7cfd8860b630b1f8f37757a43cbd1028a8e8",
+ "plan_file": "dsweep/PLAN.md",
+ "criteria_sha256": "b01beceab72f79e9b837483eb7f30403980598358c618ebc79a8dcdb97b55596",
+ "criteria_file": "harness/criteria-v3.json",
+ "code_sha256": {
+  "dsweep/sweep.py": "94eefe016287c843b04eff8a08978e8b986bb2de262e3ebf16a9c289656e6991",
+  "dsweep/analyze.py": "cfdaf54222de691e3aef8f41e7e6b58e1ecd9a7ca85356a975dd462ed9a5bc50",
+  "harness/run.py": "98ca86c29596c18ccef134a65b85ac3e7de47b3c8d3dc78754d5752be78cf61b",
+  "harness/pool.py": "66821c568ae28d7c141603ba537d3158ea6925d5e01bcfe6a494c3a9bc597236",
+  "harness/stats.py": "ff03b689db19e09fbe7a36959a26d930d941c6ed84146e49012b7ecc7e2474ab",
+  "harness/placement.py": "59a7f72acf8f4037dff2e194f0a91eaf2af41c093ef57700e8f203e6f749ae67",
+  "harness/asm.py": "215bc301cfee6da8e74b3ac3f716c3c748473a76b9cb62b0c605735a533f435e",
+  "harness/remarks.py": "1ce6463b86327a77e6edd2dce738413d29b297a434375406aa58d7baf18cf18e",
+  "harness/cachegrind.py": "b00fcebdb69b2d0c51183b57c20eb9b512d360891f7eb5c2b45efc7988989bc2",
+  "kernels/k08_matmul.cpp": "852d771a74e43a71eb1cf566c7a4b0f128badcaed4269fe45f764788bfea61a7",
+  "kernels/common.hpp": "f1983002f61118cedb7aecb78bc923cc35666ae480e799f007443addac8d8207"
+ },
+ "rule": {
+  "minimum_jobs": 3,
+  "aa_half_width_max_pct": 2.0,
+  "minimum_fit_points": 4,
+  "baseline_max_relative_residual": 0.1,
+  "excess_max_relative_residual": 0.15,
+  "undefined_resamples_max_fraction": 0.025,
+  "h1_share_band": [
+   0.8,
+   1.2
+  ],
+  "h2_share_band": [
+   -0.2,
+   0.2
+  ],
+  "falls_share_above": 1.2
+ },
+ "resamples": 2000,
+ "seed_prefix": "20261011",
+ "inputs": [
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j1/dsweep.json",
+   "run_id": "39018974239",
+   "job": "1",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j2/dsweep.json",
+   "run_id": "39018974239",
+   "job": "2",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j3/dsweep.json",
+   "run_id": "39018974239",
+   "job": "3",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j4/dsweep.json",
+   "run_id": "39018974239",
+   "job": "4",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j5/dsweep.json",
+   "run_id": "39018974239",
+   "job": "5",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  },
+  {
+   "path": "dsweep-job-amd-epyc-7763-64-core-processor-j6/dsweep.json",
+   "run_id": "39018974239",
+   "job": "6",
+   "cpu_model": "AMD EPYC 7763 64-Core Processor"
+  }
+ ],
+ "incomplete_jobs": [],
+ "cpus": [
+  {
+   "cpu_model": "AMD EPYC 7763 64-Core Processor",
+   "jobs": 6,
+   "runs": [
+    "39018974239"
+   ],
+   "inputs": [
+    "dsweep-job-amd-epyc-7763-64-core-processor-j1/dsweep.json",
+    "dsweep-job-amd-epyc-7763-64-core-processor-j2/dsweep.json",
+    "dsweep-job-amd-epyc-7763-64-core-processor-j3/dsweep.json",
+    "dsweep-job-amd-epyc-7763-64-core-processor-j4/dsweep.json",
+    "dsweep-job-amd-epyc-7763-64-core-processor-j5/dsweep.json",
+    "dsweep-job-amd-epyc-7763-64-core-processor-j6/dsweep.json"
+   ],
+   "problems": [],
+   "code_changed_since_run": [],
+   "ladder": {
+    "kernel": "k08_matmul",
+    "modulus": 8,
+    "residue": 4,
+    "min_d": 8,
+    "study_l1_d": 36,
+    "study_l2_d": 147,
+    "fit": [
+     12,
+     20,
+     28,
+     36
+    ],
+    "scan": [
+     29,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35
+    ],
+    "bridge": [
+     52,
+     76,
+     100
+    ],
+    "mid_d": 28,
+    "l1_resident_rule": "12*d*d <= l1d/2"
+   },
+   "builds": {
+    "none": {
+     "sha256": "adcd4611e16df8c9d6707ac54a08ef947378e9c867d88121afc4bc6fed7d82dd",
+     "traps": 0,
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ]
+     },
+     "elements_per_pass": 8,
+     "hot_loop": {
+      "start": "0x1360",
+      "bytes": 110,
+      "insns": 23,
+      "simd": true,
+      "start_mod64": 32,
+      "windows64": 3,
+      "extra_window": true,
+      "crosses64": true
+     },
+     "inner_loops": [
+      {
+       "start": "0x1290",
+       "bytes": 146,
+       "insns": 36,
+       "simd": false,
+       "start_mod64": 16,
+       "windows64": 3,
+       "extra_window": false,
+       "crosses64": true
+      },
+      {
+       "start": "0x1360",
+       "bytes": 110,
+       "insns": 23,
+       "simd": true,
+       "start_mod64": 32,
+       "windows64": 3,
+       "extra_window": true,
+       "crosses64": true
+      },
+      {
+       "start": "0x1420",
+       "bytes": 35,
+       "insns": 9,
+       "simd": false,
+       "start_mod64": 32,
+       "windows64": 2,
+       "extra_window": true,
+       "crosses64": true
+      }
+     ]
+    },
+    "fast": {
+     "sha256": "a03b1a2960ff929903153732f980993168bbf663def98c16d63e7e464ad8aeaa",
+     "traps": 1,
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "remarks": [
+       "the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]",
+       "the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]"
+      ]
+     },
+     "elements_per_pass": null,
+     "hot_loop": {
+      "start": "0x12b0",
+      "bytes": 38,
+      "insns": 12,
+      "simd": false,
+      "start_mod64": 48,
+      "windows64": 2,
+      "extra_window": true,
+      "crosses64": true
+     },
+     "inner_loops": [
+      {
+       "start": "0x12b0",
+       "bytes": 38,
+       "insns": 12,
+       "simd": false,
+       "start_mod64": 48,
+       "windows64": 2,
+       "extra_window": true,
+       "crosses64": true
+      }
+     ]
+    },
+    "none_a64": {
+     "sha256": "a74e58b18d20a9e8532abd69f8580f81a3442517c737c8d8c59d577491a99f1c",
+     "traps": 0,
+     "vectorization": {
+      "vectorized": true,
+      "width": 4,
+      "remarks": [
+       "vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]"
+      ]
+     },
+     "elements_per_pass": 8,
+     "hot_loop": {
+      "start": "0x13c0",
+      "bytes": 110,
+      "insns": 23,
+      "simd": true,
+      "start_mod64": 0,
+      "windows64": 2,
+      "extra_window": false,
+      "crosses64": true
+     },
+     "inner_loops": [
+      {
+       "start": "0x12c0",
+       "bytes": 146,
+       "insns": 36,
+       "simd": false,
+       "start_mod64": 0,
+       "windows64": 3,
+       "extra_window": false,
+       "crosses64": true
+      },
+      {
+       "start": "0x13c0",
+       "bytes": 110,
+       "insns": 23,
+       "simd": true,
+       "start_mod64": 0,
+       "windows64": 2,
+       "extra_window": false,
+       "crosses64": true
+      },
+      {
+       "start": "0x1480",
+       "bytes": 35,
+       "insns": 9,
+       "simd": false,
+       "start_mod64": 0,
+       "windows64": 1,
+       "extra_window": false,
+       "crosses64": false
+      }
+     ]
+    },
+    "fast_a64": {
+     "sha256": "005f4cea77eb5b04b6643a4d0bdcfcb89744515dbb1d75d224528a8e43062c31",
+     "traps": 1,
+     "vectorization": {
+      "vectorized": false,
+      "width": null,
+      "remarks": [
+       "the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]",
+       "the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]"
+      ]
+     },
+     "elements_per_pass": null,
+     "hot_loop": {
+      "start": "0x1300",
+      "bytes": 38,
+      "insns": 12,
+      "simd": false,
+      "start_mod64": 0,
+      "windows64": 1,
+      "extra_window": false,
+      "crosses64": false
+     },
+     "inner_loops": [
+      {
+       "start": "0x1300",
+       "bytes": 38,
+       "insns": 12,
+       "simd": false,
+       "start_mod64": 0,
+       "windows64": 1,
+       "extra_window": false,
+       "crosses64": false
+      }
+     ]
+    }
+   },
+   "aa": {
+    "d": 28,
+    "ratio": 1.0001636259961275,
+    "ci95": [
+     0.9993743173814478,
+     1.0009705281511105
+    ],
+    "half_width_pct": 0.07981053848313824,
+    "per_job": [
+     1.0000273942716122,
+     1.000309356124236,
+     0.9986522768292637,
+     1.0000993581483255,
+     1.0004767208360679,
+     1.001418650532195
+    ]
+   },
+   "placement": {
+    "hot_none": {
+     "start": "0x1360",
+     "bytes": 110,
+     "start_mod64": 32,
+     "windows64": 3,
+     "extra_window": true,
+     "crosses64": true,
+     "simd": true
+    },
+    "hot_fast": {
+     "start": "0x12b0",
+     "bytes": 38,
+     "start_mod64": 48,
+     "windows64": 2,
+     "extra_window": true,
+     "crosses64": true,
+     "simd": false
+    },
+    "mechanical": true,
+    "rows": [
+     {
+      "d": 12,
+      "d_ratio": 1.000526314505009,
+      "ci95": [
+       0.9967365257569549,
+       1.0043582514568499
+      ],
+      "statistical": false,
+      "mechanical": true,
+      "sensitive": false
+     },
+     {
+      "d": 20,
+      "d_ratio": 0.9650043250694321,
+      "ci95": [
+       0.9497251901133348,
+       0.9820514270230711
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 28,
+      "d_ratio": 0.9970443559443335,
+      "ci95": [
+       0.9918240353637305,
+       1.0071003071133202
+      ],
+      "statistical": false,
+      "mechanical": true,
+      "sensitive": false
+     },
+     {
+      "d": 29,
+      "d_ratio": 0.9608263467986877,
+      "ci95": [
+       0.9539140685109317,
+       0.9740642002133802
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 30,
+      "d_ratio": 0.8782855195872107,
+      "ci95": [
+       0.835019127375279,
+       0.9209793181471279
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 31,
+      "d_ratio": 0.9628890242682794,
+      "ci95": [
+       0.9539502094260089,
+       0.9753590758340861
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 32,
+      "d_ratio": 1.0105352662235092,
+      "ci95": [
+       1.0023802416238867,
+       1.0237752285384376
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 33,
+      "d_ratio": 1.0111970375539492,
+      "ci95": [
+       1.0056808309890222,
+       1.0213880382910767
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 34,
+      "d_ratio": 1.0070634269388865,
+      "ci95": [
+       1.0010337362578243,
+       1.0184845122749029
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 35,
+      "d_ratio": 0.9635504327026,
+      "ci95": [
+       0.9583757618286465,
+       0.9732823833772527
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 36,
+      "d_ratio": 1.0007809143723787,
+      "ci95": [
+       0.9939291275326397,
+       1.0121496974608373
+      ],
+      "statistical": false,
+      "mechanical": true,
+      "sensitive": false
+     },
+     {
+      "d": 52,
+      "d_ratio": 0.9834835343007456,
+      "ci95": [
+       0.9756227801883476,
+       0.9980257718643176
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 76,
+      "d_ratio": 1.1087556302586217,
+      "ci95": [
+       1.0526901375308173,
+       1.1469228146745452
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 100,
+      "d_ratio": 1.006753283526229,
+      "ci95": [
+       1.0026855515440336,
+       1.0128437876000114
+      ],
+      "statistical": true,
+      "mechanical": true,
+      "sensitive": true
+     },
+     {
+      "d": 147,
+      "d_ratio": 0.9986071579625829,
+      "ci95": [
+       0.9923973639779535,
+       1.0090335856139954
+      ],
+      "statistical": false,
+      "mechanical": true,
+      "sensitive": false
+     }
+    ],
+    "sensitive_ds": [
+     20,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     52,
+     76,
+     100
+    ]
+   },
+   "instructions": {
+    "label": "instructions, not time",
+    "jobs_agree": true,
+    "rows": [
+     {
+      "d": 12,
+      "none_per_inner": 68.75,
+      "fast_per_inner": 162.51388888888889,
+      "ratio": 2.3638383838383836,
+      "extra_per_inner": 93.76388888888889
+     },
+     {
+      "d": 20,
+      "none_per_inner": 90.59,
+      "fast_per_inner": 257.865,
+      "ratio": 2.8465062368914893,
+      "extra_per_inner": 167.275
+     },
+     {
+      "d": 28,
+      "none_per_inner": 113.11734693877551,
+      "fast_per_inner": 353.6045918367347,
+      "ratio": 3.1259979252176264,
+      "extra_per_inner": 240.4872448979592
+     },
+     {
+      "d": 29,
+      "none_per_inner": 124.07728894173603,
+      "fast_per_inner": 365.58263971462543,
+      "ratio": 2.9464106028807175,
+      "extra_per_inner": 241.50535077288941
+     },
+     {
+      "d": 30,
+      "none_per_inner": 122.04,
+      "fast_per_inner": 377.5622222222222,
+      "ratio": 3.0937579664226664,
+      "extra_per_inner": 255.52222222222218
+     },
+     {
+      "d": 31,
+      "none_per_inner": 133.00520291363162,
+      "fast_per_inner": 389.54318418314256,
+      "ratio": 2.9287815487646496,
+      "extra_per_inner": 256.53798126951096
+     },
+     {
+      "d": 32,
+      "none_per_inner": 110.97265625,
+      "fast_per_inner": 401.525390625,
+      "ratio": 3.618237178358971,
+      "extra_per_inner": 290.552734375
+     },
+     {
+      "d": 33,
+      "none_per_inner": 126.94214876033058,
+      "fast_per_inner": 413.5087235996327,
+      "ratio": 3.2574580439814813,
+      "extra_per_inner": 286.5665748393021
+     },
+     {
+      "d": 34,
+      "none_per_inner": 126.91349480968859,
+      "fast_per_inner": 425.4930795847751,
+      "ratio": 3.352622825672065,
+      "extra_per_inner": 298.5795847750865
+     },
+     {
+      "d": 35,
+      "none_per_inner": 137.8865306122449,
+      "fast_per_inner": 437.4783673469388,
+      "ratio": 3.1727418581383096,
+      "extra_per_inner": 299.59183673469386
+     },
+     {
+      "d": 36,
+      "none_per_inner": 135.86111111111111,
+      "fast_per_inner": 449.4645061728395,
+      "ratio": 3.3082646130080193,
+      "extra_per_inner": 313.6033950617284
+     },
+     {
+      "d": 52,
+      "none_per_inner": 181.59023668639054,
+      "fast_per_inner": 641.3173076923077,
+      "ratio": 3.5316728442833285,
+      "extra_per_inner": 459.7270710059172
+     },
+     {
+      "d": 76,
+      "none_per_inner": 250.40096952908587,
+      "fast_per_inner": 929.215027700831,
+      "ratio": 3.7109082662433384,
+      "extra_per_inner": 678.8140581717452
+     },
+     {
+      "d": 100,
+      "none_per_inner": 319.3036,
+      "fast_per_inner": 1217.1626,
+      "ratio": 3.8119288351274463,
+      "extra_per_inner": 897.8590000000002
+     },
+     {
+      "d": 147,
+      "none_per_inner": 459.2057476051645,
+      "fast_per_inner": 1781.1100467397844,
+      "ratio": 3.878675421700564,
+      "extra_per_inner": 1321.9042991346198
+     }
+    ],
+    "fit": {
+     "intercept": -16.036846812799183,
+     "slope": 9.15913454270597,
+     "meaning": "extra instructions per inner call = intercept + slope*d over the fit ladder: H1 predicts slope 0, H2 predicts intercept 0 (instructions, not time)"
+    }
+   },
+   "published": {
+    "L1": 3.19,
+    "L2": 3.79,
+    "source": "results/s7-pooled/pooled.json"
+   },
+   "columns": {
+    "as_compiled": {
+     "column": "as_compiled",
+     "fit_ds": [
+      12,
+      20,
+      28,
+      36
+     ],
+     "rows": [
+      {
+       "d": 12,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 1728,
+       "ratio": 2.5458054104160914,
+       "ci95": [
+        2.5413095700381887,
+        2.5530005733376977
+       ],
+       "half_width_pct": 0.5845501649754503,
+       "jobs": 6,
+       "excess_ns_per_inner": 6.107477430555555,
+       "per_job": [
+        2.543015689530247,
+        2.5420583270957913,
+        2.5414416409996763,
+        2.5610225876803736,
+        2.5393000845843114,
+        2.5480567862517502
+       ],
+       "between_job_sd_pct": 0.31355687293739737
+      },
+      {
+       "d": 20,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 4800,
+       "ratio": 2.736615064920275,
+       "ci95": [
+        2.722597921871704,
+        2.7629364623064308
+       ],
+       "half_width_pct": 2.0169270217363477,
+       "jobs": 6,
+       "excess_ns_per_inner": 9.271266249999998,
+       "per_job": [
+        2.7260143001129347,
+        2.7198742985367654,
+        2.725025886101154,
+        2.800124132239963,
+        2.7247520974121673,
+        2.724773490082032
+       ],
+       "between_job_sd_pct": 1.1267103405074541
+      },
+      {
+       "d": 28,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 9408,
+       "ratio": 3.0070950425435967,
+       "ci95": [
+        2.9909221547631812,
+        3.0384940855660867
+       ],
+       "half_width_pct": 2.3785965401452724,
+       "jobs": 6,
+       "excess_ns_per_inner": 13.044967049319729,
+       "per_job": [
+        2.9920496666160195,
+        2.995263170410503,
+        2.9896757656180695,
+        3.0805157535751118,
+        2.99493343577786,
+        2.9911930543854837
+       ],
+       "between_job_sd_pct": 1.183963395075095
+      },
+      {
+       "d": 29,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 5,
+       "working_set_bytes": 10092,
+       "ratio": 2.7233874186778158,
+       "ci95": [
+        2.7034615896558862,
+        2.7617502076356684
+       ],
+       "half_width_pct": 2.9144308989891066,
+       "jobs": 6,
+       "excess_ns_per_inner": 12.784437673404677,
+       "per_job": [
+        2.7036464423850846,
+        2.702857255824876,
+        2.7041664586699836,
+        2.8170481585374803,
+        2.7046499930924774,
+        2.709847107077028
+       ],
+       "between_job_sd_pct": 1.659027390853849
+      },
+      {
+       "d": 30,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 6,
+       "working_set_bytes": 10800,
+       "ratio": 2.9179807475823067,
+       "ci95": [
+        2.9069822391891833,
+        2.9391130171502726
+       ],
+       "half_width_pct": 1.606538898054466,
+       "jobs": 6,
+       "excess_ns_per_inner": 13.630652222222222,
+       "per_job": [
+        2.906722573146678,
+        2.9099024870397088,
+        2.907760463330847,
+        2.9678126084333396,
+        2.9062787008041457,
+        2.9099139873448507
+       ],
+       "between_job_sd_pct": 0.8312503324819719
+      },
+      {
+       "d": 31,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 7,
+       "working_set_bytes": 11532,
+       "ratio": 2.7828555633281105,
+       "ci95": [
+        2.756444400267439,
+        2.8186474605732634
+       ],
+       "half_width_pct": 3.1101530152912282,
+       "jobs": 6,
+       "excess_ns_per_inner": 13.780314689559487,
+       "per_job": [
+        2.758261711910008,
+        2.7562817877304564,
+        2.7558014006428286,
+        2.860474128570288,
+        2.760444757407594,
+        2.807500929262724
+       ],
+       "between_job_sd_pct": 1.527228867093807
+      },
+      {
+       "d": 32,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 0,
+       "working_set_bytes": 12288,
+       "ratio": 3.391901382345566,
+       "ci95": [
+        3.365212460583187,
+        3.438110317662629
+       ],
+       "half_width_pct": 3.644892853972115,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.554537841796877,
+       "per_job": [
+        3.3624615398471387,
+        3.3665160039215314,
+        3.3677616561071306,
+        3.506444914063558,
+        3.3684681648910892,
+        3.3820535264985763
+       ],
+       "between_job_sd_pct": 1.6388973455301405
+      },
+      {
+       "d": 33,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 1,
+       "working_set_bytes": 13068,
+       "ratio": 3.1827528618687024,
+       "ci95": [
+        3.1647241378861226,
+        3.215753750447154
+       ],
+       "half_width_pct": 2.5514806280515723,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.56126675849403,
+       "per_job": [
+        3.1647006844929506,
+        3.1671812239811747,
+        3.1664938854782445,
+        3.261939857550541,
+        3.163055828421531,
+        3.1743184132867293
+       ],
+       "between_job_sd_pct": 1.2101041956398215
+      },
+      {
+       "d": 34,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 2,
+       "working_set_bytes": 13872,
+       "ratio": 3.1556275537664193,
+       "ci95": [
+        3.1362847141887724,
+        3.1928068450592066
+       ],
+       "half_width_pct": 2.8261065435217114,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.887730247981546,
+       "per_job": [
+        3.138235869104694,
+        3.13738008525446,
+        3.135784936864068,
+        3.2447758584666246,
+        3.1376381884099684,
+        3.1414336081086898
+       ],
+       "between_job_sd_pct": 1.3660815904186603
+      },
+      {
+       "d": 35,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 3,
+       "working_set_bytes": 14700,
+       "ratio": 3.095674050579296,
+       "ci95": [
+        3.0781030945969707,
+        3.130363897356468
+       ],
+       "half_width_pct": 2.6130401379748536,
+       "jobs": 6,
+       "excess_ns_per_inner": 16.150986190476193,
+       "per_job": [
+        3.0804734883446887,
+        3.0803992513745335,
+        3.080353797210013,
+        3.1754146484653902,
+        3.075242984694519,
+        3.083375339726929
+       ],
+       "between_job_sd_pct": 1.2488550984486961
+      },
+      {
+       "d": 36,
+       "roles": [
+        "fit",
+        "study_l1"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 15552,
+       "ratio": 3.1902694714314657,
+       "ci95": [
+        3.1665034151895934,
+        3.233332919042452
+       ],
+       "half_width_pct": 3.3414751926429176,
+       "jobs": 6,
+       "excess_ns_per_inner": 16.865868377057613,
+       "per_job": [
+        3.1683041552864553,
+        3.168322631502721,
+        3.1637317583970104,
+        3.2978118326944075,
+        3.1707332829379506,
+        3.17484629281066
+       ],
+       "between_job_sd_pct": 1.6282192747986761
+      },
+      {
+       "d": 52,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 32448,
+       "ratio": 3.400383563943239,
+       "ci95": [
+        3.3731964352046795,
+        3.4524981466198326
+       ],
+       "half_width_pct": 3.9650855707576538,
+       "jobs": 6,
+       "excess_ns_per_inner": 24.37087493836292,
+       "per_job": [
+        3.371160852831318,
+        3.3717884261863458,
+        3.375713971727389,
+        3.5277711746437515,
+        3.3772861027581427,
+        3.3813782724853945
+       ],
+       "between_job_sd_pct": 1.8051728533224316
+      },
+      {
+       "d": 76,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 69312,
+       "ratio": 4.172784120426262,
+       "ci95": [
+        4.157757589112291,
+        4.19171671331231
+       ],
+       "half_width_pct": 1.6979562100009726,
+       "jobs": 6,
+       "excess_ns_per_inner": 44.92147822887812,
+       "per_job": [
+        4.159826388778368,
+        4.1621810322938915,
+        4.163458867746453,
+        4.215450735235583,
+        4.158998137017098,
+        4.177075336828891
+       ],
+       "between_job_sd_pct": 0.5227813617226469
+      },
+      {
+       "d": 100,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 120000,
+       "ratio": 4.0153849725915,
+       "ci95": [
+        3.999704712067712,
+        4.040251034914432
+       ],
+       "half_width_pct": 2.0273161423359998,
+       "jobs": 6,
+       "excess_ns_per_inner": 55.87404212500001,
+       "per_job": [
+        4.004071195012181,
+        3.999635842501422,
+        3.9982494248738547,
+        4.074384030250865,
+        4.002531020941629,
+        4.013972035509136
+       ],
+       "between_job_sd_pct": 0.7278197345093728
+      },
+      {
+       "d": 147,
+       "roles": [
+        "study_l2"
+       ],
+       "d_mod_8": 3,
+       "working_set_bytes": 259308,
+       "ratio": 3.7924945678842907,
+       "ci95": [
+        3.768697047117053,
+        3.8324123243479504
+       ],
+       "half_width_pct": 3.185763861544877,
+       "jobs": 6,
+       "excess_ns_per_inner": 76.76661579280238,
+       "per_job": [
+        3.77246985297898,
+        3.7683501657757628,
+        3.767519353039304,
+        3.886567011213338,
+        3.7682015684540313,
+        3.793298302666488
+       ],
+       "between_job_sd_pct": 1.2281476353921459
+      }
+     ],
+     "aa_half_width_pct": 0.07981053848313824,
+     "cost_threshold": 1.0007981053848314,
+     "cost_unseen": [],
+     "baseline": {
+      "median_max_relative_residual": 0.01628307485890714,
+      "per_job": [
+       0.016305451491401578,
+       0.017926877026698845,
+       0.015555646155339735,
+       0.016079504697286973,
+       0.016954352205455884,
+       0.01626069822641271
+      ]
+     },
+     "excess": {
+      "fixed": 0.06594804116330577,
+      "per_element_at_d_max": 2.1069944275997066,
+      "fixed_ci95": [
+       0.05008814743509005,
+       0.075502058181379
+      ],
+      "per_element_at_d_max_ci95": [
+       2.075702823375641,
+       2.164276630744908
+      ],
+      "at_d_min": 0.7682795170298746,
+      "at_d_max": 2.1729424687630123,
+      "share": 0.030349648971998745,
+      "share_ci95": [
+       0.0226099779212725,
+       0.03508464417124747
+      ],
+      "growth": 2.82832279215706,
+      "growth_ci95": [
+       2.80329479894389,
+       2.870209263830712
+      ],
+      "residual": {
+       "median_max_relative_residual": 0.022334133740551827,
+       "per_job": [
+        0.022238557847972268,
+        0.023155177444727518,
+        0.022429709633131387,
+        0.018530713539764997,
+        0.021976189149335485,
+        0.023606417006122676
+       ]
+      },
+      "resamples": 2000,
+      "defined_resamples": 2000,
+      "undefined_fraction": 0.0,
+      "meaning": "(t_F - t_N) per inner call / t_N(d_max) = fixed + per_element*d over the fit ladder; share = fixed / (fixed + per_element*d_max); growth = fitted excess at d_max over the fitted excess at d_min = 1 / (r + share*(1 - r)), r = d_min/d_max"
+     },
+     "y_view": {
+      "alpha": 0.738978052637999,
+      "slope": -0.008108021576626828,
+      "slope_ci95": [
+       -0.008328648825518644,
+       -0.007952770460802188
+      ],
+      "q": 0.6967460823356056,
+      "q_ci95": [
+       0.6865488301690775,
+       0.7032025308463467
+      ],
+      "resamples": 2000,
+      "defined_resamples": 2000,
+      "undefined_fraction": 0.0,
+      "meaning": "y = 1/(R-1) = alpha + slope*d over the fit ladder; q = y_hat(d_max)/y_hat(d_min); decides nothing"
+     },
+     "inverse_view": {
+      "intercept": 2.4115089780889685,
+      "slope": -11.00595227030646,
+      "intercept_ci95": [
+       2.3811153086600068,
+       2.4677424550497196
+      ],
+      "slope_ci95": [
+       -11.614990811060398,
+       -10.65400540237812
+      ],
+      "meaning": "R - 1 = intercept + slope/d; a fixed cost with a small a: intercept near 0, slope c/b; a cost per element: slope near 0; decides nothing"
+     }
+    },
+    "aligned": {
+     "column": "aligned",
+     "fit_ds": [
+      12,
+      20,
+      28,
+      36
+     ],
+     "rows": [
+      {
+       "d": 12,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 1728,
+       "ratio": 2.544466220936507,
+       "ci95": [
+        2.5399809820916435,
+        2.551091065513814
+       ],
+       "half_width_pct": 0.5555041711085229,
+       "jobs": 6,
+       "excess_ns_per_inner": 6.1029403935185185,
+       "per_job": [
+        2.544859120988141,
+        2.544685458561069,
+        2.5500518400810446,
+        2.541894834823232,
+        2.5505180663082623,
+        2.5348209795087207
+       ],
+       "between_job_sd_pct": 0.2277249032214493
+      },
+      {
+       "d": 20,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 4800,
+       "ratio": 2.8358578234593677,
+       "ci95": [
+        2.801694687728031,
+        2.872993044835671
+       ],
+       "half_width_pct": 3.5649178553819993,
+       "jobs": 6,
+       "excess_ns_per_inner": 9.523125208333333,
+       "per_job": [
+        2.8772003366216965,
+        2.7963638644656097,
+        2.8850400839656047,
+        2.7921705575371822,
+        2.786522326470373,
+        2.8799610602282333
+       ],
+       "between_job_sd_pct": 1.7256891528332794
+      },
+      {
+       "d": 28,
+       "roles": [
+        "fit"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 9408,
+       "ratio": 3.0160092924807533,
+       "ci95": [
+        3.013455452623867,
+        3.0180729046455292
+       ],
+       "half_width_pct": 0.2308726010831208,
+       "jobs": 6,
+       "excess_ns_per_inner": 13.099697916666669,
+       "per_job": [
+        3.0168927374405894,
+        3.0169773781924762,
+        3.0137887849411586,
+        3.018093587378775,
+        3.018044523689224,
+        3.0122635799259254
+       ],
+       "between_job_sd_pct": 0.08009845221600169
+      },
+      {
+       "d": 29,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 5,
+       "working_set_bytes": 10092,
+       "ratio": 2.834422086521344,
+       "ci95": [
+        2.831893130946437,
+        2.836162172034714
+       ],
+       "half_width_pct": 0.21345205441385406,
+       "jobs": 6,
+       "excess_ns_per_inner": 13.05957491082045,
+       "per_job": [
+        2.835074865157644,
+        2.8307156808588245,
+        2.8333292571390505,
+        2.8371289448682746,
+        2.8368049986232635,
+        2.833483931893701
+       ],
+       "between_job_sd_pct": 0.08533258796992899
+      },
+      {
+       "d": 30,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 6,
+       "working_set_bytes": 10800,
+       "ratio": 3.322360078250796,
+       "ci95": [
+        3.1731848026949425,
+        3.4928575629631218
+       ],
+       "half_width_pct": 15.983638013408964,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.825193703703698,
+       "per_job": [
+        3.074384388319865,
+        3.2901562732895075,
+        3.216068841510655,
+        3.321446289478314,
+        3.4552256521789535,
+        3.6022721430050937
+       ],
+       "between_job_sd_pct": 5.522705389697922
+      },
+      {
+       "d": 31,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 7,
+       "working_set_bytes": 11532,
+       "ratio": 2.8901103794831027,
+       "ci95": [
+        2.888211938194131,
+        2.8918433518639923
+       ],
+       "half_width_pct": 0.18157068349307082,
+       "jobs": 6,
+       "excess_ns_per_inner": 14.01663570933056,
+       "per_job": [
+        2.890593769943974,
+        2.8887181988212736,
+        2.8868520652790557,
+        2.8901141101332524,
+        2.892100225419352,
+        2.8922876256256442
+       ],
+       "between_job_sd_pct": 0.07174119116969213
+      },
+      {
+       "d": 32,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 0,
+       "working_set_bytes": 12288,
+       "ratio": 3.356539346737997,
+       "ci95": [
+        3.3537657419309457,
+        3.3596370672011004
+       ],
+       "half_width_pct": 0.2935662635077385,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.46568147786458,
+       "per_job": [
+        3.354161430576714,
+        3.359915592466565,
+        3.356813255548903,
+        3.360028174729167,
+        3.357121679961159,
+        3.3512046042479535
+       ],
+       "between_job_sd_pct": 0.10157849236593346
+      },
+      {
+       "d": 33,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 1,
+       "working_set_bytes": 13068,
+       "ratio": 3.1475100733756816,
+       "ci95": [
+        3.1447941350086945,
+        3.1491509116654153
+       ],
+       "half_width_pct": 0.217838832836037,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.464497857361494,
+       "per_job": [
+        3.148835606934204,
+        3.147562594275787,
+        3.1465038529544933,
+        3.1475055993236816,
+        3.1455954269999546,
+        3.1490587635792426
+       ],
+       "between_job_sd_pct": 0.04223828890628844
+      },
+      {
+       "d": 34,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 2,
+       "working_set_bytes": 13872,
+       "ratio": 3.1334943453943125,
+       "ci95": [
+        3.131710965995239,
+        3.135058112438043
+       ],
+       "half_width_pct": 0.16735732214021581,
+       "jobs": 6,
+       "excess_ns_per_inner": 15.82655485870819,
+       "per_job": [
+        3.1344741951342545,
+        3.131528890694712,
+        3.1320986739732586,
+        3.13579660432522,
+        3.1328333761314986,
+        3.1342364157768388
+       ],
+       "between_job_sd_pct": 0.05157328669509613
+      },
+      {
+       "d": 35,
+       "roles": [
+        "scan"
+       ],
+       "d_mod_8": 3,
+       "working_set_bytes": 14700,
+       "ratio": 3.2127784343331585,
+       "ci95": [
+        3.209307252984508,
+        3.2161681982069066
+       ],
+       "half_width_pct": 0.3430472611199331,
+       "jobs": 6,
+       "excess_ns_per_inner": 16.446641224489795,
+       "per_job": [
+        3.2132503611397567,
+        3.212682592163894,
+        3.21026393979693,
+        3.2193499005240946,
+        3.2103907740230264,
+        3.210742303628053
+       ],
+       "between_job_sd_pct": 0.10738064426550076
+      },
+      {
+       "d": 36,
+       "roles": [
+        "fit",
+        "study_l1"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 15552,
+       "ratio": 3.1877800881446503,
+       "ci95": [
+        3.1835473748618406,
+        3.1968636222127085
+       ],
+       "half_width_pct": 0.6658123675433947,
+       "jobs": 6,
+       "excess_ns_per_inner": 16.834287615740738,
+       "per_job": [
+        3.1853515228944627,
+        3.185280053403155,
+        3.1855261931651357,
+        3.2019505883498116,
+        3.185321214493069,
+        3.183289178017309
+       ],
+       "between_job_sd_pct": 0.21887154924586863
+      },
+      {
+       "d": 52,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 32448,
+       "ratio": 3.457489063465514,
+       "ci95": [
+        3.454367516547094,
+        3.461834974261717
+       ],
+       "half_width_pct": 0.37337288573116023,
+       "jobs": 6,
+       "excess_ns_per_inner": 24.447216192061145,
+       "per_job": [
+        3.4587194802154047,
+        3.455693205560406,
+        3.458112720247635,
+        3.463826241526864,
+        3.456280338352319,
+        3.4523130267379702
+       ],
+       "between_job_sd_pct": 0.1108977582016332
+      },
+      {
+       "d": 76,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 69312,
+       "ratio": 3.763484041522245,
+       "ci95": [
+        3.6282272974582943,
+        3.9705278500969485
+       ],
+       "half_width_pct": 17.115027631932712,
+       "jobs": 6,
+       "excess_ns_per_inner": 39.093245873730375,
+       "per_job": [
+        3.50908738945055,
+        3.5435274699101433,
+        3.713986394179323,
+        4.166671140652426,
+        3.8120522012324742,
+        3.873665476292291
+       ],
+       "between_job_sd_pct": 6.333275972940363
+      },
+      {
+       "d": 100,
+       "roles": [
+        "bridge"
+       ],
+       "d_mod_8": 4,
+       "working_set_bytes": 120000,
+       "ratio": 3.9884498399918913,
+       "ci95": [
+        3.986363006757675,
+        3.990638372050578
+       ],
+       "half_width_pct": 0.2137682646451422,
+       "jobs": 6,
+       "excess_ns_per_inner": 55.7352048,
+       "per_job": [
+        3.9876345791715044,
+        3.9909085488785916,
+        3.9885964751644067,
+        3.9898737462468663,
+        3.988768881710625,
+        3.984919482575056
+       ],
+       "between_job_sd_pct": 0.051786296760691596
+      },
+      {
+       "d": 147,
+       "roles": [
+        "study_l2"
+       ],
+       "d_mod_8": 3,
+       "working_set_bytes": 259308,
+       "ratio": 3.797784281480578,
+       "ci95": [
+        3.7952516245029635,
+        3.7999585488771386
+       ],
+       "half_width_pct": 0.23534621870875405,
+       "jobs": 6,
+       "excess_ns_per_inner": 76.3023129097444,
+       "per_job": [
+        3.79704212579043,
+        3.7994665215213628,
+        3.794049766283977,
+        3.80003775732702,
+        3.7996935670066194,
+        3.796419626615814
+       ],
+       "between_job_sd_pct": 0.06222349903850711
+      }
+     ],
+     "aa_half_width_pct": 0.07981053848313824,
+     "cost_threshold": 1.0007981053848314,
+     "cost_unseen": [],
+     "baseline": {
+      "median_max_relative_residual": 0.011762475800291928,
+      "per_job": [
+       0.01341091009274422,
+       0.007492226285155703,
+       0.015678748958267028,
+       0.010114041507839634,
+       0.010003761113677102,
+       0.01515234473457283
+      ]
+     },
+     "excess": {
+      "fixed": 0.08562159421589222,
+      "per_element_at_d_max": 2.091939489263668,
+      "fixed_ci95": [
+       0.07727931497271934,
+       0.09292529787737336
+      ],
+      "per_element_at_d_max_ci95": [
+       2.082440140299281,
+       2.105801141002607
+      ],
+      "at_d_min": 0.7829347573037815,
+      "at_d_max": 2.17756108347956,
+      "share": 0.03931995059310855,
+      "share_ci95": [
+       0.03545600814803035,
+       0.042710221558904325
+      ],
+      "growth": 2.7812803853267414,
+      "growth_ci95": [
+       2.763905930666526,
+       2.8013505818863
+      ],
+      "residual": {
+       "median_max_relative_residual": 0.009847443898395557,
+       "per_job": [
+        0.007103711417121883,
+        0.011179995893302697,
+        0.008514891903488416,
+        0.01302130693441964,
+        0.012442290827523598,
+        0.007541355581913154
+       ]
+      },
+      "resamples": 2000,
+      "defined_resamples": 2000,
+      "undefined_fraction": 0.0,
+      "meaning": "(t_F - t_N) per inner call / t_N(d_max) = fixed + per_element*d over the fit ladder; share = fixed / (fixed + per_element*d_max); growth = fitted excess at d_max over the fitted excess at d_min = 1 / (r + share*(1 - r)), r = d_min/d_max"
+     },
+     "y_view": {
+      "alpha": 0.7222749987886683,
+      "slope": -0.007748008626818896,
+      "slope_ci95": [
+       -0.007910025132815763,
+       -0.007558079100392033
+      ],
+      "q": 0.704508925023928,
+      "q_ci95": [
+       0.6999701139485713,
+       0.7096454479475897
+      ],
+      "resamples": 2000,
+      "defined_resamples": 2000,
+      "undefined_fraction": 0.0,
+      "meaning": "y = 1/(R-1) = alpha + slope*d over the fit ladder; q = y_hat(d_max)/y_hat(d_min); decides nothing"
+     },
+     "inverse_view": {
+      "intercept": 2.4385135486394374,
+      "slope": -11.02469907103207,
+      "intercept_ci95": [
+       2.429004273721688,
+       2.4472503634649394
+      ],
+      "slope_ci95": [
+       -11.170237321351498,
+       -10.875565375772634
+      ],
+      "meaning": "R - 1 = intercept + slope/d; a fixed cost with a small a: intercept near 0, slope c/b; a cost per element: slope near 0; decides nothing"
+     }
+    }
+   },
+   "words": {
+    "as_compiled": {
+     "word": "H2",
+     "reason": "fixed share 0.030 (95% 0.023 to 0.035), inside -0.2 to 0.2: the excess per inner call is proportional to d"
+    },
+    "aligned": {
+     "word": "H2",
+     "reason": "fixed share 0.039 (95% 0.035 to 0.043), inside -0.2 to 0.2: the excess per inner call is proportional to d"
+    }
+   },
+   "verdict": {
+    "word": "H2",
+    "reason": "fixed share 0.030 (95% 0.023 to 0.035), inside -0.2 to 0.2: the excess per inner call is proportional to d",
+    "columns_agree": true
+   },
+   "line": "On AMD EPYC 7763 64-Core Processor (6 jobs, 1 run pooled): H2."
+  }
+ ],
+ "line": "On AMD EPYC 7763 64-Core Processor (6 jobs, 1 run pooled): H2."
+}

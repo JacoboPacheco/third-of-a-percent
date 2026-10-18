@@ -18,6 +18,11 @@
      and 'not tested'; Figure 7's rows, marks, click, arrow keys, Home and End, and the aligned / as compiled switch; a text
      equivalent; the stale 'No arm64' limit gone; the Reproduce command for the Arm runner; section 10's Arm addition is two
      sentences; no number typed into the two new sections' HTML; no sideways scroll and finger-sized rows at 390 px; no console errors;
+   - the replication (replication_checks): Figure 8 in section 1 (six rows in the stored order, each set's word and job count, the inside counts, the
+     title's counts, a readout per row with the flip cells and placement numbers, the keys) and the account with Table 14 on the details page equal to
+     site/data/replication.json recomputed in Python; and the row-length sweep (dsweep_checks): the sentence in section 6a, the account, Figure 9 (panels,
+     points, toggle, readout, keys) and Table 15 equal to site/data/dsweep.json recomputed in Python (the instruction line by least squares);
+     no number typed into their HTML, no workflow-run link, finger-sized controls and no sideways scroll at 390 and 320 px;
    - section 7 (real programs): the timed result (Table 9) with its limits and the expectations, Figure 6, the estimate table and
      Table 5 (details) equal to realworld.json, the Amdahl estimate collapsed and labelled an estimate
      (share x (r - 1)) with its assumption, LightGBM marked approximate, Table 6 (details) labelled as
@@ -526,9 +531,58 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         n = pg.evaluate("document.querySelectorAll('.sec-more').length")
         closed = pg.evaluate("[...document.querySelectorAll('.sec-body')].filter(b => b.hidden).length")
         ck.ok(n >= 9 and closed == n, f"{w}: every section starts collapsed, one button each to open ({closed} of {n})")
-        r = pg.evaluate("(() => { const r = document.getElementById('race').getBoundingClientRect(), s = document.querySelector('.hero .scope').getBoundingClientRect(), d = document.querySelector('.bar-details').getBoundingClientRect(); return [r.bottom, s.bottom, d.bottom, d.top]; })()")
+        r = pg.evaluate("(() => { const r = document.getElementById('race').getBoundingClientRect(), s = document.querySelector('.hero .scope').getBoundingClientRect(), d = document.getElementById('bar-limits').getBoundingClientRect(), t = document.querySelector('.toc-btn').getBoundingClientRect(); return [r.bottom, s.bottom, d.bottom, d.top, t.bottom, t.top]; })()")
         lb = pg.evaluate("document.getElementById('race-loops').getBoundingClientRect().bottom")
-        ck.ok((r[0] <= h or (w < 641 and lb <= h * 1.3)) and r[1] <= h and r[2] <= h and r[3] >= 0, f"{w}x{h}: the whole finding is in the first view: the race (on a phone its eight lanes, the caption a short scroll below), switch and ratio, the scope sentence and the Full details link ({r}, lanes end {lb:.0f})")
+        ck.ok((r[0] <= h or (w < 641 and lb <= h * 1.3)) and r[1] <= h and r[2] <= h and r[3] >= 0 and r[4] <= h and r[5] >= 0, f"{w}x{h}: the whole finding is in the first view: the race (on a phone its eight lanes, the caption a short scroll below), switch and ratio, the scope sentence, the Limits link and the Contents button ({r}, lanes end {lb:.0f})")
+        menu = pg.evaluate("[...document.querySelectorAll('#toc-list li.toc-top a')].map(a => [a.textContent.trim(), a.getAttribute('href')])")
+        ck.ok(menu == [["Limits: what this cannot tell you", "#cannot"], ["Full details: the separate page", "details.html"]], f"{w}: the Contents menu starts with the two header items that used to be separate links, Limits and Full details ({menu})")
+        tb = pg.evaluate("""(() => { const b = document.querySelector('.toc-btn'), cs = getComputedStyle(b), r = b.getBoundingClientRect(), t = getComputedStyle(document.getElementById('race-sw'));
+            const clear = (c) => c === 'rgba(0, 0, 0, 0)' || c === 'transparent';
+            return [clear(cs.borderTopColor), clear(cs.backgroundColor), cs.textDecorationLine, Math.round(r.height), +b.matches('[aria-expanded="false"]'), !clear(t.backgroundColor), b.textContent.trim()]; })()""")
+        ck.ok(tb[5] and tb[6] == "Contents" and ((w < 641 and tb[0] and tb[1] and tb[2] == "underline" and tb[3] >= 44 and tb[4])
+                                              or (w >= 641 and not tb[0] and not tb[1])),
+              f"{w}x{h}: the switch is the one filled control in the first view, and the Contents menu does not compete with it as a second outlined pill on a phone: there it is an underlined word like the links under the intro (no outline, no fill, still 44 px tall for a finger), and from 641 px up it keeps its outline ({tb})")
+        fd = pg.evaluate("(() => { const a = document.querySelector('.hero .fine .fine-full'), r = a.getBoundingClientRect(), cs = getComputedStyle(a); return [a.textContent.trim(), a.getAttribute('href'), r.width > 0 && r.height > 0 && cs.visibility !== 'hidden', r.bottom, r.height]; })()")
+        ck.ok(fd[:2] == ["Full details", "details.html"] and ((w < 641 and not fd[2]) or (w >= 641 and fd[2] and fd[3] <= h and fd[4] >= 32)),
+              f"{w}x{h}: a plain 'Full details' link to the details page sits in the quiet link row of the first view on a wide screen (on a phone only the Contents menu holds it) ({fd})")
+        aud = pg.evaluate("(() => { const a = document.querySelector('.hero .aud'), r = a.getBoundingClientRect(); return [a.textContent.trim(), r.bottom, r.height]; })()")
+        head = pg.evaluate("""(() => { const q = (s) => document.querySelector(s).textContent.trim(), e = document.getElementById('race-head'), r = e.getBoundingClientRect();
+            return [q('#race-head .rh-t'), q('#race-head .rh-off'), q('#race-head .rh-on'), q('#race-head .rh-num'), r.height > 0, r.bottom, e.textContent.includes('Grey bar'), document.querySelectorAll('#race-head i').length, e.hasAttribute('aria-hidden')]; })()""")
+        ck.ok(aud[0] == "For C++ engineers deciding whether to turn on libc++’s bounds checks." and aud[2] > 0 and aud[1] <= h
+              and head[:4] == ["Run time with the bounds check:", "off", "on", "times as long as off"] and head[4] and head[5] <= h and not head[6] and head[7] == 3 and not head[8],
+              f"{w}x{h}: the first view names the audience, and the figure's own header says what it shows in a dozen words and three chips: what is timed ('Run time with the bounds check:'), the grey chip 'off', the coloured chip 'on', and over the numbers 'times as long as off' (the baseline named, in the switch's own words); the old sentence is gone, and the header is not hidden from assistive technology ({aud[0][:30]!r} ends at {aud[1]:.0f}; the header ends at {head[5]:.0f}; {head[:4]})")
+        words = pg.evaluate("""(() => [document.querySelectorAll('.ln-lbl').length,
+            /SIMD/.test(document.getElementById('race-head').textContent) || [...document.querySelectorAll('#race-loops button')].some(b => /SIMD/.test(b.textContent))])()""")
+        ck.ok(words[0] == 0 and not words[1],
+              f"{w}x{h}: no floating phrase sits on the bars (the figure header's two chips say which bar is which) and the word SIMD is in no chip or lane of the figure ({words})")
+        sw0 = pg.evaluate("(() => { const on = document.querySelector('#race-head .rh-on'); return [on.textContent.trim(), +getComputedStyle(on).opacity, getComputedStyle(on, '::after').content]; })()")
+        pg.click("#race-sw")
+        pg.wait_for_timeout(250)
+        sw1 = pg.evaluate("(() => { const on = document.querySelector('#race-head .rh-on'); return [+getComputedStyle(on).opacity, getComputedStyle(on, '::after').content, document.getElementById('race').classList.contains('is-on')]; })()")
+        pg.click("#race-sw")
+        pg.wait_for_timeout(250)
+        sw2 = pg.evaluate("+getComputedStyle(document.querySelector('#race-head .rh-on')).opacity")
+        ck.ok(sw0[0] == "on" and sw0[1] == 1 and sw0[2] in ("none", "normal") and sw1[0] < 0.6 and "hidden" in sw1[1] and not sw1[2] and sw2 == 1,
+              f"{w}x{h}: the figure's header changes with the switch: the 'on' chip is lit, then dimmed and marked '(hidden)' with the check off, then lit again ({sw0}, {sw1}, {sw2})")
+        cpu = pg.evaluate("""(() => { const g = document.getElementById('race-cpu'), l = document.querySelector('#race .cpu-l'), sel = g.querySelector('[aria-checked="true"]'), cs = getComputedStyle(g), ss = getComputedStyle(sel);
+            const lr = l.getBoundingClientRect();
+            return [l.textContent.trim(), g.getAttribute('aria-label'), cs.backgroundColor, ss.backgroundColor, parseFloat(cs.borderRadius) > 6, ss.boxShadow !== 'none', lr.width > 0 && getComputedStyle(l).display !== 'none', l.getAttribute('aria-hidden')]; })()""")
+        ck.ok(cpu[0] == "Measured on" and cpu[1] == "CPU model" and cpu[7] == "true" and cpu[2] != cpu[3] and cpu[4] and cpu[5] and (cpu[6] or (641 <= w <= 1040) or w <= 389),
+              f"{w}x{h}: the processor choice is a segmented control: a recessed rounded track with the chosen segment raised and a different colour, so the chosen name reads as a pressed button; 'Measured on' sits quietly beside it (beside the track on a phone) except from 641 to 1040 px and below 390 px, where there is no room, and the group is named 'CPU model' for a screen reader ({cpu})")
+        wip0 = pg.evaluate("(() => { const b = document.getElementById('wip-btn'), n = document.getElementById('wip-note'); return [b.tagName, b.getAttribute('aria-expanded'), n.hidden, b.textContent.trim()]; })()")
+        pg.click("#wip-btn")
+        wip1 = pg.evaluate("""(() => { const n = document.getElementById('wip-note'), r = n.getBoundingClientRect(), b = document.getElementById('wip-btn');
+            return [n.hidden, n.textContent.trim(), r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, b.getAttribute('aria-expanded'), n.getAnimations().length]; })()""")
+        hs = no_hscroll(pg)
+        pg.keyboard.press("Escape")
+        wip2 = pg.evaluate("[document.getElementById('wip-note').hidden, document.activeElement.id]")
+        pg.click("#wip-btn")
+        pg.evaluate("document.querySelector('.hero h1').click()")  # a click on the page itself, away from the chip and the note
+        wip3 = pg.evaluate("document.getElementById('wip-note').hidden")
+        ck.ok(wip0 == ["BUTTON", "false", True, "Work in progress"]
+              and not wip1[0] and wip1[1].startswith("More runs are still being added") and "may change" in wip1[1] and wip1[1].count(".") == 1 and wip1[2] and wip1[3] == "true" and wip1[4] == 0
+              and hs and wip2 == [True, "wip-btn"] and wip3,
+              f"{w}x{h}: the 'Work in progress' chip is a button; one click shows one sentence that says what is unfinished (more runs, text still edited, numbers may change), instantly, inside the view with no sideways scroll; Escape closes it and returns focus, so does a click elsewhere ({wip0}, {wip1}, {wip2}, {wip3})")
         ck.ok(pg.inner_text("#race-ratio").endswith("×") and len(pg.query_selector_all("#race-loops button")) == 8, f"{w}: the first view prints a measured ratio and offers all eight loop chips")
         f1 = pg.evaluate("document.getElementById('fig1').getBoundingClientRect().top")
         ck.ok(f1 < h * 3, f"{w}: the clickable heatmap is within three screens (the contrast band and the mechanism demo come first; Figure 1 starts at {f1:.0f} px)")
@@ -977,12 +1031,12 @@ def hero_variant_checks(browser, base, ck, index, pooled):
             pg.wait_for_timeout(300)
             pg.keyboard.press("h")  # the hero-variant selector is hidden by default; hide it again so it never covers a control
             ck.ok(pg.get_attribute("#race", "data-hv") == str(v), f"{tag}: the hash picks the variant")
-            r = pg.evaluate("(() => { const q = (s) => document.querySelector(s).getBoundingClientRect(); return [q('#race').bottom, q('.hero .scope').bottom, q('.bar-details').bottom, q('.bar-details').top]; })()")
+            r = pg.evaluate("(() => { const q = (s) => document.querySelector(s).getBoundingClientRect(); return [q('#race').bottom, q('.hero .scope').bottom, q('.toc-btn').bottom, q('.toc-btn').top]; })()")
             if v == 4 and w < 641:  # all eight lanes with their ratios, then at most a short scroll to the caption
                 lb = pg.evaluate("document.getElementById('race-loops').getBoundingClientRect().bottom")
                 ck.ok(lb <= h * 1.3 and r[1] <= h and r[2] <= h and r[3] >= 0, f"{tag}: the eight lanes and the scope line are in the first view, the caption within a short scroll ({round(lb)} px)")
             else:
-                ck.ok(r[0] <= h and r[1] <= h and r[2] <= h and r[3] >= 0, f"{tag}: the whole finding (loop tiles, switch, CPU choice, ratio, scope line, Full details) is in the first view ({[round(x) for x in r]})")
+                ck.ok(r[0] <= h and r[1] <= h and r[2] <= h and r[3] >= 0, f"{tag}: the whole finding (loop tiles, switch, CPU choice, ratio, scope line, the Contents button with Limits and Full details) is in the first view ({[round(x) for x in r]})")
             tiles = pg.evaluate("[...document.querySelectorAll('#race-loops button')].map(b => [!!b.querySelector('svg'), b.querySelector('.tl').textContent.trim(), b.getAttribute('aria-label') || '', b.getBoundingClientRect().height])")
             ck.ok(len(tiles) == 8 and all(t[0] and t[1] and t[2] and t[3] >= 44 for t in tiles), f"{tag}: eight glyph tiles, each an SVG of the access pattern with a text label, an aria-label and at least 44 px tall")
             ok_nums, bad = 0, []
@@ -1420,7 +1474,7 @@ def phone_checks(browser, base, ck, index):
     for w in (320, 340, 360, 375, 380, 381, 384, 387, 388, 390, 414, 480, 520, 521, 600, 640):
         pg.set_viewport_size({"width": w, "height": 800})
         pg.wait_for_timeout(120)
-        shown = pg.evaluate("""() => [...document.querySelectorAll('.bar-wip .wip-long, .bar-wip .wip-short, .hero .dateline')].filter(e => {
+        shown = pg.evaluate("""() => [...document.querySelectorAll('.bar-wip .wip-long, .hero .dateline')].filter(e => {
             const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
             return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && /in progress/i.test(e.textContent); }).length""")
         if not shown:
@@ -1482,9 +1536,9 @@ def phone_checks(browser, base, ck, index):
     ck.ok(not cut, f"hero: every lane name fits its column, on one line or wrapped to two inside its lane, from 641 to 1440 px ({cut[:3]})")
     pg.close()
     # the one-time hint pill ("flip the check") never sits on the Replay button, the CPU buttons, the caption or the readout
-    clash = []
+    clash, said = [], {}
     for v in (1, 2, 3, 4):
-        for w, h in ((1440, 900), (1024, 768), (800, 900), (390, 844)):
+        for w, h in ((1440, 900), (1024, 768), (800, 900), (390, 844), (340, 800)):
             pg = browser.new_page_plain(viewport={"width": w, "height": h})
             pg.goto(f"{base}#hero={v}", wait_until="networkidle")
             wait_ready(pg)
@@ -1492,18 +1546,52 @@ def phone_checks(browser, base, ck, index):
             seen = False
             for _ in range(8):  # the hint appears about 1.7 s after the page starts and stays for 9 s
                 pg.wait_for_timeout(500)
-                hit = pg.evaluate("""() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h);
+                got = pg.evaluate("""() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h);
                     if (h.hidden || cs.display === 'none' || +cs.opacity < 0.5) return null;
-                    const a = h.getBoundingClientRect();
-                    return ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
-                      const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; }); }""")
-                if hit is not None:
+                    const a = h.getBoundingClientRect(), sw = document.getElementById('race-sw').getBoundingClientRect();
+                    return [h.innerText.trim(), a.right <= sw.right + 0.5 && a.left >= sw.left - 0.5,
+                      ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
+                      const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; })]; }""")
+                if got is not None:
                     seen = True
-                    if hit:
-                        clash.append((v, w, hit))
+                    said[(v, w)] = got[0]
+                    if got[2] or not got[1]:
+                        clash.append((v, w, got[2], "outside its switch" if not got[1] else ""))
                     break
             pg.close()
-    ck.ok(not clash, f"the 'flip the check' hint never overlaps the Replay button, the CPU buttons, the caption or the readout in any hero variant at 1440, 1024, 800 or 390 px ({clash[:3]})")
+    ck.ok(not clash, f"the 'flip the check' hint never overlaps the Replay button, the CPU buttons, the caption or the readout, and stays inside its switch, in any hero variant at 1440, 1024, 800, 390 or 340 px ({clash[:3]})")
+    # the hint says what to do, in words that fit the width: the first move and its action on a wide screen, the first move on a mid-size one,
+    # what a tap does on a phone (the pill is the button), and the first move again below 341 px where the pill has no room for more
+    want = {(4, 1440): "Start here: flip it off", (4, 1024): "Start here", (4, 800): "Start here", (4, 390): "Tap to turn off", (4, 340): "Start here"}
+    ck.ok(all(said.get(k) == t for k, t in want.items()),
+          f"hero 4: the hint beside the switch reads 'Start here: flip it off' at 1440, 'Start here' at 1024 and 800, 'Tap to turn off' at 390 and 'Start here' at 340 px ({ {k: said.get(k) for k in want} })")
+    # the second move: after the first use the hint is gone while the check is on, and while the check is off it asks for the way back
+    # ("the check is off" is a dead end otherwise: every row reads 1.00x and the only instruction is the small readout line), inside its switch
+    back_want = {1440: "Now flip it on", 1024: "Flip it on", 800: "Flip it on", 390: "Tap to turn on", 340: "Turn on"}
+    back_bad = []
+    for w, text in back_want.items():
+        pg = browser.new_page_plain(viewport={"width": w, "height": 900})
+        pg.goto(f"{base}#hero=4", wait_until="networkidle")
+        wait_ready(pg)
+        pg.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
+        probe = """() => { const h = document.getElementById('sw-hint'), cs = getComputedStyle(h), a = h.getBoundingClientRect(), sw = document.getElementById('race-sw').getBoundingClientRect();
+            return { shown: !h.hidden && cs.display !== 'none' && +cs.opacity > 0.5, text: h.innerText.trim(), inside: a.right <= sw.right + 0.5 && a.left >= sw.left - 0.5,
+              clash: ['#race-replay', '#race-cpu', '#race-cap', '#race .race-read'].filter(s => { const e = document.querySelector(s); if (!e) return false;
+                const b = e.getBoundingClientRect(); return a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1; }) }; }"""
+        pg.wait_for_timeout(900)
+        pg.click("#race-sw")                    # first use: the check is off
+        pg.wait_for_timeout(700)
+        off = pg.evaluate(probe)
+        pg.click("#race-sw")                    # back on: the hint is gone for good
+        pg.wait_for_timeout(700)
+        on = pg.evaluate(probe)
+        pg.keyboard.press("c")                  # the key does the same as the switch
+        pg.wait_for_timeout(700)
+        off2 = pg.evaluate(probe)
+        if not (off["shown"] and off["text"] == text and off["inside"] and not off["clash"] and not on["shown"] and off2["shown"] and off2["text"] == text):
+            back_bad.append((w, off, on["shown"], off2["text"]))
+        pg.close()
+    ck.ok(not back_bad, f"hero 4: after the first use the hint is gone while the check is on, and while it is off asks 'Now flip it on' (1440), 'Flip it on' (1024, 800), 'Tap to turn on' (390), 'Turn on' (340), inside its switch and off every other control, also after the C key ({back_bad[:2]})")
 
 
 def wording_checks(browser, base, ck, index):
@@ -1679,6 +1767,8 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     def join_and(xs):
         return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
 
+    with open(os.path.join(DATA, "dsweep.json"), encoding="utf-8") as f:
+        ds_arm = next(m for m in json.load(f)["models"] if m["cpu_short"] == arm["cpu_short"])  # the row-length sweep's Arm model (its word is named in 6d's matrix-multiply paragraph)
     cells = {c["cell_id"]: c for c in arm["cells"]}
     kern = {k["kernel"]: k for k in arm["kernels"]}
     x86 = arm["x86"]["cells"]
@@ -1735,8 +1825,8 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     mmx = x86["k08_matmul.L1"]
     mtxt = norm(pg.inner_text("#arm-mm"))
     ck.ok(kern["k08_matmul"]["class"] == "kept" and mmx["class"] == "lost" and f"costs {fx_(mm['as_compiled']['ratio'])}× at L1 ({fx_(mm['aligned']['ratio'])}× aligned)" in mtxt
-          and f"against {fx_(mmx['as_compiled']['ratio'])}× on {x86name}, where the same loop loses SIMD" in mtxt and "Where the extra time goes is not shown." in mtxt,
-          "6a: the matrix-multiply sentence gives the Arm and the x86-64 numbers from the data and says where the extra time goes is not shown")
+          and f"against {fx_(mmx['as_compiled']['ratio'])}× on {x86name}, where the same loop loses SIMD" in mtxt and "Where the extra time goes is not shown." not in mtxt,
+          "6a: the matrix-multiply sentence gives the Arm and the x86-64 numbers from the data; the stale 'Where the extra time goes is not shown.' is gone (the row-length sweep's sentence replaces it, checked in dsweep_checks)")
     # the more-link names section 6d, and the caption's Table 12 link goes to the table's own caption
     ck.ok(pg.evaluate("document.querySelectorAll('#arm a[href=\"details.html#arm-full\"]').length") == 1 and pg.evaluate("document.querySelectorAll('#arm-cap a[href=\"details.html#arm-t1-cap\"]').length") == 1
           and "section 6d" in pg.inner_text("#arm .more-link"), "6a: the more-link names section 6d of the details page, and the caption's 'Table 12' links to that table's caption")
@@ -1921,8 +2011,8 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     dp.wait_for_function("document.querySelectorAll('#arm-t1 tbody tr').length === 16 && document.querySelectorAll('#arm-t2 tbody tr').length === 8 && document.getElementById('arm-limits').textContent.length > 0", timeout=20000)
     order_ok = dp.evaluate("""() => { const a = document.getElementById('arm-full'), p = document.getElementById('environment-full'), n = document.getElementById('realworld-full');
         return [!!(p.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING), !!(a.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING),
-                document.querySelector('#arm-full h2 .secno').textContent.trim(), !!document.querySelector('.dnav a[href="#arm-full"]')]; }""")
-    ck.ok(order_ok == [True, True, "6d", True], f"details: section 6d follows 6c and precedes section 7a, with a link in the contents row ({order_ok})")
+                document.querySelector('#arm-full h2 .secno').textContent.trim(), !!document.querySelector('#dall .dall-list a[href="#arm-full"]')]; }""")
+    ck.ok(order_ok == [True, True, "6d", True], f"details: section 6d follows 6c and precedes section 7a, with a link in the 'All sections' list ({order_ok})")
     dp.evaluate("document.getElementById('arm-line-box').open = true")
     intro = norm(dp.inner_text("#arm-intro"))
     t = [__import__("datetime").datetime.fromisoformat(r["started_at"].replace("Z", "+00:00")) for r in arm["runs"]]
@@ -2117,14 +2207,14 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     ck.ok(f"{lr_(m1['as_compiled']['ratio'])}× at L1 as compiled ({lr_(m1['aligned']['ratio'])}× aligned)" in mt and f"{lr_(m2['as_compiled']['ratio'])}× at L2 ({lr_(m2['aligned']['ratio'])}× aligned)" in mt
           and f"{m1['placement']['d']['ratio']:.3f} and {m2['placement']['d']['ratio']:.3f}" in mt and f"{fx_(mmx['as_compiled']['ratio'])}× and {fx_(x86['k08_matmul.L2']['as_compiled']['ratio'])}×" in mt
           and f"{mk_['builds']['fast']['asm_lines']} lines against {mk_['builds']['none']['asm_lines']}" in mt and f"{lr_(m1['instr_ratio']['as_compiled'])}× the instructions at L1" in mt
-          and "Observed in the checked build’s full listing (the .s file) and its L1 diff (the diff)" in mt and "fits the listing and the counts at L1; it was not tested" in mt and "Nothing here times the SIMD loop alone" in mt and "is not established here" in mt
+          and "Observed in the checked build’s full listing (the .s file) and its L1 diff (the diff)" in mt and f"fits the listing and the counts at L1; the row-length sweep at the end of this section tests whether the extra time per inner call is fixed, and its word is “{ds_arm['word']}”" in mt and "it was not tested" not in mt and "Nothing here times the SIMD loop alone" in mt and "is not established here" in mt
           and f"the SIMD loop has the same {mk_['simd_loop']['as_compiled']['fast_instructions']} instructions with the same opcodes in both builds" in mt and "brk #0x1" in mt
           and "sit before the SIMD loop and in the scalar loop, none inside the SIMD loop. The diff drops those jump targets, so they are read from the full listing" in mt
           and "is inferred" not in mt and "does not show their targets" not in mt
           and f"{lr_(m1['instr_ratio']['as_compiled'])}× the instructions at L1 (Cachegrind) for {lr_(m1['as_compiled']['ratio'])}× the time, and {lr_(m2['instr_ratio']['as_compiled'])}× the instructions at L2 for {lr_(m2['as_compiled']['ratio'])}× the time" in mt
           and f"d = {mcs_['L1']['d']} at L1 and d = {mcs_['L2']['d']} at L2, so the SIMD loop runs {mcs_['L1']['whole_passes']} and {mcs_['L2']['whole_passes']} passes of {arm['matmul_cost']['vector_pass_elements']} elements per row and the scalar loop is left {mcs_['L1']['d_mod_pass']} and {mcs_['L2']['d_mod_pass']}" in mt
           and f"the gather loop executes {lr_(cells['k06_gather.L1']['instr_ratio']['as_compiled'])}× and {lr_(cells['k06_gather.L2']['instr_ratio']['as_compiled'])}× the instructions at the two sizes but costs {lr_(cells['k06_gather.L1']['as_compiled']['ratio'])}× and {lr_(cells['k06_gather.L2']['as_compiled']['ratio'])}×" in mt
-          and "do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; no other d was timed" in mt
+          and "do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; the row-length sweep times other d" in mt and "no other d was timed" not in mt
           and dp.evaluate("[...document.querySelectorAll('#arm-matmul a')].some(a => a.href.endsWith('k08_matmul.L1.diff'))")
           and dp.evaluate("[...document.querySelectorAll('#arm-matmul a')].some(a => a.href.endsWith('asm/k08_matmul.fast.s'))"),
           "6d, matrix multiply: the Arm and x86-64 numbers from the data, the listing facts labelled observed (including where the trap branches sit, read from the full listing), the mechanism labelled as fitting the counts and not tested, the confound between row length and cache level stated with the gather loop's example, and links to the diff and the full listing")
@@ -2173,14 +2263,15 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     avg = norm(mp.inner_text("#arm-avg span[data-v=armAvg]"))
     sentences = re.split(r"(?<![0-9])\.\s+(?=[A-Z])", avg)
     wid = max((c for c in arm["cells"] if c["kernel"] in arm["forward_loops"]["kernels"] and c["size_class"] == "L2"), key=lambda c: c["aligned"]["half_width_pct"])
-    n_ps_f = sum(1 for q in SM["placement_sensitive"] if q["cell_id"].split(".")[0] in arm["forward_loops"]["kernels"] and q["cell_id"].endswith(".L1"))
+    # Trimmed on Oct 17 to make room for the replication figure and the row-length sentence in section 6a (the all-open length budget):
+    # the clause on the two placement-sensitive loops and the fixed instruction count per call, the cell's name beside the widest L2 interval and the
+    # seed count are gone from this paragraph (6a and section 6d carry them); the A/A floor stays tied to the forward add, the L2 widths stay, and the verdict stays 'inconclusive'.
     ck.ok(len(sentences) == 2 and "neither confirms nor contradicts the 0.30% average" in sentences[0]
-          and f"against an A/A floor of ±{pct_s(arm['aa']['half_width_pct'])} that belongs to the forward add at L1 alone ({n_ps_f} of the {len(arm['forward_loops']['kernels'])} are placement-sensitive, so the rules do not judge them" in avg
-          and (not same_add or "the instructions the checks add to a call are a fixed count, the same at both sizes, so their share of a call follows the array length" in avg)
-          and f"±{pct_s(wid['aligned']['half_width_pct'])}) is too wide to resolve 0.30%, as is an identical binary against itself (±{pct_s(aa_l2['half_width_pct'])})" in avg
-          and "the pooled verdict under the written rules is inconclusive" in avg
-          and f"on a margin that {DC_['alt_draws'] - DC_['alt_at_or_above_limit']} of {DC_['alt_draws']} other bootstrap seeds reverse (section 6a)" in sentences[1],
-          f"section 10: the Arm addition is two sentences, says it neither confirms nor contradicts the average, names the A/A floor as one cell's, and gives the widest forward interval at L2 beside an identical binary's, the verdict form and the seed-noise margin ({len(sentences)} sentences)")
+          and sentences[0].startswith(f"On {arm['cpu_short']} the three forward loops cost {lr_(f1['min'])}× to {lr_(f1['max'])}× at L1, as compiled, against an A/A floor of ±{pct_s(arm['aa']['half_width_pct'])} (forward add only)")
+          and f"At L2 the widest forward interval (±{pct_s(wid['aligned']['half_width_pct'])}) and an identical binary against itself (±{pct_s(aa_l2['half_width_pct'])}) are too wide to resolve 0.30%" in sentences[1]
+          and "the pooled verdict is inconclusive, on a margin most other seeds reverse (section 6a)" in sentences[1]
+          and DC_["alt_draws"] - DC_["alt_at_or_above_limit"] > DC_["alt_draws"] / 2,
+          f"section 10: the Arm addition is two sentences, says it neither confirms nor contradicts the average, ties the A/A floor to the forward add, and gives the widest forward interval at L2 beside an identical binary's, the verdict form and that most other seeds reverse the margin (true in the data) ({len(sentences)} sentences)")
     wf_text = open(os.path.join(REPO, ".github", "workflows", "measure.yml"), encoding="utf-8").read()
     try:
         import yaml
@@ -2206,7 +2297,7 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     typed = []
     for name, text in (("index.html #arm", src.split('<section id="arm">')[1].split("</section>")[0]), ("details.html #arm-full", dsrc.split('<section id="arm-full">')[1].split("</section>")[0])):
         plain = re.sub(r"<[^>]+>", " ", text)
-        plain = re.sub(r"6a|6d|x86-64|Figure [17]|Table 1[23]|ubuntu-24\.04-arm|Neoverse-N2|&[a-z]+;|arm64/PLAN\.md|data/arm64\.json", " ", plain)
+        plain = re.sub(r"6a|6d|x86-64|Figure [179]|Table 1[235]|ubuntu-24\.04-arm|Neoverse-N2|&[a-z]+;|arm64/PLAN\.md|data/arm64\.json", " ", plain)
         typed += [(name, m) for m in re.findall(r"\d+(?:\.\d+)?", plain)]
     ck.ok(not typed, f"the two new sections' HTML types no number: every figure is filled from site/data ({typed[:4]})")
     ck.ok(not errors and not errors_d, "Arm: no console errors, page errors or failed data requests on either page" + ("" if not (errors or errors_d) else f": {(errors + errors_d)[:4]}"))
@@ -2253,6 +2344,858 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     ck.ok(not errors_p, "Arm, 390: no console errors" + ("" if not errors_p else f": {errors_p[:3]}"))
 
 
+REP_NUM_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+REP_SAY = {"none": "not drawn", "few": "too few jobs", "map": "a map", "holds": "a small cost everywhere", "inc": "inconclusive"}
+
+
+def num_word_py(n):
+    return REP_NUM_WORDS[n] if n < len(REP_NUM_WORDS) else str(n)
+
+
+def cap_py(t):
+    return t[:1].upper() + t[1:]
+
+
+def jobs_py(n):
+    return f"{n} job{'' if n == 1 else 's'}"
+
+
+def join_and_py(xs):
+    return "".join(xs) if len(xs) <= 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def pct_s_py(v):
+    return "0%" if v == 0 else f"{v:.4f}%" if v < 0.01 else f"{v:.3f}%" if v < 0.1 else f"{v:.2f}%" if v < 1 else f"{v:.1f}%"
+
+
+def lr_py(v):
+    return f"{v:.2f}" if v >= 2 else f"{v:.3f}"
+
+
+def fx_py(v):
+    return f"{v:.1f}" if v >= 2 else f"{v:.2f}"
+
+
+def cell_name_py(cid):
+    k, sz = cid.split(".")
+    return f"the {ARM_SHORT_NAMES[k]} loop at the {sz} size"
+
+
+def rep_kind(s):
+    """The word class of one pooled set, from the stored form (not from the page's code): a map, inconclusive, too few jobs, or not drawn."""
+    if not s or not s["jobs"]:
+        return "none"
+    if not s["enough"]:
+        return "few"
+    return "map" if s["form"] == "map" else "holds" if s["form"] == "holds_everywhere" else "inc"
+
+
+def rep_with(s):
+    return f"{REP_SAY[rep_kind(s)]} ({jobs_py(s['jobs'] if s else 0)})"
+
+
+# Figure 8 on the main page calls the two sets "first" and "second" everywhere; set A, B and C belong to Table 14 on the details page
+REP_SETS = {"earlier": "the first set", "replication": "the second set", "secondary": "both together"}
+
+
+def rep_edge(R, r):
+    """A different word that comes from the placement exemption switching between the sets (the flipped cells have different roles), not from a new cost."""
+    f = next((x for x in R["arch"][r["arch"]]["flips"] if x["slug"] == r["slug"]), None)
+    return bool(f) and all(c["earlier"]["role"] != c["replication"]["role"] for c in f["cells"])
+
+
+def rep_title_py(R, rows):
+    """Figure 8's title, recomputed from the stored words of the models that could be tested in both sets."""
+    t = [r for r in rows if r["testable"]]
+    same = [r for r in t if rep_status(r) == "same"]
+    flip = [r for r in t if rep_status(r) == "flipped"]
+    tail = f"; {len(flip)} {'flipped at a rule’s edge' if flip and all(rep_edge(R, r) for r in flip) else 'changed word'}" if flip else ""
+    return f"Second set: same word on {len(same)} of {len(t)} models{tail}"
+
+
+def first_diff(got, want):
+    """Where two strings part, for a failure message ('' when they are equal)."""
+    if got == want:
+        return ""
+    i = next((k for k, (a, b) in enumerate(zip(got, want)) if a != b), min(len(got), len(want)))
+    return f"differs at {i}: page ...{got[max(0, i - 30):i + 50]!r} / expected ...{want[max(0, i - 30):i + 50]!r}"
+
+
+def form_words_py(f):
+    return "a map" if f == "map" else "a small cost everywhere" if f == "holds_everywhere" else "inconclusive"
+
+
+def rep_status(r):
+    """'same', 'flipped' or 'not testable', recomputed from the two words: the stored status must agree."""
+    e, p = r["earlier"], r["replication"]
+    if not (e and e["enough"] and p and p["enough"]):
+        return "not testable"
+    return "same" if e["form"] == p["form"] else "flipped"
+
+
+def rep_aligned(r):
+    """The plan counts the aligned ratios inside the earlier interval; the stored count has both columns, so a model's cells are half its points."""
+    cells = r["inside"]["checked"] // 2
+    return cells - sum(1 for m in r["inside"]["misses"] if m["column"] == "aligned"), cells
+
+
+def rep_role(x):
+    P = x["placement"]
+    ci = f"{P['d_ci95'][0]:.3f} to {P['d_ci95'][1]:.3f}"
+    if x["role"] == "exempt_placement_sensitive":
+        return f"left out of the forward test as placement-sensitive (compiled ÷ aligned {ci}, which excludes 1 by {P['d_misses_one_by']:.4f})"
+    miss = f", and it misses the {fx_py(x['limit'])}× limit by {x['aligned_hi_over_limit']:.4f}" if x.get("passes_forward_rule") is False else ""
+    return f"judged (compiled ÷ aligned {ci}, which includes 1){miss}"
+
+
+def rep_flip_text(R, arch, slug, names=None):
+    A = R["arch"][arch]
+    f = next((x for x in A["flips"] if x["slug"] == slug), None)
+    if not f:
+        return ""
+    n = names or A["names"]
+    return " ".join(
+        f"{cap_py(cell_name_py(c['cell_id']))}, aligned: {c['earlier']['aligned']['ratio']:.3f}× in {n['earlier']} and {c['replication']['aligned']['ratio']:.3f}× in {n['replication']}; "
+        f"its interval ends at {c['earlier']['aligned']['ci95'][1]:.4f} and {c['replication']['aligned']['ci95'][1]:.4f}, against the {fx_py(c['earlier']['limit'])}× limit. "
+        f"In {n['earlier']} it is {rep_role(c['earlier'])}; in {n['replication']} it is {rep_role(c['replication'])}."
+        for c in f["cells"])
+
+
+def rep_drawn(models_drawn, shorts):
+    return join_and_py([f"{shorts.get(m, m)} {n}" for m, n in sorted(models_drawn.items(), key=lambda kv: -kv[1])])
+
+
+STICKY_JS = """(sel) => { const w = document.querySelector(sel); w.scrollLeft = w.scrollWidth; const r = w.getBoundingClientRect(), th = w.querySelector('tbody th').getBoundingClientRect(), hd = w.querySelector('thead th').getBoundingClientRect(), hint = w.previousElementSibling;
+    return { th_left: Math.round(th.left - r.left), hd_left: Math.round(hd.left - r.left), th_w: Math.round(th.width), box_w: Math.round(r.width), scrolled: w.scrollLeft > 0, hint: !!hint && hint.classList.contains('swipe') && !hint.hidden && hint.getBoundingClientRect().height > 0 }; }"""
+
+
+def sticky_ok(g):
+    """A wide table scrolled to its right end keeps its row label in view (left edge, heading too, label at most half the box) and shows the swipe hint."""
+    return g["scrolled"] and 0 <= g["th_left"] <= 4 and 0 <= g["hd_left"] <= 4 and g["th_w"] <= 0.5 * g["box_w"] and g["hint"]
+
+
+FIG9_JS = """() => {
+  const n = (e, a) => Number(e.getAttribute(a));
+  const t = document.createElement('i'); t.style.background = 'var(--paper)'; document.body.append(t); const paper = getComputedStyle(t).backgroundColor; t.remove();
+  const keys = [...document.querySelectorAll('#ds-cap .ds-key')].map((k) => { const cs = getComputedStyle(k); return { cls: k.classList.contains('ds-aligned') ? 'aligned' : 'as_compiled', bg: cs.backgroundColor, border: cs.borderTopWidth, bcol: cs.borderTopColor, next: (k.nextSibling ? k.nextSibling.textContent.trim().slice(0, 7) : '') }; });
+  const panels = [...document.querySelectorAll('#ds-panels svg')].map((s) => {
+    const band = s.querySelector('rect.ds-band');
+    return { slug: s.dataset.slug,
+      grid: [...s.querySelectorAll('line.ds-grid')].map((l) => [n(l, 'y1'), n(l, 'y2')]),
+      ticks: [...s.querySelectorAll('text.ds-tick')].map((e) => ({ x: n(e, 'x'), y: n(e, 'y'), a: e.getAttribute('text-anchor'), t: e.textContent })),
+      band: band ? [n(band, 'x'), n(band, 'width'), n(band, 'y'), n(band, 'height')] : null,
+      circles: [...s.querySelectorAll('circle.ds-pt')].map((c) => { const cs = getComputedStyle(c); return { d: Number(c.dataset.d), col: c.classList.contains('ds-aligned') ? 'aligned' : 'as_compiled', cx: n(c, 'cx'), cy: n(c, 'cy'), fitted: c.classList.contains('fitted'), sel: c.classList.contains('sel'), fill: cs.fill, stroke: cs.stroke }; }),
+      lines: [...s.querySelectorAll('polyline.ds-line')].map((l) => ({ col: l.classList.contains('ds-aligned') ? 'aligned' : 'as_compiled', pts: l.getAttribute('points').trim().split(/\\s+/).map((q) => q.split(',').map(Number)) })) };
+  });
+  return { paper, keys, panels };
+}"""
+
+
+def fig9_geometry(g, models, view, ns_of):
+    """Everything Figure 9 draws, read back from the SVG and compared with the stored data: the y axis (value 0 lowest, labels at the right lines), the x axis, every point of
+    both columns (as compiled, aligned) at its stored value, the fit band's two ends, each joined line through the fit ladder, which points are marked as fitted, the axis title,
+    and the computed fill of filled and hollow points against the caption's key swatches. Returns a list of problems (empty when everything agrees)."""
+    bad = []
+    cols = ["as_compiled", "aligned"] if view == "ns" else ["as_compiled"]
+    val = (lambda r, c: ns_of(r, c)) if view == "ns" else (lambda r, c: r["extra_instr_per_inner"])
+    if [p["slug"] for p in g["panels"]] != [m["slug"] for m in models]:
+        return [("panels", [p["slug"] for p in g["panels"]])]
+    for p, m in zip(g["panels"], models):
+        who = m["cpu_short"]
+        gys = sorted(y for y, _ in p["grid"])
+        yl = [(t["y"] - 4, float(t["t"])) for t in p["ticks"] if t["a"] == "end"]  # a label's baseline sits 4 px below its grid line
+        xl = [(t["x"], float(t["t"])) for t in p["ticks"] if t["a"] == "middle" and re.fullmatch(r"\d+(\.\d+)?", t["t"])]
+        title = [t["t"] for t in p["ticks"] if t["a"] == "middle" and not re.fullmatch(r"\d+(\.\d+)?", t["t"])]
+        if len(yl) < 3 or len(xl) < 3:
+            bad.append((who, "too few tick labels", len(yl), len(xl)))
+            continue
+        if title != ["d, the row length"]:
+            bad.append((who, "axis title", title))
+        if sorted(y for y, _ in yl) != [round(q, 6) for q in gys] and any(min(abs(y - q) for q in gys) > 0.01 for y, _ in yl):
+            bad.append((who, "a y label is not on its grid line"))
+        yl.sort(key=lambda t: t[1])
+        (y0, v0), (y1, v1) = yl[0], yl[-1]
+        if not (v0 == 0 and y0 > y1 and y0 == max(y for y, _ in yl)):
+            bad.append((who, "y axis is not 0 at the bottom with larger values higher", yl[:2]))
+            continue
+        by = (y1 - y0) / (v1 - v0)
+        if any(abs(y - (y0 + by * v)) > 0.05 for y, v in yl):
+            bad.append((who, "y labels are not evenly spaced"))
+        xl.sort(key=lambda t: t[1])
+        (x0, d0), (x1, d1) = xl[0], xl[-1]
+        bx = (x1 - x0) / (d1 - d0)
+        if bx <= 0 or any(abs(x - (x0 + bx * d)) > 0.05 for x, d in xl):
+            bad.append((who, "x axis is not increasing and evenly spaced"))
+            continue
+        px = lambda d: x0 + bx * d  # noqa: E731
+        py = lambda v: y0 + by * v  # noqa: E731
+        rows = {r["d"]: r for r in m["rows"]}
+        got = {(c["d"], c["col"]): c for c in p["circles"]}
+        if len(p["circles"]) != len(rows) * len(cols) or set(got) != {(d, c) for d in rows for c in cols}:
+            bad.append((who, "points are not one per row length and column", len(p["circles"])))
+            continue
+        for (d, c), q in got.items():
+            r = rows[d]
+            if abs(q["cx"] - px(d)) > 0.1 or abs(q["cy"] - py(val(r, c))) > 0.1:
+                bad.append((who, f"point d={d} {c} is at ({q['cx']:.1f}, {q['cy']:.1f}), stored value puts it at ({px(d):.1f}, {py(val(r, c)):.1f})"))
+        want_fit = {r["d"] for r in m["rows"] if "fit" in r["roles"] or "study_l1" in r["roles"]}
+        if {c["d"] for c in p["circles"] if c["fitted"]} != want_fit:
+            bad.append((who, "the points marked as fitted are not the fit ladder"))
+        fit = [r for r in m["rows"] if "fit" in r["roles"]]
+        if p["band"] is None or abs(p["band"][0] - px(fit[0]["d"])) > 0.1 or abs(p["band"][0] + p["band"][1] - px(fit[-1]["d"])) > 0.1 or abs(p["band"][2] - min(gys)) > 0.1 or abs(p["band"][2] + p["band"][3] - max(gys)) > 0.1:
+            bad.append((who, "the shaded band does not run from the first to the last fit row length over the full height", p["band"]))
+        if sorted(l["col"] for l in p["lines"]) != sorted(cols):
+            bad.append((who, "joined lines", [l["col"] for l in p["lines"]]))
+        for l in p["lines"]:
+            want = [(px(r["d"]), py(val(r, l["col"]))) for r in fit]
+            if len(l["pts"]) != len(want) or any(abs(a - b) > 0.15 or abs(c - e) > 0.15 for (a, c), (b, e) in zip(l["pts"], want)):
+                bad.append((who, f"the {l['col']} line does not run through the fit ladder at its stored values", len(l["pts"]), len(want)))
+    keys = {k["cls"]: k for k in g["keys"]}
+    fills = {(c["col"]): c["fill"] for p in g["panels"] for c in p["circles"] if c["fitted"] and not c["sel"]}  # the chosen point is drawn in the highlight colour
+    if view == "ns":
+        order = [(k["cls"], k["next"]) for k in g["keys"]]
+        if order != [("as_compiled", "filled)"), ("aligned", "hollow)")] or set(keys) != {"as_compiled", "aligned"}:
+            bad.append(("caption", "the key swatches are not as compiled (filled) then aligned (hollow)", order))
+        elif not (fills["as_compiled"] != g["paper"] and fills["aligned"] == g["paper"] and keys["as_compiled"]["bg"] == fills["as_compiled"] and keys["aligned"]["bg"] == g["paper"]
+                  and keys["aligned"]["border"] == "2px" and keys["aligned"]["bcol"] == next(c["stroke"] for p in g["panels"] for c in p["circles"] if c["fitted"] and not c["sel"] and c["col"] == "aligned")):
+            bad.append(("caption", "a swatch and the points it names are drawn differently (the caption says as compiled is filled, aligned hollow)", fills, {k: v["bg"] for k, v in keys.items()}))
+    return bad
+
+
+REP_GEOM_JS = """() => {
+  const f = document.getElementById('fig-rep'), rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const head = f.querySelector('.rep-head'), rows = [...f.querySelectorAll('#rep-rows .row')];
+  const R = (e) => e.getBoundingClientRect(), bad = [];
+  const track = (e) => getComputedStyle(e).gridTemplateColumns.split(' ').map(parseFloat);
+  const apart = (a, b, what) => { if (b.left < a.right - 0.5) bad.push(what); };
+  const line = (els, what) => { const rs = els.map((e) => R(e)).filter((r) => r.width > 0).sort((a, b) => a.left - b.left); for (let i = 1; i < rs.length; i++) if (Math.abs(rs[i].top - rs[i - 1].top) < 4) apart(rs[i - 1], rs[i], what); };
+  if (getComputedStyle(head).display !== 'none') { const sp = [...head.children]; for (const s of sp) if (s.scrollWidth > s.clientWidth + 1) bad.push('header word ' + s.textContent + ' overflows'); line(sp, 'header words overlap'); }
+  for (const r of rows) {
+    const rr = R(r);
+    if (r.scrollWidth > r.clientWidth + 1) bad.push(r.dataset.slug + ' row overflows');
+    for (const c of r.children) { const cr = R(c); if (c.scrollWidth > c.clientWidth + 1) bad.push(r.dataset.slug + ' ' + c.className + ' overflows'); if (cr.left < rr.left - 1 || cr.right > rr.right + 1) bad.push(r.dataset.slug + ' ' + c.className + ' leaves the row'); }
+    line([...r.children], r.dataset.slug + ' cells overlap');
+    for (const g of r.querySelectorAll('.rg')) { const gr = R(g); line([...g.children], r.dataset.slug + ' mark and count overlap'); for (const k of g.children) { const kr = R(k); if (kr.left < gr.left - 1 || kr.right > gr.right + 1) bad.push(r.dataset.slug + ' mark or count leaves its cell'); } }
+    const bar = r.querySelector('.rbar'), rn = r.querySelector('.rn');
+    if (bar && rn && getComputedStyle(bar).display !== 'none') apart(R(bar), R(rn), r.dataset.slug + ' bar and count overlap');
+  }
+  const stackedLabels = rows.length ? rows.flatMap((r) => [...r.children].slice(1).map((c) => getComputedStyle(c, '::before').content)) : [];
+  return { fig_w: f.clientWidth, rem, rows: rows.map((r) => ({ slug: r.dataset.slug, h: Math.round(R(r).height) })), bad,
+    row_tracks: rows.length ? track(rows[0]) : [], head_tracks: track(head), head_display: getComputedStyle(head).display, row_display: rows.length ? getComputedStyle(rows[0]).display : '', labels: stackedLabels };
+}"""
+
+
+def replication_checks(browser, base, ck, index, allowed, saved, shots):
+    """The second set of runs (data/replication.json): Figure 8 on the main page (section 1) and the account with Table 14 on the details page.
+    Everything printed is recomputed here from the data file: the six rows in the stored order, each set's word and job count, the inside counts (both
+    columns, and the aligned column alone), the title's counts from the recomputed statuses, the readout per row (the flip cells with their placement
+    numbers, the not-testable model, the Arm cell), the account's paragraphs and Table 14. Also: the readout is hidden until a row is chosen, the keys,
+    no number typed into the new HTML, no workflow-run link, finger-sized rows and no sideways scroll at 390 and 320 px, no console errors."""
+    print("== the replication: Figure 8 (main page, section 1) and the account with Table 14 (details page)")
+    with open(os.path.join(DATA, "replication.json"), encoding="utf-8") as f:
+        R = json.load(f)
+    norm = lambda s: " ".join(s.replace(" ", " ").split())  # noqa: E731
+    shorts = {r["cpu_model"]: r["cpu_short"] for r in R["rows"]}
+    rows = [r for r in R["rows"] if r["earlier"] and r["earlier"]["enough"]]  # the models with a verdict in the first set
+    X, AR, P, Q, crit = R["arch"]["x86"], R["arch"]["arm"], R["pools"], R["questions"], R["criteria"]
+    ck.ok(index["sections"].get("replication") == "data/replication.json" and R["plan"] == "replication/PLAN.md" and crit["minimum_jobs"] == 3
+          and all(r["status"] == rep_status(r) for r in R["rows"]) and all(r["testable"] == (r["status"] != "not testable") for r in R["rows"]),
+          "the replication file is registered in index.json, names replication/PLAN.md, and every row's stored status equals the status recomputed from its two words")
+    same_n = [r for r in rows if r["status"] == "same"]
+    flip_n = [r for r in rows if r["status"] == "flipped"]
+    ck.ok(len(rows) == 6 and sum(1 for r in rows if r["arch"] == "arm") == 1 and len(same_n) + len(flip_n) + sum(1 for r in rows if r["status"] == "not testable") == len(rows)
+          and X["totals"]["flipped"] + AR["totals"]["flipped"] == len(flip_n) and X["totals"]["same_form"] + AR["totals"]["same_form"] == len(same_n),
+          f"the data have six models with a first-set verdict (five x86-64 and the Arm core): {len(same_n)} same word, {len(flip_n)} different, the rest not testable; the per-architecture totals agree")
+
+    # ---- the main page, every section open, 1280 wide
+    errors = []
+    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(pg, errors)
+    pg.goto(base, wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#rep-rows .row').length > 0 && document.getElementById('rep-cap').textContent.length > 20", timeout=20000)
+    pg.wait_for_timeout(300)
+    where = pg.evaluate("""() => { const f = document.getElementById('fig-rep'), n = f.nextElementSibling;
+        return [f.parentElement.closest('section[id]').id, f.previousElementSibling.id, n.className, n.querySelector('a').getAttribute('href')]; }""")
+    ck.ok(where == ["result", "cpu-note", "more-link", "details.html#holdout-full"],
+          f"main page: Figure 8 sits in section 1, after Table 1's note and before the holdout link to details.html#holdout-full ({where})")
+    title = norm(pg.inner_text("#rep-title"))
+    want_title = rep_title_py(R, rows)
+    ck.ok(title == want_title and "cost" not in title and len(same_n) + len(flip_n) == sum(1 for r in rows if r["testable"]),
+          f"Figure 8's title counts the models that could be tested in both sets, from the stored words, and names a flip by what it is without saying the cost changed: {want_title!r} (page: {title!r})")
+    lab8 = pg.get_attribute("#rep-rows", "aria-label")
+    ck.ok(lab8 == "CPU models: the verdict word on the first set of runs, on the second set and on both together. Use the arrow keys to select one.",
+          f"Figure 8's list label, word for word: it names the first set, the second set and both together, so a swapped or reduced label fails ({lab8!r})")
+    lines8 = pg.evaluate("(() => { const t = document.getElementById('rep-title'), cs = getComputedStyle(t); return Math.round(t.getBoundingClientRect().height / parseFloat(cs.lineHeight)); })()")
+    ck.ok(lines8 == 1, f"Figure 8's title is one line at 1280 wide ({lines8})")
+    head = pg.evaluate("[...document.querySelectorAll('#fig-rep .rep-head span')].map(s => s.textContent)")
+    key = norm(pg.inner_text("#rep-key"))
+    ck.ok(head == ["", "first", "second", "both", "inside"] and key == "map inconclusive too few jobs n = jobs"
+          and pg.evaluate("[...document.querySelectorAll('#rep-key .rg')].map(g => g.className.replace('rg ', ''))") == ["g-map", "g-inc", "g-few"],
+          f"Figure 8 labels its columns (first, second, both, inside) and keys the three marks and the job count ({head}, {key!r})")
+    cap = norm(pg.inner_text("#rep-cap"))
+    want_cap = (f"Figure 8. A set is one batch of runs. Inside: of {rows[0]['inside']['checked']} pooled ratios, those of the second set in the first set’s 95% interval (Table 14). "
+                "“Both” is secondary.")
+    ck.ok(cap == want_cap and pg.evaluate("[...document.querySelectorAll('#rep-cap a')].map(a => [a.getAttribute('href'), a.textContent.replace(/\\s/g, ' ')])") == [["details.html#rep-t-cap", "Table 14"]],
+          "Figure 8's caption defines a set and 'Inside' with the 32 from the data in the same two names the title, heads and readout use (first, second), says 'Both' is secondary, and links to Table 14's caption")
+    arm_link = pg.evaluate("(() => { const n = document.getElementById('arm-rep-link'); const a = n && n.querySelector('a'); return [n ? n.textContent.replace(/\\s+/g, ' ').trim() : null, a ? a.getAttribute('href') : null]; })()")
+    Qa = Q["arm_cell"]
+    want_link = f"A second set {'repeats the word, weakly' if Qa['repeated'] else 'read'}: {form_words_py(Qa['replication_form'])} (Figure 8)."
+    ck.ok(arm_link == [want_link, "#fig-rep"] and pg.evaluate("document.getElementById('arm-rep-link').closest('#arm') !== null"),
+          f"section 6a: one sentence tells the reader a second set of Arm runs read the same word on the same cell and calls it a weak repeat, and links to Figure 8 ({arm_link})")
+    got = pg.evaluate("""() => [...document.querySelectorAll('#rep-rows .row')].map(b => ({ slug: b.dataset.slug, name: b.querySelector('.name').textContent, role: b.getAttribute('role'), sel: b.getAttribute('aria-selected'),
+        tab: b.tabIndex, gap: b.classList.contains('rep-gap'), label: b.getAttribute('aria-label'), glyphs: [...b.querySelectorAll('.rg')].map(g => [g.className.replace('rg ', ''), g.querySelector('b').textContent]),
+        inside: b.querySelector('.rn').textContent, bar: b.querySelector('.rbar i') ? b.querySelector('.rbar i').style.width : null })) """)
+    bad = []
+    for g, r in zip(got, rows):
+        gl = [[f"g-{rep_kind(s)}", str(s["jobs"]) if s and s["jobs"] else "–"] for s in (r["earlier"], r["replication"], r["secondary"])]
+        ins = f"{r['inside']['inside']}/{r['inside']['checked']}" if r["inside"] else "–"
+        n = REP_SETS
+        lab = f"{r['cpu_short']}: {n['earlier']}: {rep_with(r['earlier'])}; {n['replication']}: {rep_with(r['replication'])}; {n['secondary']}: {rep_with(r['secondary'])}; " + (f"{ins.replace('/', ' of ')} pooled ratios of the second set inside the first set’s interval" if r["inside"] else "not testable")
+        if (g["slug"], g["name"], g["role"], g["sel"], g["glyphs"], g["inside"], g["label"]) != (r["slug"], r["cpu_short"], "option", "false", gl, ins, lab):
+            bad.append((g["slug"], g["glyphs"], g["inside"], g["label"], lab))
+    ck.ok(len(got) == len(rows) and not bad, f"Figure 8: six rows in the stored order, each with its three marks and job counts, the inside count and a full spoken label, recomputed from the data ({bad[:1]})")
+    ck.ok([g["gap"] for g in got] == [r["arch"] == "arm" for r in rows], "Figure 8: the Arm row (and only it) is set off from the x86-64 rows by a gap")
+    ck.ok(sum(1 for g in got if g["tab"] == 0) == 1 and not pg.evaluate("document.getElementById('rep-read').hidden === false"), "Figure 8: one row is in the tab order and the readout is hidden until a row is chosen")
+    for r, g in zip(rows, got):
+        if r["inside"]:
+            want_w = 100 * r["inside"]["inside"] / r["inside"]["checked"]
+            if abs(float(g["bar"].rstrip("%")) - want_w) > 0.06:
+                ck.ok(False, f"Figure 8: the inside bar of {r['cpu_short']} is {g['bar']}, the data say {want_w:.1f}%")
+    # ---- the readout of every row
+    bad_read, all_read = [], []
+    for r in rows:
+        pg.click(f'#rep-rows .row[data-slug="{r["slug"]}"]')
+        pg.wait_for_timeout(60)
+        txt = norm(pg.inner_text("#rep-read"))
+        all_read.append(txt)
+        n = REP_SETS
+        A_ = X if r["arch"] == "x86" else AR
+        want = [f"{r['cpu_short']} {cap_py(n['earlier'])}: {rep_with(r['earlier'])}; {n['replication']}: {rep_with(r['replication'])}; {n['secondary']}: {rep_with(r['secondary'])}."]
+        if r["inside"]:
+            a, c = rep_aligned(r)
+            want.append(f"{r['inside']['inside']} of {r['inside']['checked']} pooled ratios of {n['replication']} lie inside the 95% interval of {n['earlier']} (aligned alone {a} of {c}); the largest difference between two ratios is {pct_s_py(r['inside']['max_abs_point_diff_pct'])}.")
+        if r["status"] == "flipped":
+            want.append("The different word is a placement-exemption edge, not a change of cost. " + rep_flip_text(R, r["arch"], r["slug"], REP_SETS))
+        if not r["testable"]:
+            # the count comes from the stored pooled set (secondary.jobs), and must equal the first set's jobs plus the second set's
+            sj, ej, pj = r["secondary"]["jobs"], r["earlier"]["jobs"], (r["replication"]["jobs"] if r["replication"] else 0)
+            want.append(f"{cap_py(n['replication'])} drew {jobs_py(pj)} of it ({crit['minimum_jobs']} are needed), so whether the first reading repeats is not answered either way. Pooled with it, the {jobs_py(sj)} ({ej} of {n['earlier']} and {pj} of {n['replication']}) read {REP_SAY[rep_kind(r['secondary'])]}.")
+            m_ = re.search(r"both together: [a-z ]+ \((\d+) jobs?\)", txt)
+            m2 = re.search(r"Pooled with it, the (\d+) jobs?", txt)
+            if not (m_ and m2 and m_.group(1) == m2.group(1) and int(m2.group(1)) == ej + pj == sj):
+                bad_read.append((r["slug"], "the pooled count in the note is not the pooled count in the head", [m_ and m_.group(1), m2 and m2.group(1), ej, pj, sj]))
+        if r["arch"] == "arm":
+            c = AR["named_cells"][0]
+            below = c["earlier"]["aligned"]["ratio"] < 1 and c["replication"]["aligned"]["ratio"] < 1
+            want.append(f"Both sets are decided by one cell, {cell_name_py(c['cell_id'])}, aligned: it ends at {c['earlier']['aligned']['ci95'][1]:.4f} in {n['earlier']} and {c['replication']['aligned']['ci95'][1]:.4f} in {n['replication']}, "
+                        f"against the {fx_py(c['earlier']['limit'])}× limit, with ratios of {c['earlier']['aligned']['ratio']:.3f} and {c['replication']['aligned']['ratio']:.3f}. Pooled ({n['secondary']}) it ends at {c['secondary']['aligned']['ci95'][1]:.4f}: the ratio is about the same, the interval narrower. "
+                        f"Both ends sit near the limit{' while both ratios are below 1' if below else ''}, so a second inconclusive is a weak repeat of the word, not independent confirmation of an effect (section 6a).")
+            if pg.evaluate("[...document.querySelectorAll('#rep-read a')].map(a => a.getAttribute('href'))") != ["#arm"]:
+                bad_read.append((r["slug"], "the Arm readout does not link back to section 6a", None))
+        shown = pg.evaluate("(() => { const b = document.getElementById('rep-read'); return [!b.hidden, document.querySelector('#rep-rows .row[aria-selected=true]').dataset.slug]; })()")
+        if not (shown == [True, r["slug"]] and txt == " ".join(want) and (r["status"] == "flipped") == ("placement-exemption edge" in txt) and (not r["testable"]) == ("not answered either way" in txt)):
+            bad_read.append((r["slug"], shown, [w for w in want if w not in txt][:1], txt[:60]))
+    ck.ok(not bad_read, f"Figure 8: choosing a row shows its readout, word for word as built from the data: that row's words, the inside counts (both columns and aligned alone), the largest difference, and for the flipped rows the cell, its ratios, interval ends, limit and placement numbers; for the untestable model 'not answered either way' with the pooled job count taken from the stored pooled set and equal to the head's; for the Arm row the deciding cell, the weak-repeat sentence and the link back to section 6a ({bad_read[:1]})")
+    ck.ok(not re.search(r"\bset [ABC]\b|first pool|sets A and B", " ".join(all_read) + " " + title + " " + cap), "Figure 8, caption and every readout use only 'first' and 'second' for the two sets: set A, B and C and 'the first pool' stay in Table 14")
+    bad_numbers = page_numbers(pg, allowed, "#fig-rep")
+    ck.ok(not bad_numbers, "Figure 8 with a readout open: every number printed is in the data" + ("" if not bad_numbers else f": {bad_numbers[:4]}"))
+    pg.click(f'#rep-rows .row[data-slug="{rows[-1]["slug"]}"]')
+    pg.wait_for_timeout(60)
+    ck.ok(pg.evaluate("document.getElementById('rep-read').hidden") and pg.evaluate("document.querySelectorAll('#rep-rows .row[aria-selected=true]').length") == 0, "Figure 8: choosing the chosen row again closes the readout")
+    # ---- keys
+    pg.evaluate("document.querySelector('#rep-rows .row').focus()")
+    pg.keyboard.press("ArrowDown")
+    k1 = pg.evaluate("document.querySelector('#rep-rows .row[aria-selected=true]').dataset.slug")
+    pg.keyboard.press("End")
+    k2 = pg.evaluate("document.querySelector('#rep-rows .row[aria-selected=true]').dataset.slug")
+    pg.keyboard.press("Home")
+    k3 = pg.evaluate("document.querySelector('#rep-rows .row[aria-selected=true]').dataset.slug")
+    pg.keyboard.press("ArrowDown"); pg.keyboard.press("ArrowUp")
+    k4 = pg.evaluate("document.querySelector('#rep-rows .row[aria-selected=true]').dataset.slug")
+    ck.ok([k1, k2, k3, k4] == [rows[1]["slug"], rows[-1]["slug"], rows[0]["slug"], rows[0]["slug"]], f"Figure 8: the arrow keys, Home and End move the selection through the six rows ({[k1, k2, k3, k4]})")
+    # ---- markup types no number; no workflow-run link
+    with open(os.path.join(SITE, "index.html"), encoding="utf-8") as f:
+        src = f.read()
+    with open(os.path.join(SITE, "details.html"), encoding="utf-8") as f:
+        dsrc = f.read()
+    fig_src = src.split('<figure class="fig rep-fig" id="fig-rep">')[1].split("</figure>")[0]
+    det_src = dsrc.split('<h3 id="replication-full">')[1].split("</section>")[0]
+    typed = []
+    for name, text in (("index.html #fig-rep", fig_src), ("details.html #replication-full", det_src)):
+        plain = re.sub(r"<[^>]+>", " ", text)
+        plain = re.sub(r"Figure 8|Table 14|x86-64|&[a-z]+;", " ", plain)
+        typed += [(name, m) for m in re.findall(r"\d+(?:\.\d+)?", plain)]
+    ck.ok(not typed, f"the new replication HTML types no number: every figure is filled from site/data ({typed[:4]})")
+    ck.ok("/actions/runs" not in fig_src + det_src and pg.evaluate("document.querySelectorAll('#fig-rep a[href*=\"actions\"]').length") == 0, "the replication blocks link to no workflow run")
+    ck.ok(not errors, "Figure 8, 1280: no console errors, page errors or failed data requests" + ("" if not errors else f": {errors[:3]}"))
+    pg.close()
+
+    # ---- the details page
+    errors_d = []
+    dp = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(dp, errors_d)
+    dp.goto(base + "details.html", wait_until="networkidle")
+    dp.wait_for_function("document.querySelectorAll('#rep-table tbody tr').length > 0", timeout=20000)
+    dp.evaluate("document.querySelectorAll('details.fold').forEach(d => { d.open = true; })")
+    dp.wait_for_timeout(200)
+    txt = {i: norm(dp.inner_text("#" + i)) for i in ("rep-what", "rep-count", "rep-x86", "rep-flips", "rep-6973", "rep-arm", "rep-headline", "rep-t-cap", "rep-limits")}
+    order = dp.evaluate("[...document.querySelectorAll('#replication-full ~ *')].filter(n => !n.classList.contains('scroll-hint')).map(n => n.id || n.tagName).slice(0, 10)")
+    ck.ok(order[:10] == ["rep-what", "rep-count", "rep-x86", "rep-flips", "rep-6973", "rep-arm", "rep-headline", "rep-t-cap", "DIV", "rep-limits"]
+          and dp.evaluate("document.getElementById('replication-full').previousElementSibling.tagName") == "DIV",
+          f"details: the replication account follows the holdout table in the order what, count, x86-64, flips, 6973P-C, Arm, headline, Table 14, limits ({order})")
+    q6, am = Q["xeon_6973pc"], AR["named_cells"][0]
+    thin = max(q6["earlier_closest_forward"]["margin"], am["earlier"]["aligned_hi_over_limit"])
+    red = [i for i in ("39012986182", "39013000285") if i in P["x86"]["replication"]["run_ids"]]  # the two combine runs that went red on pool_check (they ran in the second x86-64 set)
+    want_what = (f"Why a second set, and how it is read. Two readings rested on a forward cell whose interval ended within {thin:.4f} of the limit, the Arm core’s and the Xeon 6973P-C’s, so more runs were requested. "
+                 "The plan (replication/PLAN.md) was written before the runs were dispatched, in the author’s unpublished development history; no public record shows that order, and the hash stored with the comparison shows the file’s integrity, not when it was written. "
+                 f"It fixes the reading: each set is pooled on its own, by the same code under the same rule file ({crit['file']}), and for each cell it asks whether the second set’s pooled aligned ratio lies inside the first set’s 95% interval, reported as a share, whatever comes out. "
+                 f"The pooling code, the statistics and the rule file were not changed after a result; one consistency check (harness/pool_check.py) was changed afterwards to sample only models with at least {crit['minimum_jobs']} jobs, "
+                 f"after {num_word_py(len(red))} combine runs ({join_and_py(red)}) went red on it for models with fewer, and no verdict uses such a model. "
+                 f"{cap_py(X['names']['replication'])} is {len(P['x86']['replication']['run_ids'])} more x86-64 runs ({P['x86']['replication']['jobs']} jobs), drawn by GitHub from the same pool of machines; "
+                 f"{AR['names']['replication']} is {len(P['arm']['replication']['run_ids'])} more Arm runs ({P['arm']['replication']['jobs']} jobs). "
+                 "The pooled forms of the two sets together are secondary: the sets were requested after a borderline reading, so the stopping point depended on the data, and they never replace a set read alone. "
+                 "The earlier pools’ stored verdicts are unchanged. No further runs will be made for these questions.")
+    ck.ok(txt["rep-what"] == want_what and len(red) == 2,
+          f"details, 'Why a second set', word for word: the plan written before the dispatch in unpublished history with no public record of the order and a hash that shows integrity only; what the plan asks (the second set's aligned ratio inside the first set's interval, as a share, whatever comes out); the one consistency check changed afterwards and the two red runs by id; set sizes from the data; the pooled forms secondary; no further runs ({first_diff(txt['rep-what'], want_what)})")
+    alx = [rep_aligned(r) for r in R["rows"] if r["arch"] == "x86" and r["inside"]]
+    ala = [rep_aligned(r) for r in R["rows"] if r["arch"] == "arm" and r["inside"]]
+    cells_n = rows[0]["inside"]["checked"] // 2
+    want_count = (f"How points are counted. The plan asks whether each cell’s pooled aligned ratio lies inside the earlier interval. The stored count compares both columns, as compiled and aligned, with the earlier pool’s 95% interval: "
+                  "the point-inside-interval test of harness/pool.py, which this page also uses to compare one run with another. The both-column form was written into replication/compare.py "
+                  f"after the sets’ data were in, so a model has {cells_n} cells and {2 * cells_n} points. Counted on the aligned column alone, as the plan asked: Arm {sum(a for a, _ in ala)} of {sum(c for _, c in ala)}, x86-64 {sum(a for a, _ in alx)} of {sum(c for _, c in alx)}. "
+                  "The count is descriptive: a second set’s pooled ratio carries its own noise, so fewer than 95% of its points are expected inside the first set’s interval even when nothing has changed, and the share mostly follows interval width and set size; no expected count is claimed. "
+                  f"{AR['totals']['point_diff_under_1pct']} of {AR['totals']['points_checked']} Arm points and {X['totals']['point_diff_under_1pct']} of {X['totals']['points_checked']} x86-64 points differ from the earlier pooled ratio by under 1%, "
+                  f"and the largest differences are {pct_s_py(AR['totals']['max_abs_point_diff_pct'])} (Arm) and {pct_s_py(X['totals']['max_abs_point_diff_pct'])} (x86-64).")
+    ck.ok(txt["rep-count"] == want_count and "holdout" not in txt["rep-count"],
+          f"details, 'How points are counted', word for word: both columns, harness/pool.py as the source of the test (no holdout-column precedent), the both-column form written after the data, the aligned column alone beside it ({sum(a for a, _ in ala)} of {sum(c for _, c in ala)} on Arm, {sum(a for a, _ in alx)} of {sum(c for _, c in alx)} on x86-64), the count called descriptive with no expected count claimed, the under-1% counts ({first_diff(txt['rep-count'], want_count)})")
+    xs = txt["rep-x86"]
+    x_same = [r["cpu_short"] for r in rows if r["arch"] == "x86" and r["status"] == "same"]
+    x_flip = [r["cpu_short"] for r in rows if r["arch"] == "x86" and r["status"] == "flipped"]
+    want_xs = (f"x86-64, set C. {P['x86']['replication']['jobs']} jobs drew {rep_drawn(P['x86']['replication']['models_drawn'], shorts)}. "
+               f"Of the {num_word_py(X['totals']['testable_models'])} models with at least {crit['minimum_jobs']} jobs in both sets, {num_word_py(len(x_same))} gave the same verdict word ({join_and_py(x_same)}) and {num_word_py(len(x_flip))} a different one ({join_and_py(x_flip)}). "
+               f"{X['totals']['points_inside']} of {X['totals']['points_checked']} pooled ratios lie inside the first pool’s interval.")
+    ck.ok(xs == want_xs, f"details, x86-64, word for word: the machines set C drew, the models with the same and a different word, and the inside count, recomputed from the data ({first_diff(xs, want_xs)})")
+    fl = txt["rep-flips"]
+    want_fl = (f"The {num_word_py(len(X['flips']))} different words are one edge, not a change of cost. The placement test leaves a forward cell out of the 2% test when its compiled ÷ aligned interval excludes 1 and its hot loop sits differently in the two as-compiled builds, and judges it otherwise. "
+               + " ".join(f"{f['cpu_short']}: {rep_flip_text(R, 'x86', f['slug'])}" for f in X["flips"])
+               + " Neither cell’s cost changed between the sets; the model’s word depends on which side of the test the cell lands.")
+    ck.ok(fl == want_fl and len(X["flips"]) == len(flip_n) == 2,
+          f"details, the two flips, word for word: the placement test's full rule (the compiled ÷ aligned interval excludes 1 and the hot loop sits differently), each cell with both sets' aligned ratios, interval ends, the limit and the placement numbers, framed as the exemption's edge, not a change of cost ({first_diff(fl, want_fl)})")
+    s6 = txt["rep-6973"]
+    r6 = next(r for r in R["rows"] if r["slug"] == q6["slug"])
+    missed = (q6["secondary_cause"]["forward_missed"] or [None])[0]
+    miss_txt = f": {cell_name_py(missed['cell_id'])} ends at {missed['aligned_ci95'][1]:.4f}" + (", a cell that was placement-sensitive, and so left out, in the first pool and is judged with the extra job" if missed["cell_id"] in r6["earlier"]["placement_sensitive"] and missed["cell_id"] not in r6["secondary"]["placement_sensitive"] else "") + ". " if missed else ". "
+    want6 = (f"{q6['cpu_short']} cannot be tested. {cap_py(X['names']['replication'])} drew {jobs_py(q6['replication_jobs'])} of it ({q6['minimum_jobs']} are needed), so it has no verdict there, and the question the plan asked of it, whether its borderline {re.sub('^a ', '', REP_SAY[rep_kind(r6['earlier'])])} repeats, is not answered either way. "
+             f"In {X['names']['earlier']} ({q6['earlier_jobs']} jobs) it is {REP_SAY[rep_kind(r6['earlier'])]}, with {cell_name_py(q6['earlier_closest_forward']['cell_id'])} ending nearest the limit, at {q6['earlier_closest_forward']['aligned_hi']:.4f}. "
+             f"Pooled with {X['names']['replication']}’s {jobs_py(q6['replication_jobs'])} ({q6['secondary_jobs']} jobs) it reads {REP_SAY[rep_kind(r6['secondary'])]}" + miss_txt + "That pooled word is secondary and rests on this one added job.")
+    ck.ok(not q6["testable"] and s6 == want6, f"details, the Xeon 6973P-C, word for word: not testable (set C drew {q6['replication_jobs']} of the {q6['minimum_jobs']} jobs needed), the plan's question not answered either way, the first pool's nearest cell at {q6['earlier_closest_forward']['aligned_hi']:.4f}, the pooled word secondary ({first_diff(s6, want6)})")
+    sa = txt["rep-arm"]
+    n_arm = AR["names"]
+    rn2 = next(r for r in R["rows"] if r["arch"] == "arm" and r["testable"])
+    v3_ = next((r for r in R["rows"] if r["arch"] == "arm" and not r["earlier"]), None)
+    rep_tail = (f", as {n_arm['earlier']} was" + (", and on the same cell that decided the first reading" if Q["arm_cell"]["replication_names_the_same_cells"] else "")) if Q["arm_cell"]["repeated"] else f", where {n_arm['earlier']} was {REP_SAY[rep_kind(rn2['earlier'])]}"
+    want_a = (f"Arm. {cap_py(n_arm['replication'])} is {P['arm']['replication']['jobs']} jobs: {rep_drawn(P['arm']['replication']['models_drawn'], shorts)}" + (f"; the {v3_['cpu_short']} job has no verdict" if v3_ else "")
+              + f". Read alone it is {REP_SAY[rep_kind(rn2['replication'])]}{rep_tail}: {cell_name_py(am['cell_id'])}, aligned, ends at {am['replication']['aligned']['ci95'][1]:.4f} in {n_arm['replication']} and at {am['earlier']['aligned']['ci95'][1]:.4f} in {n_arm['earlier']}, "
+              f"against the {fx_py(am['earlier']['limit'])}× limit, with ratios below 1 ({am['replication']['aligned']['ratio']:.3f} and {am['earlier']['aligned']['ratio']:.3f}). "
+              f"{cap_py(n_arm['secondary'])} pooled ({rn2['secondary']['jobs']} {rn2['cpu_short']} jobs) read {REP_SAY[rep_kind(rn2['secondary'])]}, the cell ending at {am['secondary']['aligned']['ci95'][1]:.4f} with a ratio of {am['secondary']['aligned']['ratio']:.3f}: "
+              "the ratio is about the same in all three, and only the interval narrows with more jobs. That pooled word is secondary.")
+    ck.ok(am["cell_id"] == "k02_add_fwd.L2" and sa == want_a and "30 N2 jobs" not in sa and "30 Neoverse-N2 jobs" not in sa,
+          f"details, Arm, word for word: set B's mix of cores (never called 30 Neoverse-N2 jobs), its word read alone, the one deciding cell with both sets' interval ends and ratios, and the pooled word named secondary ({first_diff(sa, want_a)})")
+    hd = txt["rep-headline"]
+    H = X["headline"]
+    ok_e = H["replication_enough_range"]
+    rep_models = [m["cpu_short"] for m in H["replication"] if m["enough"]]
+    out0 = H["outside_stored_range"][0] if H["outside_stored_range"] else None
+    pm = lambda v: v if isinstance(v, str) else f"{v:.1f}"  # noqa: E731
+    want_h = (f"The headline range. The loops that lose SIMD cost {pm(H['page_range']['printed_min'])}× to {pm(H['page_range']['printed_max'])}× in cache on the first pool. "
+              f"In {X['names']['replication']}, the {num_word_py(len(rep_models))} models with at least {crit['minimum_jobs']} jobs ({join_and_py(rep_models)}) give {ok_e['min']:.3f}× to {ok_e['max']:.3f}× (both columns, both sizes)"
+              + (f"; the cell furthest below the first pool’s minimum ({H['page_range']['min']:.4f}×) is {cell_name_py(out0['cell_id'])} of {shorts[out0['cpu_model']]}, {'aligned' if out0['column'] == 'aligned' else 'as compiled'}, at {out0['ratio']:.4f}×" if out0 else "")
+              + ". " + ("Some cells lie outside the printed range." if H["outside_printed_range"] else f"Nothing in set C lies outside the printed {pm(H['page_range']['printed_min'])}× to {pm(H['page_range']['printed_max'])}×."))
+    ck.ok(hd == want_h, f"details, the headline range, word for word: the first pool's printed range, set C's own range ({ok_e['min']:.3f}× to {ok_e['max']:.3f}×) from the models with enough jobs, the cell nearest below the minimum, and whether anything lies outside the printed range ({first_diff(hd, want_h)})")
+    tab = dp.evaluate("[...document.querySelectorAll('#rep-table tbody tr')].map(tr => [...tr.children].map(c => c.textContent.replace(/\\s+/g, ' ').trim()))")
+    heads = dp.evaluate("[...document.querySelectorAll('#rep-table thead th')].map(c => c.textContent.trim())")
+    cell_t = lambda s: f"{REP_SAY[rep_kind(s)]}, {jobs_py(s['jobs'])}" if s else "not drawn"  # noqa: E731
+    want_tab = []
+    for r in R["rows"]:
+        if r["inside"]:
+            a, c = rep_aligned(r)
+            ins, dmax = f"{r['inside']['inside']} of {r['inside']['checked']} ({a} of {c})", pct_s_py(r["inside"]["max_abs_point_diff_pct"])
+        else:
+            ins, dmax = "–", "–"
+        want_tab.append([r["cpu_short"], cell_t(r["earlier"]), cell_t(r["replication"]), cell_t(r["secondary"]), ins, dmax, {"same": "same word", "flipped": "different word", "not testable": "not testable"}[r["status"]]])
+    heads_want = ["CPU model", "First set", "Second set", "Both together (secondary)", "Pooled ratios inside the first set’s interval (aligned alone)", "Largest difference", "Status"]
+    ck.ok(tab == want_tab and heads == heads_want, f"Table 14: {len(R['rows'])} rows (every CPU model in the file) with the three words and job counts, the inside counts (aligned alone in brackets), the largest difference and the status, equal to the data, under exactly these seven column heads ({heads}; {[(a, b) for a, b in zip(tab, want_tab) if a != b][:1]})")
+    h3_rep = dp.evaluate("document.getElementById('replication-full').textContent.trim()")
+    aria14 = dp.evaluate("document.querySelector('#rep-table').closest('.tablewrap').getAttribute('aria-label')")
+    ck.ok(h3_rep == "Replication: a second set of runs" and aria14 == "Table 14, the replication per CPU model; scrolls sideways on a narrow screen, the model stays in view",
+          f"the replication's heading and Table 14's region label, word for word ({h3_rep!r}, {aria14!r})")
+    cp = txt["rep-t-cap"]
+    want_cp = (f"Table 14. Per CPU model: the verdict word and job count in the first set, the second set and both together (secondary), how many of the model’s {2 * cells_n} pooled ratios (both columns) lie inside the first set’s 95% interval (aligned alone in brackets), "
+               f"and the largest difference between a first-set and a second-set ratio. x86-64: the first set is the {P['x86']['earlier']['jobs']}-job pool, the second set is set C; Arm: set A and set B, {P['arm']['earlier']['jobs']} jobs each. "
+               f"A model with fewer than {crit['minimum_jobs']} jobs in a set has no verdict there.")
+    ck.ok(cp == want_cp, f"Table 14's caption, word for word: both columns counted, the aligned count in brackets, the sets named with their sizes (and set A, B and C mapped to first and second here), the 3-job minimum ({first_diff(cp, want_cp)})")
+    lim = txt["rep-limits"]
+    want_lim = (f"Limits. The machines in each set are drawn by GitHub, not chosen, so the sets hold few jobs of the rarer models ({rep_drawn(P['x86']['replication']['models_drawn'], shorts)} in set C). "
+                "Nothing here tests another compiler, another libc++ version or other cores, and the inside count is descriptive: no expected count is claimed. The stored verdicts of the first sets are unchanged.")
+    ck.ok(lim == want_lim, f"details, the replication's limits, word for word: the machines are drawn by GitHub (set C's mix named), no other compiler, libc++ or core, the inside count descriptive with no expected count claimed, the first sets' verdicts unchanged ({first_diff(lim, want_lim)})")
+    bad_n = []
+    for i in txt:
+        bad_n += unknown_numbers(dp.evaluate(f"(() => ({PAGE_TEXT_JS})(document.getElementById('{i}')))()"), allowed)
+    bad_n += unknown_numbers(dp.evaluate(f"(() => ({PAGE_TEXT_JS})(document.getElementById('rep-table')))()"), allowed)
+    ck.ok(not bad_n, "details: every number in the replication account and Table 14 is in the data" + ("" if not bad_n else f": {bad_n[:4]}"))
+    bad_w = [w_ for w_ in ("the truth", "proves", "confirmed", "[object", "undefined", "NaN") if any(w_ in t for t in txt.values())]
+    ck.ok(not bad_w, f"details: the replication account uses none of the words 'the truth', 'proves', 'confirmed' and prints no JavaScript placeholder ({bad_w})")
+    ck.ok(not errors_d, "details, 1280: no console errors, page errors or failed data requests" + ("" if not errors_d else f": {errors_d[:3]}"))
+    dp.close()
+
+    # ---- phone widths
+    errors_p = []
+    for width in (390, 320):
+        pp = browser.new_page(viewport={"width": width, "height": 844}, device_scale_factor=2)
+        watch(pp, errors_p)
+        pp.goto(base, wait_until="networkidle")
+        pp.wait_for_function("document.querySelectorAll('#rep-rows .row').length > 0", timeout=20000)
+        pp.evaluate("document.getElementById('fig-rep').scrollIntoView()")
+        pp.wait_for_timeout(250)
+        small = pp.evaluate("""() => [...document.querySelectorAll('#rep-rows .row, #fig-rep a')].map(e => { const r = e.getBoundingClientRect(); return [e.className || e.tagName, Math.round(r.height), Math.round(r.right)]; })
+                                .filter(x => x[1] < 32 || x[2] > innerWidth)""")
+        ck.ok(no_hscroll(pp) and not small, f"{width}: Figure 8 does not scroll sideways, and its rows and links are at least 32 px tall and fit ({small[:3]})")
+        pp.click('#rep-rows .row[data-slug="neoverse-n2"]')
+        pp.wait_for_timeout(120)
+        vis = pp.evaluate("(() => { const r = document.getElementById('rep-read').getBoundingClientRect(); return [r.width > 200, r.right <= innerWidth + 1, r.left >= -1]; })()")
+        clip = pp.evaluate("[...document.querySelectorAll('#rep-rows .row')].filter(r => r.scrollWidth > r.clientWidth + 1).map(r => r.dataset.slug)")
+        ck.ok(all(vis) and not clip, f"{width}: a tap on a row shows its readout inside the screen and no row's contents overflow it ({clip})")
+        lines_t = pp.evaluate("(() => { const t = document.getElementById('rep-title'), cs = getComputedStyle(t); return Math.round(t.getBoundingClientRect().height / parseFloat(cs.lineHeight)); })()")
+        ck.ok(lines_t <= 2, f"{width}: Figure 8's title takes at most two lines ({lines_t})")
+        shot(pp, saved, shots, f"rep-fig-{width}.png", "#fig-rep")
+        pp.close()
+    # ---- larger text: the columns are in rem, so they grow with the text, and a container query picks the layout; nothing collides
+    for width, fs in ((1440, 100), (390, 100), (1440, 150), (1440, 200), (390, 150), (390, 200), (320, 100), (320, 150), (320, 200)):
+        tp = browser.new_page(viewport={"width": width, "height": 900})
+        watch(tp, errors_p)
+        tp.goto(base, wait_until="networkidle")
+        tp.wait_for_function("document.querySelectorAll('#rep-rows .row').length > 0", timeout=20000)
+        if fs != 100:
+            tp.add_style_tag(content=f"html{{font-size:{fs}% !important}}")
+        tp.wait_for_timeout(300)
+        g = tp.evaluate(REP_GEOM_JS)
+        w_rem = g["fig_w"] / g["rem"]
+        level = 0 if w_rem > 20.5 else 1 if w_rem > 17.25 else 2
+        rem = g["rem"]
+        want_tracks = [2.625 * rem] * 3 + [4.125 * rem] if level == 0 else [2.25 * rem] * 3 + [2.5 * rem]
+        tracks_ok = level == 2 or (len(g["row_tracks"]) == 5 and all(abs(a - b) < 1.0 for a, b in zip(g["row_tracks"][1:], want_tracks)) and g["head_tracks"] == g["row_tracks"])
+        stacked_ok = level != 2 or (g["head_display"] == "none" and g["row_display"] == "flex" and g["labels"] == ['"first"', '"second"', '"both"', '"inside"'] * len(g["rows"]))
+        ck.ok(g["rows"] and tracks_ok and stacked_ok and not g["bad"],
+              f"Figure 8 at {width} wide and {fs}% text (layout {['full grid', 'compact grid', 'stacked cells'][level]}, figure {w_rem:.1f} rem wide): "
+              + ("the count columns are " + ("2.625 and the inside column 4.125" if level == 0 else "2.25 and the inside column 2.5") + f" rem, so they grow with the text (tracks {[round(x) for x in g['row_tracks']]}); " if level < 2 else "the header is dropped and each cell carries its own label; ")
+              + f"no header word, row, glyph, count or inside bar overflows or overlaps another ({g['bad'][:2]})")
+        if (width, fs) in ((1440, 100), (390, 100)):
+            ck.ok(level == 0 and [round(x) for x in g["row_tracks"][1:]] == [42, 42, 42, 66] and g["rows"][0]["h"] >= 32,
+                  f"Figure 8 at {width} wide and normal text keeps its full grid with columns of 42, 42, 42 and 66 px ({g['row_tracks']})")
+        tp.close()
+    for width in (390, 320):
+        dp = browser.new_page(viewport={"width": width, "height": 844}, device_scale_factor=2)
+        watch(dp, errors_p)
+        dp.goto(base + "details.html", wait_until="networkidle")
+        dp.wait_for_function("document.querySelectorAll('#rep-table tbody tr').length > 0", timeout=20000)
+        w_ = dp.evaluate("(() => { const w = document.getElementById('rep-table').closest('.tablewrap'); return [w.scrollWidth > w.clientWidth, getComputedStyle(w).overflowX]; })()")
+        ck.ok(no_hscroll(dp) and w_[0] and w_[1] == "auto", f"{width} details: Table 14 scrolls inside its own box and the page does not scroll sideways ({w_})")
+        st = dp.evaluate(STICKY_JS, "#rep-t-cap ~ .tablewrap")
+        ck.ok(sticky_ok(st), f"{width} details: scrolled to its right end, Table 14 keeps the CPU model in view (left edge, heading too, at most half the box) and shows the swipe hint ({st})")
+        dp.close()
+    ck.ok(not errors_p, "the replication, 390 and 320: no console errors" + ("" if not errors_p else f": {errors_p[:3]}"))
+
+
+def dsweep_checks(browser, base, ck, index, allowed, saved, shots):
+    """The row-length sweep (data/dsweep.json): one sentence in section 6a (main page), the full account, Figure 9 and Table 15 in section 6d (details).
+    Recomputed here from the data file, not from the page's code: the two models' words (the weak x86-64 control and Neoverse-N2's 'neither' with its two
+    columns), each column's fixed share and interval, the rule's bands, the ns figures with the column they belong to, the instruction counts (the line
+    in the remainder from a least-squares fit, the multiple-of-8 row with its ratio), Table 15's rows, Figure 9's panels, points, toggle, readout and keys."""
+    print("== the row-length sweep: one sentence in 6a (main), the account, Figure 9 and Table 15 in 6d (details)")
+    with open(os.path.join(DATA, "dsweep.json"), encoding="utf-8") as f:
+        D = json.load(f)
+    norm = lambda s: " ".join(s.replace(" ", " ").split())  # noqa: E731
+    Rl = D["rule"]
+    ms = [m for m in D["models"] if m.get("word") and m["word"] != "too few jobs"]
+    A = next(m for m in ms if m["arch"] == "aarch64")
+    Xm = next(m for m in ms if m["arch"] == "x86_64")
+    rws = lambda m, role: [r for r in m["rows"] if role in r["roles"]]  # noqa: E731
+    ns = lambda r, c: r[c]["excess_ns_per_inner"]  # noqa: E731
+    plain = {"H1": "changes little", "H2": "grows with d", "falls": "falls", "neither": "fits none of the words"}
+    ck.ok(index["sections"].get("dsweep") == "data/dsweep.json" and D["plan"] == "dsweep/PLAN.md" and len(D["plan_sha256"]) == 64 and len(ms) == 2
+          and A["word"] == "neither" and not A["columns_agree"] and Xm["word"] == "H2" and Xm["columns_agree"]
+          and A["columns"]["as_compiled"]["word"] == "falls" and A["columns"]["aligned"]["word"] == "H1",
+          f"the sweep file is registered, names dsweep/PLAN.md with its sha256, has two models with a word ({Xm['cpu_short']}: {Xm['word']}, {A['cpu_short']}: {A['word']} with the columns {A['columns']['as_compiled']['word']} and {A['columns']['aligned']['word']})")
+    # ---- main page: the 6a sentence
+    errors = []
+    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(pg, errors)
+    pg.goto(base, wait_until="networkidle")
+    pg.wait_for_function("document.querySelectorAll('#arm-rows .row').length === 8 && document.getElementById('arm-mm').textContent.includes('sweep')", timeout=20000)
+    fa = rws(A, "fit")
+    f1 = lambda v: f"{v:.1f}"  # noqa: E731
+    want = (f"A row-length sweep, judged by the rule in its plan, gave “{A['word']}”: as compiled the extra time per inner call {plain[A['columns']['as_compiled']['word']]} ({f1(ns(fa[0], 'as_compiled'))} to {f1(ns(fa[-1], 'as_compiled'))} ns), "
+            f"aligned it {plain[A['columns']['aligned']['word']]} ({f1(ns(fa[0], 'aligned'))} to {f1(ns(fa[-1], 'aligned'))} ns) over the fitted row lengths (section 6d).")
+    mm = norm(pg.inner_text("#arm-mm"))
+    ck.ok(want in mm and "Where the extra time goes is not shown." not in mm and mm.count("sweep") == 1 and "section 6d" in mm,
+          f"6a: one sentence names the row-length sweep, says it was judged by the rule in its plan (no claim about when the rule was written), gives the word “{A['word']}” and both columns' behaviour with their ns ranges (each naming its column), replacing the stale 'not shown' ({want[:60]}…)")
+    ck.ok(not page_numbers(pg, allowed, "#arm-mm"), "6a: the sweep sentence's numbers are in the data")
+    ck.ok(not errors, "6a sweep sentence: no console errors" + ("" if not errors else f": {errors[:3]}"))
+    pg.close()
+
+    # ---- details page
+    errors_d = []
+    dp = browser.new_page(viewport={"width": 1280, "height": 900})
+    watch(dp, errors_d)
+    dp.goto(base + "details.html", wait_until="networkidle")
+    dp.wait_for_function("document.querySelectorAll('#ds-t tbody tr').length > 0 && document.querySelectorAll('#ds-panels svg').length === 2", timeout=20000)
+    dp.evaluate("document.querySelectorAll('details.fold').forEach(d => { d.open = true; })")
+    dp.wait_for_timeout(200)
+    ids = ("ds-q", "ds-ran", "ds-out", "ds-shape", "ds-instr", "ds-scope", "ds-t-cap", "ds-limits")
+    txt = {i: norm(dp.inner_text("#" + i)) for i in ids}
+    pos = dp.evaluate("""() => { const h = document.getElementById('dsweep-full'), s = h.closest('section'); const lim = document.getElementById('arm-limits');
+        return [s.id, !!(lim.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING), [...document.querySelectorAll('#dsweep-full ~ *')].filter(n => !n.classList.contains('scroll-hint')).map(n => n.id || n.tagName).slice(0, 9)]; }""")
+    ck.ok(pos[0] == "arm-full" and pos[1] and pos[2] == ["ds-q", "ds-ran", "ds-out", "fig-ds", "ds-shape", "ds-instr", "ds-scope", "ds-t-cap", "ds-t-wrap"],
+          f"details: the sweep follows the Arm section's limits, inside section 6d, in the order question, what ran, outcome, Figure 9, the numbers, instructions, scope of the headline range, Table 15 ({pos})")
+    q = txt["ds-q"]
+    fitA = [rws(A, "fit")[0]["d"], rws(A, "fit")[-1]["d"]]
+    want_q = (f"The question. On {A['cpu_short']}, matrix multiply keeps its NEON loop in both builds and the checked build still costs {A['published']['L1']:.3f}× at L1 (d = {A['ladder']['study_l1_d']}). "
+              "The listing shows compares and selects before the NEON loop and a checked scalar loop for the leftover elements, which the matrix-multiply paragraph above reads as a set-up cost paid once per inner call (an inner call is one run of the innermost loop over d elements); that reading was inferred, and this sweep tests it. "
+              f"Three accounts are written in the plan (dsweep/PLAN.md, sha256 {D['plan_sha256'][:8]}…). It was drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code, which changed the deciding statistic, "
+              "and committed alone, before the code commit and before the first run, in the author’s unpublished development history. On the public repository it arrived in one commit together with the code; the hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs, "
+              "but the order before the runs is not checkable from public records. "
+              "H1, a fixed extra cost per inner call, predicts the same extra time per inner call at every d. H2, a cost per element, predicts extra time in proportion to d. “Falls” is extra time that is smaller at the longer rows. "
+              f"The rule reads the fixed share of the extra time at the study size, fitted over the L1-resident row lengths that leave the same remainder modulo {A['ladder']['modulus']} as the study size (d = {fitA[0]} to {fitA[1]} on {A['cpu_short']}): "
+              f"H1 when the share and its 95% interval lie inside {Rl['h1_share_band'][0]} to {Rl['h1_share_band'][1]}, H2 inside −0.2 to 0.2, “falls” above {Rl['falls_share_above']}, anything else “neither”. "
+              "It is applied twice, to the code as compiled and with every hot loop aligned to 64 bytes; when the two disagree the word is “neither” and both are stated.")
+    ck.ok(q == want_q and "before any run" not in q and "written first" not in q,
+          f"details, the question, word for word: the plan's account of its own history (drafted before the code, revised twice, committed alone before the first run in unpublished history, one public commit with the code, order not checkable from public records, hash shows no edit after the runs), the two accounts and 'falls', the rule's bands from the data, the fit ladder, both columns, and that disagreement gives 'neither' with both words stated ({first_diff(q, want_q)})")
+    ck.ok(abs(Rl["h2_share_band"][0] + 0.2) < 1e-9 and abs(Rl["h2_share_band"][1] - 0.2) < 1e-9 and Rl["h1_share_band"] == [0.8, 1.2] and Rl["falls_share_above"] == 1.2 and Rl["minimum_jobs"] == 3,
+          "the rule's bands in the data are the ones the plan wrote (H1 0.8 to 1.2, H2 -0.2 to 0.2, falls above 1.2, 3 jobs)")
+    ran = txt["ds-ran"]
+    commits = sorted({r["commit"] for r in D["runs"]})
+    name_of = lambda cm: next((m["cpu_short"] for m in D["models"] + D["too_few_jobs"] if m["cpu_model"] == cm), cm)  # noqa: E731
+    run_txt = "; ".join(f"run {r['run_id']}, {jobs_py(r['jobs'])} ({join_and_py([f'{name_of(k)} {n}' for k, n in r['models'].items()])})" for r in D["runs"])
+    want_ran = (f"What ran. {cap_py(num_word_py(len(D['runs'])))} runs of the sweep workflow, from {'one commit' if len(commits) == 1 else str(len(commits)) + ' commits'} ({', '.join(c[:7] for c in commits)}) of the temporary branch dsweep-smoke, "
+                "where the sweep workflow file is named ci.yml because a dispatchable workflow must already exist on the default branch (the branch is kept because the run records name the commit): "
+                f"{run_txt}. A CPU model needs {Rl['minimum_jobs']} jobs to get a word, so " + join_and_py([f"{m['cpu_short']} ({jobs_py(m['jobs'])})" for m in D["too_few_jobs"]]) + (" gets none" if len(D["too_few_jobs"]) == 1 else " get none")
+                + f". The timing, the pooling and the intervals are the main study’s. The identical-binary A/A has a half-width of {pct_s_py(Xm['aa']['half_width_pct'])} on {Xm['cpu_short']} and {pct_s_py(A['aa']['half_width_pct'])} on {A['cpu_short']}, against the {Rl['aa_half_width_max_pct']:g}% the rule allows.")
+    ck.ok(ran == want_ran and sum(r["jobs"] for r in D["runs"]) == D["jobs"] and "dispatched" not in ran,
+          f"details, what ran, word for word: the runs, jobs and commit from the data, the temporary branch and why its workflow file is named ci.yml, the CPU models too small for a word, and both A/A half-widths against the rule's limit ({first_diff(ran, want_ran)})")
+    cw = lambda m, c: f"“{m['columns'][c]['word']}” (fixed share {m['columns'][c]['share']:.3f}, 95% interval {m['columns'][c]['share_ci95'][0]:.3f} to {m['columns'][c]['share_ci95'][1]:.3f})"  # noqa: E731
+    out = txt["ds-out"]
+    both_gt1 = A["columns"]["as_compiled"]["share"] > 1 and A["columns"]["aligned"]["share"] > 1
+    want_out = (f"Outcome, as the written rule fixed it. {Xm['cpu_short']}: {Xm['word']} in both columns: as compiled {cw(Xm, 'as_compiled')}, aligned {cw(Xm, 'aligned')}. "
+                "The extra time per inner call grows with d there. That is the plan’s weak control, because the loop loses SIMD under the check on x86-64 and neither account was written for it; it gave the word the plan expected, and nothing more is claimed. "
+                f"{A['cpu_short']}: {A['word']}, because the two columns disagree: as compiled {cw(A, 'as_compiled')}, aligned {cw(A, 'aligned')}." + (" Both shares are above 1, so this is not a mixture." if both_gt1 else "")
+                + " A word that does not survive moving the loops is not claimed.")
+    ck.ok(out == want_out and Xm["word"] == "H2" and Xm["columns_agree"] and not A["columns_agree"],
+          f"details, the outcome, word for word: {Xm['cpu_short']} {Xm['word']} (the weak control, nothing more claimed) and {A['cpu_short']} {A['word']} because the columns disagree, with each column's word, fixed share and interval from the data ({first_diff(out, want_out)})")
+    near = lambda v: f"{v:.2f}"  # noqa: E731
+
+    def arm_series(c):
+        rest = [ns(r, c) for r in fa[2:]]
+        br, l2 = rws(A, "bridge"), rws(A, "study_l2")[0]
+        return (f"{' and '.join(f'{near(ns(r, c))} ns at d = {r['d']}' for r in fa[:2])}, then between {near(min(rest))} and {near(max(rest))} ns from d = {fa[2]['d']} to d = {fa[-1]['d']}; "
+                f"beyond the L1-resident rule (context, fitted nowhere) {', '.join(f'{near(ns(r, c))} ns at d = {r['d']}' for r in br)} and {near(ns(l2, c))} ns at the study L2 size, d = {l2['d']}")
+    sh = txt["ds-shape"]
+    rest_ac = [ns(r, "as_compiled") for r in fa[2:]]
+    flat = A["columns"]["as_compiled"]["word"] == "falls" and all(ns(r, "as_compiled") > max(rest_ac) for r in fa[:2]) and (max(rest_ac) - min(rest_ac)) / min(rest_ac) < 0.05
+    l2a = rws(A, "study_l2")[0]
+    fx_rows = rws(Xm, "fit")
+    l2x = rws(Xm, "study_l2")[0]
+    want_sh = [f"Extra time per inner call (checked minus unchecked) on {A['cpu_short']}, as compiled: {arm_series('as_compiled')}. Aligned: {arm_series('aligned')}.",
+               f"d = {l2a['d']} leaves a remainder of {l2a['d_mod_8']} where the ladder leaves {A['ladder']['residue']}, so the change from d = {rws(A, 'bridge')[-1]['d']} to d = {l2a['d']} mixes the L2 size with the remainder.",
+               f"On {Xm['cpu_short']} the extra time grows with d: as compiled {near(ns(fx_rows[0], 'as_compiled'))} ns at d = {fx_rows[0]['d']} and {near(ns(fx_rows[-1], 'as_compiled'))} ns at d = {fx_rows[-1]['d']} (aligned {near(ns(fx_rows[0], 'aligned'))} and {near(ns(fx_rows[-1], 'aligned'))}), and {near(ns(l2x, 'as_compiled'))} ns at the study L2 size, d = {l2x['d']}; the ratio rises from {fx_rows[0]['as_compiled']['ratio']:.2f} to {fx_rows[-1]['as_compiled']['ratio']:.2f}.",
+               f"did not match the observed ratio at the smallest d on {A['cpu_short']} ({fa[0]['as_compiled']['ratio']:.2f} as compiled): the written rule decides, and the table’s size did not hold."]
+    if flat:
+        want_sh.append(f"The word “falls” as compiled rests on the first two row lengths; from d = {fa[2]['d']} the values are flat, which is a fact about the points and not a second verdict.")
+    want_shape = ("What the numbers show, without the word. " + want_sh[0] + " " + (want_sh[4] + " " if flat else "") + want_sh[1] + " " + want_sh[2] + " The plan’s illustrative table of ratios under H1 and H2 " + want_sh[3])
+    ck.ok(sh == want_shape and ns(fx_rows[-1], "as_compiled") > ns(fx_rows[0], "as_compiled") and flat,
+          f"details, what the numbers show, word for word: every ns figure names its column; {A['cpu_short']}'s values at the first two row lengths, the flat run after, the bridge and the study L2 size (context, fitted nowhere); the 'falls' word resting on d = {fa[0]['d']} and {fa[1]['d']} stated as a fact about the points; {Xm['cpu_short']}'s growth; the plan's illustrative table not holding ({first_diff(sh, want_shape)})")
+    # the instruction line in the remainder: a least-squares fit in pure Python
+    pts = [(r["d_mod_8"], r["extra_instr_per_inner"]) for r in A["rows"] if ("scan" in r["roles"] or "study_l1" in r["roles"]) and r["d_mod_8"] != 0]
+    n_ = len(pts)
+    sx, sy = sum(p[0] for p in pts), sum(p[1] for p in pts)
+    sxx, sxy = sum(p[0] * p[0] for p in pts), sum(p[0] * p[1] for p in pts)
+    slope = (n_ * sxy - sx * sy) / (n_ * sxx - sx * sx)
+    icpt = (sy - slope * sx) / n_
+    fits_line = n_ >= 4 and all(abs(icpt + slope * r - e) < 0.6 for r, e in pts)
+    ei = [round(r["extra_instr_per_inner"]) for r in fa]
+    r0 = next((r for r in A["rows"] if r["d_mod_8"] == 0 and "scan" in r["roles"]), None)
+    ins = txt["ds-instr"]
+    want_ins = ("Instruction counts (secondary: instructions, not time). Cachegrind counts the extra instructions the checked build runs per inner call: "
+                + (f"{ei[0]} at every row length of the fit ladder" if len(set(ei)) == 1 else f"{min(ei)} to {max(ei)} over the fit ladder") + f" on {A['cpu_short']}"
+                + (f"; over the remainder scan and the study size it is {round(icpt)} + {round(slope)} × r, where r is d modulo {A['ladder']['modulus']} (r = 1 to {A['ladder']['modulus'] - 1})" if fits_line else "")
+                + (f", and at a multiple of {A['ladder']['modulus']} (d = {r0['d']}) it is {round(r0['extra_instr_per_inner'])}, with a time ratio of {r0['as_compiled']['ratio']:.2f}×" if r0 else "")
+                + f". On {Xm['cpu_short']} they grow with d, by about {Xm['instructions']['fit']['slope']:.1f} for each added element over the ladder. The counts are exact for the listing and say nothing about time by themselves.")
+    ck.ok(ins == want_ins and fits_line and r0 is not None and len(set(ei)) == 1,
+          f"details, instruction counts, word for word: {ei[0]} extra instructions per inner call at every fitted d, the straight line {round(icpt)} + {round(slope)} × r in the remainder (recomputed by least squares), the multiple-of-8 row (d = {r0['d'] if r0 else '?'}) with its time ratio, {Xm['cpu_short']}'s slope, labelled 'instructions, not time' ({first_diff(ins, want_ins)})")
+    # the scope of the headline range (finding: the range is for the study's sizes; this sweep shows the cost depends on the row length)
+    lost = index["page"]["lost"]
+    x_rows = Xm["rows"]
+    x12, xl1 = fx_rows[0], rws(Xm, "study_l1")[0]
+    x_past = next((r for r in rws(Xm, "bridge") if r["working_set_bytes"] > Xm["l1d_kib"] * 1024), None)
+    want_scope = (f"Scope of the headline range. The range in section 1, {lost['min']:.1f}× to {lost['max']:.1f}×, is for the study’s sizes. This sweep shows that for matrix multiply on {Xm['cpu_short']} the cost depends on the row length: "
+                  f"as compiled {fx_py(x12['as_compiled']['ratio'])}× at d = {x12['d']}, {fx_py(xl1['as_compiled']['ratio'])}× at the study’s d = {xl1['d']}"
+                  + (f" and {fx_py(x_past['as_compiled']['ratio'])}× at d = {x_past['d']} ({x_past['working_set_bytes']:,} bytes, past the {Xm['l1d_kib']} KiB L1 data cache)" if x_past else "")
+                  + f", so {lost['min']:.1f}× is not a floor for row lengths the study did not time.")
+    scope = txt["ds-scope"]
+    ck.ok(scope == want_scope and x_past is not None and x12["as_compiled"]["ratio"] < lost["min"] < x_past["as_compiled"]["ratio"] and len(x_rows) > 3,
+          f"details, scope of the headline range, word for word: the range printed in section 1 is for the study's sizes, and {Xm['cpu_short']}'s matrix-multiply ratios at the smallest row length, the study's and one past L1 come from the data and straddle it ({first_diff(scope, want_scope)})")
+    sweep_hits = [i for i in ("ds-q", "ds-ran", "ds-out", "ds-shape", "ds-instr", "ds-limits") if "the study’s sizes" in txt[i]]
+    ck.ok(not sweep_hits and scope.count("the study’s sizes") == 1, f"the sweep's account says 'the study’s sizes' once, in the scope paragraph, and nowhere else ({sweep_hits})")
+    lim = txt["ds-limits"]
+    max_hw = max(((r[c]["ci95"][1] - r[c]["ci95"][0]) / 2 / r[c]["ratio"]) * 100 for r in A["rows"] for c in ("as_compiled", "aligned"))
+    want_lim = (f"Limits. The {A['cpu_short']} result is {num_word_py(A['runs'])} run of {num_word_py(A['jobs'])} jobs on one core type, so its intervals (at most ±{pct_s_py(max_hw)}) cannot show run-to-run or host-to-host spread. "
+                "The aligned column uses a loop-alignment flag, and the placement controls are not verified on this core (the Limits paragraph of this section), so it is not a pure placement control; this is why both columns are reported. "
+                "The sweep reads no hardware counters, so it cannot say where the cycles go. One kernel, one compiler (clang 18, FAST mode) and one flag set; nothing here is said about other cores. "
+                + join_and_py([m["cpu_short"] for m in D["too_few_jobs"]]) + " drew too few jobs for a word. No further runs will be made for this question.")
+    ck.ok(lim == want_lim and A["runs"] == 1,
+          f"details, the sweep's limits, word for word: one run of six near-identical jobs on one core type (its intervals cannot show run-to-run spread), the aligned column not a pure placement control (so both are reported), no hardware counters, one kernel and compiler, the models that drew too few jobs, no further runs ({first_diff(lim, want_lim)})")
+    # Table 15
+    tab = dp.evaluate("[...document.querySelectorAll('#ds-t tbody tr')].map(tr => [...tr.children].map(c => c.textContent.replace(/\\s+/g, ' ').trim()))")
+    heads = dp.evaluate("[...document.querySelectorAll('#ds-t thead th')].map(c => c.textContent.trim())")
+    role_w = {"fit": "fit", "scan": "remainder scan", "bridge": "bridge", "study_l1": "study L1 size", "study_l2": "study L2 size"}
+    iv = lambda c: f"{lr_py(c['ratio'])}× ({lr_py(c['ci95'][0])} to {lr_py(c['ci95'][1])})"  # noqa: E731
+    want_t = [[f"{m['cpu_short']}, d = {r['d']}", ", ".join(role_w[q_] for q_ in r["roles"]), iv(r["as_compiled"]), near(ns(r, "as_compiled")), iv(r["aligned"]), near(ns(r, "aligned")), str(round(r["extra_instr_per_inner"])),
+               f"{r['placement_d']:.3f}{' ‡' if r['placement_sensitive'] else ''}"] for m in ms for r in m["rows"]]
+    heads_want = ["Model and row length", "Role", "As compiled: ratio (95% interval)", "As compiled: extra ns per inner call", "Aligned: ratio (95% interval)", "Aligned: extra ns per inner call", "Extra instructions per inner call", "Compiled ÷ aligned"]
+    ck.ok(tab == want_t and heads == heads_want,
+          f"Table 15: all {len(heads_want)} column heads word for word (a swapped pair of columns would relabel correct numbers), and {len(want_t)} rows (every row length of both models) with both columns' ratio, interval and extra ns, the extra instructions and compiled ÷ aligned with ‡ where placement-sensitive, equal to the data ({[(a, b) for a, b in zip(tab, want_t) if a != b][:1]})")
+    cp = txt["ds-t-cap"]
+    want_cp = ("Table 15. Every row length timed: the pooled ratio of checked ÷ unchecked with its 95% interval and the extra time per inner call, as compiled and aligned; Cachegrind’s extra instructions per inner call (counted, not timed); "
+               "compiled ÷ aligned, with ‡ where the written placement test calls the length placement-sensitive (fitted nowhere, as on the main study; the placement fields were defined for x86-64 fetch windows). "
+               f"{D['jobs']} jobs; {A['cpu_short']} is one run of {A['jobs']} jobs.")
+    ck.ok(cp == want_cp, f"Table 15's caption, word for word: both columns, the instruction counts labelled counted not timed, the ‡ meaning, the job totals ({first_diff(cp, want_cp)})")
+    aria15 = dp.evaluate("document.getElementById('ds-t-wrap').getAttribute('aria-label')")
+    h3_ds = dp.evaluate("document.getElementById('dsweep-full').textContent.trim()")
+    ck.ok(aria15 == "Table 15, every row length timed in the row-length sweep; scrolls sideways on a narrow screen, the model and row length stay in view" and h3_ds == "Matrix multiply: a row-length sweep",
+          f"Table 15's region label and the sweep's heading, word for word ({aria15!r}, {h3_ds!r})")
+    # Figure 9
+    fig = dp.evaluate("""() => { const f = document.getElementById('fig-ds'); return { seg: [...f.querySelectorAll('#ds-met-seg button')].map(b => [b.dataset.met, b.getAttribute('aria-checked')]), role: f.querySelector('#ds-met-seg').getAttribute('role'),
+        panels: [...f.querySelectorAll('#ds-panels svg')].map(s => ({ slug: s.dataset.slug, circles: s.querySelectorAll('circle').length, fitted: s.querySelectorAll('circle.fitted').length, lines: s.querySelectorAll('polyline').length, tab: s.getAttribute('tabindex'), label: s.getAttribute('aria-label') })),
+        titles: [...f.querySelectorAll('.ds-ptitle')].map(t => t.textContent.replace(/\\s+/g, ' ').trim()), title: document.getElementById('ds-title').textContent }; }""")
+    n_fit = {m["slug"]: len([r for r in m["rows"] if "fit" in r["roles"] or "study_l1" in r["roles"]]) for m in ms}
+    ck.ok(fig["seg"] == [["ns", "true"], ["instr", "false"]] and fig["role"] == "radiogroup" and [p["slug"] for p in fig["panels"]] == [m["slug"] for m in ms]
+          and all(p["circles"] == 2 * len(m["rows"]) and p["fitted"] == 2 * n_fit[m["slug"]] and p["lines"] == 2 and p["tab"] == "0" and "arrow keys" in p["label"] for p, m in zip(fig["panels"], ms))
+          and fig["titles"] == [f"{m['cpu_short']} {m['word']}{'' if m['columns_agree'] else ' (columns disagree)'}, {jobs_py(m['jobs'])}" for m in ms] and "extra time per inner call against the row length d" in fig["title"],
+          f"Figure 9: a time/instructions switch, one panel per model with a word, a point per row length and column (filled as compiled, hollow aligned), the fitted ladder marked, a joined line per column, focusable, titled with each model's word and job count ({[(p['circles'], p['fitted']) for p in fig['panels']]})")
+    # a click on a point selects its row length; the readout follows
+    arm_d = [r["d"] for r in A["rows"]]
+    target = rws(A, "bridge")[1]
+    dp.click(f'#ds-panels svg[data-slug="{A["slug"]}"] circle[data-d="{target["d"]}"]', force=True)
+    dp.wait_for_timeout(80)
+    rd = norm(dp.inner_text("#ds-read"))
+    col = lambda r, c, nm: f"{nm} {lr_py(r[c]['ratio'])}× ({lr_py(r[c]['ci95'][0])} to {lr_py(r[c]['ci95'][1])}), {near(ns(r, c))} ns extra per inner call"  # noqa: E731
+    want_rd = (f"{A['cpu_short']}, d = {target['d']} ({', '.join(role_w[q_] for q_ in target['roles'])}, remainder {target['d_mod_8']}): {col(target, 'as_compiled', 'as compiled')}; {col(target, 'aligned', 'aligned')}. "
+               f"{round(target['extra_instr_per_inner'])} extra instructions per inner call (counted, not timed). Compiled ÷ aligned {target['placement_d']:.3f}{', placement-sensitive' if target['placement_sensitive'] else ''}.")
+    sel = dp.evaluate("[...document.querySelectorAll('#ds-panels circle.sel')].map(c => [c.dataset.d, c.closest('svg').dataset.slug])")
+    ck.ok(rd == want_rd and sel and all(s == [str(target["d"]), A["slug"]] for s in sel), f"Figure 9: a click on the point at d = {target['d']} reads its row: both columns' ratio, interval and extra ns, the extra instructions (counted, not timed), compiled ÷ aligned ({rd[:70]}…)")
+    dp.evaluate(f"document.querySelector('#ds-panels svg[data-slug=\"{A['slug']}\"]').focus()")
+    dp.keyboard.press("End")
+    e1 = dp.evaluate("document.querySelector('#ds-panels svg[data-slug=\"" + A["slug"] + "\"] circle.sel').dataset.d")
+    dp.keyboard.press("Home")
+    e2 = dp.evaluate("document.querySelector('#ds-panels svg[data-slug=\"" + A["slug"] + "\"] circle.sel').dataset.d")
+    dp.keyboard.press("ArrowRight")
+    e3 = dp.evaluate("document.querySelector('#ds-panels svg[data-slug=\"" + A["slug"] + "\"] circle.sel').dataset.d")
+    ds_sorted = sorted(arm_d)
+    ck.ok([e1, e2, e3] == [str(ds_sorted[-1]), str(ds_sorted[0]), str(ds_sorted[1])], f"Figure 9: End, Home and the right arrow move the selection along the row lengths ({[e1, e2, e3]})")
+    sel_d = lambda: dp.evaluate("document.querySelector('#ds-panels svg[data-slug=\"" + A["slug"] + "\"] circle.sel').dataset.d")  # noqa: E731
+    dp.click("#ds-next")
+    n1 = sel_d()
+    dp.evaluate("document.getElementById('ds-prev').click()")  # a click by script, so a button that is wrongly disabled fails the check rather than waiting
+    dp.evaluate("document.getElementById('ds-prev').click()")
+    n2, prev_off = sel_d(), dp.evaluate("document.getElementById('ds-prev').disabled")
+    dp.evaluate(f"document.querySelector('#ds-panels svg[data-slug=\"{A['slug']}\"]').focus()")
+    dp.keyboard.press("End")
+    n3, next_off = sel_d(), dp.evaluate("document.getElementById('ds-next').disabled")
+    rd3 = norm(dp.inner_text("#ds-read"))
+    step_g = dp.get_attribute(".ds-step", "aria-label")
+    ck.ok([n1, n2, n3] == [str(ds_sorted[2]), str(ds_sorted[0]), str(ds_sorted[-1])] and prev_off and next_off and rd3.startswith(f"{A['cpu_short']}, d = {ds_sorted[-1]} (") and step_g == "Step through the row lengths of the chosen panel"
+          and dp.inner_text("#ds-prev").strip() == "← Shorter row" and dp.inner_text("#ds-next").strip() == "Longer row →",
+          f"Figure 9: the step buttons move the selection one row length at a time from the chosen one and the readout follows; each is disabled at its end ({[n1, n2, n3]}, {prev_off}, {next_off})")
+    dp.click("#ds-met-seg button[data-met=instr]")
+    dp.wait_for_timeout(120)
+    fig2 = dp.evaluate("""() => ({ seg: [...document.querySelectorAll('#ds-met-seg button')].map(b => b.getAttribute('aria-checked')), circles: [...document.querySelectorAll('#ds-panels svg')].map(s => s.querySelectorAll('circle').length),
+        lines: [...document.querySelectorAll('#ds-panels svg')].map(s => s.querySelectorAll('polyline').length), cap: document.getElementById('ds-cap').textContent.replace(/\\s+/g, ' '), title: document.getElementById('ds-title').textContent,
+        ticks: [...document.querySelectorAll('#ds-panels svg')].map(s => Math.max(...[...s.querySelectorAll('.ds-tick')].map(t => Number(t.textContent)).filter(x => !isNaN(x)))) })""")
+    ymax = max(r["extra_instr_per_inner"] for r in Xm["rows"])
+    ck.ok(fig2["seg"] == ["false", "true"] and fig2["circles"] == [len(m["rows"]) for m in ms] and fig2["lines"] == [1, 1] and "The instructions the checks add to one inner call (Cachegrind: counted, not timed)" in fig2["cap"]
+          and "extra instructions per inner call against the row length d" in fig2["title"] and fig2["ticks"][0] >= ymax * 0.7,
+          f"Figure 9: the instructions view shows one point per row length, one line, a caption that says counted, not timed, and a title that says instructions ({fig2['circles']}, {fig2['lines']})")
+    g9i = fig9_geometry(dp.evaluate(FIG9_JS), ms, "instr", ns)
+    ck.ok(not g9i, f"Figure 9, instructions view: each point at its stored extra-instruction count, the axes, the band and the joined line read back from the SVG ({g9i[:2]})")
+    dp.click("#ds-met-seg button[data-met=ns]")
+    dp.wait_for_timeout(120)
+    g9 = fig9_geometry(dp.evaluate(FIG9_JS), ms, "ns", ns)
+    ck.ok(not g9, f"Figure 9, time view, 1280 wide: both y axes run from 0 at the bottom with the labels on their lines; every point of both columns sits at its stored extra ns (aligned apart from as compiled); the band runs from the first to the last fit row length; each joined line goes through the fit ladder; "
+                  f"the fitted points are the ladder; the filled and hollow points match the caption's swatches ({g9[:2]})")
+    cp9 = norm(dp.inner_text("#ds-cap"))
+    ck.ok(cp9.startswith("Figure 9.") and "as compiled (" in cp9 and "filled) and aligned (" in cp9 and "hollow)" in cp9
+          and dp.evaluate("document.querySelectorAll('#ds-cap .ds-key').length") == 2
+          and "[object" not in cp9 and "The shaded band is the ladder the rule fits (" in cp9 and f"d = {fitA[0]} to {fitA[1]} on {A['cpu_short']}" in cp9 and "fitted nowhere" in cp9 and "Table 15" in cp9
+          and dp.evaluate("[...document.querySelectorAll('#ds-cap a')].map(a => a.getAttribute('href'))") == ["#ds-t-cap"],
+          "Figure 9's caption names both columns' marks, the shaded fit ladder with its d range per model, 'fitted nowhere' for the rest, and links to Table 15")
+    # numbers, typed numbers, run links, wording
+    bad_n = []
+    for i in ids:
+        bad_n += unknown_numbers(dp.evaluate(f"(() => ({PAGE_TEXT_JS})(document.getElementById('{i}')))()"), allowed)
+    for i in ("fig-ds", "ds-t"):
+        bad_n += unknown_numbers(dp.evaluate(f"(() => ({PAGE_TEXT_JS})(document.getElementById('{i}')))()"), allowed)
+    ck.ok(not bad_n, "details: every number in the sweep's account, Figure 9, its readout and Table 15 is in the data" + ("" if not bad_n else f": {bad_n[:4]}"))
+    with open(os.path.join(SITE, "details.html"), encoding="utf-8") as f:
+        dsrc = f.read()
+    blk = dsrc.split('<h3 id="dsweep-full">')[1].split("</section>")[0]
+    plain_blk = re.sub(r"Figure 9|Table 15|x86-64|&[a-z]+;", " ", re.sub(r"<[^>]+>", " ", blk))
+    typed = re.findall(r"\d+(?:\.\d+)?", plain_blk)
+    ck.ok(not typed, f"the sweep's HTML types no number: every figure is filled from site/data ({typed[:4]})")
+    runs_in_links = dp.evaluate("[...document.querySelectorAll('#dsweep-full ~ * a, #ds-ran a')].map(a => a.href).filter(h => /actions|runs/.test(h))")
+    ck.ok(not runs_in_links and all(r["run_id"] in txt["ds-ran"] for r in D["runs"]) and "/actions/runs" not in blk, f"the sweep names its run ids as plain text and links to no workflow run ({runs_in_links[:2]})")
+    bad_w = [w_ for w_ in ("the truth", "proves", "confirmed", "[object", "undefined", "NaN") if any(w_ in t for t in txt.values())]
+    ck.ok(not bad_w, f"details: the sweep's account uses none of the words 'the truth', 'proves', 'confirmed' and prints no JavaScript placeholder ({bad_w})")
+    ck.ok(not errors_d, "details sweep, 1280: no console errors, page errors or failed data requests" + ("" if not errors_d else f": {errors_d[:3]}"))
+    dp.close()
+    # ---- phone widths
+    errors_p = []
+    for width in (390, 320):
+        pp = browser.new_page(viewport={"width": width, "height": 844}, device_scale_factor=2)
+        watch(pp, errors_p)
+        pp.goto(base + "details.html", wait_until="networkidle")
+        pp.wait_for_function("document.querySelectorAll('#ds-panels svg').length === 2", timeout=20000)
+        pp.evaluate("document.getElementById('fig-ds').scrollIntoView()")
+        pp.wait_for_timeout(250)
+        m_ = pp.evaluate("""() => { const f = document.getElementById('fig-ds').getBoundingClientRect(); return { fig: [Math.round(f.left), Math.round(f.right)], svgs: [...document.querySelectorAll('#ds-panels svg')].map(s => { const r = s.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.top)]; }),
+            btn: [...document.querySelectorAll('#ds-met-seg button')].map(b => Math.round(b.getBoundingClientRect().height)),
+            step: [...document.querySelectorAll('.ds-step button')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), Math.round(r.left), Math.round(r.right)]; }), w: document.getElementById('ds-t').closest('.tablewrap').scrollWidth > document.getElementById('ds-t').closest('.tablewrap').clientWidth }; }""")
+        stacked = m_["svgs"][1][2] > m_["svgs"][0][2]
+        ck.ok(no_hscroll(pp) and all(s[0] >= -1 and s[1] <= width + 1 for s in m_["svgs"]) and stacked and all(b >= 32 for b in m_["btn"]) and m_["w"],
+              f"{width}: Figure 9's two panels stack and stay inside the screen, its switch is at least 32 px tall, Table 15 scrolls in its own box, and the page does not scroll sideways ({m_})")
+        g9p = fig9_geometry(pp.evaluate(FIG9_JS), ms, "ns", ns)
+        ck.ok(not g9p, f"{width}: Figure 9 read back from the SVG agrees with the stored values at this width too ({g9p[:2]})")
+        st15 = pp.evaluate(STICKY_JS, "#ds-t-wrap")
+        ck.ok(sticky_ok(st15), f"{width}: scrolled to its right end, Table 15 keeps the model and row length in view (left edge, heading too, at most half the box) and shows the swipe hint ({st15})")
+        ck.ok(len(m_["step"]) == 2 and all(w_ >= 44 and h_ >= 44 and l_ >= 0 and r_ <= width for w_, h_, l_, r_ in m_["step"]),
+              f"{width}: Figure 9's two step buttons (shorter row, longer row) are at least 44 px wide and tall and inside the screen, so a touch reader can pick a row length ({m_['step']})")
+        shot(pp, saved, shots, f"ds-fig-{width}.png", "#fig-ds")
+        pp.close()
+    pw = browser.new_page(viewport={"width": 1440, "height": 900})
+    watch(pw, errors_p)
+    pw.goto(base + "details.html", wait_until="networkidle")
+    pw.wait_for_function("document.querySelectorAll('#ds-panels svg').length === 2", timeout=20000)
+    bad_sc = []
+    for width, height in ((1440, 900), (1280, 800), (1100, 800), (1024, 768), (800, 600), (761, 800), (390, 844), (320, 568), (1024, 768)):
+        pw.set_viewport_size({"width": width, "height": height})
+        pw.wait_for_timeout(500)  # the redraw follows a change of the box's width after 120 ms
+        sc = pw.evaluate("""() => [...document.querySelectorAll('#ds-panels svg')].map(s => { const q = s.getBoundingClientRect(), t = s.querySelector('.ds-tick'); return [Number(s.getAttribute('width')), q.width / Number(s.getAttribute('width')), Math.round(s.closest('.ds-panel').getBoundingClientRect().top), Math.round(q.left), parseFloat(getComputedStyle(t).fontSize) * q.width / Number(s.getAttribute('width'))]; })""")
+        two = width > 760
+        if not (len(sc) == 2 and all(0.98 <= x[1] <= 1.02 and x[4] >= 11.5 for x in sc) and ((sc[0][2] == sc[1][2] and sc[1][3] > sc[0][3]) if two else sc[1][2] > sc[0][2])):
+            bad_sc.append((width, height, [(x[0], round(x[1], 3), round(x[4], 1)) for x in sc]))
+    ck.ok(not bad_sc, f"Figure 9 is drawn at scale 1 (its tick labels at their full size, at least 11.5 px) at 1440, 1280, 1100, 1024x768, 800, 761, 390 and 320 wide, including after the window is resized, two panels side by side above 760 px and stacked below ({bad_sc[:2]})")
+    pw.close()
+    ck.ok(not errors_p, "the sweep, 390 and 320: no console errors" + ("" if not errors_p else f": {errors_p[:3]}"))
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # messages may quote page text
@@ -2292,6 +3235,8 @@ def main():
             if a.arm_only:
                 try:
                     arm_checks(browser, base, ck, index, allowed, saved, shots)
+                    replication_checks(browser, base, ck, index, allowed, saved, shots)
+                    dsweep_checks(browser, base, ck, index, allowed, saved, shots)
                 finally:
                     browser.close()
                 for s in saved:
@@ -3250,16 +4195,59 @@ def main():
                 ck.ok(all(d_ in mtxt for d_ in defs) and "Cachegrind, a tool" in page.inner_text("#fig2") and "ud2, the instruction" in page.inner_text("#fig2"),
                       "main page: SIMD, A/A, Cachegrind, ud2, AVX2, geometric mean are explained at first use (NOVEC now appears only on the details page, defined there)"
                       + ("" if all(d_ in mtxt for d_ in defs) else f": missing {[d_ for d_ in defs if d_ not in mtxt]}"))
-                ck.ok("not needed to follow the result" in dp.inner_text("#details-purpose")
-                      and all(f"{L}: " in dp.inner_text(".dnav") for L in "ABCD"),
-                      "details page: a first line says it is not needed to follow the result; the nav names appendices A to D")
+                dall_targets = dp.evaluate("[...document.querySelectorAll('#dall .dall-list a')].map(a => [a.textContent.trim(), !!document.querySelector(a.getAttribute('href'))])")
+                dall_hrefs = dp.evaluate("[...document.querySelectorAll('#dall .dall-list a')].map(a => a.getAttribute('href'))")
+                dall_want = ["#result-full", "#why-full", "#placement-full", "#layout-full", "#census-full", "#mitigate-full", "#siblings-full", "#arm-full", "#realworld-full",
+                             "#pgo-full", "#programs-full", "#method-full", "#related-full", "#appendix-a", "#appendix-b", "#appendix-c", "#appendix-d"]
+                byl, purp = dp.inner_text(".front .byline"), dp.inner_text("#details-purpose")
+                crumb = dp.evaluate("(() => { const c = document.querySelector('.front .crumb'), h = document.querySelector('.front h1'); return c && h ? [c.getAttribute('href'), c.textContent.trim(), !!(c.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)] : null; })()")
+                lost_kernels = sorted({c_["cell_id"].split(".")[0] for cpu_ in pooled["cpus"] for c_ in cpu_["cells"] if c_["class"] == "lost"})
+                clang_dp = "clang " + re.search(r"\d+\.\d+\.\d+", index["toolchain"]["clang"]).group(0)
+                intel_dp = f"{index['intel_forward']['aligned']['min']:.2f}–{index['intel_forward']['aligned']['max']:.2f}"
+                avx_dp = dp.text_content('#details-purpose span[data-v="avx2Short"]').strip()
+                jump_dp = dp.evaluate("[...document.querySelectorAll('.dnav a:not(.dgo)')].map(a => [a.textContent.trim(), a.getAttribute('href'), !!document.querySelector(a.getAttribute('href'))])")
+                dall_lab = dp.evaluate("Object.fromEntries([...document.querySelectorAll('#dall .dall-list a')].map(a => [a.getAttribute('href'), a.textContent.trim()]))")
+                h2_of = dp.evaluate("Object.fromEntries(['#placement-full', '#realworld-full', '#method-full', '#appendix-a'].map(q_ => [q_, document.querySelector(q_ + ' h2').textContent.trim()]))")
+                dgo_txt, res_h2 = dp.inner_text(".dnav a.dgo").strip(), dp.evaluate("document.querySelector('#result-full h2').lastChild.textContent.trim()")
+                ck.ok(
+                      # what the page holds, for whom, and the setting it is about; the main page is a breadcrumb above the title, said in words
+                      "holds the full tables, runs and checks of a study of what bounds checks in C++’s standard library cost, loop by loop, for C++ engineers deciding whether to turn on libc++ hardening." in byl
+                      and "not needed to follow the result" not in byl + purp and "work in progress" in byl.lower()
+                      and crumb and crumb[0] == "index.html" and crumb[1].startswith("←") and "Main page" in crumb[1] and "short version" in crumb[1] and crumb[2]
+                      and dp.locator('.front .byline a[href="index.html"]').count() == 0 and dp.inner_text("#repo-link") == "Code and data on GitHub"
+                      # the box: Google's figure and why the title says it come first, then the numbers from the data, in words a reader follows
+                      and f"Google reported that libc++’s bounds checks cost {index['claim']['google_pct']:.2f}% on average over whole services, a third of a percent: the title." in purp
+                      and "This study times single loops, a different measurement. The cost depends on the loop." in purp and "neither confirms nor contradicts" not in purp
+                      and f"{lost['min']:.1f}× to {lost['max']:.1f}× as long at the study’s two in-cache sizes, with the bounds check on as with it off, for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction." in purp
+                      and purp.index("Google reported") < purp.index(f"{lost['min']:.1f}×") and "SIMD" not in purp
+                      and lost_kernels == ["k04_rev", "k05_stride2", "k08_matmul"]
+                      and f"on arrays that fit the processor’s cache ({clang_dp}, -O2):" in purp
+                      and f"About the same, near 1×, for forward loops on the AMD CPU models (one AVX2 exception, {avx_dp}×); {intel_dp}× on Intel (forward add; section 1)." in purp
+                      and avx_dp == page.text_content('#result .gist span[data-v="avx2Short"]').strip()
+                      # one filled start link that says what it does (not the heading below it), four plain jumps with targets, the fold
+                      and dgo_txt.startswith("Read the full numbers") and dgo_txt not in res_h2 and res_h2.strip() not in dgo_txt
+                      and [(j[0], j[1]) for j in jump_dp] == [("Code placement", "#placement-full"), ("Real programs", "#realworld-full"), ("How it was measured", "#method-full"), ("Full data table", "#appendix-a")] and all(j[2] for j in jump_dp)
+                      and dp.inner_text(".dnav .dlabel") == "or jump to"
+                      and dall_hrefs == dall_want and all(t[1] for t in dall_targets) and all(f"{L}: " in dp.text_content("#dall .dall-list") for L in "ABCD")
+                      and dp.get_attribute(".dnav a.dgo", "href") == "#result-full" and dp.locator(".dnav a").count() == 5
+                      # one vocabulary: the fold's entry and the section's heading for each jump use the jump row's words
+                      and all(dall_lab[j[1]].lower().endswith(j[0].lower()) and j[0].lower() in h2_of[j[1]].lower() for j in jump_dp),
+                      "details page: the first screen says what the study holds and for whom (and the setting it is about), has the main page as a breadcrumb above the title (short version, interactive chart), opens the box with Google's figure and why the title says it, then the result in words (1x as long with the check on as off for reverse, stride-2 and matrix-multiply loops; about the same for forward loops on the AMD models with the AVX2 exception, and the Intel forward-add range, as the main page's headline gives it; arrays that fit the cache; the toolchain named) with every number from the data and no unexplained SIMD, offers one start link that is not the heading below it and four plain jumps with targets, and 'All sections' lists the 17 sections and appendices A to D in page order, each with a target on the page, and the jump row, the fold and the section headings use the same words for the four jumps (Code placement, Real programs, How it was measured, Full data table)")
                 # the headline above Figure 1 and the 'cannot tell you' box under the abstract
                 page.evaluate("scrollTo(0, 0)"); page.wait_for_timeout(150)
                 hl = page.inner_text("#headline")
                 hb = page.evaluate("(() => { const r = document.getElementById('headline').getBoundingClientRect(), f = document.getElementById('fig1').getBoundingClientRect(); return [r.bottom <= f.top + 1, true]; })()")
-                ck.ok(f"take {lost['min']:.1f}× to {lost['max']:.1f}× as long in cache" in hl and "Loops that lose SIMD under the check" in hl
+                ck.ok(f"take {lost['min']:.1f}× to {lost['max']:.1f}× as long at the study’s two in-cache sizes" in hl and "Loops that lose SIMD under the check" in hl
                       and f"{IFd['aligned']['min']:.2f}–{IFd['aligned']['max']:.2f}× on Intel (forward add)" in hl and "near 1× on the AMD models" in hl and all(hb),
                       f"one headline line sits directly above Figure 1 (the hero holds the first screen), from index.json, with the AMD and Intel qualifier ({hb})")
+                # the same range, scoped to the study's sizes, wherever else the main page states it: the no-script line, the abstract bullet and the Result gist
+                ns_txt = page.evaluate("[...document.querySelectorAll('noscript')].map(n => n.textContent).join(' ')")
+                abs_txt = page.evaluate("[...document.querySelectorAll('li')].map(l => l.textContent.replace(/\\s+/g, ' '))")
+                gist_txt = " ".join(page.text_content("#result .gist").split())
+                ck.ok("times as long at the study’s two in-cache sizes" in ns_txt
+                      and any(f"{lost['min']:.1f} to {lost['max']:.1f}× as long at the study’s two in-cache sizes for loops that lose SIMD" in t for t in abs_txt)
+                      and f"{lost['min']:.1f} to {lost['max']:.1f}× as long at the study’s sizes;" in gist_txt,
+                      "the headline range is scoped to the study's sizes in the no-script line, the abstract bullet and the Result gist, as in the headline and the details box")
                 cb = page.evaluate("[...document.querySelectorAll('#cannot li')].map(l => l.innerText)")
                 ck.ok(len(cb) == 5 and "robustness report" in cb[3] and "jobs started returned nothing" in cb[4] and "production average" in cb[0] and "picked for their lost loops" in cb[1] and "profile-guided optimization" in cb[1] and "not time" in cb[1]
                       and "one main toolchain" in cb[2] and "SSE2" in cb[2] and "section 6" in cb[2]
@@ -3393,6 +4381,8 @@ def main():
                 phone_checks(browser, base, ck, index)
                 wording_checks(browser, base, ck, index)
                 arm_checks(browser, base, ck, index, allowed, saved, shots)
+                replication_checks(browser, base, ck, index, allowed, saved, shots)
+                dsweep_checks(browser, base, ck, index, allowed, saved, shots)
                 print("== 390 wide")
                 errors = []
                 page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)

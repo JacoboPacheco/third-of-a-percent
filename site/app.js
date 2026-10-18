@@ -1853,6 +1853,15 @@ function armOrder(A) { // Figure 1's row order: by the x86-64 default model's al
   const med = (k) => { const xs = IN_CACHE.map((sz) => A.x86.cells[`${k}.${sz}`]).filter(Boolean).map((c) => (c.aligned || c.as_compiled).ratio).sort((a, b) => a - b); return xs.length ? (xs.length % 2 ? xs[(xs.length - 1) / 2] : (xs[xs.length / 2 - 1] + xs[xs.length / 2]) / 2) : -1; };
   return A.kernels.map((k) => k.kernel).sort((a, b) => med(b) - med(a));
 }
+/* the matrix-multiply sentence of section 6a; the row-length sweep's one sentence joins it once both data files are in (either may arrive first) */
+function armMmFill() {
+  if (!S.arm || !S.arm.cells) return;
+  const D = armData(), x86name = D.A.x86.model.cpu_short;
+  const mm = D.cell('k08_matmul.L1'), mmx = D.x86('k08_matmul.L1'), mmk = D.kern('k08_matmul');
+  setV('armMm', mm && mmx && mmk && mmk.class === 'kept' && mmx.class === 'lost'
+    ? `Matrix multiply is where the two differ most: on this core clang keeps its SIMD loop (NEON, Arm’s version) with the checks on, yet the function costs ${fx(mm.as_compiled.ratio)}× at L1 (${fx(mm.aligned.ratio)}× aligned), against ${fx(mmx.as_compiled.ratio)}× on ${x86name}, where the same loop loses SIMD. ${dsGist() || 'Where the extra time goes is not shown.'}`
+    : `Matrix multiply costs ${fx(mm.as_compiled.ratio)}× at L1 on this core (${x86name}: ${fx(mmx.as_compiled.ratio)}×).`);
+}
 function armTexts() { // the sentences filled into [data-v] spans on both pages
   const D = armData(), A = D.A, V = A.verdict, M = A.machine, F1 = A.forward_loops.L1, SM = A.summary;
   const names = (ks) => joinAnd(ks.map((k) => SHORT_NAMES[k]));
@@ -1862,23 +1871,18 @@ function armTexts() { // the sentences filled into [data-v] spans on both pages
   const x86name = A.x86.model.cpu_short;
   const SS = A.seed_sensitivity, DC = SS.deciding_cell, aaL2 = A.noise.identical_binary_aa.L2.pooled;
   const reversed = DC.alt_draws - DC.alt_at_or_above_limit; // other seeds that put the interval's end under the limit
-  const sameAdd = Object.values(A.forward_instr.added_same_at_both_sizes).every((v) => v.as_compiled && v.aligned); // the added instruction count per call is the same at L1 and L2
   setV('armCore', A.cpu_short);
   const fwdL1 = `${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}×`;
   setV('armGist', `On an Arm core (${A.cpu_short}, ${A.jobs} jobs) ${names(D.lostK)} lose SIMD and take ${fx(SM.lost.min)}× to ${fx(SM.lost.max)}× as long in cache; forward loops cost ${fwdL1} at L1, as compiled. The written rules call this core ${form}, by a margin of ${DC.margin_over_limit.toFixed(4)} that most other bootstrap seeds reverse.`);
   setVNodes('armWhat', [`The same eight loops, repetitions and written rules ran unchanged on GitHub’s Arm runner (${A.runs.length} runs of ${A.criteria.jobs_per_run} jobs, ${M.jobs_agreeing === A.jobs ? 'every job' : `${M.jobs_agreeing} of ${A.jobs} jobs`} on a ${M.cpu_model} core, ${clang} and ${libcxx} in FAST mode at `, el('code', { class: 'nowrap' }, opt),
-    `). The data is sized by the same rule, half of each core’s L1 data cache and of its L2: ${kibWords(M.size_targets_bytes.L1 / 1024)} and ${kibWords(M.size_targets_bytes.L2 / 1024)} here, and other byte counts on the x86-64 models.`]);
+    `). The data is sized by the same rule, half of each core’s L1 data cache and of its L2: ${kibWords(M.size_targets_bytes.L1 / 1024)} and ${kibWords(M.size_targets_bytes.L2 / 1024)} here, other byte counts on the x86-64 models.`]);
   setV('armWhy', D.missed.length
-    ? `The pooled data fit neither pattern the written rules recognise: the loops that lose SIMD sit far above the limit, so the cost is not small everywhere, and the forward side of a map is missed by ${joinAnd(D.missed.map((c) => `${cellName(c.cell_id)} (a ratio of ${lr(c.aligned.ratio)}× aligned, but an interval from ${lr(c.aligned.ci95[0])} to ${lr(c.aligned.ci95[1])}×, past the ${fx(V.limit)}× limit)`))}. That miss is ${DC.margin_over_limit.toFixed(4)}, less than the movement of the interval’s end under other bootstrap seeds (${reversed} of ${DC.alt_draws} put it under the limit, at a median of ${lr(DC.alt_hi.median)}), and at that size even an identical binary against itself spreads by ±${pctS(aaL2.half_width_pct)}, so these data cannot separate ${form} from a map at this cell (details page, section 6d).`
+    ? `The forward side of a map is missed by ${joinAnd(D.missed.map((c) => `${cellName(c.cell_id)} (a ratio of ${lr(c.aligned.ratio)}× aligned, but an interval from ${lr(c.aligned.ci95[0])} to ${lr(c.aligned.ci95[1])}×, past the ${fx(V.limit)}× limit)`))}. That miss is ${DC.margin_over_limit.toFixed(4)}, less than the movement of the interval’s end under other bootstrap seeds (${reversed} of ${DC.alt_draws} put it under the limit, at a median of ${lr(DC.alt_hi.median)}), and at that size even an identical binary against itself spreads by ±${pctS(aaL2.half_width_pct)}, so these data cannot separate ${form} from a map at this cell (section 6d).`
     : `The written rules call this core ${form}; the reason is on the details page, section 6d.`);
-  const mm = D.cell('k08_matmul.L1'), mmx = D.x86('k08_matmul.L1'), mmk = D.kern('k08_matmul');
-  setV('armMm', mm && mmx && mmk && mmk.class === 'kept' && mmx.class === 'lost'
-    ? `Matrix multiply is where the two differ most: on this core clang keeps its SIMD loop (NEON, Arm’s version) with the checks on, yet the function costs ${fx(mm.as_compiled.ratio)}× at L1 (${fx(mm.aligned.ratio)}× aligned), against ${fx(mmx.as_compiled.ratio)}× on ${x86name}, where the same loop loses SIMD. Where the extra time goes is not shown.`
-    : `Matrix multiply costs ${fx(mm.as_compiled.ratio)}× at L1 on this core (${x86name}: ${fx(mmx.as_compiled.ratio)}×).`);
+  armMmFill();
   const wid = A.cells.filter((c) => A.forward_loops.kernels.includes(c.kernel) && c.size_class === 'L2')
     .reduce((a, c) => (!a || c.aligned.half_width_pct > a.aligned.half_width_pct ? c : a), null);
-  const psFwd = SM.placement_sensitive.filter((q) => A.forward_loops.kernels.includes(q.cell_id.split('.')[0]) && q.cell_id.endsWith('.L1'));
-  setV('armAvg', `On the ${A.cpu_short} core the three forward loops cost ${fwdL1} at L1, as compiled, against an A/A floor of ±${pctS(A.aa.half_width_pct)} that belongs to the forward add at L1 alone (${psFwd.length} of the ${A.forward_loops.kernels.length} are placement-sensitive, so the rules do not judge them${sameAdd ? '; the instructions the checks add to a call are a fixed count, the same at both sizes, so their share of a call follows the array length' : ''}): three microbenchmarks, not Google’s services, so this neither confirms nor contradicts the ${g}% average. At L2 the widest forward interval (${cellName(wid.cell_id)}, ±${pctS(wid.aligned.half_width_pct)}) is too wide to resolve ${g}%, as is an identical binary against itself (±${pctS(aaL2.half_width_pct)}), and the pooled verdict under the written rules is ${form}, on a margin that ${reversed} of ${DC.alt_draws} other bootstrap seeds reverse (section 6a).`);
+  setV('armAvg', `On ${A.cpu_short} the three forward loops cost ${fwdL1} at L1, as compiled, against an A/A floor of ±${pctS(A.aa.half_width_pct)} (forward add only): three microbenchmarks, not Google’s services, so this neither confirms nor contradicts the ${g}% average. At L2 the widest forward interval (±${pctS(wid.aligned.half_width_pct)}) and an identical binary against itself (±${pctS(aaL2.half_width_pct)}) are too wide to resolve ${g}%, and the pooled verdict is ${form}, on a margin most other seeds reverse (section 6a).`);
   setV('armLimit', `Arm: one core type (${A.cpu_short}), ${A.jobs} jobs on shared machines, ${clang} only; no real programs, profile-guided builds or other compilers were timed there (section 6a).`);
   setV('armLimFull', `Arm is one added column (section 6d): one core type, ${A.jobs} jobs in ${A.runs.length} runs, ${clang} only, no real programs.`);
   setV('armJobsSet', `the ${A.jobs} jobs of the ${A.runs.length} Arm runs (a separate pool on one core type), as compiled and aligned`);
@@ -2113,17 +2117,7 @@ function armDetails() {
         el('td', { class: 'num' }, `${n.asm_lines} → ${f.asm_lines}`), el('td', { class: 'num' }, String(f.traps)));
     }))));
   setV('armT2Cap', `What the compiler and the listings show, per loop, as compiled. The counts come from the saved listings (the .s files) of one job; ${A.build_facts.all_agree ? `all ${A.build_facts.jobs} jobs produced identical hashes, listings, diffs and compiler remarks for every build` : 'the jobs do not all agree'}. “NEON instructions” counts them in the whole function; “SIMD loop” is the hot loop’s instruction count; a loop with no SIMD loop shows none. “Check traps” counts the trap instructions in the checked listing (a loop whose checks were proved away has none).`);
-  // matrix multiply
-  const mk = D.kern('k08_matmul'), m1 = D.cell('k08_matmul.L1'), m2 = D.cell('k08_matmul.L2'), x1 = D.x86('k08_matmul.L1'), x2 = D.x86('k08_matmul.L2');
-  const ms = mk.simd_loop.as_compiled, mb = mk.builds, mcL1 = mcs.L1, mcL2 = mcs.L2;
-  const diffPath = `${mk.source_job}/asm/${mk.diffs.L1.file}`, fastPath = `${mk.source_job}/asm/${mk.kernel}.fast.s`;
-  const gaL1 = D.cell('k06_gather.L1'), gaL2 = D.cell('k06_gather.L2');
-  $('arm-matmul').replaceChildren(el('b', null, 'Matrix multiply. '),
-    mk.class === 'kept' && x1 && x1.class === 'lost'
-      ? `Clang vectorized it in both builds on this core (its remark with the checks on: “${mb.fast.remarks[0].replace(/\s*\[-R[^\]]*\]$/, '')}”), and the SIMD loop in the listing is the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} with the checks off and on. The function still costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled (${lr(m1.aligned.ratio)}× aligned) and ${lr(m2.as_compiled.ratio)}× at L2 (${lr(m2.aligned.ratio)}× aligned), and both cells are placement-sensitive (compiled ÷ aligned ${m1.placement.d.ratio.toFixed(3)} and ${m2.placement.d.ratio.toFixed(3)}). On ${x86name} clang 18 loses SIMD on the same loop, at ${fx(x1.as_compiled.ratio)}× and ${fx(x2.as_compiled.ratio)}×. `
-      : `It costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled and ${lr(m2.as_compiled.ratio)}× at L2 on this core. `,
-    'Observed in the checked build’s full listing (', repoNode(fastPath, 'the .s file'), ') and its L1 diff (', repoNode(diffPath, 'the diff'), `): the checked function is ${mb.fast.asm_lines} lines against ${mb.none.asm_lines}; the SIMD loop has the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} in both builds; the extra lines are compare, select-minimum and branch instructions before the SIMD loop and, after it, a scalar loop with two compare-and-branch pairs per element. The conditional branches into the function’s one trap, `, code('brk #0x1'), `, sit before the SIMD loop and in the scalar loop, none inside the SIMD loop. The diff drops those jump targets, so they are read from the full listing. `,
-    `The checked build executes ${lr(m1.instr_ratio.as_compiled)}× the instructions at L1 (Cachegrind) for ${lr(m1.as_compiled.ratio)}× the time, and ${lr(m2.instr_ratio.as_compiled)}× the instructions at L2 for ${lr(m2.as_compiled.ratio)}× the time. That the extra time comes from this surrounding code and not from the SIMD loop fits the listing and the counts at L1; it was not tested. Between the two sizes three things change together: the cache level, the row length (d = ${mcL1.d} at L1 and d = ${mcL2.d} at L2, so the SIMD loop runs ${mcL1.whole_passes} and ${mcL2.whole_passes} passes of ${A.matmul_cost.vector_pass_elements} elements per row and the scalar loop is left ${mcL1.d_mod_pass} and ${mcL2.d_mod_pass}) and the instruction ratio. A change of cache level can move the time without moving the instruction ratio: the gather loop executes ${lr(gaL1.instr_ratio.as_compiled)}× and ${lr(gaL2.instr_ratio.as_compiled)}× the instructions at the two sizes but costs ${lr(gaL1.as_compiled.ratio)}× and ${lr(gaL2.as_compiled.ratio)}×. So these data do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; no other d was timed. Nothing here times the SIMD loop alone or profiles where the time goes, and these virtual machines expose no hardware counters. The plan expected matrix multiply not to be lost on this target, from the compile-only sweep; why the target matters is not established here.`);
+  armMatmul();
   // reverse loop: the no-vectorize control
   const rv = D.cell('k04_rev.L1');
   $('arm-novec').replaceChildren(el('b', null, 'The no-vectorize control. '),
@@ -2142,6 +2136,21 @@ function armDetails() {
     `One core type (${M.cpu_model}), one runner image (${M.os}, kernel ${M.kernel}), virtual machines whose neighbours are unknown, ${A.jobs} jobs in ${A.runs.length} runs from one day. ${capFirst(clang)} and ${libcxx} only${M.march_flag_in_builds ? '' : ', with no -march flag, so the builds target the compiler’s default Arm baseline'}${flags.includes('sve') ? ' (the cores also report SVE and SVE2, which these builds did not target)' : ''}. `,
     'No real programs, no profile-guided builds and no other compilers or libc++ versions were timed on Arm, and no steal or frequency record was made for these runs. The placement fields in the data (64-byte windows) were defined for x86-64 fetch windows and are computed for Arm without a check of what an Arm core fetches, and the layout A/A moves only the unchecked build’s loops, so it did not see placement shifts that the compiled ÷ aligned ratio shows (above): neither is a verified placement control on this core. ',
     'This says nothing about Apple, AWS or other Arm cores, about other Arm compilers, or about Google’s services.');
+}
+function armMatmul() { // the matrix-multiply paragraph of section 6d; it names the row-length sweep once data/dsweep.json is in
+  if (!has('arm-matmul') || !S.arm || !S.arm.cells) return;
+  const D = armData(), A = D.A, M = A.machine, x86name = A.x86.model.cpu_short, mcs = A.matmul_cost.sizes;
+  const mk = D.kern('k08_matmul'), m1 = D.cell('k08_matmul.L1'), m2 = D.cell('k08_matmul.L2'), x1 = D.x86('k08_matmul.L1'), x2 = D.x86('k08_matmul.L2');
+  const ms = mk.simd_loop.as_compiled, mb = mk.builds, mcL1 = mcs.L1, mcL2 = mcs.L2;
+  const diffPath = `${mk.source_job}/asm/${mk.diffs.L1.file}`, fastPath = `${mk.source_job}/asm/${mk.kernel}.fast.s`;
+  const gaL1 = D.cell('k06_gather.L1'), gaL2 = D.cell('k06_gather.L2');
+  const ds = S.ds && S.ds.models.find((m) => m.cpu_short === A.cpu_short && dsWord(m)); // the sweep, once it has loaded
+  $('arm-matmul').replaceChildren(el('b', null, 'Matrix multiply. '),
+    mk.class === 'kept' && x1 && x1.class === 'lost'
+      ? `Clang vectorized it in both builds on this core (its remark with the checks on: “${mb.fast.remarks[0].replace(/\s*\[-R[^\]]*\]$/, '')}”), and the SIMD loop in the listing is the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} with the checks off and on. The function still costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled (${lr(m1.aligned.ratio)}× aligned) and ${lr(m2.as_compiled.ratio)}× at L2 (${lr(m2.aligned.ratio)}× aligned), and both cells are placement-sensitive (compiled ÷ aligned ${m1.placement.d.ratio.toFixed(3)} and ${m2.placement.d.ratio.toFixed(3)}). On ${x86name} clang 18 loses SIMD on the same loop, at ${fx(x1.as_compiled.ratio)}× and ${fx(x2.as_compiled.ratio)}×. `
+      : `It costs ${lr(m1.as_compiled.ratio)}× at L1 as compiled and ${lr(m2.as_compiled.ratio)}× at L2 on this core. `,
+    'Observed in the checked build’s full listing (', repoNode(fastPath, 'the .s file'), ') and its L1 diff (', repoNode(diffPath, 'the diff'), `): the checked function is ${mb.fast.asm_lines} lines against ${mb.none.asm_lines}; the SIMD loop has the same ${ms.fast_instructions} instructions with ${ms.same_opcodes ? 'the same opcodes' : 'different opcodes'} in both builds; the extra lines are compare, select-minimum and branch instructions before the SIMD loop and, after it, a scalar loop with two compare-and-branch pairs per element. The conditional branches into the function’s one trap, `, code('brk #0x1'), `, sit before the SIMD loop and in the scalar loop, none inside the SIMD loop. The diff drops those jump targets, so they are read from the full listing. `,
+    `The checked build executes ${lr(m1.instr_ratio.as_compiled)}× the instructions at L1 (Cachegrind) for ${lr(m1.as_compiled.ratio)}× the time, and ${lr(m2.instr_ratio.as_compiled)}× the instructions at L2 for ${lr(m2.as_compiled.ratio)}× the time. That the extra time comes from this surrounding code and not from the SIMD loop fits the listing and the counts at L1; ${ds ? `the row-length sweep at the end of this section tests whether the extra time per inner call is fixed, and its word is “${ds.word}”` : 'it was not tested'}. Between the two sizes three things change together: the cache level, the row length (d = ${mcL1.d} at L1 and d = ${mcL2.d} at L2, so the SIMD loop runs ${mcL1.whole_passes} and ${mcL2.whole_passes} passes of ${A.matmul_cost.vector_pass_elements} elements per row and the scalar loop is left ${mcL1.d_mod_pass} and ${mcL2.d_mod_pass}) and the instruction ratio. A change of cache level can move the time without moving the instruction ratio: the gather loop executes ${lr(gaL1.instr_ratio.as_compiled)}× and ${lr(gaL2.instr_ratio.as_compiled)}× the instructions at the two sizes but costs ${lr(gaL1.as_compiled.ratio)}× and ${lr(gaL2.as_compiled.ratio)}×. So these two sizes alone do not say whether the row length, the cache level or both is why matrix multiply costs so much less at L2; ${ds ? 'the row-length sweep times other d' : 'no other d was timed'}. Nothing here times the SIMD loop alone or profiles where the time goes, and these virtual machines expose no hardware counters. The plan expected matrix multiply not to be lost on this target, from the compile-only sweep; why the target matters is not established here.`);
 }
 function renderArm() {
   if (!S.arm || !S.arm.cells) return;
@@ -2168,6 +2177,377 @@ function renderHoldout() {
     el('td', null, r.reproduced == null ? 'no verdict either time' : r.reproduced ? 'yes' : 'no'))));
   setV('holdoutCap', `Table H. The first pooled runs against the holdout, per CPU model: verdict, jobs and the cost of the loops that lose SIMD in cache (aligned). Source: ${H.source} and ${H.original_source}; plan: ${H.preregistration}.`);
 }
+/* ---------- the replication: Figure 8 (main page, section 1) and its full account (details page, section 1), read from data/replication.json ---------- */
+const REP_RED = ['39012986182', '39013000285']; // the two combine runs that went red on harness/pool_check.py (a model with fewer than 3 jobs); they must be runs of the second x86-64 set
+const REP_SAY = { none: 'not drawn', few: 'too few jobs', map: 'a map', holds: 'a small cost everywhere', inc: 'inconclusive' };
+const repKind = (s) => (!s || !s.jobs ? 'none' : !s.enough ? 'few' : s.form === 'map' ? 'map' : s.form === 'holds_everywhere' ? 'holds' : 'inc');
+const repJobs = (n) => `${n} job${n === 1 ? '' : 's'}`;
+const repWith = (s) => `${REP_SAY[repKind(s)]} (${repJobs(s ? s.jobs : 0)})`;
+const d3 = (v) => v.toFixed(3), d4 = (v) => v.toFixed(4);
+const repShown = () => S.rep.rows.filter((r) => r.earlier && r.earlier.enough); // the models with a verdict in the first set
+// Figure 8 (main page) calls the two sets "first" and "second" everywhere; set A, B and C belong to Table 14 on the details page
+const REP_SETS = { earlier: 'the first set', replication: 'the second set', secondary: 'both together' };
+const repShort = (m) => { const r = S.rep.rows.find((x) => x.cpu_model === m); return r ? r.cpu_short : m; };
+function repAligned(r) { // the plan counts aligned ratios; the stored count has both columns, so a model's cells are half of its points
+  const cells = r.inside.checked / 2;
+  return { n: cells - r.inside.misses.filter((m) => m.column === 'aligned').length, of: cells };
+}
+function repRole(x) { // what the placement exemption did to one forward cell in one pool
+  const P = x.placement, ci = `${d3(P.d_ci95[0])} to ${d3(P.d_ci95[1])}`;
+  return x.role === 'exempt_placement_sensitive'
+    ? `left out of the forward test as placement-sensitive (compiled ÷ aligned ${ci}, which excludes 1 by ${d4(P.d_misses_one_by)})`
+    : `judged (compiled ÷ aligned ${ci}, which includes 1)${x.passes_forward_rule === false ? `, and it misses the ${fx(x.limit)}× limit by ${d4(x.aligned_hi_over_limit)}` : ''}`;
+}
+function repFlip(arch, slug, names) { // the cell(s) behind a model's different word, in words; the main page passes REP_SETS, the details page the real set names
+  const A = S.rep.arch[arch], f = A.flips.find((x) => x.slug === slug), nm = names || A.names;
+  if (!f) return '';
+  return f.cells.map((c) => `${capFirst(cellName(c.cell_id))}, aligned: ${d3(c.earlier.aligned.ratio)}× in ${nm.earlier} and ${d3(c.replication.aligned.ratio)}× in ${nm.replication}; its interval ends at ${d4(c.earlier.aligned.ci95[1])} and ${d4(c.replication.aligned.ci95[1])}, against the ${fx(c.earlier.limit)}× limit. In ${nm.earlier} it is ${repRole(c.earlier)}; in ${nm.replication} it is ${repRole(c.replication)}.`).join(' ');
+}
+const repEdge = (r) => { const f = S.rep.arch[r.arch].flips.find((x) => x.slug === r.slug); return !!f && f.cells.every((c) => c.earlier.role !== c.replication.role); }; // a different word that comes from the placement exemption switching, not from a new cost
+function repTitleText() { // the word counts over the models that could be tested in both sets; a flip is named for what it is only when the data show the exemption switching
+  const rows = repShown().filter((r) => r.testable), n = (st) => rows.filter((r) => r.status === st);
+  const flipped = n('flipped'), edge = flipped.length > 0 && flipped.every(repEdge);
+  return `Second set: same word on ${n('same').length} of ${rows.length} models${flipped.length ? `; ${flipped.length} ${edge ? 'flipped at a rule’s edge' : 'changed word'}` : ''}`;
+}
+function repGlyph(s) { return el('span', { class: `rg g-${repKind(s)}`, 'aria-hidden': 'true' }, el('i'), el('b', null, s && s.jobs ? String(s.jobs) : '–')); }
+function repRenderRows() {
+  const rows = repShown();
+  const out = rows.map((r) => {
+    const nm = REP_SETS, I = r.inside;
+    const firstOfArch = r === rows.find((x) => x.arch === r.arch);
+    const b = el('button', { type: 'button', class: `row rep-row st-${r.status.replace(/\W+/g, '-')}${firstOfArch && r.arch !== rows[0].arch ? ' rep-gap' : ''}`, role: 'option', 'data-slug': r.slug, 'aria-selected': 'false' });
+    b.addEventListener('click', () => repSelect(S.repSel === r.slug ? null : r.slug, false));
+    b.append(el('span', { class: 'lab' }, el('span', { class: 'name' }, r.cpu_short)), repGlyph(r.earlier), repGlyph(r.replication), repGlyph(r.secondary),
+      I ? el('span', { class: 'rin', title: `${I.inside} of ${I.checked} pooled ratios of ${nm.replication} lie inside the 95% interval of ${nm.earlier}` },
+        el('span', { class: 'rbar' }, el('i', { style: `width:${(100 * I.inside / I.checked).toFixed(1)}%` })), el('span', { class: 'rn' }, `${I.inside}/${I.checked}`))
+        : el('span', { class: 'rin', title: 'not testable: too few jobs in the second set' }, el('span', { class: 'rn na' }, '–')));
+    b.setAttribute('aria-label', `${r.cpu_short}: ${nm.earlier}: ${repWith(r.earlier)}; ${nm.replication}: ${repWith(r.replication)}; ${nm.secondary}: ${repWith(r.secondary)}; ${I ? `${I.inside} of ${I.checked} pooled ratios of the second set inside the first set’s interval` : 'not testable'}`);
+    return b;
+  });
+  $('rep-rows').replaceChildren(...out);
+  repMark();
+}
+function repMark() {
+  const first = $('rep-rows').firstElementChild;
+  for (const b of $('rep-rows').children) {
+    const on = b.dataset.slug === S.repSel;
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on || (!S.repSel && b === first) ? 0 : -1;
+  }
+}
+function repSelect(slug, focus) {
+  S.repSel = slug;
+  repMark();
+  repRead();
+  if (focus && slug) { const b = $('rep-rows').querySelector(`[data-slug="${slug}"]`); if (b) b.focus(); }
+}
+function repRead() {
+  const box = $('rep-read'), r = S.rep.rows.find((x) => x.slug === S.repSel);
+  if (!r) { box.hidden = true; box.replaceChildren(); return; }
+  const nm = REP_SETS, I = r.inside, X = S.rep.arch[r.arch];
+  const notes = [];
+  if (I) {
+    const al = repAligned(r);
+    notes.push(`${I.inside} of ${I.checked} pooled ratios of ${nm.replication} lie inside the 95% interval of ${nm.earlier} (aligned alone ${al.n} of ${al.of}); the largest difference between two ratios is ${pctS(I.max_abs_point_diff_pct)}.`);
+  }
+  if (r.status === 'flipped') notes.push(`The different word is a placement-exemption edge, not a change of cost. ${repFlip(r.arch, r.slug, nm)}`);
+  if (!r.testable) notes.push(`${capFirst(nm.replication)} drew ${repJobs(r.replication ? r.replication.jobs : 0)} of it (${S.rep.criteria.minimum_jobs} are needed), so whether the first reading repeats is not answered either way. Pooled with it, the ${repJobs(r.secondary ? r.secondary.jobs : 0)} (${r.earlier.jobs} of ${nm.earlier} and ${r.replication ? r.replication.jobs : 0} of ${nm.replication}) read ${REP_SAY[repKind(r.secondary)]}.`);
+  if (r.arch === 'arm') {
+    const c = X.named_cells[0], below = c.earlier.aligned.ratio < 1 && c.replication.aligned.ratio < 1;
+    notes.push([`Both sets are decided by one cell, ${cellName(c.cell_id)}, aligned: it ends at ${d4(c.earlier.aligned.ci95[1])} in ${nm.earlier} and ${d4(c.replication.aligned.ci95[1])} in ${nm.replication}, against the ${fx(c.earlier.limit)}× limit, with ratios of ${d3(c.earlier.aligned.ratio)} and ${d3(c.replication.aligned.ratio)}. Pooled (${nm.secondary}) it ends at ${d4(c.secondary.aligned.ci95[1])}: the ratio is about the same, the interval narrower. Both ends sit near the limit${below ? ' while both ratios are below 1' : ''}, so a second inconclusive is a weak repeat of the word, not independent confirmation of an effect (`,
+      el('a', { href: '#arm' }, 'section 6a'), ').']);
+  }
+  box.hidden = false;
+  box.replaceChildren(el('p', { class: 'rp-head' }, el('b', null, r.cpu_short), ` ${capFirst(nm.earlier)}: ${repWith(r.earlier)}; ${nm.replication}: ${repWith(r.replication)}; ${nm.secondary}: ${repWith(r.secondary)}.`),
+    ...notes.map((t) => el('p', { class: 'rp-note' }, t)));
+}
+function repCaption() {
+  const rows = repShown(), I = rows.find((r) => r.inside).inside;
+  const key = (k, t) => el('span', { class: 'rk' }, el('span', { class: `rg g-${k}`, 'aria-hidden': 'true' }, el('i')), ` ${t}`);
+  $('rep-key').replaceChildren(key('map', 'map'), key('inc', 'inconclusive'), key('few', 'too few jobs'), el('span', { class: 'rk' }, 'n = jobs'));
+  $('rep-cap').replaceChildren(el('b', null, 'Figure 8.'),
+    ` A set is one batch of runs. Inside: of ${I.checked} pooled ratios, those of the second set in the first set’s 95% interval (`,
+    el('a', { href: 'details.html#rep-t-cap' }, 'Table 14'), '). “Both” is secondary.');
+}
+function repFigure() {
+  if (!has('rep-rows')) return;
+  S.repSel = S.repSel || null;
+  $('rep-title').textContent = repTitleText();
+  repRenderRows();
+  repCaption();
+  repRead();
+  $('rep-rows').addEventListener('keydown', (e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key) || !e.target.closest || !e.target.closest('.rep-row')) return;
+    e.preventDefault();
+    const order = repShown().map((r) => r.slug);
+    let i = order.indexOf(e.target.closest('.rep-row').dataset.slug); // from the row that has focus
+    if (e.key === 'ArrowDown') i = Math.min(order.length - 1, i + 1);
+    if (e.key === 'ArrowUp') i = Math.max(0, i - 1);
+    if (e.key === 'Home') i = 0;
+    if (e.key === 'End') i = order.length - 1;
+    repSelect(order[i], true);
+  });
+}
+/* the details page: the plan, the count, one paragraph per story, Table 14, the limits */
+function repDetails() {
+  if (!has('replication-full')) return;
+  const R = S.rep, X = R.arch.x86, AR = R.arch.arm, P = R.pools, Q = R.questions, arm = AR.named_cells[0];
+  const q6 = Q.xeon_6973pc, rows = R.rows, byS = (s) => rows.find((r) => r.slug === s);
+  const drawn = (o) => joinAnd(Object.entries(o).sort((a, b) => b[1] - a[1]).map(([m, n]) => `${repShort(m)} ${n}`));
+  const thin = Math.max(q6.earlier_closest_forward.margin, arm.earlier.aligned_hi_over_limit), red = REP_RED.filter((id) => P.x86.replication.run_ids.includes(id));
+  $('rep-what').replaceChildren(el('b', null, 'Why a second set, and how it is read. '),
+    `Two readings rested on a forward cell whose interval ended within ${d4(thin)} of the limit, the Arm core’s and the Xeon 6973P-C’s, so more runs were requested. The plan (`, repoNode(R.plan), `) was written before the runs were dispatched, in the author’s unpublished development history; no public record shows that order, and the hash stored with the comparison shows the file’s integrity, not when it was written. It fixes the reading: each set is pooled on its own, by the same code under the same rule file (`, code(R.criteria.file),
+    `), and for each cell it asks whether the second set’s pooled aligned ratio lies inside the first set’s 95% interval, reported as a share, whatever comes out. The pooling code, the statistics and the rule file were not changed after a result; one consistency check (`, repoNode('harness/pool_check.py'),
+    `) was changed afterwards to sample only models with at least ${R.criteria.minimum_jobs} jobs, after ${numWord(red.length)} combine runs (${joinAnd(red)}) went red on it for models with fewer, and no verdict uses such a model. ${capFirst(X.names.replication)} is ${P.x86.replication.run_ids.length} more x86-64 runs (${P.x86.replication.jobs} jobs), drawn by GitHub from the same pool of machines; ${AR.names.replication} is ${P.arm.replication.run_ids.length} more Arm runs (${P.arm.replication.jobs} jobs). The pooled forms of the two sets together are secondary: the sets were requested after a borderline reading, so the stopping point depended on the data, and they never replace a set read alone. The earlier pools’ stored verdicts are unchanged. No further runs will be made for these questions.`);
+  const al = (a) => rows.filter((r) => r.arch === a && r.inside).reduce((t, r) => { const x = repAligned(r); return [t[0] + x.n, t[1] + x.of]; }, [0, 0]);
+  const alX = al('x86'), alA = al('arm'), cellsN = rows.find((r) => r.inside).inside.checked / 2;
+  $('rep-count').replaceChildren(el('b', null, 'How points are counted. '),
+    `The plan asks whether each cell’s pooled aligned ratio lies inside the earlier interval. The stored count compares both columns, as compiled and aligned, with the earlier pool’s 95% interval: the point-inside-interval test of `, repoNode('harness/pool.py'), `, which this page also uses to compare one run with another. The both-column form was written into `, repoNode('replication/compare.py'),
+    ` after the sets’ data were in, so a model has ${cellsN} cells and ${2 * cellsN} points. Counted on the aligned column alone, as the plan asked: Arm ${alA[0]} of ${alA[1]}, x86-64 ${alX[0]} of ${alX[1]}. The count is descriptive: a second set’s pooled ratio carries its own noise, so fewer than 95% of its points are expected inside the first set’s interval even when nothing has changed, and the share mostly follows interval width and set size; no expected count is claimed. ${AR.totals.point_diff_under_1pct} of ${AR.totals.points_checked} Arm points and ${X.totals.point_diff_under_1pct} of ${X.totals.points_checked} x86-64 points differ from the earlier pooled ratio by under 1%, and the largest differences are ${pctS(AR.totals.max_abs_point_diff_pct)} (Arm) and ${pctS(X.totals.max_abs_point_diff_pct)} (x86-64).`);
+  const sameN = rows.filter((r) => r.arch === 'x86' && r.status === 'same').map((r) => r.cpu_short), flipN = rows.filter((r) => r.arch === 'x86' && r.status === 'flipped').map((r) => r.cpu_short);
+  $('rep-x86').replaceChildren(el('b', null, 'x86-64, set C. '),
+    `${P.x86.replication.jobs} jobs drew ${drawn(P.x86.replication.models_drawn)}. Of the ${numWord(X.totals.testable_models)} models with at least ${R.criteria.minimum_jobs} jobs in both sets, ${numWord(X.totals.same_form)} gave the same verdict word (${joinAnd(sameN)}) and ${numWord(X.totals.flipped)} a different one (${joinAnd(flipN)}). ${X.totals.points_inside} of ${X.totals.points_checked} pooled ratios lie inside the first pool’s interval.`);
+  $('rep-flips').replaceChildren(el('b', null, 'The two different words are one edge, not a change of cost. '),
+    `The placement test leaves a forward cell out of the 2% test when its compiled ÷ aligned interval excludes 1 and its hot loop sits differently in the two as-compiled builds, and judges it otherwise. ${X.flips.map((f) => `${f.cpu_short}: ${repFlip('x86', f.slug)}`).join(' ')} Neither cell’s cost changed between the sets; the model’s word depends on which side of the test the cell lands.`);
+  const ps = (s) => (s.placement_sensitive || []).map((id) => cellName(id));
+  const missed = (q6.secondary_cause.forward_missed || [])[0];
+  const r6 = byS(q6.slug);
+  $('rep-6973').replaceChildren(el('b', null, `${q6.cpu_short} cannot be tested. `),
+    `${capFirst(X.names.replication)} drew ${repJobs(q6.replication_jobs)} of it (${q6.minimum_jobs} are needed), so it has no verdict there, and the question the plan asked of it, whether its borderline ${REP_SAY[repKind(r6.earlier)].replace(/^a /, '')} repeats, is not answered either way. In ${X.names.earlier} (${q6.earlier_jobs} jobs) it is ${REP_SAY[repKind(r6.earlier)]}, with ${cellName(q6.earlier_closest_forward.cell_id)} ending nearest the limit, at ${d4(q6.earlier_closest_forward.aligned_hi)}. Pooled with ${X.names.replication}’s ${repJobs(q6.replication_jobs)} (${q6.secondary_jobs} jobs) it reads ${REP_SAY[repKind(r6.secondary)]}`,
+    missed ? `: ${cellName(missed.cell_id)} ends at ${d4(missed.aligned_ci95[1])}${r6.earlier.placement_sensitive.includes(missed.cell_id) && !r6.secondary.placement_sensitive.includes(missed.cell_id) ? ', a cell that was placement-sensitive, and so left out, in the first pool and is judged with the extra job' : ''}. ` : '. ',
+    'That pooled word is secondary and rests on this one added job.');
+  const sets = AR.names, rN2 = rows.find((r) => r.arch === 'arm' && r.testable), v3 = rows.find((r) => r.arch === 'arm' && !r.earlier);
+  $('rep-arm').replaceChildren(el('b', null, 'Arm. '),
+    `${capFirst(sets.replication)} is ${P.arm.replication.jobs} jobs: ${drawn(P.arm.replication.models_drawn)}${v3 ? `; the ${v3.cpu_short} job has no verdict` : ''}. Read alone it is ${REP_SAY[repKind(rN2.replication)]}${Q.arm_cell.repeated ? `, as ${sets.earlier} was${Q.arm_cell.replication_names_the_same_cells ? ', and on the same cell that decided the first reading' : ''}` : `, where ${sets.earlier} was ${REP_SAY[repKind(rN2.earlier)]}`}: ${cellName(arm.cell_id)}, aligned, ends at ${d4(arm.replication.aligned.ci95[1])} in ${sets.replication} and at ${d4(arm.earlier.aligned.ci95[1])} in ${sets.earlier}, against the ${fx(arm.earlier.limit)}× limit, with ratios below 1 (${d3(arm.replication.aligned.ratio)} and ${d3(arm.earlier.aligned.ratio)}). ${capFirst(sets.secondary)} pooled (${rN2.secondary.jobs} ${rN2.cpu_short} jobs) read ${REP_SAY[repKind(rN2.secondary)]}, the cell ending at ${d4(arm.secondary.aligned.ci95[1])} with a ratio of ${d3(arm.secondary.aligned.ratio)}: the ratio is about the same in all three, and only the interval narrows with more jobs. That pooled word is secondary.`);
+  const H = X.headline, okE = H.replication_enough_range, rep = H.replication.filter((m) => m.enough).map((m) => m.cpu_short);
+  $('rep-headline').replaceChildren(el('b', null, 'The headline range. '),
+    `The loops that lose SIMD cost ${H.page_range.printed_min}× to ${H.page_range.printed_max}× in cache on the first pool. In ${X.names.replication}, the ${numWord(rep.length)} models with at least ${R.criteria.minimum_jobs} jobs (${joinAnd(rep)}) give ${d3(okE.min)}× to ${d3(okE.max)}× (both columns, both sizes)${H.outside_stored_range.length ? `; the cell furthest below the first pool’s minimum (${d4(H.page_range.min)}×) is ${cellName(H.outside_stored_range[0].cell_id)} of ${repShort(H.outside_stored_range[0].cpu_model)}, ${H.outside_stored_range[0].column === 'aligned' ? 'aligned' : 'as compiled'}, at ${d4(H.outside_stored_range[0].ratio)}×` : ''}. ${H.outside_printed_range.length ? 'Some cells lie outside the printed range.' : `Nothing in set C lies outside the printed ${H.page_range.printed_min}× to ${H.page_range.printed_max}×.`}`);
+  setV('repCap', `Per CPU model: the verdict word and job count in the first set, the second set and both together (secondary), how many of the model’s ${2 * cellsN} pooled ratios (both columns) lie inside the first set’s 95% interval (aligned alone in brackets), and the largest difference between a first-set and a second-set ratio. x86-64: the first set is the ${P.x86.earlier.jobs}-job pool, the second set is set C; Arm: set A and set B, ${P.arm.earlier.jobs} jobs each. A model with fewer than ${R.criteria.minimum_jobs} jobs in a set has no verdict there.`);
+  const cell = (s) => (s ? `${REP_SAY[repKind(s)]}, ${repJobs(s.jobs)}` : 'not drawn');
+  $('rep-table').querySelector('tbody').replaceChildren(...rows.map((r) => {
+    const I = r.inside, a = I ? repAligned(r) : null;
+    return el('tr', { class: I ? null : 'muted-row' }, el('th', { scope: 'row' }, r.cpu_short), el('td', null, cell(r.earlier)), el('td', null, cell(r.replication)), el('td', null, cell(r.secondary)),
+      el('td', { class: 'num' }, I ? `${I.inside} of ${I.checked} (${a.n} of ${a.of})` : '–'), el('td', { class: 'num' }, I ? pctS(I.max_abs_point_diff_pct) : '–'),
+      el('td', null, r.status === 'same' ? 'same word' : r.status === 'flipped' ? 'different word' : 'not testable'));
+  }));
+  $('rep-limits').replaceChildren(el('b', null, 'Limits. '),
+    `The machines in each set are drawn by GitHub, not chosen, so the sets hold few jobs of the rarer models (${drawn(P.x86.replication.models_drawn)} in set C). Nothing here tests another compiler, another libc++ version or other cores, and the inside count is descriptive: no expected count is claimed. The stored verdicts of the first sets are unchanged.`);
+}
+function armRepLink() { // section 6a: one sentence that sends the reader to the second set of Arm runs
+  if (!has('arm-rep-link') || !S.rep || !S.rep.questions) return;
+  const Q = S.rep.questions.arm_cell;
+  $('arm-rep-link').replaceChildren(` A second set ${Q.repeated ? 'repeats the word, weakly' : 'read'}: ${formWords(Q.replication_form)} (`, el('a', { href: '#fig-rep' }, 'Figure\u00a08'), ').');
+}
+function renderReplication() {
+  if (!S.rep || !S.rep.rows) return;
+  repFigure();
+  repDetails();
+  armRepLink();
+  updateScrollHints();
+}
+
+/* ---------- the row-length sweep: one sentence in section 6a, the full account and Figure 9 in section 6d (details page), read from data/dsweep.json ---------- */
+const DS_PLAIN = { H1: 'changes little', H2: 'grows with d', falls: 'falls', neither: 'fits none of the words' };
+const DS_ROLE = { fit: 'fit', scan: 'remainder scan', bridge: 'bridge', study_l1: 'study L1 size', study_l2: 'study L2 size' };
+const dsCol = (r, c) => (c === 'aligned' ? r.aligned : r.as_compiled);
+const dsNs = (r, c) => dsCol(r, c).excess_ns_per_inner;
+const dsRows = (m, role) => m.rows.filter((r) => r.roles.includes(role));
+const dsWord = (m) => m.word && m.word !== 'too few jobs';
+const ns2 = (v) => v.toFixed(2);
+const sgn = (v) => String(v).replace('-', '−');
+function dsGist() { // the sentence section 6a carries for the Arm core
+  const m = S.ds && S.arm && S.ds.models.find((x) => x.cpu_short === S.arm.cpu_short);
+  if (!m || !dsWord(m)) return '';
+  const fit = dsRows(m, 'fit'), a = fit[0], z = fit[fit.length - 1], f1 = (v) => v.toFixed(1);
+  return m.columns_agree
+    ? `A sweep of the row length, judged by the rule in its plan, gave “${m.word}” in both columns (section 6d).`
+    : `A row-length sweep, judged by the rule in its plan, gave “${m.word}”: as compiled the extra time per inner call ${DS_PLAIN[m.columns.as_compiled.word]} (${f1(dsNs(a, 'as_compiled'))} to ${f1(dsNs(z, 'as_compiled'))} ns), aligned it ${DS_PLAIN[m.columns.aligned.word]} (${f1(dsNs(a, 'aligned'))} to ${f1(dsNs(z, 'aligned'))} ns) over the fitted row lengths (section 6d).`;
+}
+function dsInstrLine(m) { // extra instructions per inner call over the remainder scan and the study size: a straight line in the remainder r, if it is one
+  const pts = m.rows.filter((r) => (r.roles.includes('scan') || r.roles.includes('study_l1')) && r.d_mod_8 !== 0).map((r) => [r.d_mod_8, r.extra_instr_per_inner]);
+  const n = pts.length, sx = pts.reduce((t, p) => t + p[0], 0), sy = pts.reduce((t, p) => t + p[1], 0), sxx = pts.reduce((t, p) => t + p[0] * p[0], 0), sxy = pts.reduce((t, p) => t + p[0] * p[1], 0);
+  const den = n * sxx - sx * sx;
+  if (n < 4 || den === 0) return null;
+  const slope = (n * sxy - sx * sy) / den, icpt = (sy - slope * sx) / n;
+  return pts.every(([r, e]) => Math.abs(icpt + slope * r - e) < 0.6) ? { icpt: Math.round(icpt), slope: Math.round(slope) } : null;
+}
+function dsDetails() {
+  if (!has('dsweep-full') || !S.ds) return;
+  const D = S.ds, R = D.rule, ms = D.models.filter(dsWord), mA = ms.find((m) => m.arch === 'aarch64'), mX = ms.find((m) => m.arch === 'x86_64');
+  if (!mA || !mX) return;
+  const nameOf = (cm) => (D.models.find((m) => m.cpu_model === cm) || D.too_few_jobs.find((m) => m.cpu_model === cm) || { cpu_short: cm }).cpu_short;
+  const cw = (m, c) => { const x = m.columns[c]; return `“${x.word}” (fixed share ${x.share.toFixed(3)}, 95% interval ${x.share_ci95[0].toFixed(3)} to ${x.share_ci95[1].toFixed(3)})`; };
+  const last = (a) => a[a.length - 1], fitA = dsRows(mA, 'fit'), fitX = dsRows(mX, 'fit');
+  $('ds-q').replaceChildren(el('b', null, 'The question. '),
+    `On ${mA.cpu_short}, matrix multiply keeps its NEON loop in both builds and the checked build still costs ${mA.published.L1.toFixed(3)}× at L1 (d = ${mA.ladder.study_l1_d}). The listing shows compares and selects before the NEON loop and a checked scalar loop for the leftover elements, which the matrix-multiply paragraph above reads as a set-up cost paid once per inner call (an inner call is one run of the innermost loop over d elements); that reading was inferred, and this sweep tests it. Three accounts are written in the plan (`,
+    repoNode(D.plan), `, sha256 ${D.plan_sha256.slice(0, 8)}…). It was drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code, which changed the deciding statistic, and committed alone, before the code commit and before the first run, in the author’s unpublished development history. On the public repository it arrived in one commit together with the code; the hash is stored in every dsweep.json of the runs and shows the plan was not edited after the runs, but the order before the runs is not checkable from public records. H1, a fixed extra cost per inner call, predicts the same extra time per inner call at every d. H2, a cost per element, predicts extra time in proportion to d. “Falls” is extra time that is smaller at the longer rows. The rule reads the fixed share of the extra time at the study size, fitted over the L1-resident row lengths that leave the same remainder modulo ${mA.ladder.modulus} as the study size (d = ${fitA[0].d} to ${last(fitA).d} on ${mA.cpu_short}): H1 when the share and its 95% interval lie inside ${R.h1_share_band[0]} to ${R.h1_share_band[1]}, H2 inside ${sgn(R.h2_share_band[0])} to ${R.h2_share_band[1]}, “falls” above ${R.falls_share_above}, anything else “neither”. It is applied twice, to the code as compiled and with every hot loop aligned to 64 bytes; when the two disagree the word is “neither” and both are stated.`);
+  const commits = [...new Set(D.runs.map((r) => r.commit))];
+  $('ds-ran').replaceChildren(el('b', null, 'What ran. '),
+    `${capFirst(numWord(D.runs.length))} runs of the sweep workflow, from ${commits.length === 1 ? 'one commit' : `${commits.length} commits`} (${commits.map((c) => c.slice(0, 7)).join(', ')}) of the temporary branch dsweep-smoke, where the sweep workflow file is named ci.yml because a dispatchable workflow must already exist on the default branch (the branch is kept because the run records name the commit): ${D.runs.map((r) => `run ${r.run_id}, ${repJobs(r.jobs)} (${joinAnd(Object.entries(r.models).map(([k, n]) => `${nameOf(k)} ${n}`))})`).join('; ')}. A CPU model needs ${R.minimum_jobs} jobs to get a word, so ${joinAnd(D.too_few_jobs.map((m) => `${m.cpu_short} (${repJobs(m.jobs)})`))} get${D.too_few_jobs.length === 1 ? 's' : ''} none. The timing, the pooling and the intervals are the main study’s. The identical-binary A/A has a half-width of ${pctS(mX.aa.half_width_pct)} on ${mX.cpu_short} and ${pctS(mA.aa.half_width_pct)} on ${mA.cpu_short}, against the ${R.aa_half_width_max_pct}% the rule allows.`);
+  const both = mA.columns.as_compiled.share > 1 && mA.columns.aligned.share > 1;
+  $('ds-out').replaceChildren(el('b', null, 'Outcome, as the written rule fixed it. '),
+    `${mX.cpu_short}: ${mX.word}${mX.columns_agree ? ' in both columns' : ''}: as compiled ${cw(mX, 'as_compiled')}, aligned ${cw(mX, 'aligned')}.${mX.word === 'H2' ? ' The extra time per inner call grows with d there. That is the plan’s weak control, because the loop loses SIMD under the check on x86-64 and neither account was written for it; it gave the word the plan expected, and nothing more is claimed.' : ''} ${mA.cpu_short}: ${mA.word}, because the two columns disagree: as compiled ${cw(mA, 'as_compiled')}, aligned ${cw(mA, 'aligned')}.${both ? ' Both shares are above 1, so this is not a mixture.' : ''} A word that does not survive moving the loops is not claimed.`);
+  // what the numbers show, without the word
+  const near = (v) => v.toFixed(2);
+  const arm = (c) => {
+    const rest = fitA.slice(2).map((r) => dsNs(r, c)), br = dsRows(mA, 'bridge'), l2 = dsRows(mA, 'study_l2')[0];
+    return `${fitA.slice(0, 2).map((r) => `${near(dsNs(r, c))} ns at d = ${r.d}`).join(' and ')}, then between ${near(Math.min(...rest))} and ${near(Math.max(...rest))} ns from d = ${fitA[2].d} to d = ${last(fitA).d}; beyond the L1-resident rule (context, fitted nowhere) ${br.map((r) => `${near(dsNs(r, c))} ns at d = ${r.d}`).join(', ')} and ${near(dsNs(l2, c))} ns at the study L2 size, d = ${l2.d}`;
+  };
+  const l2A = dsRows(mA, 'study_l2')[0], restAc = fitA.slice(2).map((r) => dsNs(r, 'as_compiled'));
+  const flatFrom = mA.columns.as_compiled.word === 'falls' && fitA.slice(0, 2).every((r) => dsNs(r, 'as_compiled') > Math.max(...restAc)) && (Math.max(...restAc) - Math.min(...restAc)) / Math.min(...restAc) < 0.05;
+  const l2X = dsRows(mX, 'study_l2')[0];
+  $('ds-shape').replaceChildren(el('b', null, 'What the numbers show, without the word. '),
+    `Extra time per inner call (checked minus unchecked) on ${mA.cpu_short}, as compiled: ${arm('as_compiled')}. Aligned: ${arm('aligned')}. ${flatFrom ? `The word “falls” as compiled rests on the first two row lengths; from d = ${fitA[2].d} the values are flat, which is a fact about the points and not a second verdict. ` : ''}d = ${l2A.d} leaves a remainder of ${l2A.d_mod_8} where the ladder leaves ${mA.ladder.residue}, so the change from d = ${last(dsRows(mA, 'bridge')).d} to d = ${l2A.d} mixes the L2 size with the remainder. On ${mX.cpu_short} the extra time grows with d: as compiled ${near(dsNs(fitX[0], 'as_compiled'))} ns at d = ${fitX[0].d} and ${near(dsNs(last(fitX), 'as_compiled'))} ns at d = ${last(fitX).d} (aligned ${near(dsNs(fitX[0], 'aligned'))} and ${near(dsNs(last(fitX), 'aligned'))}), and ${near(dsNs(l2X, 'as_compiled'))} ns at the study L2 size, d = ${l2X.d}; the ratio rises from ${fitX[0].as_compiled.ratio.toFixed(2)} to ${last(fitX).as_compiled.ratio.toFixed(2)}. The plan’s illustrative table of ratios under H1 and H2 did not match the observed ratio at the smallest d on ${mA.cpu_short} (${fitA[0].as_compiled.ratio.toFixed(2)} as compiled): the written rule decides, and the table’s size did not hold.`);
+  const line = dsInstrLine(mA), r0 = mA.rows.find((r) => r.d_mod_8 === 0 && r.roles.includes('scan')), ei = fitA.map((r) => Math.round(r.extra_instr_per_inner));
+  $('ds-instr').replaceChildren(el('b', null, 'Instruction counts (secondary: instructions, not time). '),
+    `Cachegrind counts the extra instructions the checked build runs per inner call: ${ei.every((v) => v === ei[0]) ? `${ei[0]} at every row length of the fit ladder` : `${Math.min(...ei)} to ${Math.max(...ei)} over the fit ladder`} on ${mA.cpu_short}${line ? `; over the remainder scan and the study size it is ${line.icpt} + ${line.slope} × r, where r is d modulo ${mA.ladder.modulus} (r = 1 to ${mA.ladder.modulus - 1})` : ''}${r0 ? `, and at a multiple of ${mA.ladder.modulus} (d = ${r0.d}) it is ${Math.round(r0.extra_instr_per_inner)}, with a time ratio of ${r0.as_compiled.ratio.toFixed(2)}×` : ''}. On ${mX.cpu_short} they grow with d, by about ${mX.instructions.fit.slope.toFixed(1)} for each added element over the ladder. The counts are exact for the listing and say nothing about time by themselves.`);
+  const lostR = S.ix.page.lost, x12 = fitX[0], xL1 = dsRows(mX, 'study_l1')[0], xPast = dsRows(mX, 'bridge').find((r) => r.working_set_bytes > mX.l1d_kib * 1024);
+  $('ds-scope').replaceChildren(el('b', null, 'Scope of the headline range. '),
+    `The range in section 1, ${lostR.min.toFixed(1)}× to ${lostR.max.toFixed(1)}×, is for the study’s sizes. This sweep shows that for matrix multiply on ${mX.cpu_short} the cost depends on the row length: as compiled ${fx(x12.as_compiled.ratio)}× at d = ${x12.d}, ${fx(xL1.as_compiled.ratio)}× at the study’s d = ${xL1.d}${xPast ? ` and ${fx(xPast.as_compiled.ratio)}× at d = ${xPast.d} (${num(xPast.working_set_bytes)} bytes, past the ${mX.l1d_kib} KiB L1 data cache)` : ''}, so ${lostR.min.toFixed(1)}× is not a floor for row lengths the study did not time.`);
+  // Table 15
+  const head = ['Model and row length', 'Role', 'As compiled: ratio (95% interval)', 'As compiled: extra ns per inner call', 'Aligned: ratio (95% interval)', 'Aligned: extra ns per inner call', 'Extra instructions per inner call', 'Compiled ÷ aligned'];
+  const iv = (c) => `${lr(c.ratio)}× (${lr(c.ci95[0])} to ${lr(c.ci95[1])})`;
+  $('ds-t-wrap').replaceChildren(el('table', { class: 'tbl dense arm-tbl', id: 'ds-t', 'aria-describedby': 'ds-t-cap' },
+    el('thead', null, el('tr', null, ...head.map((h, j) => el('th', { scope: 'col', class: j >= 2 && j !== 7 ? 'num' : null }, h)))),
+    el('tbody', null, ...ms.flatMap((m) => m.rows.map((r) => el('tr', null,
+      el('th', { scope: 'row' }, `${m.cpu_short}, d = ${r.d}`), el('td', null, r.roles.map((q) => DS_ROLE[q]).join(', ')),
+      el('td', { class: 'num' }, iv(r.as_compiled)), el('td', { class: 'num' }, ns2(r.as_compiled.excess_ns_per_inner)),
+      el('td', { class: 'num' }, iv(r.aligned)), el('td', { class: 'num' }, ns2(r.aligned.excess_ns_per_inner)),
+      el('td', { class: 'num' }, String(Math.round(r.extra_instr_per_inner))), el('td', null, `${d3(r.placement_d)}${r.placement_sensitive ? ' ‡' : ''}`)))))));
+  const maxHw = Math.max(...mA.rows.flatMap((r) => ['as_compiled', 'aligned'].map((c) => ((dsCol(r, c).ci95[1] - dsCol(r, c).ci95[0]) / 2 / dsCol(r, c).ratio) * 100)));
+  setV('dsCap', `Every row length timed: the pooled ratio of checked ÷ unchecked with its 95% interval and the extra time per inner call, as compiled and aligned; Cachegrind’s extra instructions per inner call (counted, not timed); compiled ÷ aligned, with ‡ where the written placement test calls the length placement-sensitive (fitted nowhere, as on the main study; the placement fields were defined for x86-64 fetch windows). ${D.jobs} jobs; ${mA.cpu_short} is one run of ${mA.jobs} jobs.`);
+  $('ds-limits').replaceChildren(el('b', null, 'Limits. '),
+    `The ${mA.cpu_short} result is ${numWord(mA.runs)} run of ${numWord(mA.jobs)} jobs on one core type, so its intervals (at most ±${pctS(maxHw)}) cannot show run-to-run or host-to-host spread. The aligned column uses a loop-alignment flag, and the placement controls are not verified on this core (the Limits paragraph of this section), so it is not a pure placement control; this is why both columns are reported. The sweep reads no hardware counters, so it cannot say where the cycles go. One kernel, one compiler (clang 18, FAST mode) and one flag set; nothing here is said about other cores. ${joinAnd(D.too_few_jobs.map((m) => m.cpu_short))} drew too few jobs for a word. No further runs will be made for this question.`);
+}
+function dsNiceStep(max, n) { const raw = max / n, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs, ...kids) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+  for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+function dsPanel(m, met, W) {
+  const H = 210, L = 44, Rt = 20, T = 10, B = 34, pw = W - L - Rt, ph = H - T - B;
+  const cols = met === 'ns' ? ['as_compiled', 'aligned'] : ['as_compiled'];
+  const val = (r, c) => (met === 'ns' ? dsNs(r, c) : r.extra_instr_per_inner);
+  const xmax = Math.max(...m.rows.map((r) => r.d)), ymax0 = Math.max(...m.rows.flatMap((r) => cols.map((c) => val(r, c))));
+  const xs = dsNiceStep(xmax, 4), xm = Math.ceil(xmax / xs) * xs, ys = dsNiceStep(ymax0, 4), ym = Math.ceil(ymax0 / ys) * ys;
+  const X = (d) => L + (d / xm) * pw, Y = (v) => T + ph - (v / ym) * ph;
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'ds-svg', role: 'group', tabindex: '0', 'data-slug': m.slug,
+    'aria-label': `${m.cpu_short}, ${met === 'ns' ? 'extra time' : 'extra instructions'} per inner call against the row length d. Use the left and right arrow keys to move between row lengths; the numbers are in the line below the figure and in Table 15.` });
+  for (let v = 0; v <= ym + 1e-9; v += ys) svg.append(sv('line', { x1: L, x2: W - Rt, y1: Y(v), y2: Y(v), class: 'ds-grid' }), sv('text', { x: L - 6, y: Y(v) + 4, class: 'ds-tick', 'text-anchor': 'end' }, String(+v.toFixed(2))));
+  for (let d = 0; d <= xm + 1e-9; d += xs) svg.append(sv('text', { x: X(d), y: T + ph + 16, class: 'ds-tick', 'text-anchor': 'middle' }, String(d)));
+  svg.append(sv('text', { x: L + pw / 2, y: H - 4, class: 'ds-tick', 'text-anchor': 'middle' }, 'd, the row length'));
+  const fit = dsRows(m, 'fit');
+  svg.append(sv('rect', { x: X(fit[0].d), y: T, width: Math.max(1, X(fit[fit.length - 1].d) - X(fit[0].d)), height: ph, class: 'ds-band' }));
+  const line = (c) => sv('polyline', { points: fit.map((r) => `${X(r.d).toFixed(1)},${Y(val(r, c)).toFixed(1)}`).join(' '), class: `ds-line ds-${c}` });
+  for (const c of cols) svg.append(line(c));
+  svg.append(sv('line', { x1: X(0), x2: X(0), y1: T, y2: T + ph, class: 'ds-cursor' }));
+  for (const r of m.rows) for (const c of cols) {
+    const fitted = r.roles.includes('fit') || r.roles.includes('study_l1'), big = fitted || r.roles.includes('study_l2');
+    svg.append(sv('circle', { cx: X(r.d), cy: Y(val(r, c)), r: big ? 4.5 : 3, class: `ds-pt ds-${c}${fitted ? ' fitted' : ''}`, 'data-d': r.d }));
+  }
+  svg._x = X;
+  const pick = (d) => dsPick(m.slug, d);
+  svg.addEventListener('click', (e) => {
+    const q = svg.getBoundingClientRect(), px = ((e.clientX - q.left) / q.width) * W;
+    pick(m.rows.reduce((b, r) => (Math.abs(X(r.d) - px) < Math.abs(X(b.d) - px) ? r : b), m.rows[0]).d);
+  });
+  svg.addEventListener('keydown', (e) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const ds = m.rows.map((r) => r.d).sort((a, b) => a - b);
+    let i = S.dsSel && S.dsSel.slug === m.slug ? ds.indexOf(S.dsSel.d) : -1;
+    if (e.key === 'ArrowRight') i = Math.min(ds.length - 1, i + 1);
+    if (e.key === 'ArrowLeft') i = Math.max(0, i < 0 ? 0 : i - 1);
+    if (e.key === 'Home') i = 0;
+    if (e.key === 'End') i = ds.length - 1;
+    pick(ds[i]);
+  });
+  return svg;
+}
+function dsPick(slug, d) { S.dsSel = { slug, d }; dsMark(); dsRead(); dsStepState(); }
+function dsSteps() { // the row lengths of the chosen panel, shortest first
+  const m = S.ds.models.find((x) => x.slug === S.dsSel.slug);
+  return m.rows.map((r) => r.d).sort((a, b) => a - b);
+}
+function dsStepState() {
+  const ds = dsSteps(), i = ds.indexOf(S.dsSel.d);
+  $('ds-prev').disabled = i <= 0;
+  $('ds-next').disabled = i < 0 || i >= ds.length - 1;
+}
+function dsMark() {
+  for (const svg of $('ds-panels').querySelectorAll('svg')) {
+    const on = S.dsSel && S.dsSel.slug === svg.dataset.slug;
+    const cur = svg.querySelector('.ds-cursor');
+    cur.style.display = on ? '' : 'none';
+    if (on) { const x = svg._x(S.dsSel.d); cur.setAttribute('x1', x); cur.setAttribute('x2', x); }
+    for (const p of svg.querySelectorAll('.ds-pt')) p.classList.toggle('sel', !!on && Number(p.dataset.d) === S.dsSel.d);
+  }
+}
+function dsRead() {
+  const box = $('ds-read'), m = S.ds.models.find((x) => x.slug === S.dsSel.slug), r = m && m.rows.find((x) => x.d === S.dsSel.d);
+  if (!r) { box.replaceChildren(); return; }
+  const col = (c, n) => `${n} ${lr(dsCol(r, c).ratio)}× (${lr(dsCol(r, c).ci95[0])} to ${lr(dsCol(r, c).ci95[1])}), ${ns2(dsNs(r, c))} ns extra per inner call`;
+  box.replaceChildren(el('p', { class: 'rp-head' }, el('b', null, `${m.cpu_short}, d = ${r.d}`), ` (${r.roles.map((q) => DS_ROLE[q]).join(', ')}, remainder ${r.d_mod_8}): ${col('as_compiled', 'as compiled')}; ${col('aligned', 'aligned')}. ${Math.round(r.extra_instr_per_inner)} extra instructions per inner call (counted, not timed). Compiled ÷ aligned ${d3(r.placement_d)}${r.placement_sensitive ? ', placement-sensitive' : ''}.`));
+}
+function dsPanelWidth(box) { // the width the grid really gives one panel: the stylesheet decides one or two columns, so read the first track, which keeps the drawing at scale 1
+  const tracks = getComputedStyle(box).gridTemplateColumns.split(' ').map(parseFloat).filter((v) => v > 0);
+  return Math.max(240, Math.floor(tracks.length ? tracks[0] : box.clientWidth));
+}
+function dsDraw() {
+  const box = $('ds-panels'), ms = S.ds.models.filter(dsWord);
+  const W = dsPanelWidth(box);
+  S.dsBoxW = box.clientWidth;
+  const had = document.activeElement && document.activeElement.closest && document.activeElement.closest('#ds-panels svg');
+  const slug = had && had.dataset.slug;
+  $('ds-title').textContent = `The extra ${S.dsMet === 'ns' ? 'time' : 'instructions'} per inner call against the row length d, on ${joinAnd(ms.map((m) => m.cpu_short))}`;
+  box.replaceChildren(...ms.map((m) => el('div', { class: 'ds-panel' },
+    el('p', { class: 'ds-ptitle' }, el('b', null, m.cpu_short), ` ${m.word}${m.columns_agree ? '' : ' (columns disagree)'}, ${repJobs(m.jobs)}`), dsPanel(m, S.dsMet, W))));
+  dsMark();
+  if (slug) { const n = box.querySelector(`svg[data-slug="${slug}"]`); if (n) n.focus(); }
+}
+function dsFigure() {
+  if (!has('ds-panels') || !S.ds) return;
+  const ms = S.ds.models.filter(dsWord), A = ms.find((m) => m.arch === 'aarch64');
+  S.dsMet = S.dsMet || 'ns';
+  S.dsSel = S.dsSel || { slug: A.slug, d: A.ladder.study_l1_d };
+  const seg = $('ds-met-seg');
+  for (const b of seg.querySelectorAll('button')) { b.setAttribute('aria-checked', b.dataset.met === S.dsMet ? 'true' : 'false'); b.onclick = () => { S.dsMet = b.dataset.met; for (const x of seg.querySelectorAll('button')) x.setAttribute('aria-checked', x.dataset.met === S.dsMet ? 'true' : 'false'); dsDraw(); dsCaption(); }; }
+  if (!seg.dataset.keys) { seg.dataset.keys = '1'; radioKeys(seg, 'met', (v) => { S.dsMet = v; for (const x of seg.querySelectorAll('button')) x.setAttribute('aria-checked', x.dataset.met === v ? 'true' : 'false'); dsDraw(); dsCaption(); }); }
+  const step = (dir) => () => { const ds = dsSteps(), i = ds.indexOf(S.dsSel.d); dsPick(S.dsSel.slug, ds[Math.max(0, Math.min(ds.length - 1, i + dir))]); };
+  $('ds-prev').onclick = step(-1);
+  $('ds-next').onclick = step(1);
+  dsDraw();
+  dsRead();
+  dsStepState();
+  dsCaption();
+  if (!S.dsResize) { // redraw when the box changes width (a window resize, a fold opening, a text-size change), not when its height changes
+    S.dsResize = true;
+    let t = 0;
+    const again = () => { clearTimeout(t); t = setTimeout(() => { if (S.ds && Math.abs($('ds-panels').clientWidth - S.dsBoxW) > 1) dsDraw(); }, 120); };
+    if (window.ResizeObserver) new ResizeObserver(again).observe($('ds-panels')); else addEventListener('resize', again);
+  }
+}
+function dsCaption() {
+  const ms = S.ds.models.filter(dsWord), key = (c) => el('span', { class: `key ds-key ds-${c}`, 'aria-hidden': 'true' });
+  const fits = ms.map((m) => { const f = dsRows(m, 'fit'); return `d = ${f[0].d} to ${f[f.length - 1].d} on ${m.cpu_short}`; });
+  $('ds-cap').replaceChildren(el('b', null, 'Figure 9.'),
+    ...(S.dsMet === 'ns'
+      ? [' The time the checks add to one inner call (checked minus unchecked, ns), against the row length d, as compiled (', key('as_compiled'), ' filled) and aligned (', key('aligned'), ' hollow). ']
+      : [' The instructions the checks add to one inner call (Cachegrind: counted, not timed), against the row length d. ']),
+    `The shaded band is the ladder the rule fits (${joinAnd(fits)}), joined by a line; grey points are the remainder scan, the bridge and the study L2 size, fitted nowhere. The two panels have their own scales. Select a panel, or use its arrow keys, to read a row length; all are in `, el('a', { href: '#ds-t-cap' }, 'Table 15'), '.');
+}
+function renderDsweep() {
+  if (!S.ds || !S.ds.models) return;
+  armMmFill();
+  armMatmul();
+  dsDetails();
+  dsFigure();
+  updateScrollHints();
+}
+
 /* The timed clang 19 to 21 result for matrix multiply, next to the compile-only sweep's version-by-version finding: both
    sections must be loaded, so this runs once after every section has rendered. */
 function renderMatmulVersions() {
@@ -2519,6 +2899,8 @@ async function start() {
       loadSection(S.ix.sections.versions, 'ver', renderVersions, 'versions-full'),
       loadSection(S.ix.sections.environment, 'env', renderEnvironment, 'environment-full'),
       S.ix.sections.arm64 ? loadSection(S.ix.sections.arm64, 'arm', renderArm, has('arm') ? 'arm' : 'arm-full') : null,
+      S.ix.sections.replication ? loadSection(S.ix.sections.replication, 'rep', renderReplication, has('fig-rep') ? 'fig-rep' : 'replication-full') : null,
+      S.ix.sections.dsweep ? loadSection(S.ix.sections.dsweep, 'ds', renderDsweep, has('arm') ? 'arm' : 'dsweep-full') : null,
     ]);
     renderMatmulVersions();
     renderRuleList();

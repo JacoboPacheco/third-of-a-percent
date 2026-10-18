@@ -1,7 +1,8 @@
 """The measured and counted numbers typed into README.md, readme-parts/DETAILS.md and the Arm column's text must match the stored data.
 
 Each row of ROWS (README.md), DETAILS_ROWS (readme-parts/DETAILS.md), SIBLINGS_ROWS (siblings/README.md), CESWEEP_ROWS
-(ce-sweep/README.md) and ARM64_ROWS (arm64/README.md) ties one sentence to its source:
+(ce-sweep/README.md), ARM64_ROWS (arm64/README.md), REPLICATION_ROWS (replication/README.md) and DSWEEP_ROWS
+(dsweep/README.md) ties one sentence to its source:
 
     (label, where the value comes from, a function giving the expected text, a regex anchored on
      the words around the number)
@@ -16,8 +17,8 @@ Two kinds of failure: the anchor no longer matches (the sentence was reworded: u
 the sentence) and the typed number differs from the data (fix the README, or the data is stale).
 
 Read-only and offline: only the documents above and the stored files are read.
-README_PATH, DETAILS_PATH, SIBLINGS_PATH, CESWEEP_PATH and ARM64_PATH point the test at other copies (the proof that the
-guard bites uses a tampered copy).
+README_PATH, DETAILS_PATH, SIBLINGS_PATH, CESWEEP_PATH, ARM64_PATH, REPLICATION_PATH and DSWEEP_PATH point the test at other
+copies (the proof that the guard bites uses a tampered copy).
 
 Under pytest every row is its own test. Without pytest (scripts/check.py's built-in runner) one
 plain test goes through all rows.
@@ -39,8 +40,17 @@ rest on site/data/arm64.json (built by scripts/build_site_data.py; tests/test_ar
 samples) and arm64/seed-sensitivity.json (arm64/seeds.py). Both are used only after their recorded hash of results/s8-arm-pooled/
 pooled.json is checked against the pool as it is now. The seed's own constants are read from harness/pool.py, and the
 runner wiring from .github/workflows/measure.yml with PyYAML (a missing PyYAML is a failure, not a skip).
+The replication sentences (set B and set C against the pools they replicate) rest on replication/results.json, which
+replication/compare.py derives from the six pooled files; the job counts, the run ids, the commit and the start times are read
+again from the per-job records of results/s9-*/. The d-sweep sentences rest on results/s10-dsweep-pooled/dsweep-pooled.json,
+the plan's illustrative table on dsweep/PLAN.md (read, never written), the instruction and time columns on the same pooled
+file, the leave-one-job-out figures on dsweep/analyze.py run in memory on results/s10-dsweep-run-* (40 resamples, nothing
+written), and the temporary branch's commit on the per-job records of those runs. The three tables of readme-parts/DETAILS.md
+(replication, words, sizes) and the two tables of replication/README.md and dsweep/README.md are compared line for line with
+rows built from the same files.
 test_cited_paths_exist checks that every repository path named in backticks, and every relative Markdown link, in
-README.md, readme-parts/DETAILS.md, siblings/README.md, variants/RESULTS.md, arm64/README.md and ce-sweep/README.md exists.
+README.md, readme-parts/DETAILS.md, siblings/README.md, variants/RESULTS.md, arm64/README.md, ce-sweep/README.md,
+replication/README.md and dsweep/README.md exists.
 """
 
 import datetime
@@ -96,6 +106,18 @@ def arm64_text():
 
 def cesweep_text():
     path = os.environ.get("CESWEEP_PATH") or os.path.join(REPO, "ce-sweep", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def replication_text():
+    path = os.environ.get("REPLICATION_PATH") or os.path.join(REPO, "replication", "README.md")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def dsweep_text():
+    path = os.environ.get("DSWEEP_PATH") or os.path.join(REPO, "dsweep", "README.md")
     with open(path, encoding="utf-8") as f:
         return f.read()
 
@@ -298,10 +320,36 @@ def exp_forward_sentence():
     }
 
 
+def intel_set_c_jobs():
+    """The Intel jobs of replication set C (results/s9-run-*/*/results.json): (cpu_short, k02_add_fwd.L1 aligned ratio, source) per job.
+    The page's intel_forward rows hold the S3 runs, the S4 smoke run and the pooled jobs; set C is counted here from its own job files."""
+    out = []
+    for f in sorted(glob.glob(os.path.join(REPO, S9_X86_JOBS))):
+        with open(f, encoding="utf-8") as fh:
+            d = json.load(fh)
+        model = d["run"]["runner"]["cpu_model"]
+        if "intel" in model.lower():
+            key = next(k for k in MODEL_KEYS if k in model)
+            cell = next(c for c in d["cells"] if c["cell_id"] == "k02_add_fwd.L1")
+            out.append(("Xeon " + key, cell["aligned"]["ratio"], os.path.relpath(os.path.dirname(f), REPO).replace("\\", "/")))
+    return out
+
+
+def intel_all_jobs():
+    """Every Intel job seen: [(cpu_short, aligned forward add at L1, source)] over the page's rows and the Intel jobs of set C."""
+    page = [(r["cpu_short"], r["aligned"], r["source"]) for r in J("site/data/index.json")["intel_forward"]["jobs"]]
+    out = page + intel_set_c_jobs()
+    assert len({src for _, _, src in out}) == len(out), "an Intel job is counted twice (a set C job is also one of the page's rows)"
+    return out
+
+
 def exp_intel_sentence():
     index = J("site/data/index.json")
     intel = index["intel_forward"]
     rows = intel["jobs"]
+    every = intel_all_jobs()
+    set_c = intel_set_c_jobs()
+    assert {s for s, _, _ in every} == set(intel["cpus"]), "set C drew an Intel model the page's rows do not have"
     assert intel["aligned"]["min"] == min(r["aligned"] for r in rows) and intel["aligned"]["max"] == max(r["aligned"] for r in rows)
     pooled = intel_pooled()
     forms = {c["cpu_short"]: c["form"] for c in pooled}
@@ -330,9 +378,9 @@ def exp_intel_sentence():
     assert b6["verdict"]["form"] == "inconclusive" and "missed by k03_stencil.L2" in b6["verdict"]["why"] and stencil6["ci95"][1] > 1 + limit / 100, \
         "the 75-job pool no longer has the Xeon 6973P-C INCONCLUSIVE on its stencil at L2"
     assert b["jobs"] == b6["jobs"] + 1, f"the README says one job was added to the Xeon 6973P-C; it has {b6['jobs']} jobs in the 75-job pool and {b['jobs']} now"
-    return {"jobs": str(len(rows)), "n": word(len(intel["cpus"])),
-            "pool": str(len(in_pool)), "pooljobs": str(pooled_jobs()),
-            "lo": f2(intel["aligned"]["min"]), "hi": f2(intel["aligned"]["max"]),
+    return {"jobs": str(len(every)), "n": word(len(intel["cpus"])), "setc": str(len(set_c)),
+            "pool": str(len(in_pool)), "early": str(len(rows) - len(in_pool)), "pooljobs": str(pooled_jobs()),
+            "lo": f2(min(v for _, v, _ in every)), "hi": f2(max(v for _, v, _ in every)),
             "alo": f2(min(amd)), "ahi": f2(max(amd)),
             "j1": str(jobs["Xeon 8573C"]), "j2": str(jobs["Xeon 6973P-C"]), "j2s6": str(b6["jobs"]), "ord": ORDINALS[b["jobs"]],
             "lim": str(int(limit)), "x8573": f2(by["Xeon 8573C"]), "x6973": f2(by["Xeon 6973P-C"]),
@@ -2167,8 +2215,10 @@ def exp_details_arm_stage():
 # (label, source of the value, expected-value function, regex with one named group per typed value)
 
 ROWS = [
-    ("claim: Google's average in the one-line pitch", "site/data/index.json claim.google_pct",
-     exp_google_pct, r"Google's (?P<v>[\d.]+)% average"),
+    ("claim: Google's average in the opening paragraph", "site/data/index.json claim.google_pct",
+     exp_google_pct, r"Google reported that this costs (?P<v>[\d.]+)% on average across its services, a third of a percent"),
+    ("opening paragraph: lost-loop range", "site/data/index.json page.lost",
+     exp_lost_range, r"the same checks make some loops \(reverse, stride-2, matrix multiply\) take (?P<lo>[\d.]+) to (?P<hi>[\d.]+) times as long as the same loop without them, at the study's sizes \(x86-64, one compiler version, data that fits in the CPU cache\)"),
     ("claim: Google's average in sentence 1", "site/data/index.json claim.google_pct",
      exp_google_pct, r"cost its services (?P<v>[\d.]+)% on average"),
     ("caption: reverse loop as long in the image alt text", "results/s7-pooled/pooled.json EPYC 7763 k04_rev.L1 aligned",
@@ -2178,7 +2228,7 @@ ROWS = [
     ("sentence 2: repetitions per side", "harness/criteria*.json reps_per_side",
      exp_reps, r"timed each pair (?P<lo>\d+) to (?P<hi>\d+) times per side"),
     ("sentence 3: lost-loop range", "site/data/index.json page.lost",
-     exp_lost_range, r"took (?P<lo>[\d.]+) to (?P<hi>[\d.]+) times as long in cache"),
+     exp_lost_range, r"took (?P<lo>[\d.]+) to (?P<hi>[\d.]+) times as long in cache at the study's sizes\."),
     ("sentence 3: forward range, AVX2 exception, as-compiled forward add",
      "site/data/index.json page.forward and cpus; site/data/siblings.json clang18v3-fast",
      exp_forward_sentence,
@@ -2187,7 +2237,7 @@ ROWS = [
      r"As compiled, the forward add cost about (?P<x>[\d.]+)x on (?P<n>\w+) of the (?P<of>\w+) AMD models"),
     ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s7-pooled/pooled.json Xeon k02_add_fwd.L1 and k03_stencil.L2 aligned",
      exp_intel_sentence,
-     r"Intel: in all (?P<jobs>\d+) Intel jobs seen \((?P<n>\w+) models; (?P<pool>\d+) are in the (?P<pooljobs>\d+)-job pool\) "
+     r"Intel: in all (?P<jobs>\d+) Intel jobs seen \((?P<n>\w+) models; (?P<pool>\d+) are in the (?P<pooljobs>\d+)-job pool, (?P<early>\d+) in earlier runs, (?P<setc>\d+) more in set C\) "
      r"the forward add at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
      r"against (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on the AMD models\. "
      r"The Xeon 8573C \((?P<j1>\d+) jobs\) has no verdict \(INCONCLUSIVE under the written rules\): "
@@ -2199,7 +2249,7 @@ ROWS = [
     ("found: lost-loop range, models, siblings, no-vectorize controls",
      "site/data/index.json page.lost and cpus; site/data/siblings.json; results/s7-pooled/pooled.json EPYC 7763 positive and cells",
      exp_lost_bullet,
-     r"\*\*(?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x slower\*\* in cache for loops that lose SIMD .*?"
+     r"\*\*(?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x slower\*\* in cache, at the study's sizes, for loops that lose SIMD .*?"
      r"on all (?P<n>\w+) CPU models with a verdict \(three AMD, and the Xeon 6973P-C, borderline\); the Xeon 8573C \(no verdict\) lost the same loops, "
      r"and the two Xeon models \((?P<ij>\d+) jobs each\) range (?P<ilo>[\d.]+)x to (?P<ihi>[\d.]+)x\. .*?reached about (?P<sib>[\d.]+)x at L1\. .*?"
      r"takes (?P<rev_novec>[\d.]+)x as long for reverse \((?P<rev_on>[\d.]+)x with the checks on, as compiled\), "
@@ -2442,26 +2492,33 @@ def exp_details_forward():
         ps = {x["cell_id"] for x in c["verdict"]["placement_sensitive"]}
         judged += [x["aligned"]["ratio"] for x in c["cells"] if x["kernel"] in FORWARD and x["cell_id"] not in ps]
     intel = index["intel_forward"]
-    rows = intel["jobs"]
+    rows = intel_all_jobs()  # the page's rows (S3 runs, S4 smoke run, pooled jobs) and the Intel jobs of set C
 
     def of(short):
-        return [r["aligned"] for r in rows if r["cpu_short"] == short]
+        return [v for s, v, _ in rows if s == short]
 
     def in_pool(short):
-        return [r["aligned"] for r in rows if r["cpu_short"] == short and kernel_pool_source(r["source"])]
+        return [v for s, v, src in rows if s == short and kernel_pool_source(src)]
+
+    def in_set_c(short):
+        return [v for s, v, src in rows if s == short and src.startswith("results/s9-run-")]
 
     x8370, x8573, x6973 = of("Xeon 8370C"), of("Xeon 8573C"), of("Xeon 6973P-C")
-    pooled_8573 = in_pool("Xeon 8573C")
+    pooled_8573, pooled_6973 = in_pool("Xeon 8573C"), in_pool("Xeon 6973P-C")
     a = cell_of(cpu_like("8573C"), "k02_add_fwd.L1")["aligned"]
     b = cell_of(cpu_like("6973P-C"), "k02_add_fwd.L1")["aligned"]
     return {"lo": f2(aligned["min"]), "hi": f2(aligned["max"]), "jlo": f3(min(judged)), "jhi": f3(max(judged)),
             "n": str(len(rows)), "m": word(len(intel["cpus"])), "pj": str(sum(len(in_pool(s)) for s in intel["cpus"])),
-            "ilo": f2(intel["aligned"]["min"]), "ihi": f2(intel["aligned"]["max"]),
+            "sc": str(sum(len(in_set_c(s)) for s in intel["cpus"])),
+            "ea": str(len(rows) - sum(len(in_pool(s)) for s in intel["cpus"]) - sum(len(in_set_c(s)) for s in intel["cpus"])),
+            "ilo": f2(min(v for _, v, _ in rows)), "ihi": f2(max(v for _, v, _ in rows)),
             "a1": f2(min(x8370)), "a2": f2(max(x8370)), "an": str(len(x8370)), "ap": str(len(in_pool("Xeon 8370C"))),
+            "as": str(len(in_set_c("Xeon 8370C"))),
             "b1": f2(min(x8573)), "b2": f2(max(x8573)), "bn": str(len(x8573)), "bp": str(len(pooled_8573)),
-            "bp1": f3(min(pooled_8573)), "bp2": f3(max(pooled_8573)),
+            "bp1": f3(min(pooled_8573)), "bp2": f3(max(pooled_8573)), "bs": str(len(in_set_c("Xeon 8573C"))),
             "bpool": f3(a["ratio"]), "bl": f3(a["ci95"][0]), "bh": f3(a["ci95"][1]),
             "c1": f2(min(x6973)), "c1b": f2(max(x6973)), "cn": str(len(x6973)), "c2": f3(min(x6973)), "c3": f3(max(x6973)),
+            "cp": str(len(pooled_6973)), "cp1": f3(min(pooled_6973)), "cp2": f3(max(pooled_6973)), "cs": str(len(in_set_c("Xeon 6973P-C"))),
             "cpool": f3(b["ratio"]), "cl": f3(b["ci95"][0]), "ch": f3(b["ci95"][1])}
 
 
@@ -2774,11 +2831,13 @@ DETAILS_ROWS = [
     ("details: forward loops, AMD and Intel", "site/data/index.json page.forward and intel_forward; results/s7-pooled/pooled.json",
      exp_details_forward,
      r"forward loops ran (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x of the unchecked time there; .*?judges ran (?P<jlo>[\d.]+)x to (?P<jhi>[\d.]+)x\. "
-     r"The Intel models differ\. In each of (?P<n>\d+) Intel jobs seen \((?P<m>\w+) models, (?P<pj>\d+) of them in the kernel pool\) the forward add at L1, aligned, cost "
-     r"(?P<ilo>[\d.]+)x to (?P<ihi>[\d.]+)x: Xeon 8370C (?P<a1>[\d.]+)x to (?P<a2>[\d.]+)x \((?P<an>\d+) jobs, (?P<ap>\d+) in the kernel pool\), "
+     r"The Intel models differ\. In each of (?P<n>\d+) Intel jobs seen \((?P<m>\w+) models; (?P<pj>\d+) of them in the kernel pool, (?P<ea>\d+) in earlier runs and (?P<sc>\d+) more in set C\) "
+     r"the forward add at L1, aligned, cost "
+     r"(?P<ilo>[\d.]+)x to (?P<ihi>[\d.]+)x: Xeon 8370C (?P<a1>[\d.]+)x to (?P<a2>[\d.]+)x \((?P<an>\d+) jobs, (?P<ap>\d+) in the kernel pool, (?P<as>\d+) in set C\), "
      r"Xeon 8573C (?P<b1>[\d.]+)x to (?P<b2>[\d.]+)x \((?P<bn>\d+) jobs; the (?P<bp>\d+) pooled ones (?P<bp1>[\d.]+) to (?P<bp2>[\d.]+), "
-     r"pooled (?P<bpool>[\d.]+) \[(?P<bl>[\d.]+), (?P<bh>[\d.]+)\]\) and Xeon 6973P-C (?P<c1>[\d.]+)x to (?P<c1b>[\d.]+)x \((?P<cn>\d+) jobs, "
-     r"(?P<c2>[\d.]+) to (?P<c3>[\d.]+), pooled (?P<cpool>[\d.]+) \[(?P<cl>[\d.]+), (?P<ch>[\d.]+)\]\)"),
+     r"pooled (?P<bpool>[\d.]+) \[(?P<bl>[\d.]+), (?P<bh>[\d.]+)\]; (?P<bs>\d+) in set C\) and Xeon 6973P-C (?P<c1>[\d.]+)x to (?P<c1b>[\d.]+)x \((?P<cn>\d+) jobs, "
+     r"(?P<c2>[\d.]+) to (?P<c3>[\d.]+); the (?P<cp>\d+) pooled ones (?P<cp1>[\d.]+) to (?P<cp2>[\d.]+), pooled (?P<cpool>[\d.]+) \[(?P<cl>[\d.]+), (?P<ch>[\d.]+)\]; "
+     r"(?P<cs>\d+) in set C\)"),
     ("details: positive control on EPYC 7763", "results/s7-pooled/pooled.json EPYC 7763 positive and cells", exp_details_positive,
      r"the (?P<p>\d+)-job pool in `results/s7-pooled/pooled.json` gives (?P<a>[\d.]+)x and (?P<b>[\d.]+)x\).*?"
      r"Pooled EPYC 7763 positive control \((?P<jobs>\d+) jobs, .*?reverse (?P<r1>[\d.]+)x at L1 and (?P<r2>[\d.]+)x at L2 against "
@@ -3285,6 +3344,1189 @@ ARM64_ROWS = [
      r"The plan's commit time is not: it comes from the git log of the working repository in which the project is developed, which is (?P<np>not published),"),
 ]
 
+# ---- replication sets B and C, and the d-sweep --------------------------------------------------------------------
+# The sentences about the two replication sets (README.md, readme-parts/DETAILS.md, replication/README.md, arm64/README.md) rest on
+# replication/results.json, which replication/compare.py derives from six pooled files (`python replication/compare.py --verify`
+# recomputes it), and on the job records of results/s9-*. The sentences about the d-sweep (the same four documents and dsweep/README.md)
+# rest on results/s10-dsweep-pooled/dsweep-pooled.json, which dsweep/analyze.py derives from the job files of results/s10-dsweep-run-*
+# (`python dsweep/analyze.py --verify` recomputes those), on dsweep/PLAN.md for the plan's own table, and on dsweep/analyze.py, run
+# here in memory with nothing written, for the one pool with a job left out. A table of the new sections is checked as a whole
+# block against the same data (check_table_rows): the header, a separator and exactly the data's rows in order, so a changed number,
+# an invented row, a repeated row, a deleted row and two swapped rows each fail.
+
+REPL = "replication/results.json"
+DSWEEP_POOL = "results/s10-dsweep-pooled/dsweep-pooled.json"
+DSWEEP_PLAN = "dsweep/PLAN.md"
+N2 = "Neoverse-N2"
+V3 = "Neoverse-V3"
+EPYC_9V45 = "AMD EPYC 9V45 96-Core Processor"
+EPYC_9V74 = "AMD EPYC 9V74 80-Core Processor"
+XEON_8573C = "INTEL(R) XEON(R) PLATINUM 8573C"
+COLS = ("as_compiled", "aligned")
+# the model names as the tables of the prose write them
+REPL_NAME = {N2: "Neoverse-N2 (Arm)", V3: "Neoverse-V3 (Arm)", EPYC_7763: "AMD EPYC 7763", EPYC_9V45: "AMD EPYC 9V45",
+             EPYC_9V74: "AMD EPYC 9V74", XEON_8573C: "Intel Xeon Platinum 8573C", "Intel(R) Xeon(R) 6973P-C": "Intel Xeon 6973P-C",
+             "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": "Intel Xeon Platinum 8370C"}
+DS_NAME = {N2: "Neoverse-N2", EPYC_7763: "AMD EPYC 7763", EPYC_9V45: "AMD EPYC 9V45", XEON_8573C: "Intel Xeon Platinum 8573C"}
+DS_ROLE = {("fit",): "fit", ("scan",): "scan", ("bridge",): "bridge", ("fit", "study_l1"): "fit, study L1", ("study_l2",): "study L2"}
+
+
+def row(label, source, fn, pattern):
+    """A row whose expected values are the entries of fn() for the groups the pattern captures (fn may return more)."""
+    names = tuple(re.compile(pattern, re.S).groupindex)
+
+    def expected():
+        full = fn()
+        missing = [n for n in names if n not in full]
+        assert not missing, f"{label}: the expected values do not include {missing}"
+        return {n: full[n] for n in names}
+    return (label, source, expected, pattern)
+
+
+def repl():
+    return J(REPL)
+
+
+def repl_model(arch, key):
+    return next(m for m in repl()[arch]["models"] if key in m["cpu_model"])
+
+
+def repl_arm_cell(cell_id, which):
+    return next(c for c in repl()["arm"]["named_cells"] if c["cell_id"] == cell_id)[which]
+
+
+def repl_flip(key):
+    return next(f for f in repl()["x86"]["flips"] if key in f["cpu_model"])
+
+
+def repl_flip_cell(key, cell_id):
+    return next(c for c in repl_flip(key)["cells"] if c["cell_id"] == cell_id)
+
+
+def form_word(rec):
+    return rec["form"].upper()
+
+
+def job_records(pattern):
+    out = []
+    for f in sorted(glob.glob(os.path.join(REPO, pattern))):
+        with open(f, encoding="utf-8") as fh:
+            out.append(json.load(fh))
+    return out
+
+
+S9_ARM_JOBS = "results/s9-arm-run-*/results-*/results.json"
+S9_X86_JOBS = "results/s9-run-*/results-*/results.json"
+S10_JOBS = "results/s10-dsweep-run-*/dsweep-job-*/dsweep.json"
+
+
+def start_times(*patterns):
+    return [datetime.datetime.strptime(d["run"]["started_at"], "%Y-%m-%dT%H:%M:%SZ") for p in patterns for d in job_records(p)]
+
+
+def short_commit(*patterns):
+    commits = {d["run"]["commit"][:7] for p in patterns for d in job_records(p)}
+    assert len(commits) == 1, f"the jobs name {len(commits)} commits: {sorted(commits)}"
+    return commits.pop()
+
+
+def exp_repl_sets():
+    pools = repl()["pools"]
+    a, x = pools["arm"]["replication"], pools["x86"]["replication"]
+    assert a["models_drawn"] == {N2: 29, V3: 1}, f"set B drew {a['models_drawn']}; the text says 29 on Neoverse-N2 and 1 on Neoverse-V3"
+    assert repl_model("arm", V3)["replication"]["enough"] is False, "the Neoverse-V3 job now has enough jobs for a verdict"
+    assert {d["run"]["runner"]["arch"] for d in job_records(S9_ARM_JOBS)} == {"aarch64"}, "a set B job did not run on AArch64"
+    assert {d["run"]["runner"]["arch"] for d in job_records(S9_X86_JOBS)} == {"x86_64"}, "a set C job did not run on x86-64"
+    assert len(job_records(S9_ARM_JOBS)) == a["jobs"] and len(job_records(S9_X86_JOBS)) == x["jobs"], "the s9 job records and the pooled files disagree on the job count"
+    labels = measure_runner_labels()
+    return {"bj": str(a["jobs"]), "br": str(len(a["runs"])), "n2": str(a["models_drawn"][N2]), "v3": str(a["models_drawn"][V3]),
+            "cj": str(x["jobs"]), "cr": str(len(x["runs"])), "ab": str(pools["arm"]["secondary"]["jobs"]),
+            "ac": str(pools["x86"]["secondary"]["jobs"]), "p95": str(pools["x86"]["earlier"]["jobs"]),
+            "bd": str(len(a["runs"]) * jobs_per_run()), "bq": str(a["jobs"]), "cd": str(len(x["runs"]) * jobs_per_run()), "cq": str(x["jobs"]),
+            "a": str(a["jobs"]), "x": str(x["jobs"]), "xl": labels[0], "al": labels[1], "mn": str(repl()["criteria"]["minimum_jobs"])}
+
+
+def exp_repl_arm():
+    m = repl_model("arm", N2)
+    cell = "k02_add_fwd.L2"
+    ea, rb, sab = (repl_arm_cell(cell, w) for w in ("earlier", "replication", "secondary"))
+    for who in ("earlier", "replication"):
+        missed = [x["cell_id"] for x in m[who]["cause"]["forward_missed"]]
+        assert missed == [cell], f"{who}: the verdict is decided by {missed}, the text says {cell} alone"
+    assert ea["aligned"]["ratio"] < 1 and rb["aligned"]["ratio"] < 1, "a point estimate of the cell is not below 1"
+    runs = m["secondary"]["per_run"]
+    assert len(runs) == 6 and {r["form"] for r in runs} == {"inconclusive"}, "not every one of the six runs alone is INCONCLUSIVE"
+    assert ea["limit"] == rb["limit"] == sab["limit"], "the sets name different limits"
+    return {"n": str(m["replication"]["jobs"]), "fb": form_word(m["replication"]), "ha": f4(ea["aligned"]["ci95"][1]),
+            "hb": f4(rb["aligned"]["ci95"][1]), "lim": str(ea["limit"]), "pa": f3(ea["aligned"]["ratio"]), "pb": f3(rb["aligned"]["ratio"]),
+            "nab": str(m["secondary"]["jobs"]), "fab": form_word(m["secondary"]), "hab": f4(sab["aligned"]["ci95"][1]),
+            "stab": m["secondary"]["stability"], "six": word(len(runs)), "fr": runs[0]["form"].upper(), "fa": form_word(m["earlier"])}
+
+
+def exp_repl_x86():
+    r = repl()["x86"]
+    t = r["totals"]
+    same = sorted(m["cpu_model"] for m in r["models"] if m["testable"] and m["same_form"])
+    assert same == sorted([EPYC_7763, EPYC_9V74]), f"the models with the same word as the 95-job pool: {same}"
+    assert all(repl_model("x86", k)["earlier"]["form"] == "map" for k in ("7763", "9V74")), "the 7763 and 9V74 pools are no longer MAP"
+    assert sorted(f["cpu_model"] for f in r["flips"]) == sorted([EPYC_9V45, XEON_8573C]), "the models whose word changed are no longer 9V45 and 8573C"
+    m45, m85 = repl_model("x86", "9V45"), repl_model("x86", "8573C")
+    c45, c85 = repl_flip_cell("9V45", "k03_stencil.L1"), repl_flip_cell("8573C", "k02_add_fwd.L1")
+    assert len(repl_flip("9V45")["cells"]) == 1 and len(repl_flip("8573C")["cells"]) == 1, "a flip is decided by more than one cell"
+    assert (c45["earlier"]["role"], c45["replication"]["role"]) == ("exempt_placement_sensitive", "judged_forward"), "the 9V45 stencil changed roles the other way"
+    assert (c85["earlier"]["role"], c85["replication"]["role"]) == ("judged_forward", "exempt_placement_sensitive"), "the 8573C add changed roles the other way"
+    h45 = [c45[w]["aligned"]["ci95"][1] for w in ("earlier", "replication")]
+    a85 = [c85[w]["aligned"]["ratio"] for w in ("earlier", "replication")]
+    assert abs(h45[0] - h45[1]) < 0.001 and abs(a85[0] - a85[1]) < 0.005, "the measured cost of a flipped cell is no longer about the same"
+    assert c45["earlier"]["limit"] == c45["replication"]["limit"] == c85["replication"]["limit"]
+    return {"four": word(t["testable_models"]), "mn": str(repl()["criteria"]["minimum_jobs"]), "two": word(t["same_form"]),
+            "two2": word(t["flipped"]), "p95": str(repl()["pools"]["x86"]["earlier"]["jobs"]),
+            "e45": str(m45["earlier"]["jobs"]), "r45": str(m45["replication"]["jobs"]), "fe45": form_word(m45["earlier"]),
+            "fr45": form_word(m45["replication"]), "u1": f4(h45[0]), "u2": f4(h45[1]), "lim": str(c45["earlier"]["limit"]),
+            "d1": f4(c45["earlier"]["placement"]["d_ci95"][1]), "d2": f4(c45["replication"]["placement"]["d_ci95"][1]),
+            "e85": str(m85["earlier"]["jobs"]), "r85": str(m85["replication"]["jobs"]), "fe85": form_word(m85["earlier"]),
+            "fr85": form_word(m85["replication"]), "c1": f3(a85[0]), "c2": f3(a85[1]),
+            "ac": f3(c85["replication"]["as_compiled"]["ratio"]), "al": f3(c85["replication"]["aligned"]["ratio"]),
+            "lo": f3(c85["earlier"]["aligned"]["ci95"][0]), "hi": f3(c85["earlier"]["aligned"]["ci95"][1]),
+            "d3": f4(c85["replication"]["placement"]["d_ci95"][1])}
+
+
+def exp_repl_untested():
+    m = repl_model("x86", "6973P-C")
+    q = repl()["questions"]["xeon_6973pc"]
+    assert m["testable"] is False and q["testable"] is False
+    miss = m["secondary"]["cause"]["forward_missed"]
+    assert [x["cell_id"] for x in miss] == ["k03_stencil.L1"], f"the 8-job form is decided by {[x['cell_id'] for x in miss]}"
+    assert "k03_stencil.L1" in m["earlier"]["placement_sensitive"] and "k03_stencil.L1" not in m["secondary"]["placement_sensitive"], (
+        "the stencil at L1 no longer changes from left out to judged between the 7-job and the 8-job pool")
+    return {"rj": str(m["replication"]["jobs"]), "mn": str(q["minimum_jobs"]), "ej": str(m["earlier"]["jobs"]), "ej2": str(m["earlier"]["jobs"]),
+            "sj": str(m["secondary"]["jobs"]), "sf": form_word(m["secondary"]), "hi": f4(miss[0]["aligned_ci95"][1])}
+
+
+def repl_points(arch):
+    return [(m, p) for m in repl()[arch]["models"] if m["inside"] for p in m["inside"]["points"]]
+
+
+def exp_repl_reproduction():
+    out = {}
+    for tag, arch in (("a", "arm"), ("x", "x86")):
+        pts = repl_points(arch)
+        t = repl()[arch]["totals"]
+        assert t["points_checked"] == len(pts) and t["points_inside"] == sum(1 for _, p in pts if p["inside"])
+        al = [p for _, p in pts if p["column"] == "aligned"]
+        narrow = sum(1 for _, p in pts if (p["earlier_ci95"][1] - p["earlier_ci95"][0]) / 2 / p["earlier"] < 0.001)
+        big_m, big_p = max(pts, key=lambda mp: abs(mp[1]["point_diff_pct"]))
+        gaps = [m["inside"]["max_gap_pct"] for m, _ in {id(m): (m, p) for m, p in pts}.values() if m["inside"]["max_gap_pct"] is not None]
+        out.update({tag + "i": str(t["points_inside"]), tag + "c": str(t["points_checked"]), tag + "c2": str(t["points_checked"]),
+                    tag + "al": str(sum(1 for p in al if p["inside"])), tag + "alc": str(len(al)),
+                    tag + "u": str(t["point_diff_under_1pct"]), tag + "uc": str(t["points_checked"]),
+                    tag + "d": f2(abs(big_p["point_diff_pct"])), tag + "n": str(narrow), tag + "nc": str(t["points_checked"]),
+                    tag + "g": f2(max(gaps)), tag + "big": (big_p["cell_id"], big_p["column"], big_m["cpu_model"])})
+    assert out["abig"][:2] == ("k05_stride2.L2", "aligned"), f"the largest Arm difference is {out['abig']}"
+    assert out["xbig"] == ("k05_stride2.L2", "as_compiled", XEON_8573C), f"the largest x86-64 difference is {out['xbig']}"
+    return out
+
+
+def exp_repl_headline():
+    h = repl()["x86"]["headline"]
+    r, pr = h["replication_enough_range"], h["page_range"]
+    enough = [x for x in h["replication"] if x["enough"]]
+    assert len(h["outside_printed_range"]) == 0 and len(h["outside_stored_range"]) == 1, "the cells outside the printed or the stored range changed"
+    o = h["outside_stored_range"][0]
+    assert "9V45" in o["cpu_model"] and o["jobs"] == 5 and (o["cell_id"], o["column"]) == ("k05_stride2.L1", "as_compiled") and o["ratio"] < pr["min"]
+    assert o["ratio"] == r["min"], "the cell outside the stored range is not the lowest cell of set C"
+    assert f1(o["ratio"]) == pr["printed_min"], "the cell outside the stored range no longer prints as the page's lowest end"
+    return {"lo": f3(r["min"]), "hi": f3(r["max"]), "four": word(len(enough)), "mn": str(repl()["criteria"]["minimum_jobs"]),
+            "plo": pr["printed_min"], "phi": pr["printed_max"], "oj": str(o["jobs"]), "ov": f4(o["ratio"]),
+            "gap": f4(pr["min"] - o["ratio"]), "smin": f4(pr["min"]), "pm": f1(o["ratio"])}
+
+
+def exp_repl_window():
+    ts = start_times(S9_ARM_JOBS, S9_X86_JOBS)
+    ds_ts = start_times(S10_JOBS)
+    assert len({t.date() for t in ts + ds_ts}) == 1, "the jobs did not all start on one day"
+    assert (max(ds_ts) - min(ds_ts)).total_seconds() < 60, "the d-sweep jobs did not all start within one minute"
+    reps = [repl_model("x86", k)["replication"] for k in ("9V45", "9V74", "8573C")]
+    assert all(x["stability"] == "not assessable" for x in reps), "stability became assessable for a model of set C"
+    d = ts[0]
+    return {"n": str(len(ts)), "t0": min(ts).strftime("%H:%M"), "t1": max(ts).strftime("%H:%M"), "day": f"{MONTHS[d.month - 1]} {d.day}",
+            "dn": str(len(ds_ts)), "j": str(max(x["jobs"] for x in reps)), "r0": str(min(x["runs"] for x in reps)),
+            "r1": str(max(x["runs"] for x in reps)), "c1": short_commit(S9_ARM_JOBS, S9_X86_JOBS), "c2": short_commit(S10_JOBS)}
+
+
+# the d-sweep
+
+def ds():
+    return J(DSWEEP_POOL)
+
+
+def ds_cpu(key):
+    return next(c for c in ds()["cpus"] if key in c["cpu_model"])
+
+
+def ds_rows(c, column):
+    return {r["d"]: r for r in c["columns"][column]["rows"]}
+
+
+def ds_instr(c):
+    return {r["d"]: r for r in c["instructions"]["rows"]}
+
+
+def ds_plan_r12():
+    with open(os.path.join(REPO, DSWEEP_PLAN), encoding="utf-8") as f:
+        m = re.search(r"^\| 12 \| ([\d.]+) \| ([\d.]+) \|$", f.read(), re.M)
+    assert m, "dsweep/PLAN.md no longer has the illustrative table row for d = 12"
+    return m.group(1)
+
+
+@lru_cache(maxsize=None)
+def ds_leave_one_out():
+    """The EPYC 7763 d-sweep pooled again without job 4 of run 39018974239: {column: (share with all, share without, word without)}.
+
+    Run in memory with dsweep/analyze.py (40 resamples: the share is a point estimate and does not depend on them, the word is the
+    same as with 2000); nothing is written. The pool of all the model's jobs must give the stored share first."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("dsweep_analyze_for_the_readme_test", os.path.join(REPO, "dsweep", "analyze.py"))
+    an = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(an)
+    entries = an.load_entries(sorted(glob.glob(os.path.join(REPO, "results", "s10-dsweep-run-*"))), os.path.join(REPO, "results", "s10-dsweep-pooled"))
+    items = [(r, d) for r, d in entries if EPYC_7763 == d["run"]["runner"]["cpu_model"]]
+    kept = [(r, d) for r, d in items if not (str(d["run"]["id"]) == "39018974239" and str(d["run"]["job"]) == "4")]
+    assert len(items) == ds_cpu("7763")["jobs"] and len(kept) == len(items) - 1, "job 4 of run 39018974239 is not one of the 7763 jobs"
+    plan, crit = an.plan_sha256(), an.criteria_sha256()
+    whole = an.analyse_cpu(EPYC_7763, items, plan, crit, resamples=40)
+    part = an.analyse_cpu(EPYC_7763, kept, plan, crit, resamples=40)
+    out = {}
+    for col in COLS:
+        stored = ds_cpu("7763")["columns"][col]["excess"]["share"]
+        assert abs(whole["columns"][col]["excess"]["share"] - stored) < 1e-9, f"pooling the 7763 jobs again gives another {col} share than the pooled file"
+        out[col] = (stored, part["columns"][col]["excess"]["share"], part["words"][col]["word"])
+    return out
+
+
+def exp_ds_overview():
+    d = ds()
+    assert not d["incomplete_jobs"] and len(d["inputs"]) == sum(c["jobs"] for c in d["cpus"]), "the pooled file does not list every job"
+    arm = ds_cpu(N2)
+    others = [c for c in d["cpus"] if c is not arm]
+    x_runs = sorted({r for c in others for r in c["runs"]})
+    all_runs = sorted({r for c in d["cpus"] for r in c["runs"]})
+    sizes = [len(c["columns"]["as_compiled"]["rows"]) for c in d["cpus"]]
+    assert len(arm["runs"]) == 1 and len(x_runs) == 2 and len(job_records(S10_JOBS)) == len(d["inputs"])
+    return {"three": word(len(all_runs)), "jobs": str(len(d["inputs"])), "arm": str(arm["jobs"]), "ar": word(len(arm["runs"])),
+            "x": str(sum(c["jobs"] for c in others)), "xr": word(len(x_runs)), "lo": str(min(sizes)), "hi": str(max(sizes)),
+            "ra": arm["runs"][0], "rb": x_runs[0], "rc": x_runs[1], "dj": str(len(d["inputs"])),
+            "r": f2(ds_rows(arm, "as_compiled")[arm["ladder"]["study_l1_d"]]["ratio"]), "d": str(arm["ladder"]["study_l1_d"]),
+            "res": str(arm["ladder"]["residue"]), "m": str(arm["ladder"]["modulus"]),
+            "a0": str(arm["ladder"]["fit"][0]), "a1": str(arm["ladder"]["fit"][-1]),
+            "b0": str(ds_cpu("7763")["ladder"]["fit"][0]), "b1": str(ds_cpu("7763")["ladder"]["fit"][-1]),
+            "h1lo": str(d["rule"]["h1_share_band"][0]), "h1hi": str(d["rule"]["h1_share_band"][1]), "h2lo": str(d["rule"]["h2_share_band"][0]),
+            "h2hi": str(d["rule"]["h2_share_band"][1]), "fl": str(d["rule"]["falls_share_above"]), "mn": str(d["rule"]["minimum_jobs"]),
+            "reps": str(J("harness/criteria-v3.json")["v3"]["timing"]["reps_per_side"]), "nsz": str(len(ds_rows(arm, "as_compiled"))),
+            "step": str(arm["ladder"]["modulus"]), "g0": str(arm["ladder"]["bridge"][0]), "g1": str(arm["ladder"]["bridge"][1]),
+            "g2": str(arm["ladder"]["bridge"][2]), "sc0": str(arm["ladder"]["scan"][0]), "sc1": str(arm["ladder"]["scan"][-1])}
+
+
+def exp_ds_words():
+    arm, x7, x9, x8 = ds_cpu(N2), ds_cpu("7763"), ds_cpu("9V45"), ds_cpu("8573C")
+    assert arm["verdict"]["word"] == "neither" and arm["verdict"]["columns_agree"] is False, "the Neoverse-N2 word is no longer 'neither' with disagreeing columns"
+    assert x7["verdict"]["word"] == "H2" and x7["verdict"]["columns_agree"] is True
+    assert x9["verdict"]["word"] == x8["verdict"]["word"] == "too few jobs"
+    sac, sal = (arm["columns"][c]["excess"]["share"] for c in COLS)
+    assert sac > 1 and sal > 1, "a Neoverse-N2 fixed share is not above 1"
+    return {"j7": str(x7["jobs"]), "r7": str(len(x7["runs"])), "w7": x7["verdict"]["word"], "jn": str(arm["jobs"]), "rn": str(len(arm["runs"])),
+            "wn": arm["verdict"]["word"], "wac": arm["words"]["as_compiled"]["word"], "sac": f3(sac), "wal": arm["words"]["aligned"]["word"],
+            "sal": f3(sal), "j9": str(x9["jobs"]), "j8": str(x8["jobs"]), "pr": ds_plan_r12(),
+            "obs": f2(ds_rows(arm, "as_compiled")[arm["ladder"]["fit"][0]]["ratio"]),
+            "rac": f3(sac), "ral": f3(sal)}
+
+
+def exp_ds_numbers():
+    c = ds_cpu(N2)
+    ac, al, ins = ds_rows(c, "as_compiled"), ds_rows(c, "aligned"), ds_instr(c)
+    lad = c["ladder"]
+    assert lad["fit"][:2] == [12, 20] and lad["bridge"] == [76, 108, 148] and lad["study_l2_d"] == 209 and lad["study_l1_d"] == 52
+    four = [d for d in ac if d % 8 == 4 and d <= 148]
+    assert four == [12, 20, 28, 36, 44, 52, 76, 108, 148], four
+    extra = [ins[d]["extra_per_inner"] for d in four]
+    assert round(min(extra)) == round(max(extra)), "the extra instructions per inner call differ by more than a rounding at d = 4 mod 8"
+    for d, r in ins.items():
+        if d % 8:
+            assert abs(r["extra_per_inner"] - (45 + 8 * (d % 8))) < 0.25, f"d = {d}: {r['extra_per_inner']} extra instructions, not 45 + 8r"
+    assert {d % 8 for d in ins} == set(range(8))
+    mids = [28, 36, 44, 52, 76, 108]
+    flat = [ac[d]["excess_ns_per_inner"] for d in lad["fit"][2:]]
+    assert max(flat) - min(flat) < 0.2 and min(ac[d]["excess_ns_per_inner"] for d in lad["fit"][:2]) > max(flat), "the as-compiled excess is not flat from d = 28 after two larger ones"
+    ex = lambda col, ds_: [col[d]["excess_ns_per_inner"] for d in ds_]  # noqa: E731
+    return {"ex": str(round(ins[52]["extra_per_inner"])), "lo": f1(min(extra)), "hi": f1(max(extra)), "r": str(lad["residue"]), "m": str(lad["modulus"]),
+            "d0": str(four[0]), "d1": str(four[-1]), "a12": f1(ac[12]["excess_ns_per_inner"]), "alo": f1(min(ex(ac, mids))),
+            "ahi": f1(max(ex(ac, mids))), "a148": f1(ac[148]["excess_ns_per_inner"]), "a209": f2(ac[209]["excess_ns_per_inner"]),
+            "b12": f1(al[12]["excess_ns_per_inner"]), "blo": f1(min(ex(al, mids))), "bhi": f1(max(ex(al, mids))),
+            "b148": f1(al[148]["excess_ns_per_inner"]), "b209": f2(al[209]["excess_ns_per_inner"]), "s1": str(lad["fit"][0]),
+            "s2": str(lad["fit"][1]), "fl": str(lad["fit"][2]),
+            "c0": "45", "c1": "8", "mod": str(lad["modulus"]), "r0": "1", "r1": "7", "i4": str(round(ins[52]["extra_per_inner"])),
+            "rr": str(lad["residue"]), "i209": str(round(ins[209]["extra_per_inner"])), "dl2": str(lad["study_l2_d"]), "r209": str(209 % 8),
+            "d48": "48", "r48": str(48 % 8), "i48": str(round(ins[48]["extra_per_inner"]))}
+
+
+def exp_ds_caveats():
+    c = ds_cpu(N2)
+    ac, al = ds_rows(c, "as_compiled"), ds_rows(c, "aligned")
+    sens = {r["d"]: r["sensitive"] for r in c["placement"]["rows"]}
+    assert [d for d, s in sens.items() if not s] == [48], "the unflagged size is no longer d = 48 alone"
+    l1 = c["ladder"]["study_l1_d"]
+    scan = [d for d in c["ladder"]["scan"] if d != 48]
+    assert scan == [45, 46, 47, 49, 50, 51] and 48 in c["ladder"]["scan"] and 48 % 8 == 0
+    return {"s": str(sum(sens.values())), "n": str(len(sens)), "d48": "48", "m": "8", "m2": "8", "r48": f2(ac[48]["ratio"]), "r48b": f3(ac[48]["ratio"]),
+            "n49": f2(ac[49]["ratio"]), "n47": f2(ac[47]["ratio"]), "st": f2(ac[l1]["ratio"]), "res": str(l1 % 8),
+            "slo": f2(min(ac[d]["ratio"] for d in scan)), "shi": f2(max(ac[d]["ratio"] for d in scan)), "r48c": f3(al[48]["ratio"]),
+            "blo": f2(min(al[d]["ratio"] for d in scan)), "bhi": f2(max(al[d]["ratio"] for d in scan)), "d": "48",
+            "ac": f3(ac[l1]["ratio"]), "al": f3(al[l1]["ratio"]), "l1": str(l1)}
+
+
+def exp_ds_loo():
+    got = ds_leave_one_out()
+    assert got["as_compiled"][2] == got["aligned"][2] == "H2", "the 7763 word without the job is no longer H2 in both columns"
+    return {"job": "4", "run": "39018974239", "a0": f3(got["as_compiled"][0]), "a1": f3(got["as_compiled"][1]), "b0": f3(got["aligned"][0]),
+            "b1": f3(got["aligned"][1]), "w": got["as_compiled"][2]}
+
+
+def exp_ds_boundary():
+    """Neoverse-N2: d = 76 and 108 are past the core's L1d, the excess per inner call is flat from d = 28 to d = 108 in both columns
+    and smaller only at d = 148 and d = 209 (the sentences that replace 'the same at every d')."""
+    c = ds_cpu(N2)
+    ac, al = ds_rows(c, "as_compiled"), ds_rows(c, "aligned")
+    sizes = {j["run"]["runner"]["l1d_kib"] for j in job_records(S10_JOBS) if j["run"]["runner"]["cpu_model"] == N2}
+    assert len(sizes) == 1, f"the Neoverse-N2 jobs report these L1d sizes: {sorted(sizes)}"
+    l1 = sizes.pop()
+    lad = c["ladder"]
+    assert lad["bridge"] == [76, 108, 148] and lad["fit"][2] == 28 and lad["study_l2_d"] == 209
+    for d in ac:
+        assert ac[d]["working_set_bytes"] == 12 * d * d, f"d = {d}: the working set is not three d x d int32 matrices"
+    assert all(ac[d]["working_set_bytes"] > l1 * 1024 for d in (76, 108, 148, 209)), "a size the text puts past the L1d is not past it"
+    mids = [28, 36, 44, 52, 76, 108]
+    for col in (ac, al):
+        flat = [col[d]["excess_ns_per_inner"] for d in mids]
+        assert max(flat) - min(flat) < 0.25, f"the excess is not flat from d = 28 to d = 108: {flat}"
+        assert col[148]["excess_ns_per_inner"] < min(flat) - 0.1 and col[209]["excess_ns_per_inner"] < col[148]["excess_ns_per_inner"], \
+            "the excess is no longer smaller at d = 148 and smaller still at d = 209"
+    return {"fl": str(lad["fit"][2]), "last": str(mids[-1]), "p1": str(lad["bridge"][0]), "p2": str(lad["bridge"][1]), "l1": str(l1),
+            "q1": str(lad["bridge"][2]), "q2": str(lad["study_l2_d"]), "q1b": str(lad["bridge"][2]), "q2b": str(lad["study_l2_d"]),
+            "w76": thousands(ac[76]["working_set_bytes"]), "w108": thousands(ac[108]["working_set_bytes"]),
+            "p1b": str(lad["bridge"][0]), "p2b": str(lad["bridge"][1])}
+
+
+def exp_ds_reason():
+    """The stored reason of the aligned Neoverse-N2 column ends in a phrase that means 'inside the H1 band', not 'constant'."""
+    c = ds_cpu(N2)
+    reason = c["words"]["aligned"]["reason"]
+    m = re.search(r"the excess per inner call is (the same at every d)$", reason)
+    assert m, f"the stored reason of the aligned column no longer ends 'the same at every d': {reason}"
+    assert c["words"]["aligned"]["word"] == "H1"
+    al = ds_rows(c, "aligned")
+    lad = c["ladder"]
+    upto = [d for d in al if d in lad["fit"] or d in lad["bridge"][:2]]
+    vals = [al[d]["excess_ns_per_inner"] for d in upto]
+    return {"ph": m.group(1), "h1lo": str(ds()["rule"]["h1_share_band"][0]), "h1hi": str(ds()["rule"]["h1_share_band"][1]), "wal": c["words"]["aligned"]["word"],
+            "sal": f3(c["columns"]["aligned"]["excess"]["share"]), "blo": f1(min(vals)), "bhi": f1(max(vals)), "d0": str(lad["fit"][0]),
+            "d1": str(lad["bridge"][1]), "b148": f1(al[lad["bridge"][2]]["excess_ns_per_inner"]), "b209": f2(al[lad["study_l2_d"]]["excess_ns_per_inner"])}
+
+
+def exp_workflow_count():
+    return {"n": str(len(glob.glob(os.path.join(REPO, ".github", "workflows", "*.yml"))))}
+
+
+def exp_repl_intro():
+    q = repl()["questions"]
+    arm = q["arm_cell"]
+    x = q["xeon_6973pc"]
+    ea = repl_arm_cell(arm["decides_earlier"][0], "earlier")
+    assert arm["decides_earlier"] == ["k02_add_fwd.L2"]
+    return {"fa": arm["earlier_form"].upper(), "ha": f4(ea["aligned"]["ci95"][1]), "lim": str(ea["limit"]), "fx": x["earlier_form"].upper(),
+            "hx": f4(x["earlier_closest_forward"]["aligned_hi"]), "pts": str(repl_model("arm", N2)["inside"]["checked"]),
+            "cells": str(repl_model("arm", N2)["inside"]["checked"] // 2),
+            "plo": repl()["x86"]["headline"]["page_range"]["printed_min"], "phi": repl()["x86"]["headline"]["page_range"]["printed_max"]}
+
+
+def exp_smoke_branch():
+    return {"c": short_commit(S10_JOBS)}
+
+
+def exp_s9_commit():
+    return {"commit": short_commit(S9_ARM_JOBS, S9_X86_JOBS)}
+
+
+def exp_repl_runs():
+    pools = repl()["pools"]
+    a, x = sorted(pools["arm"]["replication"]["runs"]), sorted(pools["x86"]["replication"]["runs"])
+    return {"a1": a[0], "a2": a[1], "a3": a[2], "c1": x[0], "c2": x[1], "c3": x[2], "c4": x[3], "commit": short_commit(S9_ARM_JOBS, S9_X86_JOBS)}
+
+
+def exp_ds_replication_pointer():
+    return {"stab": exp_repl_arm()["stab"]}
+
+
+# the line-by-line tables
+
+def repl_table_rows():
+    r = repl()
+
+    def cell(rec):
+        if rec is None:
+            return "-"
+        if not rec["enough"]:
+            return f"too few jobs ({rec['jobs']})"
+        return f"{form_word(rec)} ({rec['jobs']})"
+    models = [("arm", N2)] + [("x86", m["cpu_model"]) for m in r["x86"]["models"]] + [("arm", V3)]
+    rows = []
+    for arch, name in models:
+        m = next(x for x in r[arch]["models"] if x["cpu_model"] == name)
+        same = "not tested" if not m["testable"] else ("yes" if m["same_form"] else "no")
+        inside = "-" if not m["inside"] else f"{m['inside']['inside']} of {m['inside']['checked']}"
+        rows.append(f"| {REPL_NAME[name]} | {cell(m['earlier'])} | {cell(m['replication'])} | {same} | {inside} | {cell(m['secondary'])} |")
+    return rows
+
+
+def ds_words_table_rows():
+    rows = []
+    for name in (N2, EPYC_7763, EPYC_9V45, XEON_8573C):
+        c = next(x for x in ds()["cpus"] if x["cpu_model"] == name)
+
+        def col(column, c=c):
+            w = c["words"][column]["word"]
+            if w == "too few jobs":
+                return w
+            e = c["columns"][column]["excess"]
+            return f"{w} ({f3(e['share'])} [{f3(e['share_ci95'][0])}, {f3(e['share_ci95'][1])}])"
+        rows.append(f"| {DS_NAME[name]} | {c['jobs']} ({len(c['runs'])}) | {col('as_compiled')} | {col('aligned')} | {c['verdict']['word']} |")
+    assert {c["cpu_model"] for c in ds()["cpus"]} == set(DS_NAME), "the d-sweep has a CPU model the tables do not name"
+    return rows
+
+
+def ds_sizes_table_rows():
+    c = ds_cpu(N2)
+    ac, al, ins = ds_rows(c, "as_compiled"), ds_rows(c, "aligned"), ds_instr(c)
+    return [f"| {d} | {ac[d]['d_mod_8']} | {DS_ROLE[tuple(ac[d]['roles'])]} | {f3(ac[d]['ratio'])} | {f3(al[d]['ratio'])} | "
+            f"{f2(ac[d]['excess_ns_per_inner'])} | {f2(al[d]['excess_ns_per_inner'])} | {f1(ins[d]['extra_per_inner'])} |" for d in sorted(ac)]
+
+
+def repl_files_table_rows():
+    pools = repl()["pools"]
+    folder = lambda p: f"`{p['path'].split('/')[1]}`"  # noqa: E731
+    a, x = pools["arm"], pools["x86"]
+    b = a["replication"]["models_drawn"]
+    return [f"| Arm, set A (the original column) | {a['earlier']['jobs']} | {folder(a['earlier'])} | read by the page |",
+            f"| Arm, set B | {a['replication']['jobs']} ({b[N2]} Neoverse-N2, {b[V3]} Neoverse-V3) | {folder(a['replication'])} | the replication of set A |",
+            f"| Arm, sets A and B | {a['secondary']['jobs']} | {folder(a['secondary'])} | secondary |",
+            f"| x86-64, the first pool | {x['earlier']['jobs']} | {folder(x['earlier'])} | read by the page |",
+            f"| x86-64, set C | {x['replication']['jobs']} | {folder(x['replication'])} | the replication of the first pool |",
+            f"| x86-64, the first pool and set C | {x['secondary']['jobs']} | {folder(x['secondary'])} | secondary |"]
+
+
+def ds_readme_words_rows():
+    rows = []
+    for name in (N2, EPYC_7763, EPYC_9V45, XEON_8573C):
+        c = next(x for x in ds()["cpus"] if x["cpu_model"] == name)
+        v = c["verdict"]
+        if v["word"] == "too few jobs":
+            what = "too few jobs"
+        elif v["columns_agree"]:
+            what = f"{v['word']} in both columns"
+        else:
+            what = f"{v['word']}: the two columns disagree (as compiled \"{c['words']['as_compiled']['word']}\", aligned {c['words']['aligned']['word']})"
+        rows.append(f"| {DS_NAME[name]} | {c['jobs']} ({len(c['runs'])}) | {what} |")
+    return rows
+
+
+def table_block(text, header):
+    """The contiguous run of lines starting with '|' that begins at the line `header` (the header, the separator and every data row)."""
+    lines = [ln.rstrip() for ln in text.splitlines()]
+    starts = [i for i, ln in enumerate(lines) if ln == header]
+    assert len(starts) == 1, f"the header line occurs {len(starts)} times (once expected): {header}"
+    block = []
+    for ln in lines[starts[0]:]:
+        if not ln.startswith("|"):
+            break
+        block.append(ln)
+    return block
+
+
+def check_table_rows(label, rows, text, doc):
+    """rows[0] is the header line, the rest are the data rows in order. The whole table block of the document must equal them:
+    the header, a separator line, then exactly these rows, no more, no fewer, none repeated or out of order."""
+    header, expected = rows[0], rows[1:]
+    block = table_block(text, header)
+    assert len(block) >= 2 and re.fullmatch(r"\|(?:\s*:?-{3,}:?\s*\|)+", block[1]), f"{label}: {doc} has no separator line under the header {header}"
+    got = block[2:]
+    extra = [r for r in got if r not in expected]
+    missing = [r for r in expected if r not in got]
+    assert not extra and not missing, (f"{label}: {doc} differs from the data's rows.\n  rows the data does not give:\n    " + "\n    ".join(extra or ["(none)"])
+                                       + "\n  data rows the document lacks:\n    " + "\n    ".join(missing or ["(none)"]))
+    assert len(got) == len(expected), f"{label}: {doc} has {len(got)} data rows, the data gives {len(expected)} (a row is repeated)"
+    assert got == expected, f"{label}: {doc} lists the rows in another order than the data:\n  " + "\n  ".join(got)
+
+
+# the typed sentences
+
+README_NEW_ROWS = [
+    row("replication: the two sets", "replication/results.json pools; results/s9-*/results-*/results.json arch", exp_repl_sets,
+        r"set B, (?P<bj>\d+) more Arm jobs in (?P<br>\d+) runs \((?P<n2>\d+) on Neoverse-N2 and (?P<v3>\d+) on a Neoverse-V3 core, which has no verdict\), "
+        r"and set C, (?P<cj>\d+) more x86-64 jobs in (?P<cr>\d+) runs"),
+    row("replication: Arm", "replication/results.json arm models, named_cells k02_add_fwd.L2", exp_repl_arm,
+        r"Set B alone \((?P<n>\d+) Neoverse-N2 jobs\) is (?P<fb>[A-Z]+) again, on the same cell: the forward add at L2, aligned, ends at (?P<ha>[\d.]+) in set A "
+        r"and (?P<hb>[\d.]+) in set B against the (?P<lim>[\d.]+) limit, with a point estimate below 1 in both \((?P<pa>[\d.]+) and (?P<pb>[\d.]+)\)\. "
+        r"The cell sits close to the [\d.]+ limit in both sets, so a second [A-Z]+ is a weak repeat of the word and not strong evidence for it\. "
+        r"Sets A and B pooled \((?P<nab>\d+) Neoverse-N2 jobs\) give (?P<fab>[A-Z]+), with that end at (?P<hab>[\d.]+); the harness labels that form (?P<stab>\w+), "
+        r"because each of the (?P<six>\w+) runs alone is (?P<fr>[A-Z]+)\. The stored Arm verdict stays (?P<fa>[A-Z]+)\."),
+    row("replication: x86-64, the four models", "replication/results.json x86 totals and models", exp_repl_x86,
+        r"(?P<four>\w+) models had (?P<mn>\d+) or more jobs in set C\. (?P<two>\w+) gave the same verdict word as the (?P<p95>\d+)-job pool "
+        r"\(EPYC 7763 and 9V74, MAP\) and (?P<two2>\w+) a different one\."),
+    row("replication: x86-64, EPYC 9V45", "replication/results.json x86 flips (9V45, k03_stencil.L1)", exp_repl_x86,
+        r"On EPYC 9V45 \((?P<e45>\d+) jobs (?P<fe45>[A-Z]+), then (?P<r45>\d+) jobs (?P<fr45>[A-Z]+)\) the stencil at L1 is left out as placement-sensitive "
+        r"in the (?P<p95>\d+)-job pool and judged in set C; its aligned upper end is (?P<u1>[\d.]+) and (?P<u2>[\d.]+) against the (?P<lim>[\d.]+) limit\."),
+    row("replication: x86-64, Xeon 8573C", "replication/results.json x86 flips (8573C, k02_add_fwd.L1)", exp_repl_x86,
+        r"On the Xeon 8573C \((?P<e85>\d+) jobs (?P<fe85>[A-Z]+), then (?P<r85>\d+) jobs (?P<fr85>[A-Z]+)\) the forward add at L1 is judged in the "
+        r"(?P<p95>\d+)-job pool and left out in set C; it costs (?P<c1>[\d.]+) and (?P<c2>[\d.]+) aligned\. In both, the word changed because the written rule "
+        r"treated one cell differently, while the measured cost of the cell is about the same\. The 8573C's MAP in set C is not the cost going away: "
+        r"the exempt forward add still costs (?P<ac>[\d.]+) as compiled and (?P<al>[\d.]+) aligned\."),
+    row("replication: not tested", "replication/results.json x86 models (6973P-C) and questions.xeon_6973pc", exp_repl_untested,
+        r"Set C drew (?P<rj>\d+) job of the Xeon 6973P-C \((?P<mn>\d+) are the minimum\), so the question of its borderline MAP has no answer from these sets\. "
+        r"Pooled with its (?P<ej>\d+) earlier jobs \((?P<sj>\d+) jobs, a secondary form\) it is (?P<sf>[A-Z]+), because the stencil at L1, left out as "
+        r"placement-sensitive in the (?P<ej2>\d+)-job pool, is judged and ends at (?P<hi>[\d.]+); one added job"),
+    row("replication: reproduction", "replication/results.json arm and x86 models inside.points", exp_repl_reproduction,
+        r"(?P<ai>\d+) of (?P<ac>\d+) Arm points and (?P<xi>\d+) of (?P<xc>\d+) x86-64 points lie inside the earlier pool's interval, counting the as-compiled "
+        r"and the aligned column \(aligned alone: (?P<aal>\d+) of (?P<aalc>\d+) and (?P<xal>\d+) of (?P<xalc>\d+), the form the plan asked for; "
+        r"the both-column count was chosen after the data were in\); (?P<au>\d+) of (?P<auc>\d+) and "
+        r"(?P<xu>\d+) of (?P<xuc>\d+) differ from the earlier point by under 1%, and the largest differences are (?P<ad>[\d.]+)% \(Arm stride-2 at L2, aligned\) "
+        r"and (?P<xd>[\d.]+)% \(Xeon 8573C stride-2 at L2, as compiled\)\. The inside test is strict where the earlier interval is very narrow "
+        r"\(a half-width under 0\.1% of the ratio for (?P<an>\d+) of the (?P<anc>\d+) Arm points and (?P<xn>\d+) of the (?P<xnc>\d+) x86-64 points\); "
+        r"the farthest missed point is (?P<ag>[\d.]+)% \(Arm\) and (?P<xg>[\d.]+)% \(x86-64\) from the interval\."),
+    row("replication: the headline range", "replication/results.json x86 headline", exp_repl_headline,
+        r"set C ranges from (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x over the (?P<four>\w+) models with (?P<mn>\d+) or more jobs, so the printed "
+        r"(?P<plo>[\d.]+)x to (?P<phi>[\d.]+)x stands; one cell, the EPYC 9V45 stride-2 at L1 as compiled \((?P<oj>\d+) jobs, (?P<ov>[\d.]+)x\), "
+        r"lies (?P<gap>[\d.]+)x under the stored minimum of (?P<smin>[\d.]+)x and prints as (?P<pm>[\d.]+)x\."),
+    row("d-sweep: the three runs", "results/s10-dsweep-pooled/dsweep-pooled.json inputs, cpus", exp_ds_overview,
+        r"Three runs \((?P<jobs>\d+) jobs: (?P<arm>\d+) on Arm in (?P<ar>\w+) run, (?P<x>\d+) on x86-64 in (?P<xr>\w+)\) timed matrix multiply at "
+        r"(?P<lo>\d+) to (?P<hi>\d+) sizes for each CPU model"),
+    row("d-sweep: the registered words", "results/s10-dsweep-pooled/dsweep-pooled.json words, verdict, excess shares; dsweep/PLAN.md table", exp_ds_words,
+        r"EPYC 7763 \((?P<j7>\d+) jobs, (?P<r7>\d+) runs\): (?P<w7>H\d), a cost per element, which the plan expected where the loop loses SIMD\. "
+        r"Neoverse-N2 \((?P<jn>\d+) jobs, (?P<rn>\d+) run\): \"(?P<wn>\w+)\", because the two columns disagree: as compiled the excess \"(?P<wac>\w+)\" "
+        r"\(fixed share (?P<sac>[\d.]+)\), aligned it is (?P<wal>H\d) \((?P<sal>[\d.]+)\)\. Both shares are above 1, so it is not a mixture\. "
+        r"EPYC 9V45 \((?P<j9>\d+) jobs\) and Xeon 8573C \((?P<j8>\d+) job\) were too few for a word\. The plan's illustrative table gave R\(12\) = (?P<pr>[\d.]+) "
+        r"under H1 and (?P<obs>[\d.]+) was observed"),
+    row("d-sweep: instructions and times", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns and instructions", exp_ds_numbers,
+        r"FAST adds (?P<ex>\d+) extra instructions per inner call \((?P<lo>[\d.]+) to (?P<hi>[\d.]+)\) at every size with d = (?P<r>\d) mod (?P<m>\d) from "
+        r"(?P<d0>\d+) to (?P<d1>\d+) \(instruction counts, a secondary column, not times\)\. As compiled, the excess time per inner call is (?P<a12>[\d.]+) ns "
+        r"at d = 12, (?P<alo>[\d.]+) to (?P<ahi>[\d.]+) ns at d = 28, 36, 44, 52, 76 and 108, (?P<a148>[\d.]+) ns at d = 148 and (?P<a209>[\d.]+) ns at d = 209; "
+        r"aligned, (?P<b12>[\d.]+) ns, (?P<blo>[\d.]+) to (?P<bhi>[\d.]+) ns, (?P<b148>[\d.]+) ns and (?P<b209>[\d.]+) ns\. The word \"falls\" as compiled "
+        r"rests on the two smallest sizes, (?P<s1>\d+) and (?P<s2>\d+), with the excess flat, at the sizes with d = 4 mod 8, from d = (?P<fl>\d+)"),
+    row("d-sweep: caveats and d = 48", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 placement and columns", exp_ds_caveats,
+        r"\((?P<s>\d+) of the (?P<n>\d+) sizes are flagged placement-sensitive\).*?d = (?P<d48>\d+), a multiple of (?P<m>\d+), costs (?P<r48>[\d.]+)x as compiled "
+        r"against (?P<n49>[\d.]+)x and (?P<n47>[\d.]+)x at 49 and 47, so the (?P<st>[\d.]+)x belongs to the study size, which is (?P<res>\d+) mod (?P<m2>\d+)\."),
+    row("d-sweep: the temporary branch", "results/s10-dsweep-run-*/dsweep-job-*/dsweep.json run.commit", exp_smoke_branch,
+        r"the temporary public branch `dsweep-smoke` \(commit (?P<c>[0-9a-f]+)\)"),
+]
+
+DETAILS_NEW_ROWS = [
+    row("details: replication, the line in the method", "replication/results.json pools; results/s10-dsweep-pooled/dsweep-pooled.json inputs",
+        lambda: {"bj": exp_repl_sets()["bj"], "cj": exp_repl_sets()["cj"], "dj": exp_ds_overview()["dj"]},
+        r"Two replication sets \((?P<bj>\d+) more Arm jobs and (?P<cj>\d+) more x86-64 jobs\) and a matrix-multiply size sweep \((?P<dj>\d+) jobs\) followed"),
+    row("details: replication, why", "replication/results.json questions", exp_repl_intro,
+        r"the Arm pool's (?P<fa>[A-Z]+) \(the forward add at L2, aligned, ends at (?P<ha>[\d.]+) against the (?P<lim>[\d.]+) limit\) and the Xeon 6973P-C's "
+        r"(?P<fx>[A-Z]+) \(its stencil at L2 ends at (?P<hx>[\d.]+)\)"),
+    row("details: replication, the two sets", "replication/results.json pools; results/s9-*/ job records", exp_repl_sets,
+        r"set B, (?P<bj>\d+) jobs on the arm64 runner in (?P<br>\d+) runs \(`results/s9-arm-run-\*/`; (?P<n2>\d+) on Neoverse-N2 and (?P<v3>\d+) on Neoverse-V3\), "
+        r"and set C, (?P<cj>\d+) jobs on the x86-64 runner in (?P<cr>\d+) runs"),
+    row("details: replication, the secondary pools", "replication/results.json pools", exp_repl_sets,
+        r"`results/s9-arm-ab-pooled/`, (?P<ab>\d+) jobs; `results/s9-x86-ac-pooled/`, (?P<ac>\d+) jobs"),
+    row("details: replication, what the counts are", "replication/results.json arm models inside", exp_repl_intro,
+        r"how many of the earlier pool's (?P<pts>\d+) points \((?P<cells>\d+) in-cache cells, as compiled and aligned\)"),
+    row("details: replication, Arm", "replication/results.json arm models, named_cells k02_add_fwd.L2", exp_repl_arm,
+        r"Set B alone is (?P<fb>[A-Z]+) again, on the same cell as set A: the forward add at L2, aligned, ends at (?P<ha>[\d.]+) in set A and (?P<hb>[\d.]+) in set B "
+        r"against the (?P<lim>[\d.]+) limit, and its point estimate is below 1 in both \((?P<pa>[\d.]+) and (?P<pb>[\d.]+)\)\. "
+        r"The cell sits close to the [\d.]+ limit in both sets, so a second [A-Z]+ is a weak repeat of the word and not strong evidence for it\. The pooled sets A and B give "
+        r"(?P<fab>[A-Z]+), with that end at (?P<hab>[\d.]+); each of the (?P<six>\w+) runs alone is (?P<fr>[A-Z]+), so the harness labels the pooled form "
+        r"(?P<stab>\w+)\. The stored Arm verdict stays (?P<fa>[A-Z]+)\."),
+    row("details: replication, x86-64", "replication/results.json x86 totals", exp_repl_x86,
+        r"(?P<four>\w+) models had (?P<mn>\d+) or more jobs in set C\. (?P<two>\w+) gave the same word as the (?P<p95>\d+)-job pool and (?P<two2>\w+) a different one"),
+    row("details: replication, EPYC 9V45", "replication/results.json x86 flips (9V45, k03_stencil.L1)", exp_repl_x86,
+        r"EPYC 9V45: the stencil at L1 is left out as placement-sensitive in the (?P<p95>\d+)-job pool \(its placement statistic's interval ends at (?P<d1>[\d.]+)\) "
+        r"and judged in set C \(the interval ends at (?P<d2>[\d.]+)\); its aligned upper end is (?P<u1>[\d.]+) and (?P<u2>[\d.]+) against the (?P<lim>[\d.]+) limit\."),
+    row("details: replication, Xeon 8573C", "replication/results.json x86 flips (8573C, k02_add_fwd.L1)", exp_repl_x86,
+        r"Xeon 8573C: the forward add at L1 is judged in the (?P<p95>\d+)-job pool \(aligned (?P<c1>[\d.]+) \[(?P<lo>[\d.]+), (?P<hi>[\d.]+)\]\) and left out in set C "
+        r"\(the interval of its placement statistic ends at (?P<d3>[\d.]+), aligned (?P<c2>[\d.]+)\)\. The 8573C's MAP in set C is not the cost going away: "
+        r"the exempt forward add costs (?P<ac>[\d.]+) as compiled and (?P<al>[\d.]+) aligned, over the (?P<lim>[\d.]+) limit\."),
+    row("details: replication, not tested", "replication/results.json x86 models (6973P-C)", exp_repl_untested,
+        r"Set C drew (?P<rj>\d+) job of the Xeon 6973P-C, so whether its borderline MAP repeats has no answer from these sets\. Pooled with its (?P<ej>\d+) earlier jobs "
+        r"\((?P<sj>\d+) jobs, a secondary form\) it is (?P<sf>[A-Z]+), because the stencil at L1, left out as placement-sensitive in the (?P<ej2>\d+)-job pool, "
+        r"is judged and its aligned interval ends at (?P<hi>[\d.]+)\."),
+    row("details: replication, reproduction", "replication/results.json arm and x86 models inside.points", exp_repl_reproduction,
+        r"\(aligned alone: (?P<aal>\d+) of (?P<aalc>\d+) on Arm and (?P<xal>\d+) of (?P<xalc>\d+) on x86-64\)\. (?P<au>\d+) of (?P<auc>\d+) Arm points and "
+        r"(?P<xu>\d+) of (?P<xuc>\d+) x86-64 points differ from the earlier point by under 1%; the largest differences are (?P<ad>[\d.]+)% "
+        r"\(Arm stride-2 at L2, aligned\) and (?P<xd>[\d.]+)% \(Xeon 8573C stride-2 at L2, as compiled\)\. The test is strict where the earlier interval is "
+        r"very narrow \(a half-width under 0\.1% of the ratio for (?P<an>\d+) of the (?P<anc>\d+) Arm points and (?P<xn>\d+) of the (?P<xnc>\d+) x86-64 points\); "
+        r"the farthest missed point is (?P<ag>[\d.]+)% \(Arm\) and (?P<xg>[\d.]+)% \(x86-64\) from the interval\."),
+    row("details: replication, the headline", "replication/results.json x86 headline", exp_repl_headline,
+        r"the cells of reverse, stride-2 and matrix multiply range from (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x in set C over the (?P<four>\w+) models with "
+        r"(?P<mn>\d+) or more jobs, so the (?P<plo>[\d.]+)x to (?P<phi>[\d.]+)x printed holds at the study's sizes\. One cell, the EPYC 9V45 stride-2 at L1 as compiled "
+        r"\((?P<oj>\d+) jobs, (?P<ov>[\d.]+)x\), is (?P<gap>[\d.]+)x under the stored minimum of (?P<smin>[\d.]+)x and prints as (?P<pm>[\d.]+)x\."),
+    row("details: d-sweep, the question", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns", exp_ds_overview,
+        r"On Neoverse-N2 matrix multiply keeps its NEON loop under FAST and costs (?P<r>[\d.]+)x at L1;"),
+    row("details: d-sweep, the rule", "results/s10-dsweep-pooled/dsweep-pooled.json rule, ladders", exp_ds_overview,
+        r"sizes with d = (?P<res>\d) mod (?P<m>\d) \((?P<a0>\d+) to (?P<a1>\d+) on Neoverse-N2, (?P<b0>\d+) to (?P<b1>\d+) on EPYC 7763\): H1 if its point and "
+        r"95% interval lie inside (?P<h1lo>[\d.]+) to (?P<h1hi>[\d.]+), H2 inside (?P<h2lo>-?[\d.]+) to (?P<h2hi>[\d.]+), \"falls\" above (?P<fl>[\d.]+), "
+        r"otherwise \"neither\"; a CPU model needs (?P<mn>\d+) jobs"),
+    row("details: d-sweep, the runs", "results/s10-dsweep-pooled/dsweep-pooled.json inputs, cpus", exp_ds_overview,
+        r"Three runs of the d-sweep workflow \((?P<ra>\d+) on Arm, (?P<rb>\d+) and (?P<rc>\d+) on x86-64; `results/s10-dsweep-run-\*/`, pooled in "
+        r"`results/s10-dsweep-pooled/`\) timed (?P<jobs>\d+) jobs at (?P<lo>\d+) to (?P<hi>\d+) sizes per CPU model"),
+    row("details: d-sweep, reading", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns", exp_ds_numbers,
+        r"rests on the two smallest fit sizes, (?P<s1>\d+) and (?P<s2>\d+); at the sizes with d = 4 mod 8 the excess is flat from d = (?P<fl>\d+)"),
+    row("details: d-sweep, instructions", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 instructions", exp_ds_numbers,
+        r"FAST adds (?P<c0>\d+) \+ (?P<c1>\d+)r instructions per inner call, r = d mod (?P<mod>\d+), for r = (?P<r0>\d) to (?P<r1>\d): (?P<i4>\d+) for every size "
+        r"with r = (?P<rr>\d) from d = (?P<d0>\d+) to (?P<d1>\d+), and (?P<i209>\d+) at d = (?P<dl2>\d+) \(r = (?P<r209>\d)\)\. At d = (?P<d48>\d+) "
+        r"\(r = (?P<r48>\d)\) it adds (?P<i48>\d+)\."),
+    row("details: d-sweep, times", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns", exp_ds_numbers,
+        r"As compiled: (?P<a12>[\d.]+) ns at d = 12, (?P<alo>[\d.]+) to (?P<ahi>[\d.]+) ns at d = 28, 36, 44, 52, 76 and 108, (?P<a148>[\d.]+) ns at d = 148 "
+        r"and (?P<a209>[\d.]+) ns at d = 209\. Aligned: (?P<b12>[\d.]+) ns at d = 12, (?P<blo>[\d.]+) to (?P<bhi>[\d.]+) ns at d = 28, 36, 44, 52, 76 and 108, "
+        r"(?P<b148>[\d.]+) ns at d = 148 and (?P<b209>[\d.]+) ns at d = 209\."),
+    row("details: d-sweep, d = 48", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns", exp_ds_caveats,
+        r"d = (?P<d48>\d+), a multiple of (?P<m>\d+), costs (?P<r48b>[\d.]+)x as compiled against (?P<slo>[\d.]+)x to (?P<shi>[\d.]+)x at 45, 46, 47, 49, 50 and 51 "
+        r"\(aligned: (?P<r48c>[\d.]+)x against (?P<blo>[\d.]+)x to (?P<bhi>[\d.]+)x\), so the (?P<st>[\d.]+)x belongs to the study size, d = (?P<l1>\d+), "
+        r"which is (?P<res>\d+) mod (?P<m2>\d+)\."),
+    row("details: d-sweep, the plan's table", "dsweep/PLAN.md illustrative table; results/s10-dsweep-pooled/dsweep-pooled.json", exp_ds_words,
+        r"it gave R\(12\) = (?P<pr>[\d.]+) under H1 on Neoverse-N2; (?P<obs>[\d.]+) was observed as compiled"),
+    row("details: d-sweep, caveats", "results/s10-dsweep-pooled/dsweep-pooled.json placement and columns", exp_ds_caveats,
+        r"(?P<s>\d+) of the (?P<n>\d+) sizes are flagged placement-sensitive \(all but d = (?P<d>\d+)\) and the ratio at the study size moves from "
+        r"(?P<ac>[\d.]+) as compiled to (?P<al>[\d.]+) aligned"),
+    row("details: d-sweep, the job left out", "dsweep/analyze.py run in memory on results/s10-dsweep-run-*", exp_ds_loo,
+        r"Leaving out one EPYC 7763 job \(job (?P<job>\d+) of run (?P<run>\d+)\) moves its as-compiled share from (?P<a0>[\d.]+) to (?P<a1>[\d.]+) and its aligned "
+        r"share from (?P<b0>[\d.]+) to (?P<b1>[\d.]+), and the word stays (?P<w>H\d) in both columns"),
+    row("details: what the new sets do not test, the window", "results/s9-*/ and results/s10-dsweep-run-*/ job records run.started_at, run.commit; replication/results.json", exp_repl_window,
+        r"All (?P<n>\d+) jobs of the two sets started between (?P<t0>[\d:]+) and (?P<t1>[\d:]+) UTC on (?P<day>Oct \d+), and the (?P<dn>\d+) jobs of the d-sweep "
+        r"within one minute of each other"),
+    row("details: what the new sets do not test, the stability", "replication/results.json x86 models", exp_repl_window,
+        r"\(at most (?P<j>\d+) jobs, in (?P<r0>\d+) to (?P<r1>\d+) runs\)"),
+    row("details: what the new sets do not test, the commits", "results/s9-*/ and results/s10-dsweep-run-*/ job records run.commit", exp_repl_window,
+        r"`results/s9-\*` name commit (?P<c1>[0-9a-f]+) of the default branch, and those of `results/s10-dsweep-run-\*/` name commit (?P<c2>[0-9a-f]+) of the temporary branch"),
+    row("details: stage S9", "results/s9-*/ and replication/results.json pools; .github/workflows/measure.yml", exp_repl_sets,
+        r"\| S9 \| Replication: two further sets of `measure\.yml` runs, planned in writing before they were dispatched, in the author's unpublished development history \(`replication/PLAN\.md`; the order is not "
+        r"checkable from public records\): set B on "
+        r"`(?P<al>[\w.-]+)` \((?P<br>\d+) runs, (?P<bd>\d+) jobs dispatched, (?P<bq>\d+) returned results; (?P<n2>\d+) on Neoverse-N2, (?P<v3>\d+) on Neoverse-V3\) "
+        r"and set C on `(?P<xl>[\w.-]+)` \((?P<cr>\d+) runs, (?P<cd>\d+) jobs dispatched, (?P<cq>\d+) returned\)"),
+    row("details: stage S10", "results/s10-dsweep-pooled/dsweep-pooled.json inputs, cpus, ladders", exp_ds_overview,
+        r"\| S10 \| The d-sweep: matrix multiply timed at (?P<lo>\d+) to (?P<hi>\d+) sizes per CPU model; .*? three runs of the d-sweep workflow "
+        r"\((?P<jobs>\d+) jobs: (?P<arm>\d+) on Neoverse-N2, (?P<x>\d+) on x86-64\), dispatched from the temporary public branch `dsweep-smoke`"),
+    row("details: stage S10, the words", "results/s10-dsweep-pooled/dsweep-pooled.json words", exp_ds_words,
+        r"registered words H2 on EPYC 7763 \((?P<j7>\d+) jobs\) and \"neither\" on Neoverse-N2 \((?P<jn>\d+) jobs\)"),
+    row("details: layout, the workflows", ".github/workflows/*.yml", exp_workflow_count,
+        r"\.github/workflows/  (?P<n>\d+) workflows;"),
+    row("details: the follow-up list, replication", "replication/results.json pools", exp_repl_sets,
+        r"`replication/`: two further sets of full runs \((?P<a>\d+) Arm jobs, (?P<x>\d+) x86-64 jobs\)"),
+    row("details: the follow-up list, dsweep", "results/s10-dsweep-pooled/dsweep-pooled.json cpus", exp_ds_overview,
+        r"`dsweep/`: matrix multiply timed at (?P<lo>\d+) to (?P<hi>\d+) sizes per CPU model"),
+]
+
+ARM64_NEW_ROWS = [
+    row("arm64: the d-sweep that was run", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 ladder, words and columns",
+        lambda: {**exp_ds_overview(), **exp_ds_numbers(), **exp_ds_words(), **exp_ds_boundary(), "w": ds_cpu(N2)["verdict"]["word"]},
+        r"\(d = (?P<a0>\d+) to (?P<a1>\d+) in steps of (?P<step>\d+) and (?P<g0>\d+), (?P<g1>\d+) and (?P<g2>\d+), all at d mod (?P<m>\d+) = (?P<res>\d+), "
+        r"a scan of (?P<sc0>\d+) to (?P<sc1>\d+), and (?P<dl2>\d+)\) and timed matrix multiply at (?P<nsz>\d+) sizes in (?P<ar>\w+) run of (?P<arm>\d+) jobs "
+        r"on this core\. The registered word for Neoverse-N2 is \"(?P<w>\w+)\": as compiled the excess time per inner call falls with d "
+        r"\(fixed share (?P<sac>[\d.]+), the rule's word \"(?P<wac>\w+)\"; (?P<a148>[\d.]+) ns at d = 148 and (?P<a209>[\d.]+) ns at d = 209\); aligned the fixed share is "
+        r"(?P<sal>[\d.]+), inside the registered H1 band \((?P<h1lo>[\d.]+) to (?P<h1hi>[\d.]+)\), yet the aligned excess also falls at d = (?P<q1>\d+) "
+        r"\((?P<b148>[\d.]+) ns\) and at d = (?P<q2>\d+) \((?P<b209>[\d.]+) ns\)\. At the sizes with d = 4 mod 8, from d = (?P<fl>\d+) to d = (?P<last>\d+), the excess is flat "
+        r"\((?P<alo>[\d.]+) to (?P<ahi>[\d.]+) ns as compiled, (?P<blo>[\d.]+) to (?P<bhi>[\d.]+) ns aligned\), and d = (?P<p1>\d+) and d = (?P<p2>\d+) are past the "
+        r"L1 size of this core \((?P<l1>\d+) KiB L1d: (?P<w76>[\d,]+) B and (?P<w108>[\d,]+) B\), so the excess is flat across the L1 boundary and smaller only at "
+        r"d = (?P<q1b>\d+) and d = (?P<q2b>\d+)"),
+    row("arm64: the replication of set A", "replication/results.json arm models",
+        lambda: {**exp_repl_arm(), "bj": exp_repl_sets()["bj"], "n2": exp_repl_sets()["n2"]},
+        r"A pre-planned replication of (?P<bj>\d+) more jobs \(set B, (?P<n2>\d+) of them Neoverse-N2\) was run afterwards; alone it is (?P<fb>[A-Z]+) on the same cell, "
+        r"with the aligned interval ending at (?P<hb>[\d.]+), and pooled with this column \((?P<nab>\d+) Neoverse-N2 jobs\) it gives (?P<fab>[A-Z]+), "
+        r"which the harness labels (?P<stab>\w+)\."),
+]
+
+REPLICATION_ROWS = [
+    row("replication/README: why", "replication/results.json questions", exp_repl_intro,
+        r"the forward add at L2, aligned, ends at (?P<ha>[\d.]+) against a limit of (?P<lim>[\d.]+), and the Xeon 6973P-C is (?P<fx>[A-Z]+) with its stencil at L2 "
+        r"ending at (?P<hx>[\d.]+), just under the same limit"),
+    row("replication/README: the sets", "replication/results.json pools", exp_repl_sets,
+        r"\(B: (?P<bj>\d+) Arm jobs in (?P<br>\d+) runs; C: (?P<cj>\d+) x86-64 jobs in (?P<cr>\d+) runs\)"),
+    row("replication/README: the runs", "replication/results.json pools runs; results/s9-*/ job records run.commit", exp_repl_runs,
+        r"`results/s9-arm-run-\*` \(runs (?P<a1>\d+), (?P<a2>\d+) and (?P<a3>\d+)\) and `results/s9-run-\*` \(runs (?P<c1>\d+), (?P<c2>\d+), (?P<c3>\d+) and (?P<c4>\d+)\)\. "
+        r"Every job record names commit (?P<commit>[0-9a-f]+) of the default branch"),
+    row("replication/README: what came out", "replication/results.json arm models and x86 totals, headline", lambda: {**exp_repl_arm(), **exp_repl_x86(), **exp_repl_untested(), **exp_repl_headline()},
+        r"Set B alone is (?P<fb>[A-Z]+) again, on the same cell \(the forward add at L2, aligned: (?P<ha>[\d.]+) in set A, (?P<hb>[\d.]+) in set B, limit (?P<lim>[\d.]+)\)\. "
+        r"The cell sits close to the limit in both sets, so a second [A-Z]+ is a weak repeat of the word and not strong evidence for it\. "
+        r"Of the (?P<four>\w+) x86-64 models with (?P<mn>\d+) or more jobs in set C, (?P<two>\w+) gave the same verdict word as the first pool and (?P<two2>\w+) a different one; "
+        r".*? The Xeon 6973P-C had (?P<rj>\d+) job in set C and could not be tested\. The headline range of (?P<plo>[\d.]+)x to (?P<phi>[\d.]+)x holds\."),
+]
+
+DSWEEP_ROWS = [
+    row("dsweep/README: status", "results/s10-dsweep-pooled/dsweep-pooled.json inputs", exp_ds_overview,
+        r"three runs \((?P<jobs>\d+) jobs\); no further runs are planned"),
+    row("dsweep/README: the question", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 ladder and columns", exp_ds_overview,
+        r"still costs (?P<r>[\d.]+)x at the L1 size \(d = (?P<d>\d+)\)"),
+    row("dsweep/README: the runs", "results/s10-dsweep-pooled/dsweep-pooled.json cpus runs", exp_ds_overview,
+        r"\((?P<ra>\d+) on Arm, (?P<rb>\d+) and (?P<rc>\d+) on x86-64\)"),
+    row("dsweep/README: the shares and the plan's table", "results/s10-dsweep-pooled/dsweep-pooled.json; dsweep/PLAN.md",
+        lambda: {**exp_ds_words(), **exp_ds_numbers()},
+        r"the fixed share is (?P<sac>[\d.]+) as compiled and (?P<sal>[\d.]+) aligned, both above 1, so the result is not a mixture\. FAST adds (?P<ex>\d+) extra "
+        r"instructions per inner call at every size with d = (?P<r>\d) mod (?P<m>\d) from (?P<d0>\d+) to (?P<d1>\d+) .*? "
+        r"\(R\(12\) = (?P<pr>[\d.]+) under H1; (?P<obs>[\d.]+) observed\)"),
+    row("dsweep/README: the temporary branch", "results/s10-dsweep-run-*/dsweep-job-*/dsweep.json run.commit", exp_smoke_branch,
+        r"`dsweep-smoke` \(commit (?P<c>[0-9a-f]+)\)"),
+    row("dsweep/README: the smoke runs", "harness/criteria-v3.json timing.reps_per_side", exp_ds_overview,
+        r"fewer repetitions per side than the (?P<reps>\d+) of `harness/criteria-v3\.json`"),
+]
+
+# ---- the provenance, caveat and verdict sentences (review round 5) ----------------------------------------------------
+# A caveat or a verdict word is not a measured number, so the rows below do two things. Where the sentence states something the
+# data hold (a count, a verdict word, a model, a run id) its groups are compared with the data like any other row. Where it states
+# a limit or an order of events, the row has no group and fixes that the sentence is still there in these words: reworded,
+# reversed or deleted, it fails here by name. The verdict words come from replication/results.json and site/data/dsweep.json.
+
+def prov():
+    """tests/data/s9_s10_provenance.json: the commit times and branch facts the provenance sentences rest on (a record of what was read)."""
+    path = os.environ.get("PROVENANCE_PATH")  # redirected only by the tamper tests
+    if path:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return J("tests/data/s9_s10_provenance.json")
+
+
+def utc(iso):
+    return datetime.datetime.fromisoformat(iso).astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+
+def pick(values, *keys):
+    return {k: values[k] for k in keys}
+
+
+def lf_sha(rel):
+    with open(os.path.join(REPO, rel), "rb") as f:
+        return hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def exp_prov_dsweep():
+    """What the d-sweep sentences say about order and dispatch, checked against the provenance record and the stored run records."""
+    p = prov()
+    plan, code, pub, br = p["dsweep_plan"], p["dsweep_code"], p["dsweep_public"], p["dsweep_branch"]
+    first = min(start_times(S10_JOBS))
+    assert plan["files"] == ["dsweep/PLAN.md"], "the plan commit is no longer recorded as holding the plan alone"
+    assert utc(plan["author_date"]) < utc(code["author_date"]), "the record puts the plan commit after the code commit"
+    assert utc(code["author_date"]) < first, "the record puts the code commit after the first d-sweep job started"
+    assert "dsweep/PLAN.md" not in code["added"], "the code commit is recorded as holding the plan"
+    assert {"dsweep/PLAN.md", "dsweep/analyze.py", "dsweep/sweep.py", ".github/workflows/dsweep.yml"} <= set(pub["paths_in_that_commit"]), (
+        "the record no longer shows the plan arriving in the same public commit as the code")
+    assert utc(pub["date"]) <= first, "the first public commit of the plan and code is recorded after the first job started"
+    assert ds()["plan_sha256"] == lf_sha("dsweep/PLAN.md"), "dsweep/PLAN.md differs from the plan the pooled d-sweep file was made under"
+    commit = short_commit(S10_JOBS)
+    assert br["commit"].startswith(commit), f"the d-sweep job records name {commit}, the record names {br['commit'][:7]}"
+    assert sorted(br["workflow_files"]) == ["ci.yml", "dsweep.yml"], f"the branch holds {br['workflow_files']}"
+    path = os.path.join(REPO, ".github", "workflows", "dsweep.yml")
+    assert os.path.exists(path), "the tree has no .github/workflows/dsweep.yml"
+    with open(path, encoding="utf-8") as f:
+        assert f.readline().strip() == "name: " + br["ci_yml_workflow_name"], "the d-sweep workflow in this tree has another name than the one run as ci.yml"
+    return {"br": br["branch"], "c": commit, "f": "ci.yml", "g": "dsweep.yml"}
+
+
+def exp_prov_dsweep_none():
+    exp_prov_dsweep()
+    return {}
+
+
+def exp_prov_replication():
+    """What the replication sentences say about the plan's order and the dispatch: the gap between the plan commit and the earliest
+    recorded job start, the commit the runs name, and that no public record or run-time record carries the plan."""
+    p = prov()
+    plan, disp = p["replication_plan"], p["replication_dispatch"]
+    ts = start_times(S9_ARM_JOBS, S9_X86_JOBS)
+    gap = (min(ts) - utc(plan["author_date"])).total_seconds()
+    assert plan["files"] == ["replication/PLAN.md"], "the replication plan commit is no longer recorded as holding the plan alone"
+    assert 0 < gap < 60 and gap == int(gap), f"the plan commit is {gap} s before the earliest job start; the text says a whole number of seconds under a minute"
+    commit = short_commit(S9_ARM_JOBS, S9_X86_JOBS)
+    assert disp["commit"].startswith(commit), f"the s9 job records name {commit}, the record names {disp['commit']}"
+    assert disp["plan_in_public_history_at_that_commit"] is False, "the record says the plan was public at the commit the runs were dispatched from"
+    assert lf_sha("replication/PLAN.md") == repl()["plan_sha256"], "replication/PLAN.md differs from the plan the comparison was built with"
+    for d in job_records(S9_ARM_JOBS) + job_records(S9_X86_JOBS):
+        assert "plan_sha256" not in d and "plan_sha256" not in d["run"], "a replication job record now carries the plan hash"
+    dsj = job_records(S10_JOBS)
+    assert len(dsj) == 18 and all(d["plan_sha256"] == lf_sha("dsweep/PLAN.md") for d in dsj), "not every d-sweep result file stores the hash of its plan"
+    return {"sec": str(int(gap)), "n": str(len(ts)), "c": commit}
+
+
+def exp_sweep_floor():
+    """The d-sweep on EPYC 7763, as compiled: matrix multiply costs less than the headline's lower end at the smallest sizes, so 2.8x is not a floor
+    for these loops; the sizes quoted and the 7763's L1d come from the pooled file and the job records."""
+    c = ds_cpu("7763")
+    ac = ds_rows(c, "as_compiled")
+    page = repl()["x86"]["headline"]["page_range"]
+    kib = {j["run"]["runner"]["l1d_kib"] for j in job_records(S10_JOBS) if "7763" in j["run"]["runner"]["cpu_model"]}
+    assert len(kib) == 1, f"the EPYC 7763 d-sweep jobs report these L1d sizes: {sorted(kib)}"
+    kib = kib.pop()
+    l1_d = c["ladder"]["study_l1_d"]
+    assert (l1_d, 12, 76) == (36, 12, 76) and all(d in ac for d in (12, 20, 36, 76)), "the d-sweep rows of EPYC 7763 changed"
+    assert ac[12]["ratio"] < page["min"] and ac[20]["ratio"] < page["min"], "the smallest d-sweep sizes are no longer under the headline's lower end"
+    assert ac[l1_d]["working_set_bytes"] <= kib * 1024 < ac[76]["working_set_bytes"], "d = 76 is no longer the first size past the 7763's L1d"
+    return {"d12": "12", "r12": f1(ac[12]["ratio"]), "d36": str(l1_d), "r36": f1(ac[l1_d]["ratio"]), "d76": "76", "r76": f1(ac[76]["ratio"]), "kib": str(kib),
+            "pm": page["printed_min"], "ph": page["printed_max"]}
+
+
+def set_model_jobs(pattern):
+    """CPU model -> jobs, counted from the job records of one replication set (run.runner.cpu_model)."""
+    out = {}
+    for d in job_records(pattern):
+        m = d["run"]["runner"]["cpu_model"]
+        out[m] = out.get(m, 0) + 1
+    return out
+
+
+def exp_model_job_counts():
+    """The per-model job counts the limits paragraph of DETAILS.md types, from the job records of both sets, checked against the
+    comparison file; plus the sizes of the pools and the 6973P-C counts."""
+    b, c = set_model_jobs(S9_ARM_JOBS), set_model_jobs(S9_X86_JOBS)
+    for arch, counts in (("arm", b), ("x86", c)):
+        for m in repl()[arch]["models"]:
+            assert m["replication"]["jobs"] == counts.get(m["cpu_model"], 0), f"{m['cpu_model']}: the comparison file and the job records disagree on its jobs in the set"
+        assert sum(counts.values()) == repl()["pools"][arch]["replication"]["jobs"]
+    c8370 = next(v for k, v in c.items() if "8370C" in k)
+    v3 = next(v for k, v in b.items() if "Neoverse-V3" in k)
+    assert not any("Neoverse" in k for k in c), "set C now has an Arm job"
+    assert not any("8370C" in k for k in b), "set B now has a Xeon job"
+    u = exp_repl_untested()
+    return {"rj": u["rj"], "mn": u["mn"], "p95": exp_repl_sets()["p95"], "sj": u["sj"], "sf": u["sf"], "j8": str(c8370), "jv": str(v3)}
+
+
+def exp_ds_flags_none():
+    exp_ds_flags()
+    return {}
+
+
+def exp_h2_rejected():
+    """On Neoverse-N2 the fixed share of both columns lies, interval and all, above the H2 band: H2 is rejected in both."""
+    c = ds_cpu(N2)
+    band = ds()["rule"]["h2_share_band"]
+    for column in ("as_compiled", "aligned"):
+        lo, hi = c["columns"][column]["excess"]["share_ci95"]
+        assert lo > band[1], f"{column}: the fixed share's interval [{lo}, {hi}] is no longer wholly above the H2 band {band}"
+    return {"h": "H2"}
+
+
+def exp_registered_word_neither():
+    c = ds_cpu(N2)
+    assert c["verdict"]["columns_agree"] is False
+    return {"w": c["verdict"]["word"]}
+
+
+def exp_arm_majority_word():
+    """The word the whole Arm analysis gives under most of the 400 other seeds (arm64/seed-sensitivity.json): MAP."""
+    s = exp_arm_seed_whole()
+    assert int(s["map"]) > int(s["inc"]), "most of the other seeds no longer give MAP"
+    return "MAP"
+
+
+def exp_ds_flags():
+    """What every d-sweep job record says about the toolchain and the flags: one clang, one libc++, -O2, FAST against NONE, and the
+    alignment flag of the aligned pair; the numbers are returned as the docs type them."""
+    recs = job_records(S10_JOBS)
+    assert len(recs) == 18
+    aligned = set()
+    for d in recs:
+        b = d["builds"]
+        assert sorted(b) == ["fast", "fast_a64", "none", "none_a64"], f"a d-sweep job builds {sorted(b)}"
+        for k, v in b.items():
+            cmd = v["command"]
+            assert cmd.startswith("clang++-18 -O2 ") and "-stdlib=libc++" in cmd, f"{k}: {cmd}"
+            assert ("_LIBCPP_HARDENING_MODE_FAST" if k.startswith("fast") else "_LIBCPP_HARDENING_MODE_NONE") in cmd
+            m = re.search(r"-falign-loops=(\d+)", cmd)
+            assert bool(m) == k.endswith("_a64"), f"{k}: the alignment flag is on the wrong builds"
+            if m:
+                aligned.add(m.group(1))
+    clang = {d["run"]["toolchain"]["clang"] for d in recs}
+    lib = {d["run"]["toolchain"]["libcxx_package"] for d in recs}
+    assert len(aligned) == len(clang) == len(lib) == 1, "the d-sweep jobs name more than one toolchain or alignment"
+    cv = re.search(r"clang version ([\d.]+)", clang.pop()).group(1)
+    lv = re.search(r"libc\+\+-(\d+)-dev", lib.pop()).group(1)
+    arm_jobs_n = sum(1 for d in recs if d["run"]["runner"]["cpu_model"] == N2)
+    return {"al": aligned.pop(), "cl": cv, "lc": lv, "four": word(len(recs[0]["builds"])), "six": word(arm_jobs_n), "one": word(len(ds_cpu(N2)["runs"])),
+            "mn": str(ds()["rule"]["minimum_jobs"]), "w7": ds_cpu("7763")["verdict"]["word"]}
+
+
+def test_the_job_counts_of_set_b_and_set_c_by_model():
+    """Set B drew 29 Neoverse-N2 and 1 Neoverse-V3 jobs; set C drew 19 EPYC 7763, 5 EPYC 9V45, 7 EPYC 9V74, 7 Xeon Platinum 8573C and 1
+    each of the Xeon 6973P-C and the Xeon Platinum 8370C (DETAILS.md types the one-job models and the README the 29 and the 1)."""
+    b, c = set_model_jobs(S9_ARM_JOBS), set_model_jobs(S9_X86_JOBS)
+    assert b == {N2: 29, V3: 1}, b
+    assert c == {"AMD EPYC 7763 64-Core Processor": 19, "AMD EPYC 9V45 96-Core Processor": 5, "AMD EPYC 9V74 80-Core Processor": 7,
+                 "INTEL(R) XEON(R) PLATINUM 8573C": 7, "Intel(R) Xeon(R) 6973P-C": 1, "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": 1}, c
+    assert sum(b.values()) == 30 and sum(c.values()) == 40
+
+
+def exp_prov_replication_pick(*keys):
+    return lambda: pick(exp_prov_replication(), *keys)
+
+
+def exp_pool_check():
+    """The two red set-C combine runs and the rule that replaced the sampling of one-job models, from the provenance record, the
+    pooled files of the red runs and harness/criteria-v3.json."""
+    p = prov()["replication_combine_runs"]
+    runs = repl()["pools"]["x86"]["replication"]["runs"]
+    assert sorted(p["red"] + p["green"]) == sorted(runs) and len(p["red"]) == 2 and len(runs) == 4, "the record does not split the four set-C runs two and two"
+    mn = J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]
+    assert mn == repl()["criteria"]["minimum_jobs"], "the comparison and the criteria name different minimums"
+    cells = p["failing_cells"]
+    assert [c["run"] for c in cells] == p["red"], "the failing cells are not those of the two red runs"
+    assert [(c["cell_id"], c["column"]) for c in cells] == [("k08_matmul.L1", "as_compiled"), ("k03_stencil.L1", "as_compiled")]
+    assert "6973P-C" in cells[0]["cpu_model"] and "9V74" in cells[1]["cpu_model"], "the failing models are no longer the Xeon 6973P-C and the EPYC 9V74"
+    jobs = []
+    for c in cells:
+        b = next(b for b in J(f"results/s9-run-{c['run']}/pooled.json")["cpus"] if b["cpu_model"] == c["cpu_model"])
+        cell = next(x for x in b["cells"] if x["cell_id"] == c["cell_id"])
+        assert b["jobs"] == c["jobs"] < mn and cell[c["column"]]["jobs"] == c["jobs"], (
+            f"run {c['run']}: {c['cpu_model']} does not have {c['jobs']} job(s), fewer than the minimum of {mn}, in its pooled file")
+        jobs.append(c["jobs"])
+    assert jobs == [1, 2], "the two failing models no longer have one and two jobs"
+    return {"two": word(len(p["red"])), "four": word(len(runs)), "r1": p["red"][0], "r2": p["red"][1], "mn": str(mn), "j1": str(jobs[0]), "j2": str(jobs[1]),
+            "o1": word(jobs[0]), "o2": word(jobs[1])}
+
+
+def exp_plan_item(startswith, must_contain):
+    """The number of the plan item whose text starts with `startswith` (replication/PLAN.md), after checking it says `must_contain`."""
+    with open(os.path.join(REPO, "replication", "PLAN.md"), encoding="utf-8") as f:
+        items = re.findall(r"^(\d+)\. (.*)$", f.read(), re.M)
+    hits = [(n, t) for n, t in items if t.startswith(startswith)]
+    assert len(hits) == 1 and must_contain in hits[0][1], f"the plan has no single item that starts '{startswith}' and says '{must_contain}'"
+    return hits[0][0]
+
+
+def exp_repl_arm_close():
+    """The Arm replication cell sits close to its limit in both sets, and the word repeated."""
+    a = exp_repl_arm()
+    lim = float(a["lim"])
+    assert abs(float(a["ha"]) - lim) < 0.01 and abs(float(a["hb"]) - lim) < 0.01, "the Arm cell is no longer within 0.01 of the limit in both sets"
+    assert a["fa"].upper() == a["fb"].upper(), "set B and set A no longer give the same word"
+    return {"lim": a["lim"], "fb": a["fb"]}
+
+
+README_GUARD_ROWS = [
+    row("d-sweep: H2 is rejected in both Arm columns (README)", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns share_ci95; rule.h2_share_band", exp_h2_rejected,
+        r"On Arm (?P<h>H2) is rejected in both columns\."),
+    row("d-sweep: the registered word stays and no further runs will be made (README)", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 verdict", exp_registered_word_neither,
+        r"A setup cost before the NEON loop is consistent with this; the registered word is still \"(?P<w>\w+)\", and no further runs will be made\."),
+    row("d-sweep: caveats, one Arm run and the alignment flag (README)", "results/s10-dsweep-pooled/dsweep-pooled.json placement; the s10 job records builds and run.toolchain",
+        lambda: {**pick(exp_ds_flags(), "one", "six", "al"), **pick(exp_ds_caveats(), "s", "n")},
+        r"\*\*Caveats\.\*\* Arm is (?P<one>one) run of (?P<six>six) near-identical jobs, so its intervals cannot show run-to-run or host-to-host spread; "
+        r"`-falign-loops=(?P<al>\d+)` moves every loop on Arm \((?P<s>\d+) of the (?P<n>\d+) sizes are flagged placement-sensitive\), so the aligned column is not a "
+        r"pure placement control; no hardware counters were read\."),
+    row("sizes: the headline range is for the study's sizes and 2.8x is not a floor (README)", "results/s10-dsweep-pooled/dsweep-pooled.json EPYC 7763 as_compiled rows; replication/results.json x86 headline; job records run.runner.l1d_kib",
+        exp_sweep_floor,
+        r"\*\*Sizes\.\*\* The (?P<pm>[\d.]+)x to (?P<ph>[\d.]+)x is for the study's sizes\. On EPYC 7763 the matrix-multiply sweep gives, as compiled, (?P<r12>[\d.]+)x at "
+        r"d = (?P<d12>\d+), (?P<r36>[\d.]+)x at d = (?P<d36>\d+) \(the study's L1 size\) and (?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), "
+        r"so (?P=pm)x is not a floor for these loops\."),
+    row("replication: the plan's order rests on an unpublished commit time (README)", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at, run.commit; replication/results.json plan_sha256",
+        exp_prov_replication_pick("sec", "c"),
+        r"before they were dispatched \(the order rests on a commit time in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's "
+        r"recorded start; no public record shows it, and the plan's hash in `replication/results\.json` is computed when the comparison is built, so it shows the file "
+        r"is unchanged, not when it was written\): set B, .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+)\."),
+    row("replication: the two red combine jobs and the checker's sampling rule (README)", "tests/data/s9_s10_provenance.json; the pooled files of the red runs; harness/criteria-v3.json",
+        lambda: pick(exp_pool_check(), "two", "four", "mn", "o1", "o2"),
+        r"(?P<two>Two) of the (?P<four>four) set-C combine jobs ended red on `harness/pool_check\.py`, on a model with fewer than (?P<mn>\d+) jobs "
+        r"\((?P<o1>one) job in one run, (?P<o2>two) in the other\); the checker now samples only models with (?P=mn) or more jobs \(the minimum for a verdict\), "
+        r"no verdict uses a model with fewer, and the pooled files and the rules are unchanged: only that check's sampling rule changed\."),
+    row("replication: a second INCONCLUSIVE on a cell close to its limit is a weak repeat (README)", "replication/results.json arm models",
+        exp_repl_arm_close,
+        r"The cell sits close to the (?P<lim>[\d.]+) limit in both sets, so a second (?P<fb>[A-Z]+) is a weak repeat of the word and not strong evidence for it\."),
+    row("d-sweep: the plan's history and what it does not show (README)", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash", exp_prov_dsweep_none,
+        r"It was drafted before the sweep code, revised while the code was written and once more after a review that changed the deciding statistic, and committed "
+        r"alone, before the code commit and the first run, in the author's unpublished development history; its hash, stored in every result file, shows that it did "
+        r"not change after the runs, and the order before the runs cannot be checked from public records\."),
+    row("d-sweep: where the runs were dispatched from, in the folder map", "tests/data/s9_s10_provenance.json; the s10 records run.commit; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "br", "c", "f"),
+        r"its plan \(committed alone before the code and any run, in unpublished history, and unchanged since\), code and workflow \(runs `s10-dsweep-run-\*`, "
+        r"pooled in `s10-dsweep-pooled`\), dispatched from the temporary public branch `(?P<br>dsweep-smoke)` \(commit (?P<c>[0-9a-f]+)\), where the d-sweep workflow "
+        r"is the file `(?P<f>ci\.yml)` \(only a workflow already on the default branch can be dispatched\); the branch is kept because the run records name that commit\."),
+    row("replication: the inside count is descriptive", "the sentence, as worded", lambda: {},
+        r"The count is descriptive: a new pooled point carries its own noise, so fewer than 95% of points are expected inside even when nothing has changed\."),
+    row("d-sweep: the excess is flat across the L1 boundary and smaller only at the two largest sizes",
+        "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns and working sets; job records run.runner.l1d_kib", exp_ds_boundary,
+        r"with the excess flat, at the sizes with d = 4 mod 8, from d = (?P<fl>\d+) to d = (?P<last>\d+), across the L1 boundary of the core \(d = (?P<p1>\d+) and (?P<p2>\d+) are past its "
+        r"(?P<l1>\d+) KiB L1d\), and smaller again only at d = (?P<q1>\d+) and d = (?P<q2>\d+), which are context and not fitted"),
+]
+
+DETAILS_GUARD_ROWS = [
+    row("details: d-sweep, H2 is rejected in both Arm columns", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns share_ci95; rule.h2_share_band", exp_h2_rejected,
+        r"so the result is not a mixture of the two accounts; (?P<h>H2) is rejected there in both columns\."),
+    row("details: d-sweep, the registered word stays and no further runs are planned", "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 verdict", exp_registered_word_neither,
+        r"A setup cost before the NEON loop is consistent with the Arm points, and the registered word is \"(?P<w>\w+)\"\. No further runs are planned\."),
+    row("details: the limits of the sets, the 6973P-C and the one-job models", "the s9 job records run.runner.cpu_model; replication/results.json; harness/criteria-v3.json",
+        exp_model_job_counts,
+        r"The Xeon 6973P-C was not tested: set C drew (?P<rj>\d+) job of it \((?P<mn>\d+) are the minimum\), so its borderline MAP in the (?P<p95>\d+)-job pool stands "
+        r"or falls with which jobs were drawn, and the (?P<sj>\d+)-job pooled form, (?P<sf>[A-Z]+), answers the question neither way\. The Xeon Platinum 8370C drew "
+        r"(?P<j8>\d+) job in set C, and the Neoverse-V3 core (?P<jv>\d+) job in set B\."),
+    row("details: stage S9, the run folders", "replication/results.json pools runs", lambda: {"ra": exp_repl_sets()["br"], "rc": exp_repl_sets()["cr"]},
+        r"\| `replication/`, `results/s9-arm-run-\*/` \((?P<ra>\d+) runs\), `results/s9-run-\*/` \((?P<rc>\d+) runs\), `results/s9-arm-b-pooled/`"),
+    row("details: stage S10, the run folders", "results/s10-dsweep-pooled/dsweep-pooled.json cpus runs",
+        lambda: {"n": str(len({r for c in ds()["cpus"] for r in c["runs"]}))},
+        r"\| `dsweep/`, `results/s10-dsweep-run-\*/` \((?P<n>\d+) runs\), `results/s10-dsweep-pooled/` \|"),
+    row("details: d-sweep, caveats, one Arm run and the alignment flag", "results/s10-dsweep-pooled/dsweep-pooled.json; the s10 job records builds",
+        lambda: pick(exp_ds_flags(), "one", "six", "al"),
+        r"Neoverse-N2 is (?P<one>one) run of (?P<six>six) near-identical jobs, so its intervals cannot show run-to-run or host-to-host spread\. "
+        r"`-falign-loops=(?P<al>\d+)` moves every loop on Arm: "),
+    row("details: d-sweep, caveats, counters and compiler", "the s10 job records builds and run.toolchain", exp_ds_flags_none,
+        r"No hardware counters were read\. The sweep is one kernel, one compiler and `-O2`\."),
+    row("details: the lost-loop range is for the study's sizes", "site/data/index.json page.lost", exp_lost_range,
+        r"In cache, at the study's sizes, they ran \*\*(?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x slower\*\* on every x86-64 CPU model drawn"),
+    row("details: the d-sweep bears on the headline range; 2.8x is not a floor", "results/s10-dsweep-pooled/dsweep-pooled.json EPYC 7763 as_compiled rows; replication/results.json x86 headline; job records run.runner.l1d_kib",
+        lambda: pick(exp_sweep_floor(), "r12", "d12", "r36", "d36", "r76", "d76", "kib", "pm"),
+        r"It also bears on the headline range: on EPYC 7763, as compiled, matrix multiply costs (?P<r12>[\d.]+)x at d = (?P<d12>\d+), (?P<r36>[\d.]+)x at d = (?P<d36>\d+) "
+        r"\(the study's L1 size\) and (?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), so (?P<pm>[\d.]+)x is not a floor for these loops and the "
+        r"range holds at the study's sizes\."),
+    row("details: replication, the plan's order rests on an unpublished commit time", "tests/data/s9_s10_provenance.json; the s9 job records run.started_at; replication/results.json plan_sha256",
+        exp_prov_replication_pick("sec"),
+        r"committed before the sets were dispatched, in the author's unpublished development history, (?P<sec>\d+) seconds before the first job's recorded start: "
+        r"no public record shows that order, and the plan's hash in `replication/results\.json` is computed when the comparison is built, so it shows the file is "
+        r"unchanged, not when it was written;"),
+    row("details: replication, the sets were dispatched from the default branch", "the s9 job records run.commit", exp_prov_replication_pick("c"),
+        r"all dispatched from the default branch at commit (?P<c>[0-9a-f]+)\. Each is pooled alone"),
+    row("details: replication, a second INCONCLUSIVE on a cell close to its limit is a weak repeat", "replication/results.json arm models", exp_repl_arm_close,
+        r"The cell sits close to the (?P<lim>[\d.]+) limit in both sets, so a second (?P<fb>[A-Z]+) is a weak repeat of the word and not strong evidence for it\."),
+    row("details: replication, the two red combine jobs and the checker's sampling rule", "tests/data/s9_s10_provenance.json; the pooled files of the red runs; harness/criteria-v3.json",
+        lambda: pick(exp_pool_check(), "two", "four", "r1", "r2", "mn", "j1", "j2"),
+        r"\*\*The combine step\.\*\* (?P<two>Two) of the (?P<four>four) set-C combine jobs \(runs (?P<r1>\d+) and (?P<r2>\d+)\) ended red on `harness/pool_check\.py`, which "
+        r"disagreed with the pooled file on a model with fewer than (?P<mn>\d+) jobs \(run (?P=r1): the Xeon 6973P-C, (?P<j1>\d+) job, matrix multiply at L1, as compiled; "
+        r"run (?P=r2): the EPYC 9V74, (?P<j2>\d+) jobs, the stencil at L1, as compiled\)\. The checker now samples only models with (?P=mn) or more jobs, the minimum "
+        r"for a verdict; no verdict uses a model with fewer, the pooled files and the rules are unchanged, and only that check's sampling rule changed\."),
+    row("details: stage S9, unpublished order and the dispatch commit", "tests/data/s9_s10_provenance.json; the s9 job records run.commit", exp_prov_replication_pick("c"),
+        r"planned in writing before they were dispatched, in the author's unpublished development history \(`replication/PLAN\.md`; the order is not checkable from "
+        r"public records\): set B .*? both dispatched from the default branch at commit (?P<c>[0-9a-f]+); "),
+    row("details: the follow-up list and the folder map call the replication order unpublished", "the sentences, as worded", lambda: {},
+        r"planned in writing before they were dispatched \(the order rests on commit times in unpublished history\), pooled alone"),
+    row("details: the folder map, the replication plan is in unpublished history", "the sentence, as worded", lambda: {},
+        r"replication/ +the plan for replication sets B and C \(committed before they were dispatched, in unpublished history\), compare\.py"),
+    row("details: d-sweep, the plan's history and what it does not show", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "br"),
+        r"plan `dsweep/PLAN\.md`, drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code "
+        r"\(the review changed the deciding statistic\), and committed alone, before the code commit and before the first run, in the author's unpublished development "
+        r"history: its sha256 is stored in every result file, which shows that it did not change after the runs, and `dsweep/analyze\.py` treats a file with another "
+        r"hash as a file problem\. The order before the runs is not checkable from public records: on this repository the plan arrived in one commit together with "
+        r"the code, on the temporary branch `(?P<br>dsweep-smoke)`\)"),
+    row("details: d-sweep, where the runs were dispatched from", "tests/data/s9_s10_provenance.json; the s10 records run.commit; .github/workflows/dsweep.yml",
+        lambda: pick(exp_prov_dsweep(), "br", "c", "f", "g"),
+        r"They were dispatched from the temporary public branch `(?P<br>dsweep-smoke)` at commit (?P<c>[0-9a-f]+), where the workflow file is named `(?P<f>ci\.yml)` "
+        r"\(a dispatchable workflow must already exist on the default branch; in this tree it is `\.github/workflows/(?P<g>dsweep\.yml)`\); the branch is kept because "
+        r"the run records name that commit:"),
+    row("details: stage S10, the plan's history and the branch", "tests/data/s9_s10_provenance.json; the s10 records run.commit",
+        lambda: pick(exp_prov_dsweep(), "c", "f"),
+        r"`dsweep/PLAN\.md` committed alone before the sweep code and before any run, in the author's unpublished development history \(it reached this repository "
+        r"in one commit with the code\); .*?dispatched from the temporary public branch `dsweep-smoke` \(commit (?P<c>[0-9a-f]+), where the workflow file is named "
+        r"`(?P<f>ci\.yml)`\)"),
+    row("details: replication, the inside count is the pool.py test, in both columns", "harness/pool.py reproduction(); replication/compare.py", lambda: {},
+        r"The plan asked whether the new pooled aligned ratio lies inside the earlier interval\. The counts above compare each new pooled ratio, in both columns "
+        r"\(as compiled and aligned\), with the earlier pool's 95% interval: the point-inside-interval test of `harness/pool\.py` `reproduction\(\)`, which the page "
+        r"already applies run against run\. That form was written into `replication/compare\.py` after the sets' data were in, so aligned alone is printed beside it"),
+    row("details: replication, the inside count is descriptive and prints no null", "the sentence, as worded", lambda: {},
+        r"The count is descriptive: a new pooled point carries its own noise, so fewer than 95% of points are expected inside even when nothing has changed, "
+        r"and the share mostly follows interval width and set size\. No expectation under \"no change\" is printed or claimed\."),
+    row("details: d-sweep, the aligned column is H1 and still falls at the two largest sizes; flat across the L1 boundary",
+        "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 columns, working sets and rule; job records run.runner.l1d_kib",
+        lambda: {**exp_ds_boundary(), **exp_ds_words(), **exp_ds_overview()},
+        r"The aligned column is H1 by the rule \(fixed share (?P<sal>[\d.]+), inside (?P<h1lo>[\d.]+) to (?P<h1hi>[\d.]+)\), yet its excess also falls at "
+        r"d = (?P<q1>\d+) and d = (?P<q2>\d+)\. d = (?P<p1>\d+) and d = (?P<p2>\d+) are past the L1 size of the core \((?P<l1>\d+) KiB L1d: (?P<w76>[\d,]+) B and "
+        r"(?P<w108>[\d,]+) B\), so the excess is flat across the L1 boundary and smaller only at d = (?P<q1b>\d+) and d = (?P<q2b>\d+), which are context and not fitted"),
+]
+
+REPLICATION_GUARD_ROWS = [
+    row("replication/README: the plan was committed in unpublished history and its hash is not a time", "tests/data/s9_s10_provenance.json; the s9 and s10 job records; replication/results.json plan_sha256",
+        exp_prov_replication_pick("sec", "n", "c"),
+        r"committed in the author's unpublished development history (?P<sec>\d+) seconds before the earliest job start recorded in the (?P<n>\d+) job records "
+        r"\(`run\.started_at`; the commit time is from the author's machine and the start time from the runner, and the two clocks were not compared\)\. The public "
+        r"repository did not hold the file at commit (?P<c>[0-9a-f]+), the commit the runs were dispatched from, and no public record shows the order\. A hash shows "
+        r"that a file is unchanged, not when it was written: the hash in `results\.json` is computed by `compare\.py` when the comparison is built, after the data "
+        r"were in, and the per-job records do not carry it\. So the sets are described as planned before they were dispatched, on commit times a reader of this "
+        r"repository cannot check, and not as a pre-registration\. The d-sweep is better placed: every one of its result files stores the hash of its plan\."),
+    row("replication/README: the status line and the plan bullet name the unpublished history", "the sentences, as worded", lambda: {},
+        r"planned in writing before any of them was dispatched \(the order rests on commit times in unpublished history; see \"What the plan does and does not show\"\)"),
+    row("replication/README: the plan bullet", "the sentence, as worded", lambda: {},
+        r"`PLAN\.md`: the plan, committed before the runs in the author's unpublished development history\. It fixes .*? Its sha256 is stored in `results\.json`, where "
+        r"`compare\.py` computes it when it builds that file\."),
+    row("replication/README: the two red combine jobs and the checker's sampling rule", "tests/data/s9_s10_provenance.json; the pooled files of the red runs; harness/criteria-v3.json",
+        lambda: pick(exp_pool_check(), "two", "four", "r1", "r2", "mn", "j1", "j2"),
+        r"(?P<two>Two) of the (?P<four>four) set-C combine jobs \(runs (?P<r1>\d+) and (?P<r2>\d+)\) ended red on `harness/pool_check\.py`, which disagreed with the "
+        r"pooled file on a model with fewer than (?P<mn>\d+) jobs \(run (?P=r1): the Xeon 6973P-C, (?P<j1>\d+) job, matrix multiply at L1, as compiled; run (?P=r2): "
+        r"the EPYC 9V74, (?P<j2>\d+) jobs, the stencil at L1, as compiled; the two other combine jobs passed\)\. The checker now samples only models with (?P=mn) or "
+        r"more jobs, the minimum for a verdict, and lists the others as skipped\. No verdict uses a model with fewer, the pooled files and the rules are unchanged, and "
+        r"only that check's sampling rule changed \(`tests/test_replication\.py` runs the two pooled files through it\)\."),
+    row("replication/README: a second INCONCLUSIVE on a cell close to its limit is a weak repeat", "replication/results.json arm models",
+        lambda: pick(exp_repl_arm_close(), "fb"),
+        r"The cell sits close to the limit in both sets, so a second (?P<fb>[A-Z]+) is a weak repeat of the word and not strong evidence for it\."),
+    row("replication/README: the pooled forms are secondary (plan item)", "replication/PLAN.md items", lambda: {"i": exp_plan_item("Pooled forms", "They are secondary because the sets were requested after a borderline reading")},
+        r"so the stopping point depended on the data \(plan, item (?P<i>\d+)\)\."),
+    row("replication/README: the inside count", "replication/results.json arm and x86 models inside.points", exp_repl_reproduction,
+        r"Arm (?P<aal>\d+) of (?P<aalc>\d+) against (?P<ai>\d+) of (?P<ac>\d+) in both columns, x86-64 (?P<xal>\d+) of (?P<xalc>\d+) against "
+        r"(?P<xi>\d+) of (?P<xc>\d+)\. The count is descriptive: a new pooled point carries its own noise, so fewer than 95% of points are expected inside even "
+        r"when nothing has changed, and the share mostly follows interval width and set size\. No expectation under \"no change\" is printed or claimed\."),
+    row("replication/README: the plan's description of the inside count was wrong", "the sentence, as worded; replication/PLAN.md item 2; site/data/holdout.json", lambda: {},
+        r"Plan item 2 asked for the new set's pooled aligned ratio alone, and described the share as \"as in the holdout column of the page\"\. That description is "
+        r"wrong: the holdout table's \"Reproduced\" column compares verdict words only\."),
+]
+
+DSWEEP_GUARD_ROWS = [
+    row("dsweep/README: sweep.py builds four ways", "the s10 job records builds", lambda: pick(exp_ds_flags(), "four", "al"),
+        r"`sweep\.py`: builds `kernels/k08_matmul\.cpp` (?P<four>four) ways \(NONE and FAST, each as compiled and with `-falign-loops=(?P<al>\d+)`\)"),
+    row("dsweep/README: the minimum number of jobs", "results/s10-dsweep-pooled/dsweep-pooled.json rule.minimum_jobs", lambda: pick(exp_ds_flags(), "mn"),
+        r"per CPU model \((?P<mn>\d+) jobs at least\)"),
+    row("dsweep/README: the EPYC 7763 word is the one the plan expected", "results/s10-dsweep-pooled/dsweep-pooled.json EPYC 7763 verdict", lambda: pick(exp_ds_flags(), "w7"),
+        r"EPYC 7763, where the checked loop loses SIMD, gave (?P<w7>H\d), which the plan expected there; that is all that control says\."),
+    row("dsweep/README: what the sweep cannot show", "the s10 job records builds and run.toolchain; results/s10-dsweep-pooled/dsweep-pooled.json",
+        lambda: pick(exp_ds_flags(), "cl", "lc", "six", "al"),
+        r"One kernel, one compiler \(clang (?P<cl>[\d.]+) with libc\+\+ (?P<lc>\d+), FAST mode\) and `-O2`\. The Arm result is one run of (?P<six>six) jobs on one core "
+        r"type that agree closely, so its intervals show no run-to-run or host-to-host spread\. `-falign-loops=(?P<al>\d+)` moves every loop, not only the hot one, "
+        r"so the aligned column is not a pure placement control\."),
+    row("dsweep/README: the sweep bears on the headline range; 2.8x is not a floor", "results/s10-dsweep-pooled/dsweep-pooled.json EPYC 7763 as_compiled rows; replication/results.json x86 headline; job records run.runner.l1d_kib",
+        exp_sweep_floor,
+        r"On EPYC 7763, as compiled, matrix multiply costs (?P<r12>[\d.]+)x at d = (?P<d12>\d+), (?P<r36>[\d.]+)x at d = (?P<d36>\d+) \(the study's L1 size\) and "
+        r"(?P<r76>[\d.]+)x at d = (?P<d76>\d+) \(past its (?P<kib>\d+) KiB L1d\), so the (?P<pm>[\d.]+)x of \"(?P=pm)x to (?P<ph>[\d.]+)x\" is not a floor for these loops "
+        r"and the range holds at the study's sizes\."),
+    row("dsweep/README: the plan's history and what it does not show", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash",
+        lambda: pick(exp_prov_dsweep(), "br"),
+        r"drafted before the sweep code, revised while the code was written and tested and once more after a review of the plan and the code \(the review changed "
+        r"the deciding statistic; the plan's own \"Changes made before any run\" lists every change\), and committed alone, before the code commit and before the "
+        r"first run, in the author's unpublished development history\. .*? The order before the runs is not checkable from public records\. On this repository the "
+        r"plan arrived in one commit together with the code, on the temporary branch `(?P<br>dsweep-smoke)`\."),
+    row("dsweep/README: where the runs were dispatched from", "tests/data/s9_s10_provenance.json; the s10 records run.commit; .github/workflows/dsweep.yml",
+        lambda: pick(exp_prov_dsweep(), "br", "c", "f", "g"),
+        r"dispatched from a temporary branch of the public repository, `(?P<br>dsweep-smoke)` \(commit (?P<c>[0-9a-f]+)\).*?On that branch the d-sweep workflow file is "
+        r"named `(?P<f>ci\.yml)` \(a dispatchable workflow must already exist on the default branch\); in this tree it is `\.github/workflows/(?P<g>dsweep\.yml)`\. "
+        r"The branch is kept because the run records name that commit\."),
+    row("dsweep/README: the stored phrase 'the same at every d' means inside the H1 band, not constant",
+        "results/s10-dsweep-pooled/dsweep-pooled.json Neoverse-N2 words.aligned.reason and columns", exp_ds_reason,
+        r"The stored `reason` of an H1 column ends \"the excess per inner call is (?P<ph>the same at every d)\"\. That phrase is the registered code's wording for "
+        r"\"inside the H1 band\" \(a fixed share of (?P<h1lo>[\d.]+) to (?P<h1hi>[\d.]+)\), not a statement that the excess is constant: on Neoverse-N2 the aligned "
+        r"column is (?P<wal>H\d) \(fixed share (?P<sal>[\d.]+)\), and its excess, at the sizes with d = 4 mod 8, is (?P<blo>[\d.]+) to (?P<bhi>[\d.]+) ns from d = (?P<d0>\d+) to d = (?P<d1>\d+), "
+        r"(?P<b148>[\d.]+) ns at d = 148 and (?P<b209>[\d.]+) ns at d = 209\. `analyze\.py` and the stored files are not changed\."),
+]
+ARM64_GUARD_ROWS = [
+    row("arm64: what this says, the stored verdict and the 2% limit", "replication/results.json arm models; harness/criteria-v3.json forward ceiling",
+        lambda: {"fa": exp_repl_arm()["fa"], "pct": f0(round((arm_forward_limit() - 1) * 100))},
+        r"The stored verdict is (?P<fa>[A-Z]+) and is kept\. It is not a finding that the forward add costs more than (?P<pct>\d+)% at L2: that cell's interval is "
+        r"[\d.]+% either side"),
+    row("arm64: what this says, the data cannot separate the two words", "arm64/seed-sensitivity.json full forms; replication/results.json arm models",
+        lambda: {"v1": exp_repl_arm()["fa"], "v2": exp_arm_majority_word()},
+        r"The data cannot separate (?P<v1>[A-Z]+) from (?P<v2>[A-Z]+) at this cell\."),
+    row("arm64: the d-sweep plan was committed before its code and the runs", "tests/data/s9_s10_provenance.json; the s10 records; the stored plan hash",
+        exp_prov_dsweep_none,
+        r"It chose its own sizes under a plan committed before its code and the runs \(d = "),
+]
+
+ROWS.extend(README_NEW_ROWS)
+ROWS.extend(README_GUARD_ROWS)
+DETAILS_ROWS.extend(DETAILS_NEW_ROWS)
+DETAILS_ROWS.extend(DETAILS_GUARD_ROWS)
+ARM64_ROWS.extend(ARM64_NEW_ROWS)
+ARM64_ROWS.extend(ARM64_GUARD_ROWS)
+REPLICATION_ROWS.extend(REPLICATION_GUARD_ROWS)
+DSWEEP_ROWS.extend(DSWEEP_GUARD_ROWS)
+
 # Rows whose typed number is wrong against the data: label -> reason. None at the time of writing.
 # Add a row here (the test then needs to keep failing, strict) instead of editing the data to fit.
 XFAIL = {}
@@ -3336,12 +4578,21 @@ if pytest is not None:
     @pytest.mark.parametrize("row", [_param(r) for r in ARM64_ROWS])
     def test_arm64_number(row):
         check_row(row, arm64_text(), "arm64/README.md")
+
+    @pytest.mark.parametrize("row", [_param(r) for r in REPLICATION_ROWS])
+    def test_replication_number(row):
+        check_row(row, replication_text(), "replication/README.md")
+
+    @pytest.mark.parametrize("row", [_param(r) for r in DSWEEP_ROWS])
+    def test_dsweep_number(row):
+        check_row(row, dsweep_text(), "dsweep/README.md")
 else:
     def test_readme_numbers_all_rows():
         failures = []
         for rows, text, doc in ((ROWS, readme_text(), "README.md"), (DETAILS_ROWS, details_text(), "readme-parts/DETAILS.md"),
                                 (SIBLINGS_ROWS, siblings_text(), "siblings/README.md"), (CESWEEP_ROWS, cesweep_text(), "ce-sweep/README.md"),
-                                (ARM64_ROWS, arm64_text(), "arm64/README.md")):
+                                (ARM64_ROWS, arm64_text(), "arm64/README.md"), (REPLICATION_ROWS, replication_text(), "replication/README.md"),
+                                (DSWEEP_ROWS, dsweep_text(), "dsweep/README.md")):
             for row in rows:
                 try:
                     check_row(row, text, doc)
@@ -3351,6 +4602,107 @@ else:
                     if row[0] not in XFAIL:
                         failures.append(str(e))
         assert not failures, "\n".join(failures)
+
+
+# ---- the tables of the replication and d-sweep sections, line by line --------------------------------
+
+REPL_HEADER = "| CPU model | earlier pool | replication set | same word | points inside | both pooled (secondary) |"
+DS_WORDS_HEADER = ("| CPU model | jobs (runs) | as compiled: word (fixed share [95%]) | aligned: word (fixed share [95%]) | registered word |")
+DS_SIZES_HEADER = "| d | d mod 8 | role | as compiled | aligned | excess ns, as compiled | excess ns, aligned | extra instructions |"
+REPL_FILES_HEADER = "| Pool | Jobs | Folder | Role |"
+DS_README_HEADER = "| CPU model | Jobs (runs) | Word |"
+
+
+def test_details_replication_table_matches_the_data():
+    text = details_text()
+    check_table_rows("details: replication table", [REPL_HEADER] + repl_table_rows(), text, "readme-parts/DETAILS.md")
+
+
+def test_details_dsweep_tables_match_the_data():
+    text = details_text()
+    check_table_rows("details: d-sweep words table", [DS_WORDS_HEADER] + ds_words_table_rows(), text, "readme-parts/DETAILS.md")
+    check_table_rows("details: d-sweep sizes table", [DS_SIZES_HEADER] + ds_sizes_table_rows(), text, "readme-parts/DETAILS.md")
+
+
+def test_replication_readme_files_table_matches_the_data():
+    check_table_rows("replication/README: pools table", [REPL_FILES_HEADER] + repl_files_table_rows(), replication_text(), "replication/README.md")
+
+
+def test_dsweep_readme_words_table_matches_the_data():
+    check_table_rows("dsweep/README: words table", [DS_README_HEADER] + ds_readme_words_rows(), dsweep_text(), "dsweep/README.md")
+
+
+GUARDED_DOCS = {"README.md": readme_text, "readme-parts/DETAILS.md": details_text, "arm64/README.md": arm64_text,
+                "replication/README.md": replication_text, "dsweep/README.md": dsweep_text}
+
+
+def guarded_sentences():
+    return J("tests/data/guarded_sentences.json")["sentences"]
+
+
+def squash(text):
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def check_guarded_sentence(entry):
+    assert entry["doc"] in GUARDED_DOCS, f"{entry['doc']} is not one of the documents this test reads"
+    assert squash(entry["sentence"]) in squash(GUARDED_DOCS[entry["doc"]]()), (
+        f"{entry['doc']} no longer holds this sentence word for word (reworded, reversed or deleted); it states a caveat, a rule, an order of events "
+        f"or a verdict word that no row ties to data. Update the document back, or the list tests/data/guarded_sentences.json on purpose:\n  {entry['sentence']}")
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("entry", [pytest.param(e, id=f"{e['doc']}: {e['sentence'][:70]}") for e in guarded_sentences()])
+    def test_guarded_sentence_is_present(entry):
+        check_guarded_sentence(entry)
+else:
+    def test_guarded_sentences_are_present():
+        for e in guarded_sentences():
+            check_guarded_sentence(e)
+
+
+def test_the_guarded_sentence_list_covers_the_listed_caveats():
+    """At least one guarded sentence for each of the five documents, and each sentence listed once."""
+    entries = guarded_sentences()
+    assert {e["doc"] for e in entries} == set(GUARDED_DOCS), "a document has no guarded sentence"
+    assert len({(e["doc"], e["sentence"]) for e in entries}) == len(entries), "a sentence is listed twice"
+
+
+def test_the_replication_pooled_files_list_every_job_of_their_runs():
+    """The s9 pooled files name the runs they pool; each run's job folders must all be in the pooled file (a job left out would change the counts typed above)."""
+    pools = repl()["pools"]
+    for arch, folder_glob in (("arm", "results/s9-arm-run-"), ("x86", "results/s9-run-")):
+        runs = {r: len(glob.glob(os.path.join(REPO, folder_glob + r, "results-*", "results.json"))) for r in pools[arch]["replication"]["runs"]}
+        assert sum(runs.values()) == pools[arch]["replication"]["jobs"], f"{arch}: the run folders hold {sum(runs.values())} jobs, the pooled file {pools[arch]['replication']['jobs']}"
+
+
+def test_the_replication_plan_is_the_one_the_comparison_was_made_against():
+    """The comparison file stores the plan's hash (the order in which the plan and the runs were made cannot be shown by a hash)."""
+    with open(os.path.join(REPO, "replication", "PLAN.md"), "rb") as f:
+        digest = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
+    assert digest == repl()["plan_sha256"], "replication/PLAN.md differs from the plan the comparison was made against"
+
+
+def test_the_holdout_column_compares_verdict_words_only():
+    """replication/README.md says the holdout table's "Reproduced" column compares verdict words only, so it is no precedent for the
+    count of points inside an interval (the plan's description "as in the holdout column of the page" was wrong)."""
+    rows = J("site/data/holdout.json")["rows"]
+    assert rows, "the holdout data has no rows"
+    for r in rows:
+        assert set(r) == {"cpu_model", "cpu_short", "original", "holdout", "reproduced"}, f"{r['cpu_short']}: the holdout row has other fields: {sorted(r)}"
+        o, h = r["original"], r["holdout"]
+        both = bool(o and h and o["enough"] and h["enough"])
+        assert r["reproduced"] == ((o["form"] == h["form"]) if both else None), f"{r['cpu_short']}: 'reproduced' is not verdict-word equality"
+        for side in (o, h):
+            if side:
+                assert not ({"inside", "points", "points_inside", "interval"} & set(side)), f"{r['cpu_short']}: a holdout side now holds a count of points inside an interval"
+
+
+def test_the_plan_describes_the_share_as_the_holdout_columns():
+    """The sentence replication/README.md calls wrong is in the plan, in these words (the plan itself is never edited)."""
+    with open(os.path.join(REPO, "replication", "PLAN.md"), encoding="utf-8") as f:
+        text = f.read()
+    assert "whether the new set's pooled aligned ratio lies inside the earlier pool's interval, reported as a share, as in the holdout column of the page" in text
 
 
 # ---- the data behind a few rows, cross-checked against the raw pooled file -----------------------
@@ -3413,13 +4765,14 @@ def test_every_intel_model_loses_the_same_loops():
 
 # ---- every repository path the prose cites must exist -----------------------------------------------
 
-CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md", "arm64/README.md", "ce-sweep/README.md")
+CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md", "arm64/README.md", "ce-sweep/README.md",
+          "replication/README.md", "dsweep/README.md")
 # Planning documents that are not published. The note appended to DETAILS.md in the public export names them on purpose,
 # saying that they do not exist in the repository, so they are not counted as broken citations.
 UNPUBLISHED = {"docs/PLAN.md", "docs/SPEC.md", "docs/skeptic.md"}
 CITED_ROOTS = ("results/", "dayone/", "investigate/", "tests/", "harness/", "siblings/", "variants/", "ce-sweep/", "layout-sweep/",
                "pgo/", "versions/", "environment/", "robustness/", "mitigate/", "corpus/", "realworld/", "audit/", "kernels/",
-               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/")
+               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/", "replication/", "dsweep/")
 
 
 def cited_paths(doc):

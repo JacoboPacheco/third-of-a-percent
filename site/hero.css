@@ -145,7 +145,6 @@
 /* ---------- the hero switcher: lives in the top bar (never over text); hidden unless the hash says hero, or H was pressed ---------- */
 .hv-switch { display: flex; align-items: center; gap: 4px; padding: 3px 5px 3px 11px; margin-left: auto; border-radius: 999px; background: #16202f; color: #fff; font-size: .8rem; box-shadow: var(--e1); }
 .hv-switch[hidden] { display: none; }
-.hv-switch:not([hidden]) + .bar-details { margin-left: 0; }
 .hv-switch button { font: inherit; font-weight: 600; color: #fff; background: transparent; border: 0; border-radius: 999px; width: 32px; height: 32px; cursor: pointer; }
 .hv-switch button:hover { background: rgb(255 255 255 / .16); }
 .hv-switch button[aria-pressed="true"] { background: #fff; color: #16202f; }
@@ -212,8 +211,8 @@
   .seg button:first-child { border-radius: 2px 0 0 2px; }
   .seg button:last-child { border-radius: 0 2px 2px 0; }
   .stage .seg button:first-child, .stage .seg button:last-child { border-radius: 999px; }
-  .seg button, .bar-details, .toc-btn, .bar-title, .rr-name, .sec-more, .linkbtn, .back-up, .hint { position: relative; }
-  .seg button::after, .bar-details::after, .toc-btn::after, .bar-title::after, .rr-name::after, .sec-more::after, .back-up::after {
+  .seg button, .toc-btn, .bar-title, .rr-name, .sec-more, .linkbtn, .back-up, .hint { position: relative; }
+  .seg button::after, .toc-btn::after, .bar-title::after, .rr-name::after, .sec-more::after, .back-up::after {
     content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(100%, 46px); transform: translateY(-50%); }
   .stage .sw { min-height: 46px; }
   .controls { row-gap: 12px; }
@@ -328,7 +327,7 @@ html[data-hv="4"] .hero .authors { font-size: .82rem; }
   .repro-btn { min-height: 44px; }
   html[data-hv="4"] .hero .byline { font-size: 1rem; margin-bottom: .3rem; }
   html[data-hv="4"] .hero .scope { font-size: .86rem; }
-  #race[data-hv="4"] { --lane: 54px; padding: 10px 10px 10px; row-gap: 6px; }
+  #race[data-hv="4"] { --lane: 51px; padding: 10px 10px 10px; row-gap: 6px; }
   #race[data-hv="4"] .race-loops { padding: 4px; gap: 3px; }
   #race[data-hv="4"] .race-loops button { grid-template-columns: 38px minmax(0, 1fr) 56px; grid-template-rows: 26px 12px; column-gap: 8px; row-gap: 3px; align-content: center; padding: 4px 8px; height: var(--lane); }
   #race[data-hv="4"] .ln-tile { width: 38px; height: 26px; }
@@ -351,7 +350,7 @@ html[data-hv="4"] .hero .authors { font-size: .82rem; }
   #race[data-hv="4"] .race-ctl { gap: 6px 10px; }
   #race[data-hv="4"] .race-ctl .sw { margin-left: 0; }
 }
-@media (min-width: 388px) and (max-width: 640px) { html[data-hv="4"] .hero .dateline { display: none; } }
+@media (min-width: 361px) { html[data-hv="4"] .hero .dateline { display: none; } } /* the bar's chip carries the marking; below 361 px the chip is hidden and the dateline shows */
 @media (max-width: 1040px) and (min-width: 641px) {
   html[data-hv="4"] .hero-copy { grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
   #race[data-hv="4"] { --lab: 180px; }
@@ -359,16 +358,6 @@ html[data-hv="4"] .hero .authors { font-size: .82rem; }
 @media (prefers-reduced-motion: reduce) { .ln-t > i, .ln-t.on, .repro-btn { transition: none; } }
 @media print { html[data-hv="4"] .hero-copy { display: block; } }
 
-/* the key: what the bars and colours mean, once, in the controls row */
-.race-key { display: none; }
-#race[data-hv="4"] .race-key { display: none; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: .8rem; line-height: 1.2; color: var(--ink-2); min-width: 0; }
-.race-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.race-key i { display: inline-block; width: 22px; height: 8px; border-radius: 2px; }
-.race-key .k-off { background: repeating-linear-gradient(90deg, var(--off) 0 6px, transparent 6px 8px); }
-.race-key .k-lost { background: var(--c-lost); }
-.race-key .k-kept { background: var(--c-kept); }
-.race-key .k-chk { width: 8px; height: 10px; background: var(--check-hl); box-shadow: inset 0 0 0 1px #b8960a; }
-@media (max-width: 640px) { #race[data-hv="4"] .race-key { display: flex; flex-wrap: wrap; align-items: center; order: 9; flex-basis: 100%; gap: 2px 10px; } }
 
 /* ===== type voices, readable captions, the plain sentence above the word pills, aligned columns ===== */
 .words { margin-top: 14px; }
@@ -412,14 +401,6 @@ figcaption, .tnote, .tcap, .few, .ctl-label, .axis .axis-title, .f2-col .remark,
 .abstract > p, .abs-more > p, .abs-more > ul { max-width: 52em; }
 @media (max-width: 640px) { html:not([data-hv="4"]) .hero-actions { display: none; } }
 
-/* direct labels on the bars (wide screens); on a phone the key above the lanes does the job */
-.ln-lbl { position: absolute; top: 0; font: 600 .75rem/12px var(--serif); font-style: normal; white-space: nowrap; color: var(--ink-2); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 5px #fff; pointer-events: none; z-index: 3; }
-.ln-lbl[hidden] { display: none; }
-.ln-t.on .ln-lbl { color: var(--bar-text, var(--ink-2)); }
-.race-loops button[data-role="lost"] { --bar-text: var(--c-lost-text); }
-.race-loops button[data-role="kept"] { --bar-text: var(--c-kept-text); }
-.race-loops button[data-role="none"] { --bar-text: #3f4753; }
-@media (max-width: 640px) { .ln-lbl { display: none !important; } }
 @media (min-width: 641px) and (max-width: 1260px) { #race[data-hv="4"] .race-read { min-height: 124px; } }
 
 /* ===== a 12 px floor for every caption and code span; mono only for code and numbers ===== */

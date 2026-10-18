@@ -1,0 +1,45 @@
+--- k06_gather.none_a64.s
++++ k06_gather.fast_a64.s
+@@ -1,23 +1,28 @@
+ <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_>:
+ ldp	x8, x9, [x2]
+-subs	x9, x9, x8
++subs	x11, x9, x8
+ b.eq	<_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.none
+-asr	x11, x9, #2
+-ldr	x9, [x1]
+-ldr	x10, [x0]
+-cmp	x11, #0x1
+-csinc	x11, x11, xzr, hi	// hi = pmore
++ldp	x9, x12, [x1]
++asr	x14, x11, #2
++ldp	x10, x13, [x0]
++cmp	x14, #0x1
++sub	x11, x12, x9
++sub	x12, x13, x10
++asr	x11, x11, #2
++csinc	x13, x14, xzr, hi	// hi = pmore
++asr	x12, x12, #2
+ nop
+ nop
+ nop
+ nop
+-nop
+-nop
+-nop
+-nop
+-ldrsw	x12, [x8], #4
+-subs	x11, x11, #0x1
+-ldr	w12, [x9, x12, lsl #2]
+-str	w12, [x10], #4
++ldrsw	x14, [x8], #4
++cmp	x11, x14
++b.ls	<_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.plast
++cbz	x12, <_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++ldr	w14, [x9, x14, lsl #2]
++subs	x13, x13, #0x1
++sub	x12, x12, #0x1
++str	w14, [x10], #4
+ b.ne	<_Z15kern_k06_gatherRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.any
+ ret
++brk	#0x1

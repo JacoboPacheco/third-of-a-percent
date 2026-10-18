@@ -79,24 +79,31 @@
 @media print { .mech { display: none; } }
 
 /* ---------- small parts ---------- */
-.simd-gloss { margin: 0 0 .4rem; font-size: .9rem; line-height: 1.4; }
-.simd-def { color: var(--ink-2); margin-left: 6px; }
-.simd-gloss .w-chip { font-size: .86rem; min-height: 36px; padding: 4px 12px; }
-.sw-hint { position: absolute; right: 0; top: calc(100% + 8px); z-index: 6; padding: 5px 11px; border-radius: 999px; background: var(--ink); color: #fff; font: 600 .82rem/1.2 var(--serif); white-space: nowrap; box-shadow: var(--e1); opacity: 0; transform: translateY(-3px); transition: opacity 200ms var(--hv-ease), transform 200ms var(--hv-ease); pointer-events: none; }
-.sw-hint.show { opacity: 1; transform: none; }
-.sw-hint::before { content: ""; position: absolute; right: 40px; top: -4px; width: 8px; height: 8px; background: var(--ink); transform: rotate(45deg); }
+.simd-def { margin: 0 0 .4rem; font-size: .9rem; line-height: 1.4; color: var(--ink-2); }
+/* the instruction beside the switch: plain text with an arrow, from the first paint until the switch is used */
+.sw-hint { margin-left: 4px; font: 600 .86rem/1.2 var(--serif); white-space: nowrap; color: var(--t-ink, var(--ink)); opacity: 0; transition: opacity 200ms var(--hv-ease); pointer-events: none; }
+.sw-hint.show { opacity: 1; }
+.sw-hint::before { content: "\2190\00a0"; }
+.sw-hint .h-tap, .sw-hint .h-on, .sw-hint .h-on-s, .sw-hint .h-on-tap, .sw-hint .h-on-xs { display: none; }
+/* after the first use, while the check is off, the same hint asks for the second move: switch it back on */
+.sw-hint.back .h-start, .sw-hint.back .more, .sw-hint.back .h-tap { display: none !important; }
+.sw-hint.back .h-on-xs { display: inline; }
 #race .sw { position: relative; }
 #race[data-hv="4"] .replay { font-size: .86rem; }
-#race[data-hv="4"] .ln-lbl { font-size: .82rem; line-height: 14px; font-weight: 600; color: var(--ink); text-shadow: none; background: #fff; padding: 0 6px; border-radius: 4px; box-shadow: 0 0 0 1px rgb(15 23 42 / .08); height: 16px; top: -2px; z-index: 4; }
-#race[data-hv="4"] .ln-t.on .ln-lbl { color: var(--bar-text, var(--ink)); }
-#race[data-hv="4"] .ln-t.off .ln-lbl { color: var(--ink); }
 #race[data-hv="4"]:not(.is-on) .tr { opacity: 1; color: var(--ink-2); }
 #race[data-hv="4"]:not(.is-on) button[data-role] .tr { color: var(--ink-2); }
-.bar-limits { font-size: .86rem; color: var(--ink-2); white-space: nowrap; text-decoration: none; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px; min-height: 32px; display: inline-flex; align-items: center; margin-left: auto; }
-.bar-limits ~ .bar-details { margin-left: 0; }
-.bar-limits:hover { border-color: var(--ink); color: var(--ink); }
-@media (max-width: 640px) { .bar { gap: 8px; } .bar-title { font-size: .92rem; } .bar-limits, .bar-details { padding: 4px 9px; font-size: .82rem; } .toc-btn { padding: 5px 10px; } }
-@media (max-width: 420px) { .bar { gap: 6px; } .bar-limits { padding: 4px 7px; } .toc-btn { padding: 5px 8px; } } /* leaves the bar slack at 388 to 420 px, where the chip, Limits and Contents share it with the title */
+/* the bar holds the title, the work-in-progress chip and one menu button; Limits and Full details are the menu's first two entries */
+.toc { margin-left: auto; }
+.hv-switch:not([hidden]) + .toc { margin-left: 0; }
+.toc ol .toc-top a { color: var(--ink); font-weight: 600; }
+.toc ol .toc-top + .toc-top { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+@media (max-width: 640px) { .bar { gap: 8px; } .bar-title { font-size: .92rem; } .toc-btn { padding: 5px 12px; } }
+@media (max-width: 420px) { .bar { gap: 6px; } .toc-btn { padding: 5px 10px; } } /* leaves the bar slack at 361 to 420 px, where the chip and the Contents button share it with the title */
+/* on a phone the menu button is a quiet underlined word, like the links under the intro, so the Bounds check switch is the only drawn button on the first screen (readers named the outlined pill as a second candidate for the first tap); the tap area stays 44 px */
+@media (max-width: 640px) {
+  .bar .toc-btn { border-color: transparent; background: transparent; padding: 5px 6px; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  .bar .toc-btn:hover, .bar .toc-btn[aria-expanded="true"] { border-color: transparent; background: #eef1f6; text-decoration-color: var(--ink); }
+}
 
 /* the section dots: visible, with their label on hover */
 @media (min-width: 1380px) {
@@ -141,10 +148,10 @@
 
 /* ---------- finger-sized hit areas on a phone: every link, chip and button 44 px ---------- */
 @media (max-width: 640px), (pointer: coarse) {
-  .sec-more, .w-chip, .w-fold > summary, .fold > summary, .mech-step, .mech-tiles button, .bar-limits, .bar-details, .toc-btn, .simd-gloss .w-chip { min-height: 44px; }
+  .sec-more, .w-chip, .w-fold > summary, .fold > summary, .mech-step, .mech-tiles button, .toc-btn { min-height: 44px; }
   .more-link a, .jump a, .cannot-more a, .repro-more a, .simd-def a, .foot a { display: inline-block; padding: 12px 0; margin: -12px 0; }
-  .bar-limits, .bar-details, .toc-btn, .bar-title { position: relative; }
-  .bar-limits::after, .bar-details::after, .toc-btn::after, .bar-title::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 46px; transform: translateY(-50%); }
+  .toc-btn, .bar-title, .fine-l { position: relative; }
+  .toc-btn::after, .bar-title::after, .fine-l::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 46px; transform: translateY(-50%); }
 }
 
 /* the placement module: one sentence and the four taps by default */
@@ -161,13 +168,6 @@
 @media (max-width: 1040px) {
   #rows > #fig2 { margin: 2px 0 10px; padding: 10px 12px 8px; border: 0; border-radius: 12px; background: #f6f7fa; box-shadow: inset 0 0 0 1px rgb(15 23 42 / .08); min-height: 0; }
   #figures > #fig2:not(.open) { display: none; }
-}
-@media (max-width: 640px) { .bar .bar-details { display: none; } .bar-limits { margin-left: auto; } } /* the dateline carries the Full details link on a phone */
-@media (max-width: 640px) {
-  .sw-hint { position: relative; margin-left: 8px; transform: none; }
-  .sw-hint.show { transform: none; }
-  .sw-hint::before { right: auto; left: -4px; top: calc(50% - 4px); }
-  .simd-gloss { margin: 0 0 .2rem; }
 }
 @media (max-width: 640px), (pointer: coarse) {
   .paper a:not(.skip):not(.pil):not(.rail a) { position: relative; }
@@ -211,4 +211,165 @@
 @media (max-width: 640px) {
   .arm-read { padding: 10px 10px 8px; }
   .arm-rows .row { min-height: 44px; }
+}
+
+/* ---------- the replication: Figure 8 on the main page (section 1), its tables and text on the details page ---------- */
+/* Every size here is in rem (the old pixel widths at a 16px root: 42px, 66px, 6px, 11px, 24px), so the columns grow with the reader's text size;
+   a container query, not the viewport, picks the layout: three steps, the full grid, a compact grid, and a stacked row whose cells carry their own labels. */
+.rep-fig { margin: 6px 0 8px; max-width: 40em; container: rep / inline-size; --rc: 2.625rem; --ri: 4.125rem; }
+.rep-fig .fig-title { margin-bottom: 4px; }
+.rep-head, .rep-fig .rep-rows .row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, var(--rc)) var(--ri); gap: 0 .375rem; align-items: center; }
+.rep-head { padding: 0 .375rem 3px .625rem; font-size: .75rem; line-height: 1.2; color: var(--ink-3); }
+.rep-head span + span { text-align: center; }
+.rep-fig .rep-rows .row { grid-template-areas: none; min-height: 32px; padding: 2px .375rem 2px .625rem; }
+.rep-fig .rep-rows .row > * { grid-area: auto; margin: 0; }
+.rep-fig .rep-rows:hover .row:not(:hover) { opacity: 1; }
+.rep-fig .rep-rows .row .name { font-size: .92rem; line-height: 1.2; }
+.rep-fig .rep-rows .row.rep-gap { margin-top: 6px; border-top: 1px solid var(--rule); }
+.rg { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.rg i { display: inline-block; flex: none; box-sizing: border-box; width: .6875rem; height: .6875rem; border-radius: 50%; }
+.rg b { font: inherit; font-size: .78rem; font-weight: 400; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.g-map i { background: var(--ink); }
+.g-inc i { border: 2px solid var(--ink); }
+.g-few i { width: .6875rem; height: 0; border-radius: 0; border-top: 2px dotted var(--ink-3); }
+.g-few b, .g-none b { color: var(--ink-3); }
+.rin { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+.rbar { flex: none; width: 1.5rem; height: 6px; border-radius: 3px; background: var(--rule-2); overflow: hidden; }
+.rbar i { display: block; height: 100%; background: var(--ink-2); }
+.rn { font-size: .78rem; font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+.rn.na { color: var(--ink-3); }
+.rep-key { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 6px 0 0 10px; font-size: .78rem; line-height: 1.4; color: var(--ink-3); }
+.rep-key .rk { display: inline-flex; align-items: center; gap: 4px; }
+.rep-read { margin: 10px 0 4px; padding: 10px 12px 8px; border-radius: 12px; background: #f6f7fa; box-shadow: inset 0 0 0 1px rgb(15 23 42 / .08); font-size: .9rem; line-height: 1.45; color: var(--ink-2); }
+.rep-read[hidden] { display: none; }
+.rep-read .rp-head { margin: 0 0 6px; color: var(--ink); }
+.rep-read .rp-note { margin: 0 0 6px; font-size: .86rem; }
+@media (max-width: 640px) {
+  .rep-read { padding: 10px 10px 8px; }
+}
+@container rep (max-width: 20.5rem) { /* compact grid: the old phone sizes, chosen by the figure's own width (330px at a 390px phone is just above this at 100% text) */
+  .rep-head, .rep-fig .rep-rows .row { grid-template-columns: minmax(0, 1fr) repeat(3, 2.25rem) 2.5rem; gap: 0 .25rem; }
+  .rep-head { font-size: .7rem; }
+  .rep-fig .rbar { display: none; }
+  .rep-fig .rep-rows .row .name { font-size: .88rem; }
+}
+@container rep (max-width: 17.25rem) { /* too narrow for five columns: the name on its own line, then the cells, each with its own label (the header row is dropped) */
+  .rep-head { display: none; }
+  .rep-fig .rep-rows .row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px .875rem; padding: 4px .5rem 6px .625rem; }
+  .rep-fig .rep-rows .row .lab { flex: 1 0 100%; }
+  .rep-fig .rep-rows .row .rg, .rep-fig .rep-rows .row .rin { justify-content: flex-start; gap: .25rem; }
+  .rep-fig .rep-rows .row > :nth-child(n+2)::before { font-size: .7rem; color: var(--ink-3); }
+  .rep-fig .rep-rows .row > :nth-child(2)::before { content: "first"; }
+  .rep-fig .rep-rows .row > :nth-child(3)::before { content: "second"; }
+  .rep-fig .rep-rows .row > :nth-child(4)::before { content: "both"; }
+  .rep-fig .rep-rows .row > :nth-child(5)::before { content: "inside"; }
+}
+
+/* ===== the first screen with fewer things to choose between =====
+   One menu button in the bar; the section dots only after the reader scrolls; the secondary links as one quiet row of text;
+   the CPU choice as plain tabs; the switch as the one lit control; the readout's button outlined, not filled. */
+.rail { visibility: hidden; }
+html.scrolled .rail { visibility: visible; }
+
+.hero .aud { margin: 0; font-size: 1.02rem; line-height: 1.4; color: var(--ink); }
+html[data-hv="4"] .hero .aud { width: 0; min-width: 100%; }
+.hero .fine { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; margin: 0 0 .3rem; }
+.hero .fine .hero-actions { position: static; margin: 0; }
+.fine-l .more { margin-left: .3em; }
+.hero .fine .repro-box { top: calc(100% + 4px); }
+.hero .fine-l { font: inherit; font-size: .9rem; font-weight: 400; color: var(--ink-2); background: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; min-height: 32px; display: inline-flex; align-items: center; cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.hero .fine-l:hover, .hero .fine .repro-btn[aria-expanded="true"], .hero .fine-l[aria-expanded="true"] { background: none; color: var(--ink); text-decoration-color: var(--ink); box-shadow: none; }
+.hero .simd-def { margin: 0 0 .35rem; }
+@media (max-width: 640px) {
+  .hero .fine { gap: 0 16px; margin: 0; }
+  .hero .fine-l { min-height: 34px; font-size: .86rem; }
+  .hero .aud { font-size: .98rem; margin: 0 0 .35rem; }
+  html[data-hv="4"] .hero .byline { font-size: .98rem; line-height: 1.38; margin-bottom: .25rem; }
+  html:not([data-hv="4"]) .fine, html:not([data-hv="4"]) .aud { display: none; }
+  .hero .fine-full { display: none; } /* on a phone the Contents menu holds the way to the details page */
+}
+
+/* the stage's controls: the switch first and lit, the CPU choice as quiet tabs, Replay as plain text */
+#race[data-hv="4"] { grid-template-areas: "ctl" "head" "axis" "tiles" "read" "cap"; row-gap: 6px; }
+/* the figure's own header: what is timed, what the two bars are (the chips), and what the number is, in the columns they sit over */
+#race:not([data-hv="4"]) .race-head, #race:not([data-hv="4"]) .cpu-l { display: none; }
+#race:not([data-hv="4"]) .cpu-pick { display: contents; } /* the other hero variants keep the processor tabs as they were: no label, no wrapper box */
+#race[data-hv="4"] .race-head { grid-area: head; display: grid; grid-template-columns: calc(var(--lab) + 21px) minmax(0, 1fr) auto; align-items: center; margin: 4px 0 0; min-height: 22px; font-size: .92rem; line-height: 1.2; color: var(--ink); }
+.rh-key { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; min-width: 0; padding-right: 12px; color: var(--ink); }
+.rh-t { font-weight: 700; color: var(--ink); white-space: nowrap; margin-right: -6px; }
+.rh-key > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.rh-key i { display: inline-block; width: 22px; height: 8px; border-radius: 2px; }
+.rh-key .k-off { background: repeating-linear-gradient(90deg, var(--off) 0 6px, transparent 6px 8px); }
+.rh-key .k-kept { background: var(--c-kept); width: 11px; border-radius: 2px 0 0 2px; margin-right: -6px; }
+.rh-key .k-lost { background: var(--c-lost); width: 11px; border-radius: 0 2px 2px 0; }
+#race:not(.is-on) .rh-on { opacity: .45; }
+#race:not(.is-on) .rh-on::after { content: " (hidden)"; }
+@media (max-width: 359px) { #race:not(.is-on) .rh-on::after { content: none; } } /* no room for the words beside the column name; the chip is still dimmed */
+.rh-num { grid-column: 3; justify-self: end; padding-right: 15px; white-space: nowrap; color: var(--ink); font-weight: 600; }
+#race[data-hv="4"] .race-ctl { gap: 8px 22px; justify-content: flex-start; align-items: center; }
+#race[data-hv="4"] .race-ctl .sw { order: 0; margin-left: 0; min-height: 46px; padding: 5px 16px 5px 16px; gap: 10px; border-radius: 999px; background: var(--check-hl); box-shadow: inset 0 0 0 1.5px #b8960a, var(--e1); color: var(--ink);
+  transition: background-color 200ms var(--hv-ease), box-shadow 200ms var(--hv-ease); }
+#race[data-hv="4"] .race-ctl .sw[aria-checked="false"] { background: #eceff5; box-shadow: inset 0 0 0 1.5px #98a1b2, var(--e1); }
+#race[data-hv="4"] .sw-l { font-size: .98rem; font-weight: 700; }
+#race[data-hv="4"] .sw-t, #race[data-hv="4"] .sw[aria-checked="true"] .sw-t { background: #16202f; box-shadow: none; }
+#race[data-hv="4"] .sw[aria-checked="false"] .sw-t { background: #8a93a3; }
+#race[data-hv="4"] .sw .sw-t i { background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .35); }
+#race[data-hv="4"] .sw[aria-checked="true"] .sw-t i { background: #fff; }
+/* the processor choice: a segmented control (a recessed track, the chosen segment raised and white), so the chosen name reads as a pressed button; "Measured on" stays quiet beside it */
+#race[data-hv="4"] .race-ctl .cpu-pick { order: 1; margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+#race[data-hv="4"] .cpu-l { font-size: .8rem; color: var(--ink-3); white-space: nowrap; }
+#race[data-hv="4"] #race-cpu { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 2px; padding: 3px; border: 0; border-radius: 11px; overflow: visible; background: #e9edf4; box-shadow: inset 0 1px 2px rgb(15 23 42 / .12); }
+#race[data-hv="4"] #race-cpu button { font-size: .82rem; padding: 4px 10px; min-height: 30px; color: var(--ink-2); background: none; border: 0; border-radius: 8px; box-shadow: none; }
+#race[data-hv="4"] #race-cpu button:hover { background: rgb(255 255 255 / .6); color: var(--ink); }
+#race[data-hv="4"] #race-cpu button[aria-checked="true"] { background: #fff; color: var(--ink); font-weight: 600; box-shadow: var(--e1); }
+#race[data-hv="4"] .race-ctl .replay { order: 2; margin-left: 0; border: 0; padding: 4px 6px; min-height: 32px; font-size: .84rem; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+#race[data-hv="4"] .race-ctl .replay::before { content: "\21BA\00a0"; text-decoration: none; display: inline-block; }
+#race[data-hv="4"] .race-ctl .replay:hover { background: none; color: var(--ink); text-decoration-color: var(--ink); }
+/* the readout's button is the quiet way into the machine code, not a second main button */
+#race[data-hv="4"] .rr-name { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+#race[data-hv="4"] .rr-name:hover { background: #f1f3f8; box-shadow: inset 0 0 0 1.5px var(--ink), var(--e1); }
+/* the axis ticks sit above the lanes now, under the line that says what the numbers are */
+#race[data-hv="4"] .race-axis { height: 16px; margin-top: 0; margin-bottom: -2px; }
+.race-axis::before { content: none; }
+@media (min-width: 641px) and (max-width: 1040px) { #race[data-hv="4"] .cpu-l { display: none; } } /* no room for the label beside the switch and Replay on a tablet; the track still reads as a choice */
+/* narrower than 920 px the figure header takes two rows (what is timed; then the two chips on the left and the column name on the right, over the numbers), so the off state's "(hidden)" never meets the column name */
+@media (max-width: 920px) {
+  #race[data-hv="4"] .race-head { grid-template-columns: auto auto minmax(0, 1fr); gap: 3px 16px; min-height: 0; }
+  #race[data-hv="4"] .rh-key { display: contents; }
+  #race[data-hv="4"] .rh-t { grid-column: 1 / -1; margin-right: 0; }
+  #race[data-hv="4"] .rh-off { grid-column: 1; }
+  #race[data-hv="4"] .rh-on { grid-column: 2; }
+  #race[data-hv="4"] .rh-num { grid-column: 3; justify-self: end; padding-right: 0; white-space: normal; text-align: right; }
+}
+@media (max-width: 389px) { #race[data-hv="4"] .cpu-l { display: none; } } /* no room for the words beside five tabs on the smallest phones */
+@media (max-width: 1160px) { #race[data-hv="4"] .sw-hint .more { display: none; } }
+#race[data-hv="4"] .sw-hint.back .h-on-xs { display: none; }
+@media (min-width: 1161px) { #race[data-hv="4"] .sw-hint.back .h-on { display: inline; } }
+@media (min-width: 641px) and (max-width: 1160px) { #race[data-hv="4"] .sw-hint.back .h-on-s { display: inline; } }
+@media (min-width: 341px) and (max-width: 640px) { #race[data-hv="4"] .sw-hint.back .h-on-tap { display: inline; } #race[data-hv="4"] .sw-hint.back::before { content: none; } }
+@media (max-width: 340px) { #race[data-hv="4"] .sw-hint.back .h-on-xs { display: inline; } }
+@media (max-width: 640px) {
+  #race[data-hv="4"] .race-ctl { gap: 6px 10px; }
+  #race[data-hv="4"] .race-ctl .cpu-pick { margin-left: 0; flex: 1 1 100%; order: 1; gap: 4px; flex-wrap: nowrap; }
+  #race[data-hv="4"] { row-gap: 3px; }
+  #race[data-hv="4"] .cpu-l { font-size: .75rem; line-height: 1.1; flex: 0 0 auto; }
+  #race[data-hv="4"] #race-cpu { flex: 1 1 auto; min-width: 0; gap: 1px; padding: 2px; }
+  #race[data-hv="4"] #race-cpu button { padding: 4px 2px; font-size: .75rem; flex: 1 1 0; min-width: 0; min-height: 32px; }
+  #race[data-hv="4"] .race-ctl .sw { min-height: 46px; padding: 4px 14px; gap: 8px; width: 100%; }
+  #race[data-hv="4"] .sw-l { font-size: .92rem; white-space: nowrap; }
+  #race[data-hv="4"] .race-head { margin: 4px 12px 0 12px; font-size: .9rem; }
+  #race[data-hv="4"] .race-axis { margin: 0 12px -2px 12px; }
+}
+/* on a phone the hint says what a tap does (the pill is the button); below 341 px it has no room and says Start here */
+@media (min-width: 341px) and (max-width: 640px) {
+  #race[data-hv="4"] .sw-hint .h-start, #race[data-hv="4"] .sw-hint .more { display: none; }
+  #race[data-hv="4"] .sw-hint .h-tap { display: inline; }
+  #race[data-hv="4"] .sw-hint::before { content: none; }
+}
+@media (max-width: 360px) {
+  #race[data-hv="4"] .race-ctl .sw { padding: 4px 10px; gap: 6px; }
+  #race[data-hv="4"] .sw-l { font-size: .84rem; }
+  #race[data-hv="4"] .sw-hint { font-size: .76rem; margin-left: 0; }
+  #race[data-hv="4"] .sw-hint::before { content: none; }
 }

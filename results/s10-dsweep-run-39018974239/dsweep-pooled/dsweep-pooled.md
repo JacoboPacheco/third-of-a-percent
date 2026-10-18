@@ -1,0 +1,33 @@
+### AMD EPYC 7763 64-Core Processor: H2
+
+On AMD EPYC 7763 64-Core Processor (6 jobs, 1 run pooled): H2. fixed share 0.030 (95% 0.023 to 0.035), inside -0.2 to 0.2: the excess per inner call is proportional to d
+
+- jobs 6, runs 39018974239
+- as compiled: H2 (fixed share 0.030 (95% 0.023 to 0.035), inside -0.2 to 0.2: the excess per inner call is proportional to d)
+- aligned: H2 (fixed share 0.039 (95% 0.035 to 0.043), inside -0.2 to 0.2: the excess per inner call is proportional to d)
+- A/A (the same binary against a copy, d = 28): ratio 1.0002, half-width 0.080%
+- the rule's statistic, the excess per inner call in units of t_N(d_max) over the fit ladder [12, 20, 28, 36]: fixed 0.06595 [0.05009, 0.0755], per-element part at d_max 2.107 [2.076, 2.164]; fixed share 0.030 [0.023, 0.035]; growth of the fitted excess from d_min to d_max 2.828 [2.803, 2.870]; undefined resamples 0.0%
+- time per inner call affine in d: median largest relative residual 0.0163 (limit 0.1); excess affine in d: 0.0223 (limit 0.15)
+- y view (decides nothing), 1/(R-1) = 0.739 + -0.008108 d, slope 95% [-0.008329, -0.007953]; dilution Q = 0.697 [0.687, 0.703]
+- inverse view (decides nothing), R - 1 = 2.412 + -11.01/d (slope 95% [-11.61, -10.65])
+
+| d | role | d mod 8 | FAST/NONE as compiled [95%] | aligned [95%] | excess ns per inner call | placement D | extra instr per inner call (not time) | published |
+|---|---|---|---|---|---|---|---|---|
+| 12 | fit | 4 | 2.546 [2.541, 2.553] | 2.544 [2.540, 2.551] | 6.107 | 1.001 | 93.76 | - |
+| 20 | fit | 4 | 2.737 [2.723, 2.763] | 2.836 [2.802, 2.873] | 9.271 | 0.965 * | 167.28 | - |
+| 28 | fit | 4 | 3.007 [2.991, 3.038] | 3.016 [3.013, 3.018] | 13.045 | 0.997 | 240.49 | - |
+| 29 | scan | 5 | 2.723 [2.703, 2.762] | 2.834 [2.832, 2.836] | 12.784 | 0.961 * | 241.51 | - |
+| 30 | scan | 6 | 2.918 [2.907, 2.939] | 3.322 [3.173, 3.493] | 13.631 | 0.878 * | 255.52 | - |
+| 31 | scan | 7 | 2.783 [2.756, 2.819] | 2.890 [2.888, 2.892] | 13.780 | 0.963 * | 256.54 | - |
+| 32 | scan | 0 | 3.392 [3.365, 3.438] | 3.357 [3.354, 3.360] | 15.555 | 1.011 * | 290.55 | - |
+| 33 | scan | 1 | 3.183 [3.165, 3.216] | 3.148 [3.145, 3.149] | 15.561 | 1.011 * | 286.57 | - |
+| 34 | scan | 2 | 3.156 [3.136, 3.193] | 3.133 [3.132, 3.135] | 15.888 | 1.007 * | 298.58 | - |
+| 35 | scan | 3 | 3.096 [3.078, 3.130] | 3.213 [3.209, 3.216] | 16.151 | 0.964 * | 299.59 | - |
+| 36 | fit+study_l1 | 4 | 3.190 [3.167, 3.233] | 3.188 [3.184, 3.197] | 16.866 | 1.001 | 313.60 | 3.190 |
+| 52 | bridge | 4 | 3.400 [3.373, 3.452] | 3.457 [3.454, 3.462] | 24.371 | 0.983 * | 459.73 | - |
+| 76 | bridge | 4 | 4.173 [4.158, 4.192] | 3.763 [3.628, 3.971] | 44.921 | 1.109 * | 678.81 | - |
+| 100 | bridge | 4 | 4.015 [4.000, 4.040] | 3.988 [3.986, 3.991] | 55.874 | 1.007 * | 897.86 | - |
+| 147 | study_l2 | 3 | 3.792 [3.769, 3.832] | 3.798 [3.795, 3.800] | 76.767 | 0.999 | 1321.90 | 3.790 |
+
+Rows with role fit enter the fit; scan, bridge and study_l2 are context. `*` marks a placement-sensitive d (criteria-v3 rule). Published = the pooled as-compiled ratio already published for this CPU model (a sanity reading, not a criterion).
+

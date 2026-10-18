@@ -15,6 +15,15 @@ Sample, per CPU model: the A/A, the layout A/A of k02_add_fwd.L1, and k01_sum_fw
 k03_stencil.L1, k04_rev.L1, k05_stride2.L2, k06_gather.L1 and k08_matmul.L1 in both columns where
 present, plus the placement statistic of k03_stencil.L1 and k02_add_fwd.L1.
 
+Only CPU models with at least the minimum number of jobs are sampled (v3.pooling.minimum_jobs of the criteria
+file the pooled.json names, 3 in harness/criteria-v3.json: the same rule harness/pool.py applies before it gives
+a model a verdict). A model with fewer jobs is listed ("skip") and never sampled: its pooled interval rests on
+one or two jobs, no verdict or printed number is taken from it, and the lumpy tail of a single job's 40
+repetitions once made this check disagree with the stored interval (Xeon 6973P-C, k08_matmul.L1 as compiled,
+1 job, replication set C: by 0.0406 against a tolerance of 0.0347 in the pooled file of run 39012986182, by 0.0849
+in the pooled file of the whole set). Changed on Oct 17: the sampling rule only. The tolerance, the resampling and
+everything else are as before.
+
 Usage: python harness/pool_check.py <pooled.json>     exit 0 if every sampled number agrees.
 """
 import json
@@ -22,6 +31,9 @@ import math
 import os
 import random
 import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(HERE)
 
 SAMPLE_CELLS = ("k01_sum_fwd.L1", "k02_add_fwd.L1", "k03_stencil.L1", "k04_rev.L1", "k05_stride2.L2",
                 "k06_gather.L1", "k08_matmul.L1")
@@ -62,7 +74,16 @@ def ratio4(n, f, na, fa):
     return (f / n) / (fa / na)
 
 
-def check(path):
+def minimum_jobs(pooled):
+    """v3.pooling.minimum_jobs of the criteria file the pooled.json names (a path relative to the repository):
+    the number of jobs a CPU model needs before harness/pool.py gives it a verdict and this check samples it."""
+    with open(os.path.join(REPO, pooled["criteria_file"]), encoding="utf-8") as fh:
+        return json.load(fh)["v3"]["pooling"]["minimum_jobs"]
+
+
+def check(path, skipped=None):
+    """Recompute a sample of the pooled numbers; returns (statistics recomputed, problems). CPU models with fewer
+    than minimum_jobs jobs are listed and not sampled; their names go into `skipped` when a list is passed."""
     with open(path, encoding="utf-8") as fh:
         pooled = json.load(fh)
     base = os.path.dirname(os.path.abspath(path))
@@ -70,11 +91,18 @@ def check(path):
     for inp in pooled["inputs"]:
         with open(os.path.join(base, inp["path"]), encoding="utf-8") as fh:
             docs[inp["path"]] = json.load(fh)
+    minimum = minimum_jobs(pooled)
     rng = random.Random(7)
     problems, n = [], 0
     for blk in pooled["cpus"]:
         cpu = blk["cpu_model"]
         jobs = [docs[i["path"]] for i in pooled["inputs"] if i["cpu_model"] == cpu]  # pooled.json's job order
+        if len(jobs) < minimum:
+            print(f"   skip    {cpu[:34]:34s} {len(jobs)} job{'s' if len(jobs) != 1 else ''}, fewer than the minimum "
+                  f"of {minimum}: listed, not sampled (no verdict rests on it)")
+            if skipped is not None:
+                skipped.append(cpu)
+            continue
         todo = [("aa", [[d["controls"]["aa"]["a_ns"], d["controls"]["aa"]["b_ns"]] for d in jobs], ratio2, blk["aa"])]
         if "k02_add_fwd.L1" in blk["layout_aa"]:
             lay = [next(p for p in d["controls"]["layout_aa"] if p["id"] == "k02_add_fwd.L1") for d in jobs]
@@ -120,8 +148,10 @@ def main(argv):
     if len(argv) != 2:
         print(__doc__)
         return 2
-    n, problems = check(argv[1])
-    print(f"   {n} pooled statistics recomputed independently; {len(problems)} disagree")
+    skipped = []
+    n, problems = check(argv[1], skipped)
+    print(f"   {n} pooled statistics recomputed independently; {len(problems)} disagree"
+          + (f"; {len(skipped)} CPU model{'s' if len(skipped) != 1 else ''} with too few jobs not sampled" if skipped else ""))
     return 0 if not problems else 1
 
 

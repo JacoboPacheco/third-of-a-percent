@@ -198,6 +198,83 @@ def test_independent_check_agrees_on_a_written_file():
         assert problems
 
 
+def write_pooled(d, jobs):
+    """Each job under d/j<i>/results.json, pooled by pool.py; returns (path of pooled.json, the pooled document)."""
+    paths = []
+    for i, j in enumerate(jobs):
+        os.makedirs(os.path.join(d, f"j{i}"))
+        p = os.path.join(d, f"j{i}", "results.json")
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(j, f)
+        paths.append(p)
+    out = os.path.join(d, "pooled.json")
+    doc = pool.pool(pool.load_inputs(paths, d), CRIT, SHA)
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(doc, f)
+    return out, doc
+
+
+def quiet_check(path):
+    """pool_check.check(path, skipped) with its output captured: (n, problems, skipped, printed text)."""
+    import contextlib
+    import io
+    skipped, buf = [], io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        n, problems = pool_check.check(path, skipped)
+    return n, problems, skipped, buf.getvalue()
+
+
+def test_independent_check_skips_cpu_models_below_the_minimum_job_count():
+    """A model with fewer jobs than v3.pooling.minimum_jobs is listed and never sampled; a model with exactly the
+    minimum is still checked. (The first version of this rule: the lumpy tail of one job's repetitions made the check
+    disagree with the stored interval of a one-job model by more than its tolerance, in a real run.)"""
+    minimum = CRIT["v3"]["pooling"]["minimum_jobs"]
+    assert minimum == 3
+    rng = random.Random(10)
+    big = [job(rng, "1", host=1 + 0.03 * i, n=12) for i in range(minimum)]
+    one = [job(rng, "1", cpu="A 1-job CPU", n=12)]
+    two = [job(rng, "1", cpu="B 2-job CPU", n=12) for _ in range(minimum - 1)]
+    with tempfile.TemporaryDirectory() as d:
+        alone_dir = os.path.join(d, "alone")
+        os.makedirs(alone_dir)
+        alone_path, _ = write_pooled(alone_dir, big)
+        n_alone, problems_alone, skipped_alone, _ = quiet_check(alone_path)
+        assert n_alone > 0 and problems_alone == [] and skipped_alone == []
+
+        mixed_dir = os.path.join(d, "mixed")
+        os.makedirs(mixed_dir)
+        path, doc = write_pooled(mixed_dir, one + big + two)
+        assert pool_check.minimum_jobs(doc) == minimum
+        assert [b["jobs"] for b in doc["cpus"]] == [1, minimum, minimum - 1]  # the 1-job model sorts before the others
+        n, problems, skipped, text = quiet_check(path)
+        assert problems == [], problems
+        assert n == n_alone, "the skipped models added or removed sampled statistics"
+        assert skipped == ["A 1-job CPU", "B 2-job CPU"]
+        for name in skipped:
+            assert any(ln.lstrip().startswith("skip") and name in ln for ln in text.splitlines()), text
+            assert not any(name in ln and ln.lstrip().startswith(("ok", "FAIL")) for ln in text.splitlines()), text
+        assert any(ln.lstrip().startswith("ok") and "AMD EPYC 7763" in ln for ln in text.splitlines()), text
+
+        # nothing the check does not sample can fail it: a zero-width interval on every statistic of the small models
+        for b in doc["cpus"]:
+            if b["jobs"] < minimum:
+                for st in [b["aa"]] + [c[col] for c in b["cells"] for col in ("as_compiled", "aligned")]:
+                    st["ci95"] = [st["ratio"] - 1e-6, st["ratio"] + 1e-6]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        n2, problems2, skipped2, _ = quiet_check(path)
+        assert problems2 == [] and n2 == n and len(skipped2) == 2
+
+        # ... but the same tampering on the model that has the minimum is still caught
+        big_block = next(b for b in doc["cpus"] if b["jobs"] == minimum)
+        c0 = big_block["cells"][0]["as_compiled"]
+        c0["ci95"] = [c0["ratio"] - 1e-6, c0["ratio"] + 1e-6]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        n3, problems3, skipped3, text3 = quiet_check(path)
+        assert problems3 and len(skipped3) == 2 and "FAIL" in text3, text3
+
+
 def test_v3_criteria_keep_the_v2_thresholds():
     import verdict
     v2 = verdict.load_criteria(os.path.join(pool.REPO, "harness", "criteria-v2.json"))

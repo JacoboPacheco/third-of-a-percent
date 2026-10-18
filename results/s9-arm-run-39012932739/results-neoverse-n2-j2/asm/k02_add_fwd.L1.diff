@@ -1,0 +1,115 @@
+--- k02_add_fwd.none.s
++++ k02_add_fwd.fast.s
+@@ -2,48 +2,69 @@
+ ldp	x8, x9, [x1]
+ subs	x9, x9, x8
+ b.eq	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.none
+-asr	x12, x9, #2
+-ldr	x9, [x2]
+-ldr	x10, [x0]
+-cmp	x12, #0x1
+-csinc	x11, x12, xzr, hi	// hi = pmore
+-cmp	x12, #0x8
+-b.cs	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.hs, b.nlast
+-mov	x12, xzr
+-lsl	x13, x12, #2
+-sub	x11, x11, x12
+-add	x8, x8, x13
+-add	x9, x9, x13
+-add	x10, x10, x13
+-ldr	w12, [x8], #4
+-subs	x11, x11, #0x1
+-ldr	w13, [x9], #4
+-add	w12, w13, w12
+-str	w12, [x10], #4
++asr	x11, x9, #2
++ldp	x9, x12, [x0]
++ldp	x10, x13, [x2]
++cmp	x11, #0x1
++sub	x12, x12, x9
++csinc	x11, x11, xzr, hi	// hi = pmore
++asr	x12, x12, #2
++sub	x13, x13, x10
++sub	x14, x11, #0x1
++asr	x13, x13, #2
++cmp	x14, x12
++csel	x14, x14, x12, cc	// cc = lo, ul, last
++cmp	x14, x13
++csel	x15, x14, x13, cc	// cc = lo, ul, last
++cmp	x15, #0x7
++b.hi	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.pmore
++mov	x14, xzr
++b	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++sub	x14, x9, x8
++cmp	x14, #0x20
++mov	x14, xzr
++b.cc	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.lo, b.ul, b.last
++sub	x16, x9, x10
++cmp	x16, #0x20
++b.cc	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.lo, b.ul, b.last
++add	x14, x15, #0x1
++mov	w16, #0x8                   	// #8
++add	x17, x9, #0x10
++ands	x15, x14, #0x7
++csel	x15, x16, x15, eq	// eq = none
++add	x16, x10, #0x10
++sub	x14, x14, x15
++add	x15, x8, #0x10
++mov	x18, x14
++ldp	q0, q3, [x16, #-16]
++subs	x18, x18, #0x8
++ldp	q1, q2, [x15, #-16]
++add	x15, x15, #0x20
++add	x16, x16, #0x20
++add	v0.4s, v0.4s, v1.4s
++add	v1.4s, v3.4s, v2.4s
++stp	q0, q1, [x17, #-16]
++add	x17, x17, #0x20
++b.ne	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.any
++lsl	x16, x14, #2
++mov	x15, xzr
++sub	x12, x12, x14
++sub	x13, x13, x14
++sub	x11, x11, x14
++add	x8, x8, x16
++add	x10, x10, x16
++add	x9, x9, x16
++cmp	x13, x15
++b.eq	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.none
++cmp	x12, x15
++b.eq	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.none
++lsl	x14, x15, #2
++add	x15, x15, #0x1
++cmp	x11, x15
++ldr	w16, [x8, x14]
++ldr	w17, [x10, x14]
++add	w16, w17, w16
++str	w16, [x9, x14]
+ b.ne	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.any
+ ret
+-sub	x12, x10, x8
+-cmp	x12, #0x20
+-mov	x12, xzr
+-b.cc	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.lo, b.ul, b.last
+-sub	x13, x10, x9
+-cmp	x13, #0x20
+-b.cc	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.lo, b.ul, b.last
+-and	x12, x11, #0xfffffffffffffff8
+-add	x13, x8, #0x10
+-add	x14, x9, #0x10
+-add	x15, x10, #0x10
+-mov	x16, x12
+-ldp	q0, q3, [x14, #-16]
+-subs	x16, x16, #0x8
+-ldp	q1, q2, [x13, #-16]
+-add	x13, x13, #0x20
+-add	x14, x14, #0x20
+-add	v0.4s, v0.4s, v1.4s
+-add	v1.4s, v3.4s, v2.4s
+-stp	q0, q1, [x15, #-16]
+-add	x15, x15, #0x20
+-b.ne	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.any
+-cmp	x11, x12
+-b.ne	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>  // b.any
+-b	<_Z16kern_k02_add_fwdRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_S6_+off>
++brk	#0x1

@@ -393,17 +393,10 @@ function layout4(infos) {
       cap.hidden = !(i.cls === 'kept' && k !== 'k01_sum_fwd');
       cap.style.left = `calc(${pct(i.ratio).toFixed(2)}% - 7px)`;
     }
-    for (const l of tracks.querySelectorAll('.ln-lbl')) l.hidden = true;
     const grid = tracks.querySelector('.ln-grid');
     grid.replaceChildren(...ticks.map((v) => Object.assign(document.createElement('i'), { className: v === 1 ? 'one' : '', style: `left:${pct(v).toFixed(2)}%` })));
   }
-  // direct labels on the bars themselves (wide screens): the first lane names the unchecked bar, and one lane per outcome names the checked bar, where the track is empty
-  let col = pct(1); // the labels share one left edge: right of the longest of the labelled bars, so they never sit on a bar or the 1x line
-  const lbl = (k, kind, text, len) => { const l = $('race-loops').querySelector(`button[data-k="${k}"] .ln-t.${kind} .ln-lbl`); if (!l || len > 62) return; l.textContent = text; l.dataset.len = String(Math.max(len, pct(1))); col = Math.max(col, len); l.hidden = false; };
-  const shortest = (cls) => ks.filter((k) => infos[k].cls === cls && infos[k].ratio != null).sort((a, b) => infos[a].ratio - infos[b].ratio)[0];
-  lbl(ks[0], 'off', 'check off', pct(1));
-  for (const [cls, text] of [['kept', 'check on, keeps SIMD'], ['lost', 'check on, loses SIMD'], ['none', 'check on, no SIMD to lose']]) { const k = shortest(cls); if (k) lbl(k, 'on', text, pct(infos[k].ratio)); }
-  for (const l of $('race-loops').querySelectorAll('.ln-lbl:not([hidden])')) l.style.left = `calc(${col.toFixed(2)}% + 12px)`;
+  // no labels float on the bars: which bar is which is the figure header's job (the two chips), and what a loop's colour and texture mean is in the readout under the lanes
   const ax = $('race-axis');
   ax.replaceChildren(...ticks.map((v) => Object.assign(document.createElement('span'), { className: v === 1 ? 'one' : '', style: `left:${pct(v).toFixed(2)}%`, textContent: `${v}×` })));
 }
@@ -507,7 +500,7 @@ function buildSwitcher() {
     el.append(b);
   }
   const bar = $('bar'); // the switcher lives in the top bar, where it can never cover text
-  bar.insertBefore(el, bar.querySelector('.bar-details') || null);
+  bar.insertBefore(el, $('toc') || null);
   document.addEventListener('keydown', (e) => {
     if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ''))) el.hidden = !el.hidden;
   });
@@ -515,7 +508,7 @@ function buildSwitcher() {
     if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || '')) || document.querySelector('.slideover.open')) return;
     const ks = Object.keys(S.ix.criteria.kernels);
     if (/^[1-8]$/.test(e.key) && ks[+e.key - 1]) { select(ks[+e.key - 1], false, true); }
-    else if (e.key === 'c' || e.key === 'C') { R.on = !R.on; show(); }
+    else if (e.key === 'c' || e.key === 'C') { R.on = !R.on; show(); document.dispatchEvent(new Event('race-used')); }
   });
   /* print: a static, light poster whatever the screen variant is (the bars are CSS backgrounds, which printers drop; the poster is drawn) */
   const pm = matchMedia('print'); let before = null;
@@ -539,6 +532,16 @@ function buildRepro() {
   document.addEventListener('click', (e) => { if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) set(false); });
 }
 
+/* ---------- the Work in progress chip: one click shows what is unfinished (instant, nothing moves) ---------- */
+function buildWip() {
+  const btn = $('wip-btn'), note = $('wip-note');
+  if (!btn || !note) return;
+  const set = (on) => { note.hidden = !on; btn.setAttribute('aria-expanded', String(on)); };
+  btn.addEventListener('click', () => set(note.hidden));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !note.hidden) { set(false); btn.focus(); } });
+  document.addEventListener('click', (e) => { if (!note.hidden && !note.contains(e.target) && !btn.contains(e.target)) set(false); });
+}
+
 /* ---------- build ---------- */
 function build(api) {
   const loops = $('race-loops'), cpus = $('race-cpu'), cap = (t) => t.replace(/^./, (c) => c.toUpperCase());
@@ -547,7 +550,7 @@ function build(api) {
     const b = document.createElement('button');
     b.type = 'button'; b.setAttribute('role', 'radio'); b.dataset.k = k;
     b.innerHTML = `<span class="ln-tile"><svg class="gl" viewBox="0 0 64 36" aria-hidden="true" focusable="false">${GLYPH[k] || ''}</svg></span><span class="tl"></span><span class="tr" aria-hidden="true"></span>`
-      + '<span class="ln-tracks" aria-hidden="true"><span class="ln-grid"></span><span class="ln-t off"><i></i><em class="ln-lbl" hidden></em></span><span class="ln-t on"><i></i><b class="ln-cap"></b><em class="ln-lbl" hidden></em></span></span>';
+      + '<span class="ln-tracks" aria-hidden="true"><span class="ln-grid"></span><span class="ln-t off"><i></i></span><span class="ln-t on"><i></i><b class="ln-cap"></b></span></span>';
     b.querySelector('.tl').textContent = cap(SHORT_NAMES[k]);
     b.addEventListener('click', () => { // a lane opens the real machine code; on a touch screen the first tap shows the loop's sentence, the second opens it
       const touchFirst = R.v === 4 && matchMedia('(pointer: coarse)').matches && k !== R.k;
@@ -585,6 +588,7 @@ function build(api) {
   R.k = S.sel;
   buildSwitcher();
   buildRepro();
+  buildWip();
   R.v = hashVariant() || DEFAULT_HV;
   applyVariant(R.v, true);
   sizeCanvas();
