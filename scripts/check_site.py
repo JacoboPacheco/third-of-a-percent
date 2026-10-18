@@ -3869,6 +3869,11 @@ def access_checks(browser, base, ck, index):
                 if side:
                     pg.keyboard.press("ArrowRight")
                     pg.keyboard.press("ArrowRight")
+                    # where the browser smooth-scrolls (Linux) the box starts to move a frame or two after the key: wait up to two seconds for it
+                    try:
+                        pg.wait_for_function("document.activeElement.scrollLeft > 0", timeout=2000)
+                    except Exception:
+                        pass
                     moved = pg.evaluate("document.activeElement.scrollLeft")
                     ck.ok(side[0] and moved > 0, f"{key} page at {w_} px: a table box ({side[1]}) takes focus and the arrow keys scroll it sideways (scrolled {moved:.0f} px)")
             pg.close()
@@ -3994,6 +3999,9 @@ def forced_colors_checks(browser, base, ck, index):
             sel = pg.evaluate("(() => { const r = document.querySelector('#rows .row[aria-selected=\"true\"]'); if (!r) return null; const s = getComputedStyle(r), b = getComputedStyle(r, '::before'); return [s.outlineStyle, parseFloat(s.outlineWidth), b.forcedColorAdjust]; })()")
             ck.ok(sel is not None and sel[0] != "none" and sel[1] >= 2 and sel[2] == "none",
                   f"main page under forced colours: the selected row in Figure 1 is marked by an outline and its edge bar keeps a system colour ({sel})")
+            tile = pg.evaluate("(() => { const t = document.querySelector('.mech-tiles button[aria-checked=\"true\"]'); if (!t) return null; const s = getComputedStyle(t); return [s.outlineStyle, parseFloat(s.outlineWidth)]; })()")
+            ck.ok(tile is not None and tile[0] != "none" and tile[1] >= 2,
+                  f"main page under forced colours: the chosen loop shape in the mechanism demo is marked by an outline, because its white fill and bar are dropped ({tile})")
         pg.close()
 
 
@@ -4022,6 +4030,7 @@ def tooltip_checks(browser, base, ck, index):
         pg.goto(base, wait_until="networkidle")
         wait_ready(pg)
         pg.evaluate("document.querySelector('#fig1').scrollIntoView()")
+        _settle_scroll(pg)  # the page scrolls smoothly: hover only once the dots have stopped moving
         pg.wait_for_timeout(300)
         for hnd in pg.query_selector_all("#rows .mk-hit"):
             bb = hnd.bounding_box()
