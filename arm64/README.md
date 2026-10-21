@@ -137,7 +137,7 @@ What this says. The stored verdict is INCONCLUSIVE and is kept. It is not a find
 
 ### Run to run
 
-Of the 192 comparisons of one run's point against another run's interval (16 cells, 2 columns, 6 ordered pairs of runs), 13 fall outside, with a largest gap of 5.17%. Eight of the 13 are stride-2 at L2 (gaps of 2.06% to 5.17%), where the runs' points are 4.92x, 4.95x and 5.36x as compiled; the other five have gaps under 0.01%. In those stride-2 cells the intervals understate the spread between runs, as they do on x86-64.
+Of the 192 comparisons of one run's point against another run's interval (16 cells, 2 columns, 6 ordered pairs of runs), 13 fall outside, with a largest gap of 5.17%. Eight of the 13 are stride-2 at L2 (gaps of 2.06% to 5.17%), where the runs' points are 4.92x, 4.95x and 5.36x as compiled; the other five have gaps under 0.01%. In those stride-2 cells 8 of 12 comparisons fall outside, against 2.5 expected if the intervals were exactly calibrated; over all 16 cells the count is below that expectation (13 of 192, against 34.7). With the six runs of sets A and B pooled together (secondary) the stride-2 cells at L2 have 28 of 60 outside against 11.5 expected, and all in-cache cells 101 of 960 against 177.7 ([calibration baseline](../robustness/README-calibration.md)).
 
 ## Written first, and whether it held
 

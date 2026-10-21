@@ -369,6 +369,130 @@ def intel_all_jobs():
     return out
 
 
+# ---- the three stored readings of round 7: seed re-draws (x86-64), the A/A at L2, the calibration baseline ----------
+
+SEED_X86 = "robustness/seed-sensitivity-x86.json"
+AA_L2 = "robustness/aa-l2.json"
+CALIBRATION = "robustness/calibration.json"
+X6973_MODEL = "Intel(R) Xeon(R) 6973P-C"
+AMD_9V45_MODEL = "AMD EPYC 9V45 96-Core Processor"
+
+
+def seed_cell(cell_id):
+    """One record of robustness/seed-sensitivity-x86.json (id '<cpu model>|<forward or placement>|<cell>')."""
+    found = [c for c in J(SEED_X86)["cells"] if c["id"] == cell_id]
+    assert len(found) == 1, f"{SEED_X86} holds {len(found)} records for {cell_id}"
+    return found[0]
+
+
+def seed_facts():
+    """What the Xeon 6973P-C and EPYC 9V45 statements quote from the seed re-draws, tied to the stored pooled file:
+    the stored interval end of each cell must be the pooled file's, so a changed pool fails here before a number can drift."""
+    seeds = J(SEED_X86)
+    limit = 1 + cpu_like("6973P-C")["verdict"]["forward_limit_pct"] / 100
+    s6 = seed_cell(X6973_MODEL + "|forward|k03_stencil.L2")
+    assert abs(s6["stored"]["hi"] - cell_of(cpu_like("6973P-C"), "k03_stencil.L2")["aligned"]["ci95"][1]) < 1e-6, \
+        "the seed file's stored end of the Xeon 6973P-C stencil at L2 is not the pooled file's"
+    assert s6["alt"]["summary"]["limit"] == limit and s6["alt"]["draws"] == seeds["alt_seeds"]["count"]
+    n9 = seed_cell(AMD_9V45_MODEL + "|forward|k03_stencil.L1")
+    assert abs(n9["stored"]["hi"] - cell_of(cpu_like("9V45"), "k03_stencil.L1")["aligned"]["ci95"][1]) < 1e-6, \
+        "the seed file's stored end of the EPYC 9V45 stencil at L1 is not the pooled file's"
+    p9 = seed_cell(AMD_9V45_MODEL + "|placement|k03_stencil.L1")
+    assert p9["converged"]["excludes_1"] is True and p9["alt"]["draws"] == seeds["alt_seeds"]["count"]
+    whole = seeds["whole"]["models"][X6973_MODEL]
+    forms = whole["tally"]["forms"]
+    assert whole["stored_form"] == "map" and sum(forms.values()) == whole["tally"]["count"] == seeds["whole"]["count"], "the whole-analysis tally is not over the stored 60 seeds"
+    conv = s6["converged"]
+    assert conv["hi"] < limit and abs(limit - conv["hi"] - (-conv["margin_to_limit"])) < 1e-9
+    assert limit - conv["hi"] < s6["alt"]["summary"]["hi"]["sd"], "the converged margin is no longer smaller than the sd of one draw's end"
+    return {"alt": seeds["alt_seeds"]["count"], "res": conv["resamples"], "conv": conv["hi"], "convm": limit - conv["hi"],
+            "sd": s6["alt"]["summary"]["hi"]["sd"], "hits": s6["alt"]["summary"]["at_or_above_limit"], "stored": s6["stored"]["hi"],
+            "inc": forms["inconclusive"], "map": forms["map"], "total": whole["tally"]["count"],
+            "conv9": n9["converged"]["hi"], "conv9m": n9["converged"]["hi"] - limit, "kept9": p9["alt"]["summary"]["excludes_1"], "draws9": p9["alt"]["draws"],
+            "limit": limit}
+
+
+def aa_l2_pool(pool_id):
+    found = [p for p in J(AA_L2)["pools"] if p["id"] == pool_id]
+    assert len(found) == 1, f"{AA_L2} holds {len(found)} pools called {pool_id}"
+    return found[0]
+
+
+def aa_l2_model(pool_id, key):
+    found = [m for m in aa_l2_pool(pool_id)["models"] if key in m["cpu_model"]]
+    assert len(found) == 1, f"{AA_L2} pool {pool_id} holds {len(found)} models containing {key}"
+    return found[0]
+
+
+def aa_l2_facts():
+    """The pooled identical-binary A/A at L1 and L2 that the README and the details quote (pool s7 for the x86-64 models, s8-arm for the Arm core)."""
+    s7 = aa_l2_pool("s7")
+    enough = [m for m in s7["models"] if m["jobs"] >= J("site/data/index.json")["criteria"]["minimum_jobs"]]
+    others = [m for m in enough if X6973_MODEL not in m["cpu_model"]]
+    x, a = aa_l2_model("s7", "6973P-C"), aa_l2_model("s8-arm", "Neoverse-N2")
+    ceiling = J(AA_L2)["criteria"]["aa_half_width_max_pct"]
+    assert len(enough) == 5 and len(others) == 4, "the s7 pool no longer has five models with a verdict-sized job count"
+    assert len(J(AA_L2)["pools"]) == 4, "robustness/aa-l2.json no longer covers four pools, which the README and the details say"
+    assert x["l2"]["half_width_pct"] > ceiling and a["l2"]["half_width_pct"] > ceiling and all(m["l2"]["half_width_pct"] < ceiling for m in others), \
+        "the models above the 2% ceiling at L2 are no longer the Xeon 6973P-C and the Arm core alone"
+    assert J(AA_L2)["rule_at_l2"]["stored_words_that_would_change"] == ["s7: " + X6973_MODEL], \
+        "read at L2, the ceiling clause no longer changes the Xeon 6973P-C's word alone"
+    assert x["jobs"] == cpu_like("6973P-C")["jobs"] and a["jobs"] == arm_cpu()["jobs"], "the A/A pools are not over the pooled files' jobs"
+    return {"max_others": max(m["l2"]["half_width_pct"] for m in others), "n_others": len(others), "x1": x["l1"]["half_width_pct"],
+            "x2": x["l2"]["half_width_pct"], "a1": a["l1"]["half_width_pct"], "a2": a["l2"]["half_width_pct"], "ceil": ceiling}
+
+
+def aa_l2_as_wide_as_the_deciding_cells():
+    """'About as wide as' means within a quarter either way: the A/A half-width at L2 against the half-width of the interval of the cell that decides the word."""
+    f = aa_l2_facts()
+    wide_x = seed_cell(X6973_MODEL + "|forward|k03_stencil.L2")["stored"]["half_width_pct"]
+    iv = arm_cell("k02_add_fwd.L2")["aligned"]["ci95"]
+    wide_a = (iv[1] - iv[0]) / 2 / arm_cell("k02_add_fwd.L2")["aligned"]["ratio"] * 100
+    for name, aa, cell in (("Xeon 6973P-C stencil at L2", f["x2"], wide_x), ("Arm forward add at L2", f["a2"], wide_a)):
+        assert 0.75 <= aa / cell <= 1.25, f"the A/A at L2 ({aa:.2f}%) is no longer about as wide as the interval of the {name} ({cell:.2f}%)"
+    return {}
+
+
+def calib_model(pool, key):
+    found = [m for m in J(CALIBRATION)["run_to_run"][pool]["models"] if key in m["cpu_model"]]
+    assert len(found) == 1, f"{CALIBRATION} pool {pool} holds {len(found)} models containing {key}"
+    return found[0]
+
+
+def calib_family(model, kernels):
+    """(outside, pairs, expected outside) over the cells of the given kernels (the kernel id is the part of the cell id before the first underscore)."""
+    cells = [c for c in model["by_cell"] if c["cell_id"].split("_")[0] in kernels]
+    return sum(c["outside"] for c in cells), sum(c["pairs"] for c in cells), sum(c["expected_outside"] for c in cells)
+
+
+def calib_facts():
+    """The calibrated run-to-run counts that the README and the details quote, tied to the pooled files' own reproduction counts."""
+    m7, m9, m6 = calib_model("s7", "7763"), calib_model("s7", "9V74"), calib_model("s6", "7763")
+    assert (m7["outside"], m7["checked"]) == (cpu_like("7763")["reproduction"]["outside"], cpu_like("7763")["reproduction"]["checked"]), \
+        "the calibration file's EPYC 7763 count is not the pooled file's reproduction count"
+    assert (m9["outside"], m9["checked"]) == (cpu_like("9V74")["reproduction"]["outside"], cpu_like("9V74")["reproduction"]["checked"])
+    lost, fwd = calib_family(m7, ("k04", "k05", "k08")), calib_family(m7, ("k01", "k02", "k03"))
+    s7, s9, s6s = m7["simulation"]["independent"], m9["simulation"]["independent"], m6["simulation"]["independent"]
+    assert s7["p025"] <= m7["outside"] <= s7["p975"] and m9["outside"] < s9["p025"] and s6s["p025"] <= m6["outside"] <= s6s["p975"], \
+        "the totals are no longer inside (EPYC 7763) and below (EPYC 9V74) the range of independent comparisons"
+    assert lost[0] > lost[2] and fwd[0] < fwd[2], "the excess on EPYC 7763 is no longer in the lost-loop cells and absent from the forward ones"
+    return {"m7": m7, "m9": m9, "m6": m6, "lost": lost, "fwd": fwd, "r7": (s7["p025"], s7["p975"]), "r9": (s9["p025"], s9["p975"]), "r6": (s6s["p025"], s6s["p975"])}
+
+
+def calib_subsets(key="6973P-C"):
+    """{J: (INCONCLUSIVE, draws)} for the subset sizes that were run, and whether the 5-job subsets are every possible one."""
+    d = J(CALIBRATION)
+    model = next(m for m in d["subsets"] if key in m)
+    out = {}
+    for j in (3, 5):
+        e = d["subsets"][model]["by_j"][str(j)]
+        out[j] = (e["forms"]["inconclusive"], e["count"], e["exhaustive"])
+        assert e["forms"]["inconclusive"] + e["forms"].get("map", 0) == e["count"]
+    assert out[5][2] is True and out[3][2] is False and "count" not in d["subsets"][model]["by_j"]["10"], "the subset draws are no longer 30 of 3 and all of 5"
+    assert d["constants"]["subset_js"][:2] == [3, 5] and d["constants"]["subsets_per_j"] == out[3][1]
+    return out
+
+
 def exp_intel_sentence():
     index = J("site/data/index.json")
     intel = index["intel_forward"]
@@ -404,13 +528,16 @@ def exp_intel_sentence():
     assert b6["verdict"]["form"] == "inconclusive" and "missed by k03_stencil.L2" in b6["verdict"]["why"] and stencil6["ci95"][1] > 1 + limit / 100, \
         "the 75-job pool no longer has the Xeon 6973P-C INCONCLUSIVE on its stencil at L2"
     assert b["jobs"] == b6["jobs"] + 1, f"the README says one job was added to the Xeon 6973P-C; it has {b6['jobs']} jobs in the 75-job pool and {b['jobs']} now"
+    sf = seed_facts()
+    assert sf["inc"] > 0 and sf["map"] > sf["inc"], "the Xeon 6973P-C's whole analysis is no longer MAP in most and INCONCLUSIVE in some of the other seeds"
     return {"jobs": str(len(every)), "n": word(len(intel["cpus"])), "setc": str(len(set_c)),
             "pool": str(len(in_pool)), "early": str(len(rows) - len(in_pool)), "pooljobs": str(pooled_jobs()),
             "lo": f2(min(v for _, v, _ in every)), "hi": f2(max(v for _, v, _ in every)),
             "alo": f2(min(amd)), "ahi": f2(max(amd)),
             "j1": str(jobs["Xeon 8573C"]), "j2": str(jobs["Xeon 6973P-C"]), "j2s6": str(b6["jobs"]), "ord": ORDINALS[b["jobs"]],
             "lim": str(int(limit)), "x8573": f2(by["Xeon 8573C"]), "x6973": f2(by["Xeon 6973P-C"]),
-            "end6": f3(stencil6["ci95"][1]), "end7": f3(stencil["ci95"][1]), "j3": str(few[0]["jobs"])}
+            "end6": f3(stencil6["ci95"][1]), "end7": f3(stencil["ci95"][1]), "j3": str(few[0]["jobs"]),
+            "conv": f4(sf["conv"]), "convm": f4(sf["convm"]), "seedinc": str(sf["inc"]), "seedtot": str(sf["total"])}
 
 
 def exp_lost_bullet():
@@ -658,7 +785,13 @@ def exp_independence_holdout():
     loo = leave_one_job_out()
     r, r6 = cpu_like("7763")["reproduction"], cpu_like("7763", pool=POOLED_S6)["reproduction"]
     # the README names the holdout family once: "EPYC 7763 and 9V74, not 9V45"
+    cf = calib_facts()
+    assert cf["m6"]["checked"] == r6["checked"] and cf["m6"]["outside"] == r6["outside"], "the calibration file's 75-job EPYC 7763 count is not the pooled file's"
     return {"n": str(pooled_jobs()), "o": str(sum(c["jobs"] for c in original["cpus"])),
+            "exp": f1(cf["m7"]["expected_outside"]),
+            "fo": str(cf["lost"][0]), "fn": str(cf["lost"][1]), "fe": f1(cf["lost"][2]),
+            "go": str(cf["fwd"][0]), "gn": str(cf["fwd"][1]), "ge": f1(cf["fwd"][2]),
+            "vo": str(cf["m9"]["outside"]), "vn": str(cf["m9"]["checked"]), "ve": f1(cf["m9"]["expected_outside"]),
             "same": "no verdict form" if same else "a verdict form",
             "k": word(k), "m": word(len(x6973["methods"])),
             "inc": str(sum(1 for _, form in loo if form == "inconclusive")), "tot": str(len(loo)),
@@ -2287,7 +2420,7 @@ ROWS = [
      r"\((?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, one AVX2 exception, (?P<avx>[\d.]+)x\); "
      r"below 1x the checked loop ran faster \(cause inferred: loop layout\)\. "
      r"As compiled, the forward add cost about (?P<x>[\d.]+)x on (?P<n>\w+) of the (?P<of>\w+) AMD models"),
-    ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s7-pooled/pooled.json Xeon k02_add_fwd.L1 and k03_stencil.L2 aligned",
+    ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s7-pooled/pooled.json Xeon k02_add_fwd.L1 and k03_stencil.L2 aligned; robustness/seed-sensitivity-x86.json",
      exp_intel_sentence,
      r"Intel: in all (?P<jobs>\d+) Intel jobs seen \((?P<n>\w+) models; (?P<pool>\d+) are in the (?P<pooljobs>\d+)-job pool, (?P<early>\d+) in earlier runs, (?P<setc>\d+) more in set C\) "
      r"the forward add at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
@@ -2296,6 +2429,8 @@ ROWS = [
      r"its forward add costs a measured (?P<x8573>[\d.]+)x, over the (?P<lim>\d+)% forward limit\. "
      r"The Xeon 6973P-C \((?P<j2>\d+) jobs\) has a verdict \(MAP\) that is borderline: with (?P<j2s6>\d+) jobs it was INCONCLUSIVE, "
      r"its stencil at L2 ending at (?P<end6>[\d.]+), over the same limit, and the (?P<ord>\w+) job moved that end to (?P<end7>[\d.]+); "
+     r"with the bootstrap's draw no longer mattering that end is (?P<conv>[\d.]+), under the limit by (?P<convm>[\d.]+), "
+     r"and the whole analysis gives INCONCLUSIVE under (?P<seedinc>\d+) of (?P<seedtot>\d+) other seeds, so the word is best read as undecided; "
      r"its forward add of (?P<x6973>[\d.]+)x is left out as placement-sensitive\. "
      r"A third model, the Xeon 8370C, drew (?P<j3>\d+) job, too few to judge\."),
     ("found: lost-loop range, models, siblings, no-vectorize controls",
@@ -2358,14 +2493,18 @@ ROWS = [
     ("trust: repetitions in the later rule versions", "harness/criteria-v3.json",
      exp_v3_reps, r"(?P<v>\d+) repetitions per side\) after earlier results"),
     ("trust: independence and holdout",
-     "results/s7-pooled and s6-pooled and s4-pooled job counts and reproduction; robustness/results.json s7 forms; harness/pool.py with each Xeon 6973P-C job left out; site/data/holdout.json rows reproduced",
+     "results/s7-pooled and s6-pooled and s4-pooled job counts and reproduction; robustness/results.json s7 forms; harness/pool.py with each Xeon 6973P-C job left out; site/data/holdout.json rows reproduced; robustness/calibration.json run_to_run s7 and s6",
      exp_independence_holdout,
      r"On the (?P<n>\d+)-job pool a block bootstrap and the other interval methods tried \(exploratory, \[report\]\(robustness/report\.md\)\) "
      r"change (?P<same>no verdict form) on EPYC 7763, 9V74, 9V45 or the Xeon 8573C; the Xeon 6973P-C stays MAP under (?P<k>\w+) of the (?P<m>\w+), "
      r"and changes with the set of jobs more than with the method \(leaving one job out, in turn, gives INCONCLUSIVE in (?P<inc>\d+) of its (?P<tot>\d+) cases\)\. "
      r"A fresh run, planned in writing \(the records do not show the order\), matched the original (?P<o>\d+)-job pool on (?P<yes>EPYC 7763 and 9V74), not (?P<no>9V45)\. "
-     r"Intervals still understate run-to-run spread: on EPYC 7763 a run's point fell outside another run's interval in (?P<out>\d+) of (?P<chk>\d+) comparisons "
-     r"\((?P<pct>\d+)%; (?P<pct6>\d+)% in the (?P<n6>\d+)-job pool\)\."),
+     r"Run to run, a run's point fell outside another run's interval on EPYC 7763 in (?P<out>\d+) of (?P<chk>\d+) comparisons "
+     r"\((?P<pct>\d+)%; (?P<pct6>\d+)% in the (?P<n6>\d+)-job pool\), against (?P<exp>[\d.]+) expected if the intervals were exactly calibrated; "
+     r"the excess lies in the reverse, stride-2 and matrix-multiply cells \((?P<fo>\d+) of (?P<fn>\d+), against (?P<fe>[\d.]+) expected\), "
+     r"not in the forward ones \((?P<go>\d+) of (?P<gn>\d+), against (?P<ge>[\d.]+)\), "
+     r"and on EPYC 9V74 the count is (?P<vo>\d+) of (?P<vn>\d+) against (?P<ve>[\d.]+) expected "
+     r"\(\[calibration baseline\]\(robustness/README-calibration\.md\)\)\."),
     ("folders: the eight loops", "site/data/index.json criteria.kernels",
      exp_eight_loops, r"`kernels/` the (?P<n>\d+) loops"),
     ("folders: the kernel pool", "results/s4-run-*/, results/s6-run-*/ and results/s7-run-*/ result files; results/s6-pooled/pooled.json",
@@ -2473,7 +2612,9 @@ def exp_table_9v45():
     limit = 1 + c["verdict"]["forward_limit_pct"] / 100
     over = x["aligned"]["ci95"][1] - limit
     assert over > 0, "counted, 9V45 k03_stencil.L1 would no longer miss the forward limit"
-    return {"one": str(len(three)), "n": str(len(c["per_run"])), "m": f4(over)}
+    sf = seed_facts()
+    assert sf["conv9m"] > 0 and sf["kept9"] == sf["draws9"], "the EPYC 9V45 stencil at L1 is no longer over the limit at the converged end and left out under every other seed"
+    return {"one": str(len(three)), "n": str(len(c["per_run"])), "m": f4(over), "cm": f4(sf["conv9m"]), "keep": str(sf["kept9"]), "tot4": str(sf["draws9"])}
 
 
 def exp_table_8573c():
@@ -2489,7 +2630,9 @@ def exp_table_6973pc():
     limit = 1 + c["verdict"]["forward_limit_pct"] / 100
     assert c["verdict"]["form"] == "map" and c6["verdict"]["form"] == "inconclusive" and x["ci95"][1] < limit, \
         "the Xeon 6973P-C is no longer MAP now and INCONCLUSIVE in the 75-job pool, with the stencil at L2 under the limit"
-    return {"j6": str(c6["jobs"]), "r": f3(x["ratio"]), "lo": f3(x["ci95"][0]), "hi": f3(x["ci95"][1]), "lim": f2(limit)}
+    sf = seed_facts()
+    return {"j6": str(c6["jobs"]), "r": f3(x["ratio"]), "lo": f3(x["ci95"][0]), "hi": f3(x["ci95"][1]), "lim": f2(limit),
+            "si": str(sf["inc"]), "st": str(sf["total"])}
 
 
 def exp_table_note():
@@ -2522,8 +2665,14 @@ def exp_table_note():
     methods = J("robustness/results.json")["datasets"]["s7"]["cpus"]["Intel(R) Xeon(R) 6973P-C"]["methods"]
     assert [m for m, v in methods.items() if v["form"] == "inconclusive"] == ["d0"], "the 6973P-C is no longer INCONCLUSIVE under the first form of the lag-1 correction only"
     few = index["page"]["cpus_few"]
+    sf, af, sub = seed_facts(), aa_l2_facts(), calib_subsets()
+    assert abs(sf["stored"] - stencil["ci95"][1]) < 1e-6
     return {"p": f3(cell_of(a, "k02_add_fwd.L1")["aligned"]["ratio"]),
             "lim": f2(limit),
+            "res": thousands(sf["res"]), "conv": f4(sf["conv"]), "convm": f4(sf["convm"]), "sd": f4(sf["sd"]), "alt": str(sf["alt"]),
+            "hits": str(sf["hits"]), "lim2": f2(sf["limit"]), "si": str(sf["inc"]), "st": str(sf["total"]), "sm": str(sf["map"]),
+            "seven3": word(b["jobs"]), "sj3": "3", "sj5": "5", "s3i": str(sub[3][0]), "s3n": str(sub[3][1]), "s5i": str(sub[5][0]), "s5n": str(sub[5][1]),
+            "aa2l": f2(af["x2"]), "aa1l": f2(af["x1"]), "ceil": f"{af['ceil']:g}",
             "al": f3(cell_of(b, "k02_add_fwd.L1")["aligned"]["ratio"]),
             "ac": f3(cell_of(b, "k02_add_fwd.L1")["as_compiled"]["ratio"]),
             "end": f3(stencil["ci95"][1]), "margin": f4(limit - stencil["ci95"][1]),
@@ -2859,18 +3008,25 @@ DETAILS_ROWS = [
      r".*?\| AMD EPYC 9V74 \|[^|\n]*\|[^|\n]*\| MAP, the same in each of the (?P<b>\d+) runs with 3 or more jobs \(the other (?P<bo>\d+) have fewer\)"),
     ("details: table, EPYC 9V45 borderline", "results/s7-pooled/pooled.json EPYC 9V45 per_run and k03_stencil.L1", exp_table_9v45,
      r"MAP; stability not assessable \((?P<one>\d+) of (?P<n>\d+) runs has 3 or more jobs, and that run alone is INCONCLUSIVE\); "
-     r"borderline: counted, one left-out cell would miss the forward limit by (?P<m>[\d.]+) \|"),
+     r"borderline: counted, one left-out cell would miss the forward limit by (?P<m>[\d.]+) \((?P<cm>[\d.]+) at the converged end of its interval; "
+     r"that cell stays left out under (?P<keep>\d+) of (?P<tot4>\d+) other seeds\) \|"),
     ("details: table, Xeon 8573C verdict", "results/s7-pooled/pooled.json Xeon 8573C k02_add_fwd.L1 aligned", exp_table_8573c,
      r"INCONCLUSIVE: the forward add at L1, aligned (?P<r>[\d.]+) \[(?P<lo>[\d.]+), (?P<hi>[\d.]+)\], misses the 2% forward rule"),
     ("details: table, Xeon 6973P-C verdict", "results/s7-pooled/pooled.json Xeon 6973P-C k03_stencil.L2 aligned", exp_table_6973pc,
      r"MAP, borderline: INCONCLUSIVE with (?P<j6>\d+) jobs; the stencil at L2, aligned (?P<r>[\d.]+) \[(?P<lo>[\d.]+), (?P<hi>[\d.]+)\], "
-     r"now ends under the (?P<lim>[\d.]+) limit;"),
+     r"now ends under the (?P<lim>[\d.]+) limit; the forward add at L1 is placement-sensitive and left out; "
+     r"INCONCLUSIVE in (?P<si>\d+) of (?P<st>\d+) whole analyses under other seeds, so best read as undecided \|"),
     ("details: table, the note on the Intel rows",
-     "results/s7-pooled and s6-pooled Xeon cells and per_run; the newest 6973P-C job's results.json; robustness/results.json s7; harness/pool.py with each 6973P-C job left out",
+     "results/s7-pooled and s6-pooled Xeon cells and per_run; the newest 6973P-C job's results.json; robustness/results.json s7; harness/pool.py with each 6973P-C job left out; "
+     "robustness/seed-sensitivity-x86.json, aa-l2.json and calibration.json",
      exp_table_note,
      r"fails the rule \(point (?P<p>[\d.]+), limit (?P<lim>[\d.]+)\)\. For the Xeon 6973P-C the forward add at L1 \(aligned (?P<al>[\d.]+), "
      r"as compiled (?P<ac>[\d.]+)\) is placement-sensitive and left out, and the verdict passes on the stencil at L2, whose interval ends at "
-     r"(?P<end>[\d.]+), a margin of (?P<margin>[\d.]+) under the limit\. With the (?P<j6>\d+) jobs of the (?P<n6>\d+)-job pool the same cell ended at "
+     r"(?P<end>[\d.]+) under the stored seed, a margin of (?P<margin>[\d.]+) under the limit that belongs to that seed alone: "
+     r"with the bootstrap's draw no longer mattering \((?P<res>[\d,]+) resamples\) the end is (?P<conv>[\d.]+), under the limit by (?P<convm>[\d.]+), "
+     r"which is less than the (?P<sd>[\d.]+) \(sd\) by which one draw's end varies over (?P<alt>\d+) other seeds, in (?P<hits>\d+) of which it is at or above (?P<lim2>[\d.]+), "
+     r"and the whole analysis is INCONCLUSIVE in (?P<si>\d+) of (?P<st>\d+) other seeds \(MAP in (?P<sm>\d+)\)\. "
+     r"With the (?P<j6>\d+) jobs of the (?P<n6>\d+)-job pool the same cell ended at "
      r"(?P<end6>[\d.]+) and the model was INCONCLUSIVE\. The (?P<ord>\w+) job came from a noisy machine \(its own A/A control (?P<aa7>[\d.]+)%, "
      r"above the (?P<aamax>\d+)% limit for a single job's own verdict, and a stencil ratio of (?P<s7>[\d.]+), the lowest of the (?P<seven>\w+)\) "
      r"and moved the end under the limit; the pooled rules exclude no job on its own A/A control \(`harness/criteria-v3\.json`\)\. "
@@ -2878,7 +3034,10 @@ DETAILS_ROWS = [
      r"\(MAP only without job (?P<mj>\d+) of run (?P<mr>\d+); `tests/test_readme_numbers\.py` repeats this\), "
      r"and the model is MAP under (?P<k>\d+) of the (?P<m>\d+) interval methods of the robustness analysis "
      r"\(INCONCLUSIVE only under the first form of the lag-1 correction\)\. "
-     r"The form depends on which jobs were drawn more than on the interval method, and the verdict is borderline\. "
+     r"The form depends on which jobs were drawn more than on the interval method, and the verdict is borderline and best read as undecided: "
+     r"drawing (?P<sj3>\d+) of the (?P<seven3>\w+) jobs at random gives INCONCLUSIVE in (?P<s3i>\d+) of (?P<s3n>\d+) draws and all (?P<sj5>\d+)-job subsets in (?P<s5i>\d+) of (?P<s5n>\d+) "
+     r"\(`robustness/README-calibration\.md`\), and an identical binary timed at L2 has a pooled half-width of (?P<aa2l>[\d.]+)% on this model against (?P<aa1l>[\d.]+)% at L1, "
+     r"above the rule's (?P<ceil>\d+)% ceiling, which the rule reads at L1 only \(read at L2, the ceiling clause would end this verdict at INCONCLUSIVE; the rule is not changed\)\. "
      r"Neither Xeon model has a run with 3 jobs, so stability is not assessable, and the jobs of each came from (?P<runs>\d+) runs "
      r"\(at most (?P<per>\d+) per run\)\. The Xeon Platinum 8370C drew (?P<j8370>\d+) job \((?P<need>\d+) are needed\): no verdict and no numbers shown\."),
     ("details: forward loops, AMD and Intel", "site/data/index.json page.forward and intel_forward; results/s7-pooled/pooled.json",
@@ -4132,9 +4291,10 @@ DETAILS_NEW_ROWS = [
     row("details: replication, the line in the method", "replication/results.json pools; results/s10-dsweep-pooled/dsweep-pooled.json inputs",
         lambda: {"bj": exp_repl_sets()["bj"], "cj": exp_repl_sets()["cj"], "dj": exp_ds_overview()["dj"]},
         r"Two replication sets \((?P<bj>\d+) more Arm jobs and (?P<cj>\d+) more x86-64 jobs\) and a matrix-multiply size sweep \((?P<dj>\d+) jobs\) followed"),
-    row("details: replication, why", "replication/results.json questions", exp_repl_intro,
+    row("details: replication, why", "replication/results.json questions; robustness/seed-sensitivity-x86.json converged end",
+        lambda: exp_repl_why_with_seeds(),
         r"the Arm pool's (?P<fa>[A-Z]+) \(the forward add at L2, aligned, ends at (?P<ha>[\d.]+) against the (?P<lim>[\d.]+) limit\) and the Xeon 6973P-C's "
-        r"(?P<fx>[A-Z]+) \(its stencil at L2 ends at (?P<hx>[\d.]+)\)"),
+        r"(?P<fx>[A-Z]+) \(its stencil at L2 ends at (?P<hx>[\d.]+) under the stored seed and at (?P<conv>[\d.]+) once the draw no longer matters\)"),
     row("details: replication, the two sets", "replication/results.json pools; results/s9-*/ job records", exp_repl_sets,
         r"set B, (?P<bj>\d+) jobs on the arm64 runner in (?P<br>\d+) runs \(`results/s9-arm-run-\*/`; (?P<n2>\d+) on Neoverse-N2 and (?P<v3>\d+) on Neoverse-V3\), "
         r"and set C, (?P<cj>\d+) jobs on the x86-64 runner in (?P<cr>\d+) runs"),
@@ -5219,13 +5379,74 @@ def exp_program_floor():
 
 
 def exp_aa_extra():
-    n = 0
+    """README, 'Floors, sizes and builds': the A/A at L2 is timed in every job (details.json aa_extra) and pooled per CPU model in robustness/aa-l2.json."""
     for d in x86_pool_dirs():
         det = json.loads(read_text_file(os.path.join(d, "details.json")))
         assert "k02_add_fwd.L2" in det["aa_extra"], f"{d} holds no L2 A/A"
-        n += 1
-    assert b"aa_extra" not in read_text_file(os.path.join(REPO, POOLED)), "the pooled file now holds the L2 A/A: update the text that says it is not pooled"
-    return {}
+    af = aa_l2_facts()
+    aa_l2_as_wide_as_the_deciding_cells()
+    return {"mx": f2(af["max_others"]), "nf": word(af["n_others"]), "x2": f2(af["x2"]), "x1": f2(af["x1"]),
+            "a2": f2(af["a2"]), "a1": f3(af["a1"]), "ceil": f"{af['ceil']:g}"}
+
+
+def exp_aa_l2_tail():
+    """README, 'What MAP and INCONCLUSIVE cover': the closing sentence on the seed re-draws, the 3-job subsets and the A/A at L2."""
+    sf, af, sub = seed_facts(), aa_l2_facts(), calib_subsets()
+    aa_l2_as_wide_as_the_deciding_cells()
+    return {"si": str(sf["inc"]), "st": str(sf["total"]), "sj": "3", "s3i": str(sub[3][0]), "s3n": str(sub[3][1]),
+            "x2": f2(af["x2"]), "a2": f2(af["a2"]), "ceil": f"{af['ceil']:g}"}
+
+
+def exp_robustness_folder_seeds():
+    return {"n": str(J(SEED_X86)["alt_seeds"]["count"])}
+
+
+def exp_details_calibrated():
+    cf = calib_facts()
+    return {"e7": f1(cf["m7"]["expected_outside"]), "e9": f1(cf["m9"]["expected_outside"]),
+            "l7": f0(cf["r7"][0]), "h7": f0(cf["r7"][1]), "l9": f0(cf["r9"][0]), "h9": f0(cf["r9"][1]),
+            "o7": str(cf["m7"]["outside"]), "o9": str(cf["m9"]["outside"]),
+            "fo": str(cf["lost"][0]), "fn": str(cf["lost"][1]), "fe": f1(cf["lost"][2]),
+            "go": str(cf["fwd"][0]), "gn": str(cf["fwd"][1]), "ge": f1(cf["fwd"][2]),
+            "l6": f0(cf["r6"][0]), "h6": f0(cf["r6"][1]), "n6": str(cf["m6"]["checked"])}
+
+
+def exp_repl_why_with_seeds():
+    """DETAILS, the replication entry: the two thin margins. The Xeon 6973P-C's end under the stored seed is the replication file's and the seed file's;
+    the end once the draw no longer matters is the seed file's converged end."""
+    sf = seed_facts()
+    out = {k: v for k, v in exp_repl_intro().items() if k in ("fa", "ha", "lim", "fx", "hx")}
+    assert out["hx"] == f4(sf["stored"]), "the replication file's and the seed file's stored end of the Xeon 6973P-C stencil at L2 differ"
+    out["conv"] = f4(sf["conv"])
+    return out
+
+
+def exp_details_aa_l2_intro():
+    return {"ceil": f"{aa_l2_facts()['ceil']:g}"}
+
+
+def exp_details_aa_l2_paragraph():
+    af = aa_l2_facts()
+    aa_l2_as_wide_as_the_deciding_cells()
+    return {"mx": f2(af["max_others"]), "nf": word(af["n_others"]), "ceil": f"{af['ceil']:g}", "x2": f2(af["x2"]), "a2": f2(af["a2"])}
+
+
+def exp_arm_calibrated():
+    """arm64/README, run-to-run comparisons: the stride-2 cells at L2 and all in-cache cells, in the Arm pool and in sets A and B pooled."""
+    arm = calib_model("s8-arm", "Neoverse-N2")
+    ab = calib_model("s9-arm-ab", "Neoverse-N2")
+    def stride2(model):
+        """The stride-2 cell at L2, summed over its two columns (as compiled and aligned)."""
+        cells = [c for c in model["by_cell"] if c["cell_id"] == "k05_stride2.L2"]
+        assert len(cells) == 2, "the stride-2 cell at L2 no longer has two columns in the calibration file"
+        return {k: sum(c[k] for c in cells) for k in ("outside", "pairs", "expected_outside")}
+    s2, s2ab = stride2(arm), stride2(ab)
+    assert (arm["outside"], arm["checked"]) == (arm_cpu()["reproduction"]["outside"], arm_cpu()["reproduction"]["checked"]), "the calibration file's Arm count is not the pooled file's"
+    assert arm["outside"] < arm["expected_outside"] and ab["outside"] < ab["expected_outside"] and s2["outside"] > s2["expected_outside"], \
+        "the Arm counts are no longer below the calibrated expectation overall and above it in the stride-2 cells at L2"
+    return {"so": str(s2["outside"]), "sn": str(s2["pairs"]), "se": f1(s2["expected_outside"]), "ao": str(arm["outside"]), "an": str(arm["checked"]),
+            "ae": f1(arm["expected_outside"]), "bo": str(s2ab["outside"]), "bn": str(s2ab["pairs"]), "be": f1(s2ab["expected_outside"]),
+            "co": str(ab["outside"]), "cn": str(ab["checked"]), "ce": f1(ab["expected_outside"])}
 
 
 def exp_google_quote():
@@ -5257,9 +5478,21 @@ GROUP2_README_ROWS = [
         r"\((?P<ac2>[\d.]+)x as compiled, (?P<aa2>[\d.]+)x aligned\) is among the cells left out, and the Xeon 8573C's \((?P<xc2>[\d.]+)x in both columns\) is judged, so the two "
         r"Intel words do not rank those models by cost\. The 6973P-C's MAP and the Arm INCONCLUSIVE each rest on one cell within (?P<tol>[\d.]+) of the (?P<lim>[\d.]+) limit "
         r"\((?P<h1>[\d.]+) and (?P<h2>[\d.]+)\)"),
-    row("trust: floors, sizes and builds, the A/A at L2", "details.json aa_extra of the 95 jobs; results/s7-pooled/pooled.json (holds no aa_extra)", exp_aa_extra,
-        r"The same A/A at L2 is timed in every job \(stored as `aa_extra` in each job's `details\.json`\) but is not pooled for the x86 models, so their forward passes at L2 are "
-        r"not shown to be resolved to 2%"),
+    row("trust: floors, sizes and builds, the A/A at L2", "details.json aa_extra of the 95 jobs; robustness/aa-l2.json pools s7 and s8-arm; the seed file's stencil interval and the Arm pool's forward add interval at L2",
+        exp_aa_extra,
+        r"The same A/A at L2 is timed in every job \(stored as `aa_extra` in each job's `details\.json`\) and pooled per CPU model in `robustness/aa-l2\.json` "
+        r"\(table in the \[details\]\(readme-parts/DETAILS\.md\)\): its pooled half-width is at most (?P<mx>[\d.]+)% on (?P<nf>\w+) x86-64 models, (?P<x2>[\d.]+)% on the Xeon 6973P-C "
+        r"\((?P<x1>[\d.]+)% at L1\) and (?P<a2>[\d.]+)% on the Arm core \((?P<a1>[\d.]+)% at L1\), the last two above the (?P<ceil>\d+)% ceiling; "
+        r"on the Arm core that A/A is as wide as the cells it would judge \(above\)\. Read at L2, the ceiling clause would turn the 6973P-C's MAP into INCONCLUSIVE "
+        r"and change no other stored word in the four pools that file covers; the rule reads L1 only and is not changed\."),
+    row("trust: what MAP and INCONCLUSIVE cover, the closing sentence (seeds, subsets, the A/A at L2)",
+        "robustness/seed-sensitivity-x86.json whole; robustness/calibration.json subsets; robustness/aa-l2.json s7 and s8-arm", exp_aa_l2_tail,
+        r"those are the stored seed's ends: re-drawn under other seeds the 6973P-C's whole analysis is INCONCLUSIVE in (?P<si>\d+) of (?P<st>\d+) and (?P<sj>\d+)-job subsets of its own jobs "
+        r"are INCONCLUSIVE in (?P<s3i>\d+) of (?P<s3n>\d+) \(\[calibration\]\(robustness/README-calibration\.md\)\), and an identical binary timed at L2 is about as wide as the intervals "
+        r"of the cells the two words rest on \((?P<x2>[\d.]+)% pooled on the 6973P-C and (?P<a2>[\d.]+)% on the Arm core, against the (?P<ceil>\d+)% ceiling the rule reads at L1; "
+        r"see \"Floors, sizes and builds\"\), so a word that close is better read as undecided at this sampling\."),
+    row("folders: the seed re-draws in robustness/", "robustness/seed-sensitivity-x86.json alt_seeds.count", exp_robustness_folder_seeds,
+        r"\(interval ends re-drawn under (?P<n>\d+) other seeds\)"),
     row("trust: floors, sizes and builds, programs, RAM and NDEBUG", "results/realworld-pooled/realworld.json pairs.aa and pairs.layout; early results.json RAM cells; realworld/build.py, pgo/build_pgo.py",
         lambda: {**exp_program_floor(), **exp_ram()},
         r"is at most (?P<aamax>[\d.]+)% on EPYC 7763, while building the same program without checks at `-falign-loops=64` moves it by (?P<fmt>[\d.]+)% for \{fmt\} on EPYC 7763 "
@@ -5774,6 +6007,53 @@ DETAILS_ROWS.append(row("details: the d-sweep plan's Records section calls the p
                         "dsweep/PLAN.md (read); tests/data/s9_s10_provenance.json public_history and dsweep_public", exp_dsweep_records_claim,
                         r"The plan's own \"Records\" section calls the public history one squashed sync commit with the plan pushed alone first; neither was so\."))
 
+ROUND7_DETAILS_ROWS = [
+    row("details: run to run, against exactly calibrated intervals", "robustness/calibration.json run_to_run s7 (EPYC 7763, 9V74) and s6 (EPYC 7763), families of cells",
+        exp_details_calibrated,
+        r"Exactly calibrated intervals would put (?P<e7>[\d.]+) and (?P<e9>[\d.]+) of those outside \(95% range for independent comparisons: (?P<l7>\d+) to (?P<h7>\d+) and (?P<l9>\d+) to (?P<h9>\d+)\), "
+        r"so the totals alone do not show intervals that are too narrow: EPYC 7763's (?P<o7>\d+) lie inside that range, EPYC 9V74's (?P<o9>\d+) below it\. "
+        r"The excess on EPYC 7763 is in the reverse, stride-2 and matrix-multiply cells \((?P<fo>\d+) of (?P<fn>\d+) outside against (?P<fe>[\d.]+) expected\), "
+        r"not in the forward ones \((?P<go>\d+) of (?P<gn>\d+) against (?P<ge>[\d.]+)\)\..*?"
+        r"EPYC 7763's counts in both pools lie inside the calibrated range \((?P<l6>\d+) to (?P<h6>\d+) of (?P<n6>\d+) in the 75-job pool\), so the rise is not shown to be more than chance"),
+    row("details: the rule reads the A/A at L1 only", "robustness/aa-l2.json criteria.aa_half_width_max_pct", exp_details_aa_l2_intro,
+        r"The rules read the identical-binary A/A of the forward add at L1 only \(ceiling (?P<ceil>\d+)%\)"),
+    row("details: the A/A at L2, what the table shows", "robustness/aa-l2.json s7 and s8-arm; the seed file's stencil interval and the Arm pool's forward add interval at L2",
+        exp_details_aa_l2_paragraph,
+        r"The pooled L2 half-width is at most (?P<mx>[\d.]+)% on (?P<nf>\w+) x86-64 models and above the (?P<ceil>\d+)% ceiling on the Xeon 6973P-C \((?P<x2>[\d.]+)%\) "
+        r"and the Arm core \((?P<a2>[\d.]+)%\); in both, the A/A is about as wide as the interval of the cell that decides the word "
+        r"\(the stencil at L2 for the 6973P-C, the forward add at L2 for the Arm core\), so for those two words the noise of an unchanged binary at that size is "
+        r"about the size of what the deciding cell's interval can resolve\."),
+]
+
+ARM64_ROUND7_ROWS = [
+    row("arm64: run to run, against exactly calibrated intervals", "robustness/calibration.json run_to_run s8-arm and s9-arm-ab (k05_stride2.L2, all cells)", exp_arm_calibrated,
+        r"In those stride-2 cells (?P<so>\d+) of (?P<sn>\d+) comparisons fall outside, against (?P<se>[\d.]+) expected if the intervals were exactly calibrated; over all 16 cells "
+        r"the count is below that expectation \((?P<ao>\d+) of (?P<an>\d+), against (?P<ae>[\d.]+)\)\. With the six runs of sets A and B pooled together \(secondary\) "
+        r"the stride-2 cells at L2 have (?P<bo>\d+) of (?P<bn>\d+) outside against (?P<be>[\d.]+) expected, and all in-cache cells (?P<co>\d+) of (?P<cn>\d+) against (?P<ce>[\d.]+) "
+        r"\(\[calibration baseline\]\(\.\./robustness/README-calibration\.md\)\)\."),
+]
+
+DETAILS_ROWS.extend(ROUND7_DETAILS_ROWS)
+ARM64_ROWS.extend(ARM64_ROUND7_ROWS)
+
+AA_L2_TABLE_HEADER = ("| CPU model | jobs | pooled A/A half-width at L1 | pooled A/A half-width at L2 | jobs with their own half-width above 2% at L2 |")
+AA_L2_TABLE_ROWS = (("AMD EPYC 7763", "s7", "7763"), ("AMD EPYC 9V74", "s7", "9V74"), ("AMD EPYC 9V45", "s7", "9V45"),
+                    ("Intel Xeon Platinum 8573C", "s7", "8573C"), ("Intel Xeon 6973P-C", "s7", "6973P-C"), ("Arm Neoverse-N2", "s8-arm", "Neoverse-N2"))
+
+
+def aa_l2_table_rows():
+    """The details table of the identical-binary A/A at L1 and L2, line by line, from robustness/aa-l2.json (header, separator not included, then one row per model)."""
+    out = [AA_L2_TABLE_HEADER]
+    for label, pool, key in AA_L2_TABLE_ROWS:
+        m = aa_l2_model(pool, key)
+        out.append(f"| {label} | {m['jobs']} | {m['l1']['half_width_pct']:.3f}% | {m['l2']['half_width_pct']:.3f}% | {m['l2']['jobs_above_ceiling']} of {m['jobs']} |")
+    return out
+
+
+def test_details_aa_l2_table_matches_the_data():
+    check_table_rows("details: the A/A at L1 and L2", aa_l2_table_rows(), details_text(), "readme-parts/DETAILS.md")
+
+
 # Rows whose typed number is wrong against the data: label -> reason. None at the time of writing.
 # Add a row here (the test then needs to keep failing, strict) instead of editing the data to fit.
 XFAIL = {}
@@ -6246,6 +6526,34 @@ else:
     def test_cited_paths_exist_all():
         missing = {doc: missing_in_doc(doc) for doc in citing_present()}
         assert not any(missing.values()), f"documents name paths that do not exist: { {d: m for d, m in missing.items() if m} }"
+
+
+def test_the_lostloops_pointers_cite_the_tool_and_its_example_workflow():
+    """README.md and the details point at tools/lostloops/ and its example workflow; the guard above sees both paths, so a renamed file fails it."""
+    for doc, getter in (("README.md", readme_text), ("readme-parts/DETAILS.md", details_text)):
+        cited = {rel for _, rel in cited_paths_in(getter(), doc)}
+        assert "tools/lostloops/" in cited and "tools/lostloops/example-workflow.yml" in cited, f"{doc} no longer names the tool and its example workflow"
+    assert missing_cited("`tools/lostloops/example-workflow.yml`") == []
+    assert missing_cited("`tools/lostloops/example-workflow.ymll`") == ["tools/lostloops/example-workflow.ymll"]
+    assert missing_cited("`tools/lostloop/`") == ["tools/lostloop/"]
+
+
+def test_the_repository_files_the_page_links_to_exist():
+    """site/app.js maps the data-href keys of the page to repository files (repoPath); every literal path in the map must exist, and the two
+    keys of the lostloops pointer must map to the tool's README and its example workflow, which site/index.html must use."""
+    with open(os.path.join(REPO, "site", "app.js"), encoding="utf-8") as f:
+        js = f.read()
+    m = re.search(r"const repoPath = \{(.*?)\};", js, re.S)
+    assert m, "site/app.js has no repoPath map"
+    literal = dict(re.findall(r"(\w+): '([^']+)'", m.group(1)))
+    assert literal, "no literal paths found in repoPath"
+    missing = sorted(p for p in literal.values() if not os.path.exists(os.path.join(REPO, p)))
+    assert not missing, f"site/app.js links to repository files that do not exist: {missing}"
+    assert literal.get("lostloopsUrl") == "tools/lostloops/README.md" and literal.get("llWorkflowUrl") == "tools/lostloops/example-workflow.yml"
+    with open(os.path.join(REPO, "site", "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    for key in ("lostloopsUrl", "llWorkflowUrl"):
+        assert f'data-href="{key}"' in page, f"site/index.html does not use {key}"
 
 
 # ---- statements about the order of events: each names the unpublished history or links to the account of it ---------------------

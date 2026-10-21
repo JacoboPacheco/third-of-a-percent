@@ -251,6 +251,15 @@ def minmax(vals):
     return {"min": min(vals), "max": max(vals)} if vals else None
 
 
+def break_even(google_pct, lost):
+    """Arithmetic only, never a measurement: loops that take r times as long with the check on and hold a share f of a program's
+    run time (check off) add f * (r - 1) to it, so an average of google_pct per cent needs f = google_pct / (r - 1) per cent of run
+    time. Evaluated at the two ends of the headline range (page.lost); section 10 of the page prints the two shares."""
+    return {"google_pct": google_pct,
+            "at_min": {"r": lost["min"], "share_pct": google_pct / (lost["min"] - 1)},
+            "at_max": {"r": lost["max"], "share_pct": google_pct / (lost["max"] - 1)}}
+
+
 def builds_json(details):
     """Figure 2's per-build facts, taken from one job's details.json (the run's own record)."""
     out = {"pinned_cpu": details.get("pinned_cpu"), "remark_flags": details.get("remark_flags"), "kernels": {}}
@@ -1031,6 +1040,7 @@ def build(out_dir):
         "forms": sorted({c["form"] for c in good}),
     }
     index["page"]["lost_all_above_min"] = all(c["lost_ci_lo_min"] >= crit["verdict"]["lost_ci_lo_min_ratio"] for c in good)
+    index["page"]["break_even"] = break_even(CLAIM["google_pct"], index["page"]["lost"])
     index["default_cpu"] = next((c for c in good if c["cpu_model"] == DEFAULT_CPU_MODEL),
                                 max(good, key=lambda c: c["jobs"]))["slug"]
     index["method"] = method_record()
@@ -1039,6 +1049,7 @@ def build(out_dir):
     index["s1_forward"] = s1_forward()
     index["provenance"] = provenance_data()
     index["ram_early"] = ram_early()
+    index["robustness"] = robustness_data(pooled)
     index["sections"] = {"mitigate": "data/mitigate.json", "siblings": "data/siblings.json", "corpus": "data/corpus.json",
                          "realworld": "data/realworld.json", "holdout": "data/holdout.json", "related": "data/related.json", "cesweep": "data/cesweep.json",
                          "layout": "data/layout.json", "pgo": "data/pgo.json",
@@ -1138,6 +1149,11 @@ def realworld_data(lost_max):
         out.append(r)
     minimum = pooled["minimum_jobs"]
     groups = [rw_group(g, minimum) for g in pooled["cpus"]]
+    per_run = {}
+    for i in pooled["inputs"]:
+        per_run[(i["cpu_model"], i["run_id"])] = per_run.get((i["cpu_model"], i["run_id"]), 0) + 1
+    for g in groups:  # the largest number of jobs of this model that any one run holds: a run needs `minimum` of them to be compared
+        g["max_in_a_run"] = max(n for (m, _), n in per_run.items() if m == g["cpu_model"])
     allr = rw_group(pooled["all_runners"], 0)
     main = next(g for g in groups if g["enough"])  # the one CPU model with enough jobs
     expect = []
@@ -1155,6 +1171,76 @@ def realworld_data(lost_max):
             "timing": {"groups": groups, "all": allr, "main_cpu": main["cpu_model"], "expect": expect,
                        "slow_min": min(slow), "slow_max": max(slow),
                        "jobs": len(pooled["inputs"]), "processes_per_side": 40, "abba_pairs": 4}}
+
+
+# ---------------------------------------------------------------- three analyses read beside the stored words (robustness/)
+ROB_CALIBRATION = "robustness/calibration.json"
+ROB_SEEDS_X86 = "robustness/seed-sensitivity-x86.json"
+ROB_AA_L2 = "robustness/aa-l2.json"
+
+
+def calibrated_counts(entry, stored):
+    """One model's run-to-run count that exactly calibrated intervals would give (an entry of robustness/calibration.json),
+    refused unless its checked/outside counts are the pool's own (`stored` is the pool's "reproduction" block)."""
+    sim = entry["simulation"]["independent"]
+    assert (entry["checked"], entry["outside"]) == (stored["checked"], stored["outside"]), \
+        f"calibration.json counts for {entry['cpu_model']} differ from the pool's own reproduction counts"
+    return {"jobs": entry["jobs"], "checked": entry["checked"], "outside": entry["outside"],
+            "expected_outside": entry["expected_outside"], "independent_lo": sim["p025"], "independent_hi": sim["p975"]}
+
+
+def arm_calibration(cal, pool_sha, cpu_model, rep):
+    """The Arm pool's entry of robustness/calibration.json for site/data/arm64.json (the Arm column is additive, so it is kept
+    out of index.json): refused unless the file read this Arm pool (path and hash) and its counts are the pool's own."""
+    pin = cal["inputs"]["pools"]["s8-arm"]
+    assert pin["sha256"] == pool_sha and pin["path"] == ARM_POOLED, "calibration.json read another Arm pool"
+    (m,) = cal["run_to_run"]["s8-arm"]["models"]
+    assert m["cpu_model"] == cpu_model, "calibration.json is about another Arm CPU model"
+    return {"source": ROB_CALIBRATION, "source_sha256": sha(os.path.join(REPO, ROB_CALIBRATION)), **calibrated_counts(m, rep)}
+
+
+def robustness_data(pooled):
+    """The page's figures from the three round-7 analyses: the expected run-to-run counts of calibrated intervals
+    (robustness/calibration.json), the x86-64 pool re-drawn under other bootstrap seeds (robustness/seed-sensitivity-x86.json) and
+    the identical-binary A/A at the L2 size (robustness/aa-l2.json). Nothing here changes a stored word. Each file is checked
+    against the pool this page reads (file hash) and against the pool's own counts before one figure is copied from it. The Arm
+    pool's calibration entry is built in arm64_data() (site/data/arm64.json), because the Arm column adds no figure to index.json."""
+    cal, seeds, aal2 = (load(os.path.join(REPO, p)) for p in (ROB_CALIBRATION, ROB_SEEDS_X86, ROB_AA_L2))
+    sha_x86 = sha(os.path.join(REPO, POOLED))
+    assert cal["inputs"]["pools"]["s7"]["sha256"] == sha_x86 and cal["inputs"]["pools"]["s7"]["path"] == POOLED, "calibration.json read another x86-64 pool"
+    assert seeds["pool"]["sha256"] == sha_x86 and seeds["pool"]["path"] == POOLED, "seed-sensitivity-x86.json read another pool"
+    x86_pool = next(p for p in aal2["pools"] if p["id"] == "s7")
+    assert x86_pool["pooled_file"] == POOLED and aal2["inputs"][POOLED] == sha_x86, "aa-l2.json read another x86-64 pool"
+    by_model = {c["cpu_model"]: c for c in pooled["cpus"]}
+
+    cal_x86 = {m["cpu_model"]: calibrated_counts(m, by_model[m["cpu_model"]]["reproduction"]) for m in cal["run_to_run"]["s7"]["models"]}
+
+    whole = seeds["whole"]
+    seed_models = {}
+    for model, w in whole["models"].items():
+        assert w["stored_seed_form"] == w["stored_form"] == by_model[model]["verdict"]["form"], f"{model}: the seed file's stored word is not the pool's"
+        seed_models[model] = {"jobs": w["jobs"], "stored_form": w["stored_form"], "seeds": whole["count"],
+                              "forms": {k: w["tally"]["forms"].get(k, 0) for k in ("map", "inconclusive")}, "cells": {}}
+    for e in seeds["cells"]:
+        if e["kind"] != "forward" or e["column"] != "aligned":
+            continue
+        cell = next(x for x in by_model[e["cpu_model"]]["cells"] if x["cell_id"] == e["cell_id"])
+        assert cell["aligned"]["ci95"][1] == e["stored"]["hi"], f"{e['id']}: the seed file's stored end is not the pool's"
+        lim = e["alt"]["summary"]["limit"]
+        seed_models[e["cpu_model"]]["cells"][e["cell_id"]] = {
+            "limit": lim, "stored_hi": e["stored"]["hi"], "converged_hi": e["converged"]["hi"],
+            "converged_under": lim - e["converged"]["hi"], "draws": e["converged"]["resamples"],
+            "alt_draws": e["alt"]["draws"], "alt_at_or_above": e["alt"]["summary"]["at_or_above_limit"]}
+
+    aa = {}
+    for m in x86_pool["models"]:
+        assert m["l1_matches_pool"] and m["l1"]["half_width_pct"] == by_model[m["cpu_model"]]["aa"]["half_width_pct"], f"{m['cpu_model']}: the L1 A/A is not the pool's"
+        aa[m["cpu_model"]] = {"jobs": m["jobs"], "l1_pct": m["l1"]["half_width_pct"], "l2_pct": m["l2"]["half_width_pct"],
+                              "l2_jobs_above": m["l2"]["jobs_above_ceiling"]}
+    src = lambda p: {"source": p, "source_sha256": sha(os.path.join(REPO, p))}
+    return {"calibration": {**src(ROB_CALIBRATION), "x86": cal_x86},
+            "seeds": {**src(ROB_SEEDS_X86), "other_seeds": seeds["alt_seeds"]["count"], "models": seed_models},
+            "aa_l2": {**src(ROB_AA_L2), "ceiling_pct": aal2["criteria"]["aa_half_width_max_pct"], "models": aa}}
 
 
 # ---------------------------------------------------------------- layout sweep (layout-sweep/) and PGO column (pgo/)
@@ -2121,6 +2207,7 @@ def arm64_data(index, x86):
                            "l2_max_pct": sd_l2[0], "l2_max_cell": sd_l2[1], "l2_max_column": sd_l2[2]},
         "reproduction": {"checked": rep["checked"], "outside": rep["outside"],
                          "max_gap_pct": max([m["gap_pct"] for m in rep["misses"]], default=None), "misses": rep["misses"]},
+        "reproduction_calibration": arm_calibration(load(os.path.join(REPO, ROB_CALIBRATION)), sha(path), c["cpu_model"], rep),
         "verdict": verdict, "cells": cells, "kernels": ks,
         "instr_label": cells_in[0]["instr_label"],
         "build_facts": {"jobs": len(res), "kernels": len(kernels), "builds_per_kernel": len(ARM_BUILDS),
@@ -2399,6 +2486,7 @@ def baked_values(data_dir):
         "bandWorst": _fx(worst[1]), "bandName": short.get(worst[0], worst[0]),
         "googlePct": f"{ix['claim']['google_pct']:.2f}",
         "lostMin": f"{ix['page']['lost']['min']:.1f}", "lostMax": f"{ix['page']['lost']['max']:.1f}",
+        "beLo": f"{ix['page']['break_even']['at_min']['share_pct']:.2g}", "beHi": f"{ix['page']['break_even']['at_max']['share_pct']:.2g}",
         "clang": f"clang {ver(tc.get('clang'))}", "libcxx": f"libc++ {ver(tc.get('libcxx_package'))}",
         "c1Lost": f"{t1['lost']:,}", "c1Vec": f"{t1['none']['vectorized']:,}",
         "c2Lost": f"{t2['lost']:,}", "c2Vec": f"{t2['none']['vectorized']:,}",

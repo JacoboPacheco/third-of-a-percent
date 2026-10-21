@@ -205,6 +205,22 @@ function renderProvenance() {
       ', commits on the temporary public branches ', code(ac.where), ' and ', code(dc.where), ', which are kept for that reason.'),
     el('p', null, `Run links in the records open only for the runs of s6 to s10 (${open} of ${linked} links): the earlier runs were made before this repository existed, in repositories that are not public. The commit and run facts here were read from the GitHub API on ${P.read_on}.`));
 }
+// A map that stands by a narrow margin and does not survive other bootstrap seeds: the figures behind "undecided"
+// (robustness/seed-sensitivity-x86.json for the seeds, robustness/aa-l2.json for the identical-binary A/A at L2), or null.
+function undecidedFacts(c) {
+  const R = S.ix.robustness, nc = nearestCall(c);
+  if (!R || !nc || nc.left || c.form !== 'map') return null;
+  const sm = R.seeds.models[c.cpu_model], cell = sm && sm.cells[nc.id];
+  if (!cell || !sm.forms.inconclusive) return null;
+  const aa = R.aa_l2.models[c.cpu_model];
+  return { n: sm.seeds, inc: sm.forms.inconclusive, under: cell.converged_under, draws: cell.draws, l2: aa && aa.l2_pct > R.aa_l2.ceiling_pct ? aa.l2_pct : null };
+}
+function undecidedWords(c, short) { // '' unless the model's narrow map is undecided under other seeds
+  const u = undecidedFacts(c);
+  if (!u) return '';
+  if (short) return `${u.inc} of ${u.n} other bootstrap seeds give an inconclusive verdict${u.l2 != null ? `, and an identical binary timed against itself at L2 has a half-width of ${u.l2.toFixed(2)}%` : ''}: best read as undecided.`;
+  return `The ${c.cpu_short} margin is the stored seed’s alone: with ${u.draws.toLocaleString('en-US')} draws the end moves to ${Math.abs(u.under).toFixed(4)} ${u.under >= 0 ? 'below' : 'above'} the limit, ${u.inc} of ${u.n} other seeds give an inconclusive verdict${u.l2 != null ? `, and an identical binary timed against itself at L2 has a half-width of ${u.l2.toFixed(2)}% (the rule reads that pair at L1)` : ''}, so its map is best read as undecided.`;
+}
 // What the placement exemption does and does not settle (details, section 3). The labels in Table 1 describe the cells left
 // after it; it sets no limit on the size of the effect it leaves out; aligning the loop starts removes one source of
 // code-placement variation; several words rest on margins of a few thousandths.
@@ -224,9 +240,9 @@ function renderPsScope() {
       judged.length ? `; the ${joinAnd(judged.map((j) => `${j.c.cpu_short}’s ${bare(big.q.cell_id)}, ${fx(j.x.aligned.ratio)}× aligned and not flagged,`))} is judged, misses the limit, and the ${judged[0].c.cpu_short} ${verdictOf(judged[0].c)}` : '',
       '. The labels in Table 1 therefore describe the cells left after the exemption, not every forward cell; the cells left out and their aligned ratios are listed beside each label (Table 1, and Table 2 below).'),
     ex ? el('p', null, `Aligning every hot loop to a 64-byte boundary removes one source of code-placement variation, not all of it: it fixes only where each hot loop starts, and the loop’s length, the position of its inner branches and of the code around it are left as compiled. The ${cellName(ex.q.cell_id).replace(/^the /, '')} on the ${ex.c.cpu_short} shows that the column still matters: ${fx(ex.q.ratio)}× as compiled, ${fx(ex.q.aligned_ratio)}× aligned.`) : null,
-    narrow.length ? el('p', null, `Several words rest on small margins. ${narrow.length === 1 ? 'On the model' : 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies ${joinAnd(narrow.map((x) => (x.left ? `${x.m.toFixed(4)} above it on the ${x.c.cpu_short} (a cell left out as placement-sensitive, which would miss the limit if counted)` : `${x.m.toFixed(4)} below it on the ${x.c.cpu_short}`)))}. The intervals resample jobs and understate the spread between runs (`,
-      el('a', { href: '#method-full' }, '“Run to run”, section 8'), '), so these words can change with the jobs drawn or the seed. How the verdicts move with the interval method is in the ',
-      repoNode('robustness/report.md', 'robustness report'), ' and, for the Arm pool, how the stored verdict sits among other seeds is in the ', repoNode('arm64/seed-sensitivity.json', 'seed-sensitivity file'), '.') : null,
+    narrow.length ? el('p', null, `Several words rest on small margins. ${narrow.length === 1 ? 'On the model' : 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies ${joinAnd(narrow.map((x) => (x.left ? `${x.m.toFixed(4)} above it on the ${x.c.cpu_short} (a cell left out as placement-sensitive, which would miss the limit if counted)` : `${x.m.toFixed(4)} below it on the ${x.c.cpu_short}`)))}.${narrow.map((x) => undecidedWords(x.c, false)).filter(Boolean).map((t) => ` ${t}`).join('')} The intervals resample jobs, so with few jobs these words can change with the jobs drawn or the seed (`,
+      el('a', { href: '#method-full' }, '“Run to run”, section 8'), '). The ',
+      repoNode('robustness/report.md', 'robustness report'), ' shows how the verdicts move with the interval method, and the seed-sensitivity files (', repoNode('robustness/seed-sensitivity-x86.json', 'x86-64'), ', ', repoNode('arm64/seed-sensitivity.json', 'Arm'), ') how the stored verdicts sit among other seeds.') : null,
   ];
   $('ps-scope').replaceChildren(...kids.filter(Boolean));
 }
@@ -239,7 +255,8 @@ function fillStatic() {
   // Repository files: a link into the public repository (REPO_BASE in the builder); plain monospace text if it is empty.
   const base = ix.repo.base || '';
   const repoPath = { criteriaUrl: cr.file, planUrl: 'corpus/PLAN2.md', pooledUrl: ix.pooled.source, findingsUrl: 'investigate/FINDINGS.md', robustnessUrl: 'robustness/report.md', repoUrl: '',
-    vecUrl: 'investigate/vectorizer/reverse-stride2/README.md', matmulVecUrl: 'investigate/vectorizer/matmul/README.md' };
+    vecUrl: 'investigate/vectorizer/reverse-stride2/README.md', matmulVecUrl: 'investigate/vectorizer/matmul/README.md',
+    lostloopsUrl: 'tools/lostloops/README.md', llWorkflowUrl: 'tools/lostloops/example-workflow.yml' };
   for (const n of [...document.querySelectorAll('[data-href]')]) {
     const k = n.dataset.href;
     if (k === 'claimUrl') { n.href = ix.claim.url; continue; }
@@ -271,6 +288,8 @@ function fillStatic() {
     nCpusEnough: String(pg.cpus_enough),
     lostMin: pg.lost.min.toFixed(1),
     lostMax: pg.lost.max.toFixed(1),
+    beLo: pg.break_even.at_min.share_pct.toPrecision(2), // section 10: the arithmetic at the two ends of that range
+    beHi: pg.break_even.at_max.share_pct.toPrecision(2),
     fwdMin: fx(pg.forward.aligned.min),
     fwdMax: fx(pg.forward.aligned.max),
     fwdCompiledMax: fx(pg.forward.compiled.max),
@@ -287,11 +306,14 @@ function fillStatic() {
   // run-to-run movement of the pooled ratios: every model that had at least two runs with enough jobs to compare
   const reproM = good.filter((c) => c.reproduction && c.reproduction.checked > 0);
   const gapOf = (c) => (c.reproduction.max_gap_pct != null ? c.reproduction.max_gap_pct.toFixed(1) : 'n/a');
+  // the count calibrated intervals would give (robustness/calibration.json), only where its counts are this pool's own
+  const calOf = (c) => { const q = ix.robustness && ix.robustness.calibration.x86[c.cpu_model]; return q && q.outside === c.reproduction.outside && q.checked === c.reproduction.checked ? q : null; };
+  const expOf = (c, long) => { const q = calOf(c); return q ? ` (${q.expected_outside.toFixed(1)} expected${long ? ' for calibrated intervals' : ''})` : ''; };
   v.reproText = reproM.length
-    ? `on ${reproM[0].cpu_short}, ${reproM[0].reproduction.outside} of ${reproM[0].reproduction.checked} comparisons put one run’s pooled ratio outside another run’s interval, by at most ${gapOf(reproM[0])}%${reproM.slice(1).map((c) => `; on ${c.cpu_short}, ${c.reproduction.outside} of ${c.reproduction.checked}, by at most ${gapOf(c)}%`).join('')}.`
+    ? `on ${reproM[0].cpu_short}, ${reproM[0].reproduction.outside} of ${reproM[0].reproduction.checked}${expOf(reproM[0], true)} comparisons put one run’s pooled ratio outside another run’s interval, by at most ${gapOf(reproM[0])}%${reproM.slice(1).map((c) => `; on ${c.cpu_short}, ${c.reproduction.outside} of ${c.reproduction.checked}${expOf(c, false)}, by at most ${gapOf(c)}%`).join('')}.`
     : 'no model had enough jobs in two runs to compare them.';
   v.reproMethod = reproM.length
-    ? `On ${joinAnd(reproM.map((c) => c.cpu_short))}, the ${reproM.length === 1 ? 'only model' : 'models'} with enough jobs in more than one run (a run needs ${cr.minimum_jobs} jobs of the model), a run’s pooled ratio fell outside another run’s pooled interval in ${joinAnd(reproM.map((c) => `${c.reproduction.outside} of ${c.reproduction.checked}`))} comparisons${reproM.length === 1 ? '' : ', respectively'}.`
+    ? `On ${joinAnd(reproM.map((c) => c.cpu_short))}, the ${reproM.length === 1 ? 'only model' : 'models'} with enough jobs in more than one run (a run needs ${cr.minimum_jobs} jobs of the model), a run’s pooled ratio fell outside another run’s pooled interval in ${joinAnd(reproM.map((c) => `${c.reproduction.outside} of ${c.reproduction.checked}`))} comparisons${reproM.length === 1 ? '' : ', respectively'}${reproM.every(calOf) ? `; exactly calibrated intervals would put about ${joinAnd(reproM.map((c) => calOf(c).expected_outside.toFixed(1)))} outside (robustness/calibration.json)` : ''}.`
     : 'No model had enough jobs in more than one run to compare runs.';
   // working sets larger than the cache: timed only in the early jobs, as compiled
   const RM = ix.ram_early;
@@ -336,7 +358,9 @@ function fillStatic() {
   const thin = good.filter((c) => c.form === 'inconclusive' || c.stability !== 'stable');
   const thinInc = inc.length ? `${joinAnd(inc.map((c) => c.cpu_short))} ${inc.length === 1 ? 'has' : 'have'} ${[...new Set(inc.map((c) => c.jobs))].join(' or ')} jobs, in runs of at most ${Math.max(...inc.flatMap(perRun))}` : '';
   const thinMap = naMap.map((c) => `${c.cpu_short}’s ${c.jobs} jobs came in runs of ${Math.min(...perRun(c))} to ${Math.max(...perRun(c))}, so ${runsJudged(c) ? `only ${runsJudged(c)} of its ${c.per_run.length} runs` : 'none of its runs'} can be judged alone`);
-  v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. The job-level resampling understates the spread between machines when jobs are few, and these verdicts cannot be checked run against run.${v.narrowLong ? ` ${v.narrowLong}` : ''}`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
+  const xeons = ix.cpus.filter((c) => /xeon/i.test(c.cpu_model)); // "no Xeon model ..." holds only while no Xeon model has two runs of enough jobs
+  const noXeonRuns = xeons.length > 0 && xeons.every((c) => runsJudged(c) < 2);
+  v.thinText = thin.length ? `${[thinInc, ...thinMap].filter(Boolean).join('; ')}. With few jobs the sampled jobs may not contain the spread between machines, and these verdicts cannot be checked run against run${noXeonRuns ? ` (no Xeon model has two runs of ${cr.minimum_jobs} or more jobs)` : ''}.${v.narrowLong ? ` ${v.narrowLong}` : ''}`.replace(/^./, (ch) => ch.toUpperCase()) : 'Every model with a verdict was judged on at least as many jobs as the written rule needs, and its verdict held run by run.';
   // jobs that never returned, and which CPU models the returned ones are
   const L = runLedger(ix), topCpu = L.byCpu.reduce((a, c) => (!a || c.inOrig > a.inOrig ? c : a), null);
   const jobsS = (n) => `${n} job${n === 1 ? '' : 's'}`;
@@ -804,12 +828,16 @@ function aaHalfWidth() { // the selected model's byte-identical A/A, pooled: the
 }
 function aaBand(hw) { // drawn at least 5 px wide so a band of a tenth of a percent stays visible
   const a = pos(1 - hw / 100).p, b = pos(1 + hw / 100).p;
-  return el('span', { class: 'aa-band', style: `left:calc(${(a + b) / 2}% - max(2.5px, ${(b - a) / 2}%));width:max(5px, ${b - a}%)`, title: `A/A: ±${hw.toFixed(2)}%` });
+  return el('span', { class: 'aa-band', style: `left:calc(${(a + b) / 2}% - max(2.5px, ${(b - a) / 2}%));width:max(5px, ${b - a}%)`, title: `A/A at L1: ±${hw.toFixed(2)}%` });
+}
+function aaL2Say() { // '; ±0.36% at L2' where the identical binary is noisier at the L2 size (robustness/aa-l2.json), else ''
+  const q = S.ix.robustness && S.ix.robustness.aa_l2.models[currentCpu().cpu_model], hw = aaHalfWidth();
+  return q && hw != null && q.l2_pct > hw ? `; ±${q.l2_pct.toFixed(2)}% at L2` : '';
 }
 function jobsLine(r) { // the drawer's per-job strip (phones show the per-job marks only here)
   if (!r.pts.some((p) => p.perJob.length)) return null;
   const hw = aaHalfWidth();
-  return el('div', { class: 'f2-jobs' }, el('p', { class: 'f2-jobs-t' }, `Every job’s own ratio (ticks) and the pooled ratio (dark bar), ${S.col === 'aligned' ? 'aligned' : 'as compiled'}${hw != null ? `; the faint band at 1× is this model’s A/A half-width, ±${hw.toFixed(2)}%` : ''}:`),
+  return el('div', { class: 'f2-jobs' }, el('p', { class: 'f2-jobs-t' }, `Every job’s own ratio (ticks) and the pooled ratio (dark bar), ${S.col === 'aligned' ? 'aligned' : 'as compiled'}${hw != null ? `; the faint band at 1× is this model’s A/A half-width at L1, ±${hw.toFixed(2)}%${aaL2Say()}` : ''}:`),
     ...r.pts.filter((p) => p.perJob.length).map((p) => {
       const tr = el('div', { class: 'track' });
       for (const t of TICKS) tr.append(el('span', { class: t === 1 ? 'one' : 'gl', style: `left:${pos(t).p}%` }));
@@ -904,7 +932,7 @@ function renderFig1() {
       jobs > 1 ? `Each mark is the pooled ratio of ${jobs} jobs in ${pc.runs.length} run${pc.runs.length > 1 ? 's' : ''}; ` : 'One job, so each mark is that job’s ratio; ',
       'the thin lines are 95% intervals that include the spread between jobs, often narrower than the mark. ',
       el('span', { class: 'key key-jt', 'aria-hidden': 'true' }), ' Tiny ticks above the L1 dot and below the L2 ring: each job’s own ratio. ',
-      ...(aaHalfWidth() != null ? [el('span', { class: 'key key-aa', 'aria-hidden': 'true' }), ` Faint band at 1×: this model’s A/A half-width (±${aaHalfWidth().toFixed(2)}%, a binary timed against a byte-identical copy), drawn at least 5 px wide. `] : []),
+      ...(aaHalfWidth() != null ? [el('span', { class: 'key key-aa', 'aria-hidden': 'true' }), ` Faint band at 1×: this model’s A/A half-width at L1 (±${aaHalfWidth().toFixed(2)}%${aaL2Say()}; a binary timed against a byte-identical copy). `] : []),
       '‡ and a dashed ring mark a placement-sensitive cell: moving the loop’s code changes its ratio by more than noise (section 3), so the forward test leaves it out. It can still sit above 1× when aligned. ',
       el('span', { class: 'tnote-i' }, `Jobs: the pooled runs, ${S.ix.pooled.jobs} jobs, sizes L1 and L2.`)));
 }
@@ -2197,7 +2225,7 @@ function armDetails() {
   $('arm-floors').replaceChildren(el('b', null, 'Noise floors and movement. '),
     `The A/A control (the unchecked binary against a byte-identical copy of itself) is timed on the forward add at the L1 size; pooled over ${A.aa.jobs} jobs, it has a half-width of ${pctS(A.aa.half_width_pct)}; per job it is ${pctS(jh.median)} at the median (${pctS(jh.min)} to ${pctS(jh.max)}). That is the floor of that one cell, not of the core: the widest interval of a measured cell is ±${pctS(w1.h)} at L1 (${cellName(w1.id)}, ${colSay(w1.col)}) and ±${pctS(w2.h)} at L2 (${cellName(w2.id)}, ${colSay(w2.col)}). The layout A/A (the unchecked binary against itself built at a different loop alignment) is less quiet: per cell its half-width runs from ${pctS(lay.min)} to ${pctS(lay.max)}, the largest at ${cellName(layMax.cell_id)}. `,
     `Between jobs, a cell’s ratio spreads by at most ${sd.l1_max_pct.toFixed(2)}% at L1 (${cellName(sd.l1_max_cell)}, ${sd.l1_max_column === 'aligned' ? 'aligned' : 'as compiled'}) and ${sd.l2_max_pct.toFixed(1)}% at L2 (${cellName(sd.l2_max_cell)}, ${sd.l2_max_column === 'aligned' ? 'aligned' : 'as compiled'}), as a standard deviation. `,
-    `Run to run, ${rep.outside} of ${rep.checked} comparisons put one run’s pooled ratio outside another run’s interval, by at most ${rep.max_gap_pct.toFixed(1)}% (${cellName(worstMiss.cell_id)}); ${tiny} of them by less than 0.01%.`);
+    `Run to run, ${rep.outside} of ${rep.checked} comparisons${(() => { const q = A.reproduction_calibration; return q && q.outside === rep.outside && q.checked === rep.checked ? ` (${q.expected_outside.toFixed(1)} expected for calibrated intervals)` : ''; })()} put one run’s pooled ratio outside another run’s interval, by at most ${rep.max_gap_pct.toFixed(1)}% (${cellName(worstMiss.cell_id)}); ${tiny} of them by less than 0.01%.`);
   // placement: what the layout A/A can and cannot see
   const LV = A.layout_vs_placement, lrow = (id) => LV.rows.find((r) => r.cell_id === id);
   const lst = lrow('k03_stencil.L1'), lga = lrow('k06_gather.L1'), lmm = lrow('k08_matmul.L1');
@@ -2750,7 +2778,7 @@ function renderRealworld() {
   setV('rwDetect', numWord(detected.length));
   setV('rwDetectProjects', numWord(projectsOf(detected)));
   setV('rwOthers', numWord(T.groups.length - 1));
-  setV('rwStatus', `${capFirst(numWord(prog.length))} program workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and tabulated on the details page.`);
+  setV('rwStatus', `${capFirst(numWord(prog.length))} workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and on the details page.`);
   setV('rwTCap', `FAST ÷ NONE, whole program, AMD ${main.cpu_short}, ${main.jobs} jobs, 95% interval beneath. Aligned: both builds with every hot loop aligned to 64 bytes. A/A floor: the unchecked program against a copy of itself. A reading needs both columns above the floor.`);
   $('rw-time-table').querySelector('tbody').replaceChildren(...Object.keys(RW_NAMES).map((n) => rwTimeRow(n, main.rows[n])));
   const lostProgs = prog.map((r) => r.row);
@@ -2770,12 +2798,12 @@ function renderRealworld() {
   const fmax = Math.max(...prog.map((r) => r.funcs_none));
   const small = prog.filter((r) => r.lines_none < 1 && slow(main).includes(r.row));
   const lin = prog.find((r) => r.row === 'lightgbm_linear');
-  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ own lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of what the programs execute (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} that is under 1%, yet FAST costs them ${pc(Math.min(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% to ${pc(Math.max(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% across the two columns: consistent with most of the cost being checks elsewhere, in loops that kept SIMD or in other code. Which checks account for this was not isolated, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
+  setV('rwShare', `Cachegrind counts instructions, not time: the lost loops’ lines hold ${rwPct(lo, false)} to ${rwPct(hi, false)} of executed instructions (their functions up to ${pctS(fmax)}). For ${joinAnd(small.map((r) => RW_NAMES[r.row]))} it is under 1%, yet FAST costs them ${pc(Math.min(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% to ${pc(Math.max(...small.flatMap((r) => [main.rows[r.row].fast.ratio, main.rows[r.row].aligned.ratio])))}% across the two columns: consistent with most of the cost being checks elsewhere (loops that kept SIMD, other code). Which checks account for this was not isolated, so no mechanism is claimed (LightGBM linear, at ${pctS(lin.lines_none)}, cannot be separated).`);
   const ex = T.expect, held = ex.filter((e) => e.held), miss = ex.filter((e) => !e.held);
   const why = (e) => `${RW_NAMES[e.row].replace(' (control)', '')}: expected ${e.low.toFixed(2)} to ${e.high.toFixed(2)}${e.call === 'probably not' || e.call === 'no' ? ' and undetectable' : ''}, got ${rwR3(e.fast)} and ${rwR3(e.aligned)}${e.reading === 'detectably slower' ? ', detectable' : ''}`;
   setV('rwExpect', `Of the ${ex.length} expectations committed before any run (in the author’s unpublished development history), ${held.length} held (range and detectable-or-not call, both columns; Table 11 on the details page). Missed: ${miss.map(why).join('; ')}.`);
-  setV('rwLimits', `Limits: no profile-guided optimization in this timing (a separate PGO column, section 7c, did not make the cost vanish in most rows), shared virtual machines, one toolchain (clang 18, libc++ 18, -O2, x86-64 baseline), three AMD CPU models only, and programs picked because they contain lost loops, so not a sample of Google’s services. This neither confirms nor contradicts Google’s 0.30%.`);
-  setV('rwOtherCap', `The other CPU models: ${rest.map((g) => `AMD ${g.cpu_short}, ${g.jobs} jobs in ${g.runs} runs`).join('; ')} (the second in Table 10c). Readings are summarised in section 7; with so few jobs the intervals understate the spread between machines. FAST ÷ NONE, interval beneath; Layout A/A: the unchecked binary aligned ÷ as compiled.`);
+  setV('rwLimits', `Limits: no profile-guided optimization in this timing (section 7c’s PGO column did not make the cost vanish in most rows), shared virtual machines, one toolchain (clang 18, libc++ 18, -O2, x86-64 baseline), three AMD CPU models only, and programs picked because they contain lost loops, so not a sample of Google’s services. This neither confirms nor contradicts Google’s 0.30%.`);
+  setV('rwOtherCap', `The other CPU models: ${rest.map((g) => `AMD ${g.cpu_short}, ${g.jobs} jobs in ${g.runs} runs`).join('; ')} (the second in Table 10c). Readings are summarised in section 7; with so few jobs the spread between machines is only sampled${rest.every((g) => g.max_in_a_run < R.minimum_jobs) ? `, and no run holds ${R.minimum_jobs} or more jobs of any of them to test it` : ''}. FAST ÷ NONE, interval beneath; Layout A/A: the unchecked binary aligned ÷ as compiled.`);
   setV('rwOther2Cap', rest[1] ? `AMD ${rest[1].cpu_short}, ${rest[1].jobs} jobs in ${rest[1].runs} runs. Same columns as Table 10.` : '');
   setV('rwAllCap', `All ${T.all.jobs} jobs pooled across CPU models. Descriptive only, since it mixes CPU models.`);
   for (const [id, g] of [['rw-other-table', rest[0]], ['rw-other2-table', rest[1]], ['rw-all-table', T.all]]) {
@@ -2894,7 +2922,7 @@ function renderVerdictNote() { // Figure 1 draws the measured bars for every mod
   const n = document.getElementById('cpu-verdict');
   if (!n) return;
   const c = currentCpu();
-  if (!S.fixture && c.form === 'map' && closeCalls(c).length) { n.textContent = `${c.cpu_short}: ${closeWords(c)} More in Table 1 and the details.`; return; }
+  if (!S.fixture && c.form === 'map' && closeCalls(c).length) { n.textContent = `${c.cpu_short}: ${closeWords(c)}${undecidedWords(c, true) ? ` ${capFirst(undecidedWords(c, true))}` : ''} More in Table 1 and the details.`; return; }
   if (S.fixture || c.form !== 'inconclusive') { n.textContent = ''; return; }
   const ms = missWords(c);
   n.textContent = `No verdict for ${c.cpu_short}: inconclusive under the written rules${ms ? `, because the ${limitWords(c)} rule is missed by ${ms}` : ''}. The bars are measured values; Table 1 has the reason.`;

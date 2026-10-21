@@ -42,6 +42,10 @@
    every dsweep.json and dsweep-pooled.json (any edit of the plan after a run fails here); results/*dsweep-pooled/
    dsweep-pooled.json must list every dsweep.json of its run folders once and equal a fresh dsweep/analyze.py over them, with
    only the input-path strings ignored (floats to 1e-9 relative), as must each run's own copy.
+   Round 7 robustness analyses (each fails if its script or stored file is absent): robustness/seeds_x86.py --verify --model 6973P
+   --whole 1 and the same for --model 9V45 (about 2 minutes together; the other models' cells and the 60 whole analyses are
+   recomputed only by the default --verify), robustness/aa_l2.py --verify (under a minute) and robustness/calibration.py --verify
+   (about a minute).
    The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps. Every step whose script or stored result is not in the repository FAILS the run (a deleted
    checker or result folder does not make it greener); only the page step can be skipped, and then the exit code is 3.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
@@ -733,6 +737,30 @@ def main():
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "arm64", "seeds.py"), "--check"]) == 0
     else:
         ok &= missing_step("arm64/seeds.py and arm64/seed-sensitivity.json")
+    print("== x86-64 seed sensitivity (robustness/seeds_x86.py --verify --model 6973P --whole 1 and --model 9V45 --whole 1: the cells of the Xeon "
+          "6973P-C and of the EPYC 9V45 (the two models whose word rests on a cell near a line) under all 400 other seeds, their converged readings "
+          "and one whole analysis each recomputed from the pool, about 2 minutes together; the 7763, 9V74 and 8573C cells and the full 60 whole "
+          "analyses are recomputed only by the default --verify (about 5 minutes, run by hand), not by this step; fails if absent)")
+    if os.path.exists(os.path.join(REPO, "robustness", "seeds_x86.py")) and os.path.exists(os.path.join(REPO, "robustness", "seed-sensitivity-x86.json")):
+        sys.stdout.flush()
+        for model in ("6973P", "9V45"):
+            ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "seeds_x86.py"), "--verify", "--model", model, "--whole", "1"]) == 0
+    else:
+        ok &= missing_step("robustness/seeds_x86.py and robustness/seed-sensitivity-x86.json")
+    print("== identical-binary A/A at L2 (robustness/aa_l2.py --verify: robustness/aa-l2.json recomputed from the jobs' stored A/A samples, "
+          "under a minute; fails if absent)")
+    if os.path.exists(os.path.join(REPO, "robustness", "aa_l2.py")) and os.path.exists(os.path.join(REPO, "robustness", "aa-l2.json")):
+        sys.stdout.flush()
+        ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "aa_l2.py"), "--verify"]) == 0
+    else:
+        ok &= missing_step("robustness/aa_l2.py and robustness/aa-l2.json")
+    print("== calibration of the run-to-run claim (robustness/calibration.py --verify: robustness/calibration.json recomputed, with the "
+          "identity shuffle and one more shuffle of the shuffle null and the J=3 subsets, about 1 minute; fails if absent)")
+    if os.path.exists(os.path.join(REPO, "robustness", "calibration.py")) and os.path.exists(os.path.join(REPO, "robustness", "calibration.json")):
+        sys.stdout.flush()
+        ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "calibration.py"), "--verify"]) == 0
+    else:
+        ok &= missing_step("robustness/calibration.py and robustness/calibration.json")
     print("== replication (replication/compare.py --verify: replication/results.json recomputed from the six pooled files; fails if absent)")
     if os.path.exists(os.path.join(REPO, "replication", "compare.py")) and os.path.exists(os.path.join(REPO, "replication", "results.json")):
         sys.stdout.flush()

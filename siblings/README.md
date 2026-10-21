@@ -261,5 +261,5 @@ Read each cell the same way as in the L1 table.
   - GCC never ran on an EPYC 9V45 that passed the A/A, nor on the Xeon Platinum 8573C.
   - clang 20 never ran on the Xeon Platinum 8573C.
   - EXTENSIVE, DEBUG and x86-64-v3 never ran on the Xeon 6973P-C.
-- **Within-job intervals understate run-to-run spread** (see the main README). The brackets above pool several jobs but still come from 2 runs on one day.
+- **Intervals from two runs on one day cannot show run-to-run spread.** The brackets above pool several jobs but still come from 2 runs on one day; what the kernel pools show about intervals and run-to-run spread is in `robustness/README-calibration.md`.
 - **Nothing about Google's services, the 0.30% figure, or whole programs.** These are 8 synthetic loops.

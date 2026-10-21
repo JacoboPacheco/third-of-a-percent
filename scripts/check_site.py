@@ -329,6 +329,60 @@ def left_out_above(c, pooled):
             if x["cell_id"] in ps and x["class"] == "kept" and x["size_class"] in ("L1", "L2") and x["aligned"] and x["aligned"]["ratio"] > lim]
 
 
+def robustness_raw():
+    """The three round-7 analyses as stored (robustness/): the expected run-to-run counts, the x86-64 pool under other bootstrap seeds and
+    the identical-binary A/A at the L2 size. Read from the files, not from site/data/index.json, so the page is compared with the source."""
+    out = []
+    for name in ("calibration", "seed-sensitivity-x86", "aa-l2"):
+        with open(os.path.join(REPO, "robustness", name + ".json"), encoding="utf-8") as f:
+            out.append(json.load(f))
+    return out
+
+
+def undecided_py(c, cell_id, left, short=False):
+    """The Python twin of undecidedWords() in site/app.js, from the raw files: '' unless the model's map is counted (the nearest call is
+    not a left-out cell) and some of the other bootstrap seeds give an inconclusive word; else the clause the page says beside the margin:
+    the long form on the details page, the short form beside Figure 1."""
+    if c["form"] != "map" or left:
+        return ""
+    _, seeds, aal2 = robustness_raw()
+    w = seeds["whole"]["models"].get(c["cpu_model"])
+    e = next((x for x in seeds["cells"] if x["cpu_model"] == c["cpu_model"] and x["cell_id"] == cell_id
+              and x["kind"] == "forward" and x["column"] == "aligned"), None)
+    inc = w["tally"]["forms"].get("inconclusive", 0) if w else 0
+    if not (w and e and inc):
+        return ""
+    n = seeds["whole"]["count"]
+    under = e["alt"]["summary"]["limit"] - e["converged"]["hi"]
+    pool = next(p for p in aal2["pools"] if p["id"] == "s7")
+    m = next((q for q in pool["models"] if q["cpu_model"] == c["cpu_model"]), None)
+    l2 = m["l2"]["half_width_pct"] if m and m["l2"]["half_width_pct"] > aal2["criteria"]["aa_half_width_max_pct"] else None
+    if short:
+        return (f"{inc} of {n} other bootstrap seeds give an inconclusive verdict"
+                + (f", and an identical binary timed against itself at L2 has a half-width of {l2:.2f}%" if l2 is not None else "") + ": best read as undecided.")
+    return (f"The {c['cpu_short']} margin is the stored seed’s alone: with {e['converged']['resamples']:,} draws the end moves to {abs(under):.4f} "
+            f"{'below' if under >= 0 else 'above'} the limit, {inc} of {n} other seeds give an inconclusive verdict"
+            + (f", and an identical binary timed against itself at L2 has a half-width of {l2:.2f}% (the rule reads that pair at L1)" if l2 is not None else "")
+            + ", so its map is best read as undecided.")
+
+
+def rw_other_tail_py():
+    """The Python twin of the closing words of the 'other CPU models' caption (site/app.js, rwOtherCap), from the stored pool
+    results/realworld-pooled/realworld.json: the spread between machines is only sampled, and, when no run holds the minimum number
+    of jobs of any of those models, that no run can test it."""
+    with open(os.path.join(REPO, "results", "realworld-pooled", "realworld.json"), encoding="utf-8") as f:
+        p = json.load(f)
+    mn = p["minimum_jobs"]
+    main = next(g for g in p["cpus"] if g["jobs"] >= mn)
+    per = {}
+    for i in p["inputs"]:
+        per[(i["cpu_model"], i["run_id"])] = per.get((i["cpu_model"], i["run_id"]), 0) + 1
+    rest = [g["cpu_model"] for g in p["cpus"] if g["cpu_model"] != main["cpu_model"]]
+    none_enough = all(max(n for (m, _), n in per.items() if m == r) < mn for r in rest)
+    return ("with so few jobs the spread between machines is only sampled"
+            + (f", and no run holds {mn} or more jobs of any of them to test it" if none_enough else "") + ".")
+
+
 def main_versions(abstract, cbox, ck):
     """Main page: the newer timed toolchains are named in the abstract and the limits box, and say what held."""
     with open(os.path.join(DATA, "versions.json"), encoding="utf-8") as f:
@@ -1239,6 +1293,12 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         rp.goto(f"{base}#hero={v}", wait_until="networkidle")
         rp.wait_for_function("document.querySelectorAll('#race-loops button').length === 8", timeout=15000)
         rp.wait_for_timeout(300)
+        # the lane labels are canvas text that the page redraws once the web fonts have arrived (race.js, fonts.ready); a slow
+        # or loaded run can get them after the first reading's quiet window, so start reading only when they are in
+        try:
+            rp.wait_for_function("document.fonts.status === 'loaded'", timeout=15000)
+        except Exception:
+            pass
         pick_loop(rp, "k04_rev")
         a1 = settled_sig(rp)
         faded = rp.evaluate("(() => { document.getElementById('race-replay').click(); return document.getAnimations().length; })()")
@@ -1249,7 +1309,9 @@ def hero_variant_checks(browser, base, ck, index, pooled):
         a2 = settled_sig(rp)
         rp.wait_for_timeout(900)
         a3 = settled_sig(rp)
-        ck.ok(a1 == a2 == a3 and rp.inner_text("#race-ratio") == want(default, "k04_rev"), f"hero {v}: with reduced motion the final frame shows at once and the ratio is the same")
+        same_frame, ratio_ok = a1 == a2 == a3, rp.inner_text("#race-ratio") == want(default, "k04_rev")
+        ck.ok(same_frame and ratio_ok, f"hero {v}: with reduced motion the final frame shows at once and the ratio is the same"
+              + ("" if same_frame and ratio_ok else f" (readings equal: first/second {a1 == a2}, second/third {a2 == a3}; ratio as expected {ratio_ok})"))
         ctx.close()
     # the switcher: invisible to visitors, shown by the hash or the key H
     pg = browser.new_page_plain(viewport={"width": 1440, "height": 900})
@@ -1487,6 +1549,11 @@ def check_derived_wording(ck, page, dp, index, pooled, cpus, t1r, rec):
             ck.ok(vt.startswith(f"{c['cpu_short']}: the pattern held, by a narrow margin") and "More in Table 1 and the details" in vt
                   and all(f"{hi:.3f}×" in vt for _, hi, _ in cc) and all(f"{fx(r_)}× aligned" in vt for _, r_ in above) and (not above or "left out as placement-sensitive" in vt),
                   f"Figure 1, {c['cpu_short']}: a map by a narrow margin says so, with the interval ends {[(i_, round(h_, 4)) for i_, h_, _ in cc]} and the left-out cells above the limit {above}")
+            # and says "undecided" exactly where other bootstrap seeds do not keep the word (robustness/seed-sensitivity-x86.json, aa-l2.json)
+            i_n, _, left_n = min(cc, key=lambda q: abs(q[1] - lim_of(c, pooled)))
+            und = undecided_py(c, i_n, left_n, short=True)
+            ck.ok((f" {und} More in Table 1 and the details." in vt) if und else "undecided" not in vt,
+                  f"Figure 1, {c['cpu_short']}: " + (f"the note adds {und!r}" if und else "the note does not call the map undecided (the other seeds keep the word)"))
         else:
             ck.ok(vt == "", f"Figure 1, {c['cpu_short']}: no verdict note")
     page.click(f'#cpu-seg [data-cpu="{index["default_cpu"]}"]')
@@ -2239,6 +2306,7 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
           "6d, the samples at L2: the per-process slow-share mixture at both sizes, no cause claimed, and the L2 medians (including the lost loops') called less stable")
     fl = norm(dp.inner_text("#arm-floors"))
     tiny = sum(1 for m in rep["misses"] if m["gap_pct"] < 0.01)
+    (arm_cal,) = robustness_raw()[0]["run_to_run"]["s8-arm"]["models"]
 
     def widest(sz):
         best = max(((c[col]["half_width_pct"], c["cell_id"], col) for c in arm["cells"] if c["size_class"] == sz for col in ("as_compiled", "aligned")))
@@ -2249,8 +2317,10 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
           and "That is the floor of that one cell, not of the core" in fl
           and f"the widest interval of a measured cell is ±{pct_s(w1_[0])} at L1 ({cell_name(w1_[1])}, {w1_[2]}) and ±{pct_s(w2_[0])} at L2 ({cell_name(w2_[1])}, {w2_[2]})" in fl
           and f"from {pct_s(lay['min'])} to {pct_s(lay['max'])}" in fl and f"{sd['l1_max_pct']:.2f}% at L1" in fl and f"{sd['l2_max_pct']:.1f}% at L2" in fl
-          and f"{rep['outside']} of {rep['checked']} comparisons" in fl and f"by at most {rep['max_gap_pct']:.1f}%" in fl and f"{tiny} of them by less than 0.01%" in fl,
-          "6d, floors: the A/A named as the floor of one cell (the forward add at L1) beside the widest intervals at both sizes, the layout A/A range, the between-job spread at both sizes and the run-to-run comparison, from the data")
+          and f"Run to run, {rep['outside']} of {rep['checked']} comparisons ({arm_cal['expected_outside']:.1f} expected for calibrated intervals) put one run’s pooled ratio outside another run’s interval" in fl
+          and (arm_cal["checked"], arm_cal["outside"]) == (rep["checked"], rep["outside"])
+          and f"by at most {rep['max_gap_pct']:.1f}%" in fl and f"{tiny} of them by less than 0.01%" in fl,
+          "6d, floors: the A/A named as the floor of one cell (the forward add at L1) beside the widest intervals at both sizes, the layout A/A range, the between-job spread at both sizes and the run-to-run comparison with the count calibrated intervals would give, from the data")
     lyt = norm(dp.inner_text("#arm-layout"))
     LV_ = {r["cell_id"]: r for r in arm["layout_vs_placement"]["rows"]}
 
@@ -3742,13 +3812,14 @@ def placement_scope_checks(browser, base, ck, index):
     judged = [(c, next(x for x in missed_forward_py(c, pooled) if x["cell_id"] == big_q["cell_id"])) for c in good
               if any(x["cell_id"] == big_q["cell_id"] for x in missed_forward_py(c, pooled))]
     ex_c, ex_q = max(((c, q) for c, q in allps if q["cell_id"] == "k03_stencil.L1"), key=lambda cq: abs(cq[1]["aligned_ratio"] - cq[1]["ratio"]))
-    narrow = []
+    narrow, narrow_at = [], {}
     for c in good:
         cc = close_calls(c, pooled)
         if cc:
             lim = lim_of(c, pooled)
             i, hi, left = min(cc, key=lambda q: abs(q[1] - lim))
             narrow.append((c, abs(hi - lim), left))
+            narrow_at[c["cpu_model"]] = (i, left)
     lim_big = lim_of(big_c, pooled)
     ck.ok(big_q["aligned_ratio"] > lim_big and judged and all(x["aligned"]["ratio"] > lim_of(c, pooled) and x["aligned"]["ratio"] < big_q["aligned_ratio"] for c, x in judged)
           and all(c["form"] == "inconclusive" for c, _ in judged) and big_c["form"] != "inconclusive" and narrow
@@ -3764,9 +3835,10 @@ def placement_scope_checks(browser, base, ck, index):
     p2 = (f"Aligning every hot loop to a 64-byte boundary removes one source of code-placement variation, not all of it: it fixes only where each hot loop starts, and the loop’s length, the position of its inner branches and of the code around it are left as compiled. "
           f"The {bare(ex_q['cell_id'])} on the {ex_c['cpu_short']} shows that the column still matters: {fx_py(ex_q['ratio'])}× as compiled, {fx_py(ex_q['aligned_ratio'])}× aligned.")
     bits = join_and_py([(f"{m:.4f} above it on the {c['cpu_short']} (a cell left out as placement-sensitive, which would miss the limit if counted)" if left else f"{m:.4f} below it on the {c['cpu_short']}") for c, m, left in narrow])
-    p3 = (f"Several words rest on small margins. {'On the model' if len(narrow) == 1 else 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies {bits}. "
-          "The intervals resample jobs and understate the spread between runs (“Run to run”, section 8), so these words can change with the jobs drawn or the seed. "
-          "How the verdicts move with the interval method is in the robustness report and, for the Arm pool, how the stored verdict sits among other seeds is in the seed-sensitivity file.")
+    undecided = "".join(f" {t}" for t in (undecided_py(c, *narrow_at[c["cpu_model"]]) for c, _, _ in narrow) if t)
+    p3 = (f"Several words rest on small margins. {'On the model' if len(narrow) == 1 else 'On the models'} called narrow in Table 1, the interval end nearest the forward limit lies {bits}.{undecided} "
+          "The intervals resample jobs, so with few jobs these words can change with the jobs drawn or the seed (“Run to run”, section 8). "
+          "The robustness report shows how the verdicts move with the interval method, and the seed-sensitivity files (x86-64, Arm) how the stored verdicts sit among other seeds.")
     page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
     page.goto(base, wait_until="networkidle")
     wait_ready(page)
@@ -3777,10 +3849,18 @@ def placement_scope_checks(browser, base, ck, index):
     ck.ok(got == [p1, p2, p3], f"details, section 3: what the exemption does and does not settle, word for word ({first_diff(' | '.join(got), ' | '.join([p1, p2, p3]))})")
     links = dp.evaluate("[...document.querySelectorAll('#ps-scope p a')].map(a => [a.textContent, a.getAttribute('href')])")
     repo = index["repo"]["base"]
-    want_links = [["“Run to run”, section 8", "#method-full"], ["robustness report", f"{repo}/blob/main/robustness/report.md"], ["seed-sensitivity file", f"{repo}/blob/main/arm64/seed-sensitivity.json"]]
-    ck.ok(links == want_links and os.path.exists(os.path.join(REPO, "robustness", "report.md")) and os.path.exists(os.path.join(REPO, "arm64", "seed-sensitivity.json"))
+    want_links = [["“Run to run”, section 8", "#method-full"], ["robustness report", f"{repo}/blob/main/robustness/report.md"],
+                  ["x86-64", f"{repo}/blob/main/robustness/seed-sensitivity-x86.json"], ["Arm", f"{repo}/blob/main/arm64/seed-sensitivity.json"]]
+    ck.ok(links == want_links and all(os.path.exists(os.path.join(REPO, *p.split("/"))) for p in ("robustness/report.md", "robustness/seed-sensitivity-x86.json", "arm64/seed-sensitivity.json"))
           and dp.evaluate("!!document.getElementById('method-full')"),
-          f"details, section 3: the links go to the Run to run entry, the robustness report and the seed-sensitivity file, which exist ({links})")
+          f"details, section 3: the links go to the Run to run entry, the robustness report and the two seed-sensitivity files, which exist ({links})")
+    # the clause on the margin that does not survive other seeds: present exactly where the stored files say it should be, and only there
+    want_und = [undecided_py(c, *narrow_at[c["cpu_model"]]) for c, _, _ in narrow]
+    p3_got = got[2] if len(got) > 2 else ""
+    ck.ok(all(t in p3_got for t in want_und if t) and sum(1 for t in want_und if t) >= 1
+          and all(c["cpu_short"] + " margin is the stored seed’s alone" in p3_got for (c, _, _), t in zip(narrow, want_und) if t)
+          and p3_got.count("margin is the stored seed’s alone") == sum(1 for t in want_und if t),
+          f"details, section 3: the narrow margin that other bootstrap seeds do not keep is called undecided, from robustness/seed-sensitivity-x86.json and aa-l2.json ({[t[:40] for t in want_und if t]})")
     cap = _squash(page.text_content("#cpu-cap"))
     tip = _squash(page.text_content("#col-tip"))
     armcap = _squash(page.evaluate("document.getElementById('arm-cap').textContent"))
@@ -3791,6 +3871,71 @@ def placement_scope_checks(browser, base, ck, index):
           "the alignment tooltip and Figure 7's caption say the 64-byte alignment removes one source of code-placement variation, not all of it")
     ck.ok(all("cannot sway the result" not in _squash(p.text_content("body")) for p in (page, dp)) and "where the code happens to land" not in _squash(page.text_content("body")),
           "both pages: 'cannot sway the result' is gone")
+    page.close()
+    dp.close()
+
+
+def robustness_wording_checks(browser, base, ck, index):
+    """Three round-7 analyses beside the words they qualify: the count calibrated intervals would give beside each run-to-run count,
+    the thin-coverage sentence, and the L1 / L2 labels of the A/A band. Every figure is recomputed from the stored files in
+    robustness/ and results/ (not from site/data/index.json). The clause on the margin that other seeds do not keep is pinned in
+    placement_scope_checks (details) and in the Figure 1 loop (the note beside the switcher)."""
+    print("== robustness: expected counts, thin coverage and the A/A at L1 and L2, from the stored files")
+    cal, _, aal2 = robustness_raw()
+    good = [c for c in index["cpus"] if c["enough"]]
+    with open(os.path.join(REPO, index["pooled"]["source"]), encoding="utf-8") as f:
+        pooled = json.load(f)
+    minj = index["criteria"]["minimum_jobs"]
+    page = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    page.goto(base, wait_until="networkidle")
+    wait_ready(page)
+    dp = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    dp.goto(base + "details.html", wait_until="networkidle")
+    wait_details(dp)
+    # 1. the count that exactly calibrated, independent intervals would give, beside each run-to-run count
+    exp = {m["cpu_model"]: m for m in cal["run_to_run"]["s7"]["models"]}
+    rm = [c for c in good if c["reproduction"] and c["reproduction"]["checked"] > 0]
+    rec = _squash(dp.text_content("#reconcile"))
+    meth = _squash(dp.text_content('[data-v="reproMethod"]'))
+    same = all(c["cpu_model"] in exp and (exp[c["cpu_model"]]["checked"], exp[c["cpu_model"]]["outside"]) == (c["reproduction"]["checked"], c["reproduction"]["outside"]) for c in rm)
+    want_rec = [(f"on {c['cpu_short']}, " if i == 0 else f"; on {c['cpu_short']}, ")
+                + f"{c['reproduction']['outside']} of {c['reproduction']['checked']} ({exp[c['cpu_model']]['expected_outside']:.1f} expected"
+                + (" for calibrated intervals" if i == 0 else "") + ")" for i, c in enumerate(rm)] if same else []
+    want_meth = ("exactly calibrated intervals would put about " + join_and_py([f"{exp[c['cpu_model']]['expected_outside']:.1f}" for c in rm])
+                 + " outside (robustness/calibration.json)") if same else ""
+    ck.ok(rm and same and all(w in rec for w in want_rec) and want_meth in meth,
+          f"details: each run-to-run count has the count calibrated intervals would give beside it, from robustness/calibration.json ({[w[:60] for w in want_rec]}; Run to run: {want_meth[:90]})")
+    # 2. thin coverage: what the sampled jobs may miss, and that no Xeon model has two runs that can be judged
+    thin = [c for c in good if c["form"] == "inconclusive" or c["stability"] != "stable"]
+    thin_txt = _squash(dp.text_content('[data-v="thinText"]'))
+    xeon = [q for q in pooled["cpus"] if "xeon" in q["cpu_model"].lower()]
+    no_xeon_runs = bool(xeon) and all(sum(1 for r in q["per_run"] if r["jobs"] >= minj) < 2 for q in xeon)
+    want_thin = ("With few jobs the sampled jobs may not contain the spread between machines, and these verdicts cannot be checked run against run"
+                 + (f" (no Xeon model has two runs of {minj} or more jobs)" if no_xeon_runs else "") + ".")
+    ck.ok(thin and want_thin in thin_txt, f"details, thin coverage: {want_thin!r} ({first_diff(thin_txt, want_thin) if want_thin not in thin_txt else 'present'})")
+    ck.ok(all("understate" not in _squash(p_.text_content("body")) for p_ in (page, dp)), "both pages: no sentence says the intervals understate the spread between runs or machines (the data do not show that for every model)")
+    # 3. Figure 1's A/A band is the L1 pair: the legend, the band's title and the drawer line say so, and give the L2 figure where it is wider
+    l2m = {m["cpu_model"]: m for m in next(p for p in aal2["pools"] if p["id"] == "s7")["models"]}
+    for c in good:
+        pc = next(q for q in pooled["cpus"] if q["cpu_model"] == c["cpu_model"])
+        hw = pc["aa"]["half_width_pct"]
+        m = l2m.get(c["cpu_model"])
+        say = f"; ±{m['l2']['half_width_pct']:.2f}% at L2" if m and m["l2"]["half_width_pct"] > hw else ""
+        legend = f"Faint band at 1×: this model’s A/A half-width at L1 (±{hw:.2f}%{say}; a binary timed against a byte-identical copy)."
+        line = f"; the faint band at 1× is this model’s A/A half-width at L1, ±{hw:.2f}%{say}:"
+        page.click(f'#cpu-seg [data-cpu="{c["slug"]}"]')
+        try:  # wait for the redraw of the chosen model (legend, band title and drawer line), not a fixed time; the assertion below stays as strict
+            page.wait_for_function("([t, b, l]) => (document.querySelector('#fig1-cap')?.textContent || '').replace(/\\s+/g, ' ').includes(t) "
+                                   "&& document.querySelector('#rows .aa-band')?.getAttribute('title') === b "
+                                   "&& (document.querySelector('.f2-jobs-t')?.textContent || '').replace(/\\s+/g, ' ').trim().endsWith(l)",
+                                   arg=[f"half-width at L1 (±{hw:.2f}%", f"A/A at L1: ±{hw:.2f}%", line], timeout=10000)
+        except Exception:
+            pass
+        band = page.locator("#rows .aa-band").first.get_attribute("title")
+        jobs_t = _squash(page.locator(".f2-jobs-t").first.text_content()) if page.locator(".f2-jobs-t").count() else ""
+        ck.ok(legend in _squash(page.text_content("#fig1-cap")) and band == f"A/A at L1: ±{hw:.2f}%" and jobs_t.endswith(line),
+              f"Figure 1, {c['cpu_short']}: the A/A band is named the L1 pair in the legend, its title and the drawer line"
+              + (f", with the L2 figure ({say.strip('; ')})" if say else ", no L2 figure (not wider)") + f" (title {band!r}; drawer {jobs_t[-70:]!r})")
     page.close()
     dp.close()
 
@@ -4250,6 +4395,55 @@ def pinned_text_checks(browser, base, ck, index):
     ck.ok(not badj and abs(mm["min"] - mm["max"]) < 0.01,
           f"{len(js_pins)} captions and mechanism sentences in race.js and app.js are pinned word for word, the matrix-multiply figure from versions.json ({mm['min']:.2f} to {mm['max']:.2f})"
           + ("" if not badj else f" (missing: {'; '.join(f'{ph!r} [{why}]' for why, ph in badj[:3])})"))
+    # section 4's pointer to tools/lostloops/ and section 10's break-even arithmetic. The command, the limits and the word "untested" are read
+    # from the tool's own files; the two shares are recomputed here from the claim and the headline range, not from the page's code.
+    ll_dir = os.path.join(REPO, "tools", "lostloops")
+    with open(os.path.join(ll_dir, "README.md"), encoding="utf-8") as f:
+        ll_readme = f.read()
+    with open(os.path.join(ll_dir, "example-workflow.yml"), encoding="utf-8") as f:
+        ll_flow = f.read()
+    cmd_m = re.search(r"^(python3 lostloops\.py --compile-commands \S+ --out \S+)$", ll_readme, re.M)
+    find_m = re.search(r"Find these loops in your code\..*? tested once, on three projects\.", idx)
+    find_want = ("Find these loops in your code. tools/lostloops lists the loops that clang’s own remarks show vectorized only with the checks off; from that folder, "
+                 + (cmd_m.group(1) if cmd_m else "<no command in the tool's README>") + " (example workflow, untested). Linux, clang and libc++ only; "
+                 "counts loops, not time; link-time optimization flags removed; tested once, on three projects.")
+    # (a phrase of the tool's README, the page's words for it): the page states no limit the tool's own text does not
+    limit_pairs = [("Linux, with Python", "Linux"), ("clang 18 or newer and libc++ 18 or newer", "clang and libc++"), ("**Counts, not time.**", "counts loops, not time"),
+                   ("`-flto*`", "link-time optimization flags removed"), ("tested live once", "tested once"), ("on leveldb, Spectra and LightGBM", "three projects"),
+                   ("documentation only", "example workflow, untested")]
+    limit_bad = [(t, p) for t, p in limit_pairs if t not in ll_readme or p not in find_want]
+    pgl = browser.new_page_plain(viewport={"width": 1280, "height": 900})
+    pgl.goto(base, wait_until="networkidle")
+    wait_ready(pgl)
+    got_links = pgl.evaluate("[...document.querySelectorAll('#find-loops a')].map(a => [a.textContent.trim(), a.getAttribute('href')])")
+    where = pgl.evaluate("['find-loops', 'break-even'].map(i => { const e = document.getElementById(i); return e && e.closest('section') ? e.closest('section').id : null; })")
+    pgl.close()
+    repo_base = index["repo"]["base"]
+    want_links = [["tools/lostloops", f"{repo_base}/blob/main/tools/lostloops/README.md"],
+                  ["example workflow", f"{repo_base}/blob/main/tools/lostloops/example-workflow.yml"]]
+    ck.ok(find_m is not None and find_m.group(0) == find_want and not limit_bad and "NOT tested yet" in ll_flow and cmd_m is not None
+          and got_links == want_links and where[0] == "census",
+          "section 4: the pointer to tools/lostloops/ is the tool's own command and limits word for word (command, Linux, clang and libc++, counts not time, "
+          "link-time optimization flags removed, tested once on three projects, workflow untested), its two links go to the tool's README and example workflow"
+          + ("" if find_m is not None and find_m.group(0) == find_want else f" (page: {first_diff(find_m.group(0) if find_m else '', find_want)})")
+          + ("" if not limit_bad else f" (not in the tool's README or the pointer: {limit_bad[:2]})") + ("" if got_links == want_links else f" (links: {got_links})"))
+    g = index["claim"]["google_pct"]
+    r_lo, r_hi = pg["lost"]["min"], pg["lost"]["max"]
+    f_lo, f_hi = g / (r_lo - 1), g / (r_hi - 1)
+    be = pg["break_even"]
+    be_want = (f"so averaging {g:.2f}% needs f = {g:.2f}%÷(r−1): {f_lo:.2g}% at r = {fx_py(r_lo)}, {f_hi:.2g}% at r = {fx_py(r_hi)}, the headline range’s ends.")
+    be_m = re.search(r"Break-even, as arithmetic\..*?for any program\.", idx)
+    be_text = be_m.group(0) if be_m else ""
+    # a reader who redoes the sum with the r printed on the page gets the share printed beside it
+    shown_sum = [f"{g / (float(fx_py(r)) - 1):.2g}" for r in (r_lo, r_hi)]
+    ck.ok(be_m is not None and be_want in be_text and "add f×(r−1) to a program" in be_text
+          and "It assumes those loops keep their loop-level ratio in the program and the rest is unchanged; it is not a measurement or prediction for any program." in be_text
+          and not re.search(r"\b(because|caused?|due to|explains?)\b", be_text) and where[1] == "average"
+          and abs(be["at_min"]["share_pct"] - f_lo) < 1e-12 and abs(be["at_max"]["share_pct"] - f_hi) < 1e-12 and be["google_pct"] == g
+          and be["at_min"]["r"] == r_lo and be["at_max"]["r"] == r_hi and shown_sum == [f"{f_lo:.2g}", f"{f_hi:.2g}"],
+          f"section 10: the break-even arithmetic is f = {g:.2f}%÷(r−1) = {f_lo:.2g}% at r = {fx_py(r_lo)} and {f_hi:.2g}% at r = {fx_py(r_hi)}, recomputed from the claim and the headline range "
+          f"(page.lost), equal to page.break_even, repeatable with the r printed, stated as arithmetic and not as a measurement or a cause"
+          + ("" if be_m is not None and be_want in be_text else f" (page: {_miss(be_text, be_want)})"))
     # meta tags, the Google link and the canonical addresses
     pages_url = "https://" + index["repo"]["base"].split("github.com/")[1].split("/")[0].lower() + ".github.io/" + index["repo"]["base"].rstrip("/").split("/")[-1] + "/"
     mi, md = _head_meta("index.html"), _head_meta("details.html")
@@ -4343,7 +4537,7 @@ def pinned_text_checks(browser, base, ck, index):
 
 
 BAKED_NAMES = ["googlePct", "clang", "lostMin", "lostMax", "avx2Short", "intelRange", "c2Lost", "c2Vec", "fixMin", "fixMax", "rwSlowMin", "rwSlowMax",
-               "jobsPerRun", "nRuns", "minJobs", "nJobs"]
+               "jobsPerRun", "nRuns", "minJobs", "nJobs", "beLo", "beHi"]
 # the one baked span that stays empty on purpose: the main page's headline line sits in the hero block, which is changed in its own files
 BAKED_EMPTY_OK = {("intelRange", "headline")}
 _SPANS_JS = """(names) => [...document.querySelectorAll('[data-v]')].filter(e => names.includes(e.dataset.v) && !e.closest('noscript'))
@@ -4503,7 +4697,7 @@ def ux_checks(browser, base, ck, index):
     dialog_checks(browser, base, ck, index)
 
 
-FOCUSED = {"provenance": provenance_checks, "claims": claims_scope_checks, "pages": pages_workflow_checks, "access": access_checks, "placement": placement_scope_checks, "ux": ux_checks, "stability": layout_stability_checks, "text": pinned_text_checks, "refs": ref_link_checks, "live": live_region_checks, "print": print_checks}  # check groups that take (browser, base, ck, index) and can run alone with --only
+FOCUSED = {"provenance": provenance_checks, "claims": claims_scope_checks, "pages": pages_workflow_checks, "access": access_checks, "placement": placement_scope_checks, "robustness": robustness_wording_checks, "ux": ux_checks, "stability": layout_stability_checks, "text": pinned_text_checks, "refs": ref_link_checks, "live": live_region_checks, "print": print_checks}  # check groups that take (browser, base, ck, index) and can run alone with --only
 
 
 def main():
@@ -5017,7 +5211,7 @@ def main():
                       "section 7: limits stated: no PGO, shared VMs, one toolchain, programs picked for their lost loops, neither confirms nor contradicts 0.30%")
                 dtxt = dp.inner_text("#realworld-full")
                 ck.ok(dp.locator("#rw-other-table tbody tr").count() == 8 and dp.locator("#rw-other2-table tbody tr").count() == 8 and dp.locator("#rw-all-table tbody tr").count() == 8 and dp.locator("#rw-expect-table tbody tr").count() == 8
-                      and dtxt.count("held") >= len(held) and "understate the spread between machines" in dtxt and "Descriptive only" in dtxt,
+                      and dtxt.count("held") >= len(held) and rw_other_tail_py() in _squash(dtxt) and "understate" not in dtxt and "Descriptive only" in dtxt,
                       "details page: Tables 10 and 10c (the two other CPU models), Table 10b (all runners, descriptive) and Table 11 (every expectation, held or not) have all eight programs")
                 # per CPU model: the same sentence the page prints, recomputed here from the data (lost-loop programs only)
                 oth = dp.inner_text("#rw-other")
@@ -5460,7 +5654,7 @@ def main():
                       "section 7: limits stated: no PGO, shared VMs, one toolchain, programs picked for their lost loops, neither confirms nor contradicts 0.30%")
                 dtxt = dp.inner_text("#realworld-full")
                 ck.ok(dp.locator("#rw-other-table tbody tr").count() == 8 and dp.locator("#rw-other2-table tbody tr").count() == 8 and dp.locator("#rw-all-table tbody tr").count() == 8 and dp.locator("#rw-expect-table tbody tr").count() == 8
-                      and dtxt.count("held") >= len(held) and "understate the spread between machines" in dtxt and "Descriptive only" in dtxt,
+                      and dtxt.count("held") >= len(held) and rw_other_tail_py() in _squash(dtxt) and "understate" not in dtxt and "Descriptive only" in dtxt,
                       "details page: Tables 10 and 10c (the two other CPU models), Table 10b (all runners, descriptive) and Table 11 (every expectation, held or not) have all eight programs")
                 # per CPU model: the same sentence the page prints, recomputed here from the data (lost-loop programs only)
                 oth = dp.inner_text("#rw-other")
@@ -5716,6 +5910,7 @@ def main():
                 pages_workflow_checks(browser, base, ck, index)
                 access_checks(browser, base, ck, index)
                 placement_scope_checks(browser, base, ck, index)
+                robustness_wording_checks(browser, base, ck, index)
                 ux_checks(browser, base, ck, index)
                 pinned_text_checks(browser, base, ck, index)
                 arm_checks(browser, base, ck, index, allowed, saved, shots)

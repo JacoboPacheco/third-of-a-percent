@@ -1347,6 +1347,17 @@
  },
  "note": "written by scripts/build_site_data.py from results/ and the study folders; do not edit by hand",
  "page": {
+  "break_even": {
+   "at_max": {
+    "r": 8.005079397534045,
+    "share_pct": 0.04282606705437302
+   },
+   "at_min": {
+    "r": 2.8055383339723203,
+    "share_pct": 0.1661554309622313
+   },
+   "google_pct": 0.3
+  },
   "cpus_enough": 5,
   "cpus_few": [
    {
@@ -2080,6 +2091,185 @@
   "base": "https://github.com/JacoboPacheco/third-of-a-percent",
   "check_command": "python scripts/check.py",
   "measure_command": "gh workflow run measure.yml"
+ },
+ "robustness": {
+  "aa_l2": {
+   "ceiling_pct": 2.0,
+   "models": {
+    "AMD EPYC 7763 64-Core Processor": {
+     "jobs": 29,
+     "l1_pct": 0.07016703141939362,
+     "l2_jobs_above": 6,
+     "l2_pct": 0.361373819278088
+    },
+    "AMD EPYC 9V45 96-Core Processor": {
+     "jobs": 23,
+     "l1_pct": 0.1999596955147287,
+     "l2_jobs_above": 0,
+     "l2_pct": 0.2139834926917772
+    },
+    "AMD EPYC 9V74 80-Core Processor": {
+     "jobs": 28,
+     "l1_pct": 0.05456781847629211,
+     "l2_jobs_above": 0,
+     "l2_pct": 0.3382636734747979
+    },
+    "INTEL(R) XEON(R) PLATINUM 8573C": {
+     "jobs": 7,
+     "l1_pct": 0.6911281533295566,
+     "l2_jobs_above": 0,
+     "l2_pct": 0.37585817185252224
+    },
+    "Intel(R) Xeon(R) 6973P-C": {
+     "jobs": 7,
+     "l1_pct": 0.5431317041030947,
+     "l2_jobs_above": 3,
+     "l2_pct": 2.340934678546158
+    },
+    "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz": {
+     "jobs": 1,
+     "l1_pct": 0.15525432808773387,
+     "l2_jobs_above": 0,
+     "l2_pct": 0.03681565876625381
+    }
+   },
+   "source": "robustness/aa-l2.json",
+   "source_sha256": "26c4ce8528439d916ac64410689e7db90ef3ac77db8c170dff2c2ab5b7f2d2cf"
+  },
+  "calibration": {
+   "source": "robustness/calibration.json",
+   "source_sha256": "2c999b7957d6ef18960761658ac54e22b1b7798bea243fd635753d934234ae39",
+   "x86": {
+    "AMD EPYC 7763 64-Core Processor": {
+     "checked": 640,
+     "expected_outside": 148.44577195058451,
+     "independent_hi": 183,
+     "independent_lo": 115,
+     "jobs": 29,
+     "outside": 168
+    },
+    "AMD EPYC 9V74 80-Core Processor": {
+     "checked": 384,
+     "expected_outside": 88.36779634041632,
+     "independent_hi": 112,
+     "independent_lo": 65,
+     "jobs": 28,
+     "outside": 62
+    }
+   }
+  },
+  "seeds": {
+   "models": {
+    "AMD EPYC 9V45 96-Core Processor": {
+     "cells": {
+      "k03_stencil.L1": {
+       "alt_at_or_above": 366,
+       "alt_draws": 400,
+       "converged_hi": 1.0203367779596695,
+       "converged_under": -0.00033677795966946533,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.020431400587305
+      }
+     },
+     "forms": {
+      "inconclusive": 0,
+      "map": 60
+     },
+     "jobs": 23,
+     "seeds": 60,
+     "stored_form": "map"
+    },
+    "INTEL(R) XEON(R) PLATINUM 8573C": {
+     "cells": {
+      "k01_sum_fwd.L1": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.0165078727697163,
+       "converged_under": 0.0034921272302836925,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.0165737902194645
+      },
+      "k01_sum_fwd.L2": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.0142474316520624,
+       "converged_under": 0.005752568347937581,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.0133878770026976
+      },
+      "k03_stencil.L1": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.0168967981617651,
+       "converged_under": 0.0031032018382348703,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.0173117783624848
+      },
+      "k03_stencil.L2": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.0166825173072653,
+       "converged_under": 0.0033174826927346857,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.016595127708946
+      }
+     },
+     "forms": {
+      "inconclusive": 60,
+      "map": 0
+     },
+     "jobs": 7,
+     "seeds": 60,
+     "stored_form": "inconclusive"
+    },
+    "Intel(R) Xeon(R) 6973P-C": {
+     "cells": {
+      "k01_sum_fwd.L2": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.016924864958786,
+       "converged_under": 0.0030751350412139278,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.016652061312831
+      },
+      "k03_stencil.L1": {
+       "alt_at_or_above": 0,
+       "alt_draws": 400,
+       "converged_hi": 1.0112223916994547,
+       "converged_under": 0.008777608300545303,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.0111605058649413
+      },
+      "k03_stencil.L2": {
+       "alt_at_or_above": 73,
+       "alt_draws": 400,
+       "converged_hi": 1.0195969919208785,
+       "converged_under": 0.00040300807912152514,
+       "draws": 100000,
+       "limit": 1.02,
+       "stored_hi": 1.0183929822990796
+      }
+     },
+     "forms": {
+      "inconclusive": 13,
+      "map": 47
+     },
+     "jobs": 7,
+     "seeds": 60,
+     "stored_form": "map"
+    }
+   },
+   "other_seeds": 400,
+   "source": "robustness/seed-sensitivity-x86.json",
+   "source_sha256": "2595f56f8199ee3961226fb1fcd8c0402962b577ecd3d0fa34686dfeeeb7e7d3"
+  }
  },
  "s1_forward": [
   {
