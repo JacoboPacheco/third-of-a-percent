@@ -11,7 +11,8 @@ quotes for the Xeon 6973P-C (13 of 60 other seeds inconclusive, an end 0.0004 be
 real programs (no run holds three jobs of the other two CPU models). (4) None of these numbers is typed in the page's own files:
 they come from site/data, so a change in the stored files reaches the page and is caught by scripts/build_site_data.py --check.
 
-Offline. No fixtures, so scripts/check.py's built-in runner runs it."""
+Offline. No fixtures, and it runs with or without pytest: under pytest every guard is its own test; without it (scripts/check.py's
+built-in runner, which CI uses) one test goes through the guards of each kind."""
 import copy
 import hashlib
 import importlib.util
@@ -21,7 +22,10 @@ import re
 import sys
 from functools import lru_cache
 
-import pytest
+try:
+    import pytest
+except ImportError:  # scripts/check.py falls back to its own runner when pytest is missing
+    pytest = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -195,20 +199,49 @@ def test_the_arm_calibration_entry_is_what_arm64_json_holds():
     assert b.arm_calibration(cal, s, model, rep) == read("site/data/arm64.json")["reproduction_calibration"]
 
 
-@pytest.mark.parametrize("name,edit,word", ARM_GUARDS, ids=[g[0] for g in ARM_GUARDS])
-def test_builder_refuses_an_arm_calibration_that_fails_a_guard(name, edit, word):
+def _check_arm_guard(name, edit, word):
     b, cal, s, model, rep = _arm_args()
     edit(cal, rep)
-    with pytest.raises(AssertionError) as e:
+    try:
         b.arm_calibration(cal, s, model, rep)
-    assert word in str(e.value), f"{name}: it failed, but not on that guard ({e.value})"
+    except AssertionError as e:
+        assert word in str(e), f"{name}: it failed, but not on that guard ({e})"
+        return
+    raise AssertionError(f"{name}: arm_calibration() accepted it")
 
 
-@pytest.mark.parametrize("name,path,edit,word", GUARDS, ids=[g[0] for g in GUARDS])
-def test_builder_refuses_a_file_that_fails_a_guard(name, path, edit, word):
+def _check_file_guard(name, path, edit, word):
     err = _tampered(path, edit)
     assert err is not None, f"{name}: robustness_data() accepted it"
     assert word in str(err), f"{name}: it failed, but not on that guard ({err})"
+
+
+def _all_guards(check, guards):
+    """Every guard through `check`, the failures collected: the form the built-in runner of scripts/check.py runs."""
+    assert guards, "no guards to check"
+    failures = []
+    for g in guards:
+        try:
+            check(*g)
+        except AssertionError as e:
+            failures.append(f"{g[0]}: {e}")
+    assert not failures, f"{len(failures)} of {len(guards)} guards failed:\n" + "\n".join(failures)
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("name,edit,word", ARM_GUARDS, ids=[g[0] for g in ARM_GUARDS])
+    def test_builder_refuses_an_arm_calibration_that_fails_a_guard(name, edit, word):
+        _check_arm_guard(name, edit, word)
+
+    @pytest.mark.parametrize("name,path,edit,word", GUARDS, ids=[g[0] for g in GUARDS])
+    def test_builder_refuses_a_file_that_fails_a_guard(name, path, edit, word):
+        _check_file_guard(name, path, edit, word)
+else:
+    def test_builder_refuses_an_arm_calibration_that_fails_each_guard():
+        _all_guards(_check_arm_guard, ARM_GUARDS)
+
+    def test_builder_refuses_a_file_that_fails_each_guard():
+        _all_guards(_check_file_guard, GUARDS)
 
 
 # ------------------------------------------------------------------ (3) the figures the page quotes
@@ -252,10 +285,21 @@ def test_no_xeon_model_has_two_runs_that_can_be_judged_alone():
 
 
 # ------------------------------------------------------------------ (4) no typed copy of a figure in the page's own files
-@pytest.mark.parametrize("fname", ["app.js", "index.html", "details.html"])
-def test_the_new_figures_are_not_typed_in_the_page_files(fname):
+PAGE_FILES = ["app.js", "index.html", "details.html"]
+
+
+def _check_no_typed_figure(fname):
     with open(os.path.join(REPO, "site", fname), encoding="utf-8") as f:
         text = f.read()
     for lit in ("148.4", "88.4", "34.7", "2.34%", "0.0004", "13 of 60", "100,000", "no run holds 3", "two runs of 3"):
         assert lit not in text, f"site/{fname} types {lit!r}; the figure must come from site/data (scripts/build_site_data.py)"
     assert not re.search(r"understate", text, re.I), f"site/{fname} says the intervals understate the spread: robustness/calibration.json does not show that for every model"
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("fname", PAGE_FILES)
+    def test_the_new_figures_are_not_typed_in_the_page_files(fname):
+        _check_no_typed_figure(fname)
+else:
+    def test_the_new_figures_are_not_typed_in_the_page_files():
+        _all_guards(lambda fname: _check_no_typed_figure(fname), [(f,) for f in PAGE_FILES])

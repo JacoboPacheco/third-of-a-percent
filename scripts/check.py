@@ -85,17 +85,18 @@ import stats  # noqa: E402
 import verdict  # noqa: E402
 
 
-def run_tests():
+def run_tests(tests_dir=None):
+    tests_dir = tests_dir or os.path.join(REPO, "tests")
     try:
         import pytest  # noqa: F401
     except ImportError:
         pytest = None
     if pytest is not None:
         print("== tests (pytest)")
-        return pytest.main(["-q", os.path.join(REPO, "tests")]) == 0
+        return pytest.main(["-q", tests_dir]) == 0
     print("== tests (built-in runner; pytest is not installed)")
     passed, failed = 0, []
-    for path in sorted(glob.glob(os.path.join(REPO, "tests", "test_*.py"))):
+    for path in sorted(glob.glob(os.path.join(glob.escape(tests_dir), "test_*.py"))):
         mod = importlib.import_module(os.path.basename(path)[:-3])
         for name, fn in inspect.getmembers(mod, inspect.isfunction):
             if not name.startswith("test_") or fn.__module__ != mod.__name__:
@@ -103,10 +104,13 @@ def run_tests():
             try:
                 fn()
                 passed += 1
-            except Exception:
+            except (Exception, SystemExit):  # a test that calls sys.exit() is a failure, not the end of the run
                 failed.append(f"{mod.__name__}.{name}")
                 traceback.print_exc()
     print(f"   {passed} passed, {len(failed)} failed" + (": " + ", ".join(failed) if failed else ""))
+    if not passed and not failed:
+        print("   FAIL: the built-in runner found no test to run")
+        return False
     return not failed
 
 

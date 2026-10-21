@@ -7,13 +7,19 @@ in a copy of the text held in memory, and requires the row to fail with the type
 longer matches"). It does the same for the A/A table, the cited paths and the sentences pinned word for word.
 
 Nothing is written; the documents on disk are read only.
+
+Runs with or without pytest: under pytest every tampered number is its own test; without it (scripts/check.py's built-in runner,
+which CI uses) one test goes through all of them.
 """
 
 import os
 import re
 import sys
 
-import pytest
+try:
+    import pytest
+except ImportError:  # scripts/check.py falls back to its own runner when pytest is missing
+    pytest = None
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import test_readme_numbers as T  # noqa: E402
@@ -44,6 +50,15 @@ def rows_by_label(rows, labels):
     return [found[lb] for lb in labels]
 
 
+def assertion_from(fn, what):
+    """The AssertionError that fn() raises. Fails if it raises none: the stand-in for pytest.raises, which the built-in runner lacks."""
+    try:
+        fn()
+    except AssertionError as e:
+        return e
+    raise AssertionError(f"{what}: no AssertionError was raised")
+
+
 def alter(value):
     """A different value of the same kind: the last digit moved, a number word moved to the next one, a verdict word swapped; None if the text is none of these."""
     if re.fullmatch(r"[\d.,]*\d[\d.,]*", value):  # a number; a name that holds digits (EPYC 7763 and 9V74) is not one
@@ -71,21 +86,52 @@ def tampered_cases():
             groups = [g for g in m.re.groupindex if alter(m.group(g)) is not None]
             assert groups, f"{row[0]}: the row has no typed number to tamper with"
             for g in groups:
-                cases.append(pytest.param(row, doc, text, g, id=f"{doc}: {row[0]} / {g}={m.group(g)}"))
+                cases.append((f"{doc}: {row[0]} / {g}={m.group(g)}", row, doc, text, g))
     return cases
 
 
-@pytest.mark.parametrize("row,doc,text,group", tampered_cases())
-def test_changing_one_typed_number_fails_its_row(row, doc, text, group):
+def check_tampered_case(row, doc, text, group):
     check = lambda t: T.check_row(row, t, doc)  # noqa: E731
     check(text)  # the real text passes
     m = re.search(row[3], text, re.S)
     a, b = m.span(group)
     new = alter(m.group(group))
     bad = text[:a] + new + text[b:]
-    with pytest.raises(AssertionError) as err:
-        check(bad)
-    assert f"types '{new}' for '{group}'" in str(err.value), f"{row[0]}: the row failed, but not on the typed value of '{group}': {str(err.value)[:200]}"
+    err = assertion_from(lambda: check(bad), f"{row[0]}: changing '{group}' to '{new}'")
+    assert f"types '{new}' for '{group}'" in str(err), f"{row[0]}: the row failed, but not on the typed value of '{group}': {str(err)[:200]}"
+
+
+TAMPERED = tampered_cases()
+
+
+def test_every_round_7_document_contributes_tampered_cases():
+    """An emptied row list would drop its cases without a failure; each document keeps at least one case for every row it lists."""
+    rows_per_doc = {}
+    for _cid, row, doc, _text, _g in TAMPERED:
+        rows_per_doc.setdefault(doc, set()).add(row[0])
+    want = {
+        "README.md": len(README_LABELS),
+        "readme-parts/DETAILS.md": len(DETAILS_LABELS) + 1,
+        "arm64/README.md": 1,
+    }
+    assert set(rows_per_doc) == set(want), f"documents with tampered cases: {sorted(rows_per_doc)}, expected {sorted(want)}"
+    for doc, n in want.items():
+        assert len(rows_per_doc[doc]) >= n, f"{doc}: {len(rows_per_doc[doc])} rows have tampered cases, at least {n} expected"
+
+
+if pytest is not None:
+    @pytest.mark.parametrize("row,doc,text,group", [pytest.param(row, doc, text, g, id=cid) for cid, row, doc, text, g in TAMPERED])
+    def test_changing_one_typed_number_fails_its_row(row, doc, text, group):
+        check_tampered_case(row, doc, text, group)
+else:
+    def test_changing_one_typed_number_fails_its_row_in_every_case():
+        failures = []
+        for cid, row, doc, text, g in TAMPERED:
+            try:
+                check_tampered_case(row, doc, text, g)
+            except AssertionError as e:
+                failures.append(f"{cid}: {e}")
+        assert not failures, f"{len(failures)} of {len(TAMPERED)} tampered numbers were not caught as expected:\n" + "\n".join(failures)
 
 
 # ---- the A/A table of the details --------------------------------------------------------------------
@@ -111,22 +157,18 @@ def test_the_aa_l2_table_fails_when_a_cell_a_row_or_the_order_changes():
     cell = lines[:]
     cell[first] = re.sub(r"(\d+\.\d+)%", lambda m: f"{float(m.group(1)) + 0.001:.3f}%", lines[first], count=1)
     assert cell[first] != lines[first]
-    with pytest.raises(AssertionError):
-        run(cell)
+    assertion_from(lambda: run(cell), "a changed cell")
     last = first + len(rows) - 2
     assert lines[last].startswith("| Arm Neoverse-N2 |") and not lines[last + 1].startswith("|"), "the table no longer ends with the Arm core"
     dropped = lines[:last] + lines[last + 1:]
-    with pytest.raises(AssertionError):
-        run(dropped)
+    assertion_from(lambda: run(dropped), "a dropped row")
     swapped = lines[:]
     swapped[first], swapped[first + 1] = lines[first + 1], lines[first]
-    with pytest.raises(AssertionError):
-        run(swapped)
+    assertion_from(lambda: run(swapped), "two rows swapped")
     jobs = lines[:]
     jobs[last] = re.sub(r"\| (\d+) \|", lambda m: f"| {int(m.group(1)) + 1} |", lines[last], count=1)
     assert jobs[last] != lines[last]
-    with pytest.raises(AssertionError):
-        run(jobs)
+    assertion_from(lambda: run(jobs), "a changed job count")
 
 
 def test_the_aa_l2_table_has_one_row_per_pooled_model():
@@ -180,17 +222,20 @@ def test_the_round7_sentences_are_pinned_and_a_reversal_is_caught():
             if old in sentence:
                 broken = flat.replace(sentence, sentence.replace(old, new, 1))
                 assert sentence not in broken
-                with pytest.raises(AssertionError):
-                    entry_text = {**T.GUARDED_DOCS, e["doc"]: lambda broken=broken: broken}
-                    original = T.GUARDED_DOCS
-                    T.GUARDED_DOCS = entry_text
-                    try:
-                        T.check_guarded_sentence(e)
-                    finally:
-                        T.GUARDED_DOCS = original
+                assertion_from(lambda: check_with_text(e, broken), f"the reversal '{old}' -> '{new}' in: {e['sentence'][:60]}")
                 break
         else:
-            pytest.fail(f"no reversal was tried on: {e['sentence'][:80]}")
+            raise AssertionError(f"no reversal was tried on: {e['sentence'][:80]}")
+
+
+def check_with_text(entry, text):
+    """T.check_guarded_sentence(entry) with the entry's document replaced by `text` for the duration of the call."""
+    original = T.GUARDED_DOCS
+    T.GUARDED_DOCS = {**original, entry["doc"]: lambda: text}
+    try:
+        T.check_guarded_sentence(entry)
+    finally:
+        T.GUARDED_DOCS = original
 
 
 # ---- the wording that was replaced -------------------------------------------------------------------
