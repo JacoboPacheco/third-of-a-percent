@@ -43,7 +43,7 @@ def is_commit(ref):
 def test_every_workflow_is_either_pinned_or_listed():
     on_disk = {os.path.basename(p) for p in glob.glob(os.path.join(WORKFLOWS, "*.yml"))}
     assert on_disk == set(PINNED) | set(MOVING_TAGS), (
-        f"workflows not placed: {sorted(on_disk - set(PINNED) - set(MOVING_TAGS))}; listed but missing: {sorted(set(PINNED) | set(MOVING_TAGS) - on_disk)}")
+        f"workflows not placed: {sorted(on_disk - set(PINNED) - set(MOVING_TAGS))}; listed but missing: {sorted((set(PINNED) | set(MOVING_TAGS)) - on_disk)}")
 
 
 def test_pinned_workflows_use_a_full_commit_and_name_the_version():

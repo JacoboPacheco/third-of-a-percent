@@ -75,7 +75,9 @@ What the table says, and only that:
   `num_cat_threshold`, `num_components`, `n_pos`), 27 (10 locations) by a container's `size()`,
   10 (4 locations) are range or iterator loops. A forward loop over `i < n` that indexes a
   `std::vector` cannot be proven in range when `n` is not that vector's size, so the check stays
-  in the loop and the vectorizer gives up.
+  in the loop. In a compile-only test on Compiler Explorer (`forwardn/README.md`) that made clang
+  16 to 18 stop vectorizing sums over such a loop and some writes; clang 19.1.0 and later kept the
+  sums vectorized (one two-store loop is lost again on clang 22 and 23).
 - **Shapes** (per-function count, distinct locations): reverse 129 (3: two `[n - 1 - i]` loops in
   LightGBM, 128 copies, and one counting-down loop in whisper.cpp's `parakeet.cpp`), strided 39
   (14), indirect 11 (5), other 265 (55): forward loops bounded by a variable 228 (38), unclear
