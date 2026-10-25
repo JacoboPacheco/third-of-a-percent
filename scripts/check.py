@@ -42,6 +42,12 @@
    every dsweep.json and dsweep-pooled.json (any edit of the plan after a run fails here); results/*dsweep-pooled/
    dsweep-pooled.json must list every dsweep.json of its run folders once and equal a fresh dsweep/analyze.py over them, with
    only the input-path strings ignored (floats to 1e-9 relative), as must each run's own copy.
+   The variable-bound timing (forwardt/PLAN.md): forwardt/analyze.py --verify validates every stored forwardt.json, recomputes its
+   ratios and intervals from the raw samples and recomputes forwardt/results.json from forwardt/runs.json (the only input, plan
+   "Runs: Accounting"); the sha256 of forwardt/PLAN.md must equal the one recorded here and in forwardt/analyze.py and be the
+   plan_sha256 stored in every forwardt.json and in forwardt/results.json; every forwardt.json under results/ and forwardt/ must lie
+   in a folder the manifest names. Before the planned runs the manifest is empty and nothing is stored, which passes; a missing
+   analysis script, plan or manifest, an unreadable results.json, or a missing results.json while the manifest lists a run fails.
    Round 7 robustness analyses (each fails if its script or stored file is absent): robustness/seeds_x86.py --verify --model 6973P
    --whole 1 and the same for --model 9V45 (about 2 minutes together; the other models' cells and the 60 whole analyses are
    recomputed only by the default --verify), robustness/aa_l2.py --verify (under a minute) and robustness/calibration.py --verify
@@ -497,6 +503,154 @@ def check_dsweep():
     return ok
 
 
+# ---------------------------------------------------------------- the timing of forward loops with a variable bound (forwardt/PLAN.md)
+FORWARDT_PLAN = "forwardt/PLAN.md"
+FORWARDT_ANALYSIS = "forwardt/analyze.py"
+FORWARDT_MANIFEST = "forwardt/runs.json"
+FORWARDT_RESULTS = "forwardt/results.json"
+# sha256 of forwardt/PLAN.md (line endings read as LF). The same value is kept in forwardt/analyze.py
+# (FIRST_COMMIT_PLAN_SHA256) and in every stored result. Both constants are code the author can edit, so they are records the
+# author keeps and not independent evidence; a stored result file is what an edit of the plan after a run cannot reach.
+FORWARDT_PLAN_SHA256 = "91a7c6a08a1307a0f04209caeea44f887418ceb5368759814bfaee79cd0a986f"
+
+
+def forwardt_result_files(repo=None):
+    """Every per-job forwardt.json under results/ and forwardt/ (the only places a stored run is looked for)."""
+    repo = repo or REPO
+    found = set()
+    for sub in ("results", "forwardt"):
+        # glob.escape: a checkout may sit under a folder whose name has [ ] * ? in it (repo[1]), which glob would read as a pattern
+        base = glob.escape(os.path.join(repo, sub))
+        found.update(os.path.normpath(p) for p in glob.glob(os.path.join(base, "**", "forwardt.json"), recursive=True))
+    return sorted(found)
+
+
+def forwardt_recorded_in_analysis(analysis=FORWARDT_ANALYSIS):
+    """The value of FIRST_COMMIT_PLAN_SHA256 in forwardt/analyze.py, read from the source text (the module is not imported), or None."""
+    import re
+    try:
+        with open(os.path.join(REPO, analysis), encoding="utf-8") as f:
+            m = re.search(r'^FIRST_COMMIT_PLAN_SHA256\s*=\s*"([0-9a-f]{64})"', f.read(), re.M)
+    except OSError:
+        return None
+    return m.group(1) if m else None
+
+
+def check_forwardt_plan(sweeps, pools=(), plan=FORWARDT_PLAN, analysis=FORWARDT_ANALYSIS, recorded=FORWARDT_PLAN_SHA256):
+    """The plan (forwardt/PLAN.md) is the one the analysis and every stored result were produced under. Its sha256 (CRLF read as LF)
+    must equal the value this file records and the one forwardt/analyze.py records, and each stored forwardt.json and each result
+    file (forwardt/results.json) must store that same hash as its plan_sha256 (a result file also as first_commit_plan_sha256), so
+    any later edit of the plan, even of one word, shows here. With no stored file only the three records are compared."""
+    problems = []
+    try:
+        want = lf_sha(plan)
+    except OSError as e:
+        print(f"   FAIL {plan}: cannot be read ({e})")
+        return False
+    if want != recorded:
+        problems.append(f"{plan} hashes to {want[:12]} but scripts/check.py records {recorded[:12]}: the plan was edited")
+    first = forwardt_recorded_in_analysis(analysis)
+    if first is None:
+        problems.append(f"{analysis}: no FIRST_COMMIT_PLAN_SHA256 constant found")
+    elif first != want:
+        problems.append(f"{analysis} records the plan as {first[:12]} but {plan} hashes to {want[:12]}")
+    for path in list(sweeps) + list(pools):
+        try:
+            name = os.path.relpath(path, REPO).replace("\\", "/")
+        except ValueError:  # another drive (a scratch copy in a test)
+            name = path
+        try:
+            with open(path, encoding="utf-8") as f:
+                doc = json.load(f)
+            have = doc.get("plan_sha256")
+            first_have = doc.get("first_commit_plan_sha256")
+        except (OSError, ValueError, AttributeError) as e:
+            problems.append(f"{name}: unreadable ({e})")
+            continue
+        if have != want:
+            problems.append(f"{name}: stored plan_sha256 {str(have)[:12]} is not the hash of {plan} as it stands ({want[:12]}); "
+                            "the plan was edited after the run, or the file was not produced under it")
+        if "first_commit_plan_sha256" in doc and first_have != recorded:
+            problems.append(f"{name}: stored first_commit_plan_sha256 {str(first_have)[:12]} is not the recorded {recorded[:12]}")
+    for pr in problems:
+        print(f"   FAIL {pr}")
+    if not problems:
+        print(f"   ok   {plan} (sha256 {want[:12]}) is the plan {analysis} and scripts/check.py record, and all {len(sweeps)} "
+              f"forwardt.json and {len(pools)} result file(s) stored were produced under")
+    return not problems
+
+
+def check_forwardt_named(files, manifest=FORWARDT_MANIFEST):
+    """Every stored forwardt.json lies in a folder that an entry of the manifest names. The analysis reads only the folders the
+    manifest names, so a stored file outside them would be a run it never counts. (The other manifest rules are the analysis's own
+    stops, and forwardt/analyze.py --verify runs them.)"""
+    try:
+        with open(os.path.join(REPO, manifest), encoding="utf-8") as f:
+            entries = json.load(f)["entries"]
+        folders = [os.path.normpath(e["folder"]).replace("\\", "/") for e in entries if isinstance(e, dict) and e.get("folder")]
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        print(f"   FAIL {manifest}: cannot be read as a manifest ({e})")
+        return False
+    problems = []
+    for path in files:
+        try:
+            rel = os.path.relpath(path, REPO).replace("\\", "/")
+        except ValueError:
+            rel = path
+        if not any(rel.startswith(fol.rstrip("/") + "/") for fol in folders):
+            problems.append(f"{rel}: no entry of {manifest} names its folder, so the analysis never reads it")
+    for pr in problems:
+        print(f"   FAIL {pr}")
+    if not problems:
+        print(f"   ok   all {len(files)} stored forwardt.json file(s) lie in a folder {manifest} names"
+              + ("" if files else " (none is stored: no run exists yet)"))
+    return not problems
+
+
+def check_forwardt():
+    """The forwardt step of main(): forwardt/analyze.py --verify (every stored forwardt.json validated and its ratios recomputed
+    from the raw samples, forwardt/results.json recomputed from forwardt/runs.json and compared), the plan hash, and that every
+    stored forwardt.json is in a folder the manifest names. Before the planned runs the manifest is empty and nothing is stored,
+    which passes; a missing analysis script, plan or manifest, an unreadable results.json, or a results.json missing while the
+    manifest lists a run, fails."""
+    import subprocess
+    analyze = os.path.join(REPO, *FORWARDT_ANALYSIS.split("/"))
+    if not os.path.exists(analyze):
+        return missing_step(FORWARDT_ANALYSIS)
+    ok = True
+    for rel in (FORWARDT_PLAN, FORWARDT_MANIFEST):
+        if not os.path.exists(os.path.join(REPO, *rel.split("/"))):
+            ok &= missing_step(rel)
+    if not ok:
+        return False
+    results = os.path.join(REPO, *FORWARDT_RESULTS.split("/"))
+    stored = os.path.exists(results)
+    if stored:
+        try:
+            with open(results, encoding="utf-8") as f:
+                json.load(f)
+        except (OSError, ValueError) as e:
+            print(f"   FAIL {FORWARDT_RESULTS}: unreadable ({e})")
+            return False
+    else:
+        try:
+            with open(os.path.join(REPO, *FORWARDT_MANIFEST.split("/")), encoding="utf-8") as f:
+                runs = len(json.load(f)["entries"])
+        except (OSError, ValueError, KeyError, TypeError):
+            runs = 0   # an unreadable manifest is reported by the analysis below
+        if runs:
+            print(f"   FAIL {FORWARDT_RESULTS}: missing, but {FORWARDT_MANIFEST} lists {runs} run(s)")
+            ok = False
+    sys.stdout.flush()
+    r = subprocess.run([sys.executable, analyze, "--verify"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    sys.stdout.write(r.stdout)   # printed here, not inherited, so that a caller (the tests) can read what the analysis said
+    ok &= r.returncode == 0
+    files = forwardt_result_files()
+    ok &= check_forwardt_plan(files, [results] if stored else [])
+    ok &= check_forwardt_named(files)
+    return ok
+
+
 def check_pooled(path):
     """A pooled.json (criteria-v3): schema, criteria hash, full recomputation, independent sample."""
     import pool
@@ -774,6 +928,10 @@ def main():
     print("== d-sweep (dsweep/analyze.py --verify: every stored dsweep.json validated and its numbers recomputed; the plan hash; "
           "the pooled files re-pooled and compared, input paths aside; none is stored until the sweep has run)")
     ok &= check_dsweep()
+    print("== forward loops with a variable bound (forwardt/analyze.py --verify: every stored forwardt.json validated and its numbers recomputed, "
+          "forwardt/results.json recomputed from forwardt/runs.json; the plan hash; every stored file in a folder the manifest names; an empty "
+          "manifest and nothing stored is the state before the planned runs and passes)")
+    ok &= check_forwardt()
     print("== PGO column (pgo/check.py: plan, build script, pooled file recomputed from the raw samples, report, tests)")
     if os.path.exists(os.path.join(REPO, "pgo", "check.py")):
         sys.stdout.flush()

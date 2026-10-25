@@ -153,6 +153,7 @@ The 17 sizes on Neoverse-N2 (ratios FAST over NONE; the excess in ns per inner c
   - `arm64/`: the same 8 kernels timed on GitHub's arm64 runner (Neoverse-N2), 3 full runs pooled apart from the x86-64 jobs, with its plan written first.
   - `replication/`: two further sets of full runs (30 Arm jobs, 40 x86-64 jobs) planned in writing (the plan's commit time, in the author's unpublished development history, is 27 seconds before the first job's recorded start, inside the dispatch lag, so the order cannot be established), pooled alone and compared with the pools they replicate by `compare.py`.
   - `dsweep/`: matrix multiply timed at 15 to 17 sizes per CPU model to test the account of its Arm cost: its plan committed before the runs, in the author's unpublished development history, `sweep.py` on the runner, `analyze.py` applying the written rule.
+  - `forwardt/`: six forward loops with a variable bound timed under clang 18 (two of them controls whose bound is `size()`): its plan, the loops in `forwardt/kernels/`, `sweep.py` for the runner and `analyze.py` for the analysis. The manifest of runs is empty: no run exists and no result is claimed.
   - `siblings/`: the same 8 kernels under clang 18 EXTENSIVE and DEBUG, `-march=x86-64-v3`, GCC 14 with `_GLIBCXX_ASSERTIONS` at `-O2` and `-O3`, and clang 20 with libc++ 20.
   - `investigate/`: why `k02_add_fwd` cost 1.6x on some CPUs; `investigate/vectorizer/`: compile-only studies on Compiler Explorer (saved answers, offline checks) of which pass and which cost decision stops the vectorizer, for the reverse and stride-2 loops and for matrix multiply.
 
@@ -175,7 +176,7 @@ harness/        run.py (build, time, collect), stats.py, remarks.py, asm.py, cac
                 placement.py, verdict.py, combine.py, pool.py, pool_check.py, criteria*.json
 tests/          the tests check.py runs
 scripts/        check.py (the one check), build_site_data.py, check_site.py
-.github/workflows/  15 workflows; measure.yml is the main run, pages.yml publishes site/ to the live page
+.github/workflows/  16 workflows; measure.yml is the main run, pages.yml publishes site/ to the live page
 results/        every run kept as downloaded, one folder per run or pooled set
                 (s1 to s4, s4-pooled, s6-run-*, s6-pooled, s7-run-*, s7-pooled, s8-arm-run-*, s8-arm-pooled,
                 s9-arm-run-*, s9-run-*, s9-*-pooled, s10-dsweep-run-*, s10-dsweep-pooled, s5-holdout, corpus*, mitigate*, siblings*, realworld*, ...),
@@ -187,6 +188,7 @@ siblings/       the same kernels under other toolchains and modes: runner, summa
 arm64/          the same kernels on GitHub's arm64 runner (Neoverse-N2): PLAN.md (written first), README.md
 replication/    the plan for replication sets B and C (committed in the author's unpublished development history, 27 seconds before the first job's recorded start), compare.py, results.json, README.md
 dsweep/         the matrix-multiply d-sweep: PLAN.md (committed alone before the code and any run, in the author's unpublished development history, unchanged since), sweep.py, analyze.py, README.md
+forwardt/       the variable-bound timing: PLAN.md, kernels/ (six loops), sweep.py, analyze.py, runs.json (empty), README.md
 investigate/    why one forward loop cost 1.6x on some CPUs (FINDINGS.md);
                 vectorizer/ compile-only studies of why the reverse, stride-2 and matrix-multiply
                 loops lose SIMD and why matrix multiply is kept on clang 19 to 21

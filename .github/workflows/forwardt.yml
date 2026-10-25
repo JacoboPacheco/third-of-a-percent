@@ -1,0 +1,115 @@
+name: forwardt
+
+# The timing of six forward loops whose bound is a variable (forwardt/PLAN.md, the plan this workflow runs): for
+# each of six small loops (two sum loops and a copy loop with the bound spelled a.size() or n, a fill loop and an
+# offset loop), does FAST cost more than NONE on this CPU, at a working set that fits L1 and one that fits L2? Each
+# job builds every loop five ways (NONE and FAST as compiled, NONE and FAST with -falign-loops=64, and a
+# no-vectorize build), times FAST against NONE in both builds with a byte-identical A/A, times the no-vectorize
+# build only for the loops the plan names, takes Cachegrind counts beside the times, and uploads its out/ folder
+# BEFORE any check of the results. A job that stops after its first timing leaves out/forwardt.partial.jsonl.
+#
+# There is no pooling step in this workflow: the analysis (forwardt/analyze.py, a separate piece) reads the
+# downloaded forwardt.json files of the planned runs and applies the written rule.
+#
+# Planned runs (PLAN.md): runner=ubuntu-24.04-arm once (6 jobs); runner=ubuntu-24.04 twice (6 jobs each), the two
+# x86-64 runs started from the same commit. A run with jobs=[1] is a test of the workflow; a run with reps set is a
+# smoke run (the files are marked and refused by the analysis). Neither is ever pooled into a result.
+# A second attempt of a run (Re-run failed jobs or Re-run all jobs) writes files marked with run.attempt greater than 1; the analysis
+# stops on them, because the plan lists a failed job and does not replace it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "GitHub-hosted runner label: ubuntu-24.04 (x86-64, the default) or ubuntu-24.04-arm (AArch64, Neoverse-N2). One label per run; results are pooled per CPU model afterwards"
+        type: choice
+        options: ["ubuntu-24.04", "ubuntu-24.04-arm"]
+        default: "ubuntu-24.04"
+      jobs:
+        description: "matrix job numbers as a JSON list; the planned runs use all six (jobs=[1] is a test of the workflow, never pooled)"
+        default: "[1, 2, 3, 4, 5, 6]"
+      reps:
+        description: "SMOKE RUN ONLY: processes per side instead of the 40 of harness/criteria-v3.json (for example 4, to exercise the whole path in a few minutes). Leave empty for a real run; a file made with it is marked as a smoke file and the analysis refuses it"
+        default: ""
+      time_limit:
+        description: "minutes: the timeout of every job of the run (a job that reaches it is cancelled and not replaced). Leave it at 45; raise it only for the plan's restart after the time limit, when every job of a run reached it"
+        type: string
+        default: "45"
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ fromJSON(inputs.time_limit) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(inputs.jobs) }}
+    steps:
+      # First, before anything else: every result is read against the CPU it got.
+      - name: Runner CPU (read every result against this)
+        id: cpu
+        run: |
+          CPU="$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+          # AArch64 /proc/cpuinfo has no "model name" line; lscpu names the core (the harness reads lscpu too)
+          [ -n "$CPU" ] || CPU="$(lscpu | sed -n 's/^Model name: *//p' | head -1)"
+          SLUG="$(echo "$CPU" | tr 'A-Z' 'a-z' | sed -E 's/\((r|tm|c)\)//g; s/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+          echo "CPU model: $CPU"
+          echo "cores: $(nproc)"
+          echo "slug=${SLUG:-unknown-cpu}" >> "$GITHUB_OUTPUT"
+          echo "### Job ${{ matrix.job }} runner CPU: $CPU ($(nproc) cores)" >> "$GITHUB_STEP_SUMMARY"
+
+      # The time limit this job was started with, in the summary right after the CPU line (the step above is
+      # word for word measure.yml's, so the limit gets a step of its own).
+      - name: Time limit of this job
+        env:
+          JOB: ${{ matrix.job }}
+          TIME_LIMIT: ${{ inputs.time_limit }}
+        run: |
+          echo "Job $JOB time limit: $TIME_LIMIT minutes (input time_limit)"
+          echo "Job $JOB time limit: $TIME_LIMIT minutes (input time_limit)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install clang-18, libc++-18, valgrind and numpy (Ubuntu noble apt)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-18 libc++-18-dev libc++abi-18-dev valgrind python3-numpy
+          clang++-18 --version
+          valgrind --version
+          dpkg-query -W libc++-18-dev libc++abi-18-dev clang-18 valgrind
+
+      - name: Runner facts
+        run: |
+          lscpu
+          nproc
+          free -m
+          for i in /sys/devices/system/cpu/cpu0/cache/index*; do echo "$i $(cat $i/level) $(cat $i/type) $(cat $i/size)"; done
+          python3 forwardt/sweep.py --assume-caches 64,1024
+
+      # Before the timing: the argument lists, the sizes, the words and the file schema run on generated data, with
+      # this Python and this numpy. A failure here stops the job before it times anything.
+      - name: Offline self-test (generated data, no timing)
+        run: |
+          sudo apt-get install -y -qq python3-yaml
+          python3 tests/test_forwardt.py
+
+      - name: Build, time and collect
+        env:
+          JOB: ${{ matrix.job }}
+          REPS: ${{ inputs.reps }}
+        run: |
+          ARGS=()
+          if [ -n "$REPS" ]; then ARGS+=(--reps "$REPS"); fi
+          python3 forwardt/sweep.py --job "$JOB" --out out --build build/forwardt "${ARGS[@]}"
+
+      # Immediately after the sweep and before any check of the results: the folder is the result.
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forwardt-job-${{ steps.cpu.outputs.slug }}-j${{ matrix.job }}
+          path: out/
+          if-no-files-found: warn

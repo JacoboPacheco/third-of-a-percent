@@ -1,8 +1,8 @@
 """The GitHub actions the workflows use: which workflows pin them by commit, and that none is added with a moving tag unnoticed.
 
-ci.yml and pages.yml were written with actions pinned to a full commit (the version in a comment). measure.yml, siblings.yml and
-dsweep.yml, the workflows that produced the published measurements, are pinned to the same commits. The runs under results/ ran
-before the pins and used the moving v4 tags. The ten other workflows (the follow-up columns) still use the moving tags and are
+ci.yml and pages.yml were written with actions pinned to a full commit (the version in a comment). measure.yml, siblings.yml,
+dsweep.yml and forwardt.yml, the workflows that produced (or are to produce) the measurements, are pinned to the same commits. The
+runs under results/ ran before the pins and used the moving v4 tags. The ten other workflows (the follow-up columns) still use the moving tags and are
 listed below by name, so a new workflow with a moving tag fails here until it is pinned or listed on purpose, and a listed one
 that has been pinned must come off the list."""
 import glob
@@ -12,7 +12,7 @@ import re
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOWS = os.path.join(REPO, ".github", "workflows")
 
-PINNED = ("ci.yml", "pages.yml", "measure.yml", "siblings.yml", "dsweep.yml")
+PINNED = ("ci.yml", "pages.yml", "measure.yml", "siblings.yml", "dsweep.yml", "forwardt.yml")
 MOVING_TAGS = ("corpus.yml", "dayone.yml", "environment.yml", "investigate.yml", "layout-sweep.yml", "lostloops-live.yml",
                "mitigate.yml", "pgo.yml", "realworld.yml", "versions.yml")
 # the first-party actions the measurement workflows use, and the commit each is pinned to (version in the trailing comment)
@@ -56,7 +56,7 @@ def test_pinned_workflows_use_a_full_commit_and_name_the_version():
 
 
 def test_the_measurement_workflows_use_the_expected_commits():
-    for name in ("measure.yml", "siblings.yml", "dsweep.yml", "ci.yml", "pages.yml"):
+    for name in ("measure.yml", "siblings.yml", "dsweep.yml", "forwardt.yml", "ci.yml", "pages.yml"):
         for action, ref, comment in actions(name):
             if action in EXPECTED_PINS:
                 sha, version = EXPECTED_PINS[action]

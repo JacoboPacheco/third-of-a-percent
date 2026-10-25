@@ -6242,11 +6242,17 @@ def licence_files():
     return sorted(found)
 
 
-def test_the_readme_says_there_is_no_licence_file_and_there_is_none():
-    """The README states that no licence file exists. Adding one is the author's decision and must come with a changed sentence, so this fails until
-    both are done together; the sentence itself is guarded in tests/data/guarded_sentences.json."""
-    assert "no licence file" in readme_text()
-    assert licence_files() == [], f"the README says there is no licence file, but these exist: {licence_files()}"
+def test_the_licence_file_is_the_mit_licence_and_the_readme_says_so():
+    """The README's last section names the MIT licence and the file LICENSE, and says the LLVM excerpts are not covered; the file is the standard
+    MIT text for the author, and no other licence-looking file sits in the root or in tools/lostloops/ (the places a reader would look)."""
+    assert licence_files() == ["LICENSE"], f"expected exactly the file LICENSE, found: {licence_files()}"
+    with open(os.path.join(REPO, "LICENSE"), encoding="utf-8") as f:
+        text = f.read()
+    assert text.startswith("MIT License\n\nCopyright (c) 2026 Jacobo Pacheco\n\nPermission is hereby granted, free of charge"), text[:120]
+    assert "THE SOFTWARE IS PROVIDED \"AS IS\"" in text and text.rstrip().endswith("DEALINGS IN THE\nSOFTWARE.")
+    readme = squash(readme_text())
+    assert "are under the MIT licence (the file `LICENSE`)" in readme and "no licence file" not in readme
+    assert "llvm-src/` are not covered by it" in readme
 
 
 def test_the_llvm_excerpts_carry_a_notice_that_matches_the_folder():
@@ -6270,15 +6276,6 @@ def test_the_llvm_excerpts_carry_a_notice_that_matches_the_folder():
     assert "indvars_predicate_traps.txt" in notice and "collectLoopUniforms_sha256.txt" in notice
     for n in excerpts:  # the 14 are exactly the files the NOTICE describes by pattern
         assert n.endswith(".cpp.txt") or n.startswith(("legality_", "x86_")), f"{n} starts with the LLVM header but the NOTICE does not describe it"
-
-
-def test_the_lostloops_texts_do_not_invite_copying_or_vendoring():
-    """No licence is granted (see the README's last section), so the tool's README and its example workflow must not tell a reader to copy or vendor it."""
-    for rel in ("tools/lostloops/README.md", "tools/lostloops/example-workflow.yml"):
-        with open(os.path.join(REPO, rel), encoding="utf-8") as f:
-            text = f.read()
-        hits = re.findall(r"(?i)\b(copy this (?:folder|file)|copy it into|vendor it|copy tools/lostloops)", text)
-        assert not hits, f"{rel} invites a reader to copy or vendor the tool: {hits}"
 
 
 def test_the_replication_pooled_files_list_every_job_of_their_runs():
@@ -6379,7 +6376,7 @@ def test_every_intel_model_loses_the_same_loops():
 # ---- every repository path the prose cites must exist -----------------------------------------------
 
 CITING = ("README.md", "readme-parts/DETAILS.md", "siblings/README.md", "variants/RESULTS.md", "arm64/README.md", "ce-sweep/README.md",
-          "replication/README.md", "dsweep/README.md", "corpus/README.md", "mitigate/README.md", "realworld/README.md",
+          "replication/README.md", "dsweep/README.md", "forwardt/README.md", "corpus/README.md", "mitigate/README.md", "realworld/README.md",
           "investigate/vectorizer/matmul/README.md", "investigate/vectorizer/reverse-stride2/README.md", "gaps/GAPS.md", "gaps/GAPS-2.md",
           "tools/lostloops/README.md")
 # Documents that also name their own files by a bare name, relative to the document's folder (`lostloops.py`, `evidence/`): a span that is only a
@@ -6397,7 +6394,7 @@ def citing_present():
 UNPUBLISHED = {"docs/PLAN.md", "docs/SPEC.md", "docs/skeptic.md"}
 CITED_ROOTS = ("results/", "dayone/", "investigate/", "tests/", "harness/", "siblings/", "variants/", "ce-sweep/", "layout-sweep/",
                "pgo/", "versions/", "environment/", "robustness/", "mitigate/", "corpus/", "realworld/", "audit/", "kernels/",
-               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/", "replication/", "dsweep/")
+               "programs/", "scripts/", "site/", "tools/", "docs/", "gaps/", "claims-audit/", ".github/", "arm64/", "replication/", "dsweep/", "forwardt/")
 
 
 GH_WORKFLOW_RUN = re.compile(r"gh workflow run ([\w.-]+\.ya?ml)")
@@ -6570,7 +6567,7 @@ ORDER_DOCS = {"README.md": readme_text, "readme-parts/DETAILS.md": details_text}
 # (the result files store the hash of several of them) and say in their own words when they were written; the folder documents, README.md and
 # the details page are where the order is attributed. The list is built from the tree, so a new document is scanned without being added here,
 # and the export (which drops a few private notes and cuts gaps/GAPS.md after its first section) is scanned the same way.
-ORDER_FOLDERS = ("arm64", "ce-sweep", "corpus", "dsweep", "environment", "gaps", "investigate", "layout-sweep", "mitigate", "pgo", "realworld",
+ORDER_FOLDERS = ("arm64", "ce-sweep", "corpus", "dsweep", "environment", "forwardt", "gaps", "investigate", "layout-sweep", "mitigate", "pgo", "realworld",
                  "replication", "robustness", "siblings", "tools", "variants", "versions")
 ORDER_EXTRA_DOCS = ("docs/dayone-results.md",)
 ORDER_RECORD_NAME = re.compile(r"^PLAN[\w.\-]*\.md$")
@@ -6604,6 +6601,9 @@ def order_doc_text(doc):
 
 # A unit that states an order without the qualifier and is allowed to: (document, words of the unit) -> why. Each entry must still be needed.
 ORDER_CLAIM_EXCEPTIONS = {
+    ("forwardt/README.md", "was committed on its own, before the code and before any run"):
+        "the same sentence says what the order rests on (the author's clock, and the public history in which the plan is the only file of its commit), "
+        "so the reader is told what can and cannot be checked; the plan itself lists the part that cannot",
     ("readme-parts/DETAILS.md", "so this later data is not a pre-registered test either"):
         "a negation: it says the later runs were not planned before the data was known, so it states no order that needs a source",
     ("investigate/vectorizer/reverse-stride2/README.md", "is set once, before the label"):
@@ -6678,7 +6678,7 @@ else:
 def test_the_order_scan_reaches_the_folder_documents_and_leaves_out_only_the_plans():
     """The folder documents that state results are in the scan (the list is read from the tree, so this fails if a walk or a skip rule drops them),
     and the only files left out are the plans, whose names start with PLAN."""
-    must_scan = {"arm64/README.md", "ce-sweep/README.md", "corpus/README.md", "docs/dayone-results.md", "dsweep/README.md", "gaps/GAPS.md",
+    must_scan = {"arm64/README.md", "ce-sweep/README.md", "corpus/README.md", "docs/dayone-results.md", "dsweep/README.md", "forwardt/README.md", "gaps/GAPS.md",
                  "investigate/FINDINGS.md", "mitigate/README.md", "pgo/report.md", "realworld/README.md", "replication/README.md",
                  "robustness/report.md", "siblings/README.md", "tools/lostloops/README.md", "variants/RESULTS.md",
                  "investigate/vectorizer/reverse-stride2/README.md"}
