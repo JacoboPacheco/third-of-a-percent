@@ -1,10 +1,12 @@
 """scripts/check.py knows the forwardt/ piece: the step that runs forwardt/analyze.py --verify, the guard on the plan's hash, and
 the rule that every stored forwardt.json lies in a folder forwardt/runs.json names.
 
-What state the repository is in, and what these tests pin: forwardt/PLAN.md is in the tree, forwardt/runs.json is an empty
-manifest and no forwardt.json or forwardt/results.json is stored, so the step must PASS there ("no run exists yet" is a legal
-state). The functions are also run on small scratch copies of the repository (check.REPO is pointed at them for the length of
-one call) to show what makes them fail: a plan with one changed word, a stored file made under another plan, a stored file in a
+What state the repository is in, and what these tests pin: forwardt/PLAN.md is in the tree, forwardt/runs.json lists five runs
+(two code tests and three measurement runs), 18 forwardt.json files and forwardt/results.json are stored, and the step must PASS
+there; the committed state is pinned below (the entries, the 18 files, the jobs per CPU model, the plan hash, the recomputation)
+and each pin is shown to fail when a stored number or the manifest is changed. An empty manifest (nothing to verify, which
+passes) is still a legal state and is run on scratch trees. The functions are also run on small scratch copies of the repository
+(check.REPO is pointed at them for the length of one call) to show what makes them fail: a plan with one changed word, a stored file made under another plan, a stored file in a
 folder the manifest does not name, a results.json that is not what a fresh analysis gives, a missing or unreadable one, and a
 missing analysis script, plan or manifest. The analysis's own rules (the stops of the plan's "Runs: Accounting", the recomputation
 of every ratio) are tested in tests/test_forwardt_analyze.py and are not repeated here.
@@ -109,10 +111,9 @@ def test_the_step_passes_on_the_tree_as_it_stands():
     assert rc is True, out
     assert "FAIL" not in out
     assert "ok   forwardt/PLAN.md (sha256 91a7c6a08a13)" in out, out
-    with open(os.path.join(REPO, "forwardt", "runs.json"), encoding="utf-8") as f:
-        runs = json.load(f)["entries"]
-    if not runs:
-        assert "nothing to verify" in out and "none is stored: no run exists yet" in out, out
+    # the committed manifest lists runs, so the analysis recomputed results.json and compared it (about a minute and a half)
+    assert "results.json matches the recomputation" in out and "nothing to verify" not in out, out
+    assert "ok   all 18 stored forwardt.json file(s) lie in a folder forwardt/runs.json names" in out, out
 
 
 def test_the_three_records_of_the_plan_hash_agree_with_the_plan():
@@ -127,7 +128,10 @@ def test_the_three_records_of_the_plan_hash_agree_with_the_plan():
 def test_the_header_of_check_py_describes_the_step():
     doc = check.__doc__
     assert "forwardt/PLAN.md" in doc and "forwardt/analyze.py --verify" in doc and "forwardt/runs.json" in doc
-    assert "before the planned runs the manifest is empty" in " ".join(doc.split()).lower()
+    text = " ".join(doc.split())
+    assert "a manifest that lists no run has nothing to verify and passes" in text
+    assert "forwardt/results.json is stored" in text
+    assert "before the planned runs" not in text and "manifest is empty" not in text   # the committed manifest lists runs
 
 
 def test_main_runs_the_forwardt_step_after_the_d_sweep_step_and_before_the_next_one():
@@ -223,7 +227,7 @@ def test_a_stored_file_in_a_folder_the_manifest_does_not_name_is_caught():
             assert found == ["forwardt/odd/forwardt.json", "results/named-run-2/job-1/forwardt.json",
                              "results/named-run/job-1/forwardt.json", "results/stray-run/job-1/forwardt.json"], found
             rc, out = run(check.check_forwardt_named, [])
-            assert rc is True and "none is stored: no run exists yet" in out, out
+            assert rc is True and "(no forwardt.json is stored)" in out, out
 
 
 def test_the_step_fails_on_an_unnamed_stored_file_even_when_the_analysis_alone_passes():
@@ -295,7 +299,7 @@ def test_a_missing_results_json_fails_exactly_when_the_manifest_lists_a_run():
             rc, out = run(check.check_forwardt)
         assert rc is False and "FAIL forwardt/results.json: missing, but forwardt/runs.json lists 1 run(s)" in out, out
     with tempfile.TemporaryDirectory() as tmp:
-        scratch(tmp)     # an empty manifest: nothing to verify, which is the state before the planned runs
+        scratch(tmp)     # an empty manifest (a scratch tree; the committed one lists runs): nothing to verify, which passes
         with repo_at(tmp):
             rc, out = run(check.check_forwardt)
         assert rc is True and "nothing to verify" in out, out
@@ -671,10 +675,19 @@ def rewrite(path, fn):
     return text
 
 
+def synthetic_empty_state(root):
+    """Documents as they read while the manifest lists no run (the committed ones no longer do), and an empty manifest."""
+    put(root, "forwardt/runs.json", text=json.dumps(EMPTY_MANIFEST) + "\n")
+    put(root, "forwardt/README.md", text="\n".join(EMPTY_MANIFEST_SENTENCES["forwardt/README.md"]) + "\n")
+    put(root, "README.md", text="intro\nno run exists and no result is claimed\n"
+        "- `forwardt/` the timing of six forward loops, the manifest of runs `forwardt/runs.json` (empty)\n")
+    put(root, "readme-parts/DETAILS.md", text="intro\r\nThe manifest of runs is empty: no run exists and no result is claimed.\r\n"
+        "forwardt/       the variable-bound timing, runs.json (empty)\r\n")
+
+
 def test_the_empty_manifest_guard_reads_the_manifest_both_ways():
     with tempfile.TemporaryDirectory() as tmp:
-        for rel in list(EMPTY_MANIFEST_SENTENCES) + ["forwardt/runs.json"]:
-            shutil.copyfile(os.path.join(REPO, *rel.split("/")), put(tmp, rel, text=""))
+        synthetic_empty_state(tmp)
         assert empty_manifest_problems(tmp) == []
         # one sentence gone while the manifest is empty
         gone = EMPTY_MANIFEST_SENTENCES["forwardt/README.md"][3]
@@ -733,3 +746,167 @@ def test_the_empty_manifest_guard_reads_the_manifest_both_ways():
         put(tmp, "forwardt/runs.json", text=json.dumps({"schema": 1, "entries": [{}, {}]}) + "\n")
         got = empty_manifest_problems(tmp)
         assert got and all("2 entries" in p for p in got), got
+
+
+# ---------------------------------------------------------------- the committed state: five runs, 18 stored files
+
+# The runs of the committed manifest, in order: (run id, runner, class, clause, jobs started, folder or None).
+COMMITTED_RUNS = [
+    ("40181023212", "ubuntu-24.04", "test", "code test", 1, None),
+    ("40181028100", "ubuntu-24.04-arm", "test", "code test", 1, None),
+    ("40861186704", "ubuntu-24.04-arm", "measurement", "Neoverse-N2 run", 6, "results/s11-forwardt-run-40861186704"),
+    ("40861190251", "ubuntu-24.04", "measurement", "x86-64 run 1", 6, "results/s11-forwardt-run-40861190251"),
+    ("40861193559", "ubuntu-24.04", "measurement", "x86-64 run 2", 6, "results/s11-forwardt-run-40861193559"),
+]
+COMMITTED_SHA = "595e061f53cf074011ee15f998be14a45f950c1f"
+# CPU model fragment -> (jobs in the 18 stored files, read by the analysis, target). EPYC 9V45 has 2 jobs, below the rule's 3.
+COMMITTED_MODELS = {"EPYC 7763": (7, True, "x86-64"), "EPYC 9V45": (2, False, "x86-64"), "EPYC 9V74": (3, True, "x86-64"),
+                    "Neoverse-N2": (6, True, "Neoverse-N2")}
+
+
+def jload(path):
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def committed_state_problems(root):
+    """Where the forwardt runs under root differ from the committed state: the manifest (five entries, two code tests and three
+    measurement runs, one commit), the 18 stored forwardt.json files (six per measurement folder, the plan hash, the run id and
+    commit each carries) and forwardt/results.json (the plan hash, the jobs per CPU model and which models are read). A list of
+    words, empty when everything agrees. It reads files and recomputes nothing; the numbers are forwardt/analyze.py --verify's."""
+    problems = []
+    try:
+        manifest = jload(os.path.join(root, "forwardt", "runs.json"))
+        entries = manifest["entries"]
+    except (OSError, ValueError, KeyError) as e:
+        return ["forwardt/runs.json cannot be read (%s)" % e]
+    for key, want in (("branch", "forwardt-run"), ("workflow_file", ".github/workflows/forwardt.yml"),
+                      ("time_limit_minutes", 45), ("test_ratios_read", False)):
+        if manifest.get(key) != want:
+            problems.append("runs.json %s is %r, expected %r" % (key, manifest.get(key), want))
+    if len(entries) != len(COMMITTED_RUNS):
+        problems.append("runs.json lists %d entries, expected %d" % (len(entries), len(COMMITTED_RUNS)))
+    for got, (run_id, runner, cls, clause, jobs, folder) in zip(entries, COMMITTED_RUNS):
+        have = (got.get("run_id"), got.get("runner"), got.get("class"), got.get("clause"), got.get("jobs_started"), got.get("folder"))
+        if have != (run_id, runner, cls, clause, jobs, folder):
+            problems.append("runs.json entry %s differs: %r" % (run_id, have))
+        if got.get("jobs_returned") != jobs or got.get("not_returned") != []:
+            problems.append("runs.json entry %s: jobs_returned %r, not_returned %r" % (run_id, got.get("jobs_returned"), got.get("not_returned")))
+        if got.get("head_sha") != COMMITTED_SHA:
+            problems.append("runs.json entry %s: head_sha %r, expected %s" % (run_id, got.get("head_sha"), COMMITTED_SHA))
+    files = check.forwardt_result_files(root)
+    if len(files) != 18:
+        problems.append("%d forwardt.json files are stored, expected 18" % len(files))
+    jobs_by_model = {}
+    for path in files:
+        rel = os.path.relpath(path, root).replace("\\", "/")
+        doc = jload(path)
+        folder = rel.rsplit("/", 2)[0]
+        entry_ = [r for r in COMMITTED_RUNS if r[5] == folder]
+        if not entry_:
+            problems.append("%s: lies in no folder of the manifest" % rel)
+            continue
+        run = doc.get("run", {})
+        if doc.get("plan_sha256") != PLAN_SHA256 or doc.get("smoke") is not False or doc.get("kind") != "forwardt":
+            problems.append("%s: plan_sha256, smoke or kind differs (%r, %r, %r)" % (rel, doc.get("plan_sha256"), doc.get("smoke"), doc.get("kind")))
+        if run.get("id") != entry_[0][0] or run.get("commit") != COMMITTED_SHA or run.get("attempt") != 1:
+            problems.append("%s: run id, commit or attempt differs (%r, %r, %r)" % (rel, run.get("id"), run.get("commit"), run.get("attempt")))
+        want_arch = "aarch64" if entry_[0][1].endswith("arm") else "x86_64"
+        if run.get("runner", {}).get("arch") != want_arch:
+            problems.append("%s: arch %r, expected %s" % (rel, run.get("runner", {}).get("arch"), want_arch))
+        model = run.get("runner", {}).get("cpu_model", "")
+        jobs_by_model[model] = jobs_by_model.get(model, 0) + 1
+    for frag, (jobs, _read, _target) in COMMITTED_MODELS.items():
+        have = sum(n for m, n in jobs_by_model.items() if frag in m)
+        if have != jobs:
+            problems.append("%d stored files name a CPU model with %r, expected %d" % (have, frag, jobs))
+    per_folder = {}
+    for path in files:
+        folder = os.path.relpath(path, root).replace("\\", "/").rsplit("/", 2)[0]
+        per_folder[folder] = per_folder.get(folder, 0) + 1
+    for _id, _r, cls, _c, _j, folder in COMMITTED_RUNS:
+        if folder and per_folder.get(folder) != 6:
+            problems.append("%s holds %r forwardt.json files, expected 6" % (folder, per_folder.get(folder)))
+    try:
+        results = jload(os.path.join(root, "forwardt", "results.json"))
+        models = results["analysis"]["models"]
+    except (OSError, ValueError, KeyError) as e:
+        return problems + ["forwardt/results.json cannot be read (%s)" % e]
+    for key in ("plan_sha256", "first_commit_plan_sha256"):
+        if results.get(key) != PLAN_SHA256:
+            problems.append("results.json %s is %r" % (key, results.get(key)))
+    if len(models) != len(COMMITTED_MODELS):
+        problems.append("results.json has %d CPU models, expected %d" % (len(models), len(COMMITTED_MODELS)))
+    for frag, (jobs, read, target) in COMMITTED_MODELS.items():
+        hit = [m for m in models if frag in m.get("cpu_model", "")]
+        if len(hit) != 1 or (hit[0].get("jobs"), hit[0].get("read"), hit[0].get("target")) != (jobs, read, target):
+            problems.append("results.json model %r: %r, expected %r" % (
+                frag, [(m.get("jobs"), m.get("read"), m.get("target")) for m in hit], (jobs, read, target)))
+    return problems
+
+
+def copy_committed_state(tmp):
+    """The files committed_state_problems reads, copied from the repository (plan, manifest, results.json, 18 stored files)."""
+    for rel in ("forwardt/runs.json", "forwardt/results.json"):
+        shutil.copyfile(os.path.join(REPO, *rel.split("/")), put(tmp, rel, text=""))
+    for path in check.forwardt_result_files(REPO):
+        rel = os.path.relpath(path, REPO).replace("\\", "/")
+        shutil.copyfile(path, put(tmp, rel, text=""))
+
+
+def test_the_committed_state_is_five_runs_eighteen_files_and_the_models_7_2_3_6():
+    problems = committed_state_problems(REPO)
+    assert not problems, "\n".join(problems)
+
+
+def test_the_committed_state_pins_find_a_changed_manifest_or_result_file():
+    with tempfile.TemporaryDirectory() as tmp:
+        copy_committed_state(tmp)
+        assert committed_state_problems(tmp) == []
+        manifest_path = os.path.join(tmp, "forwardt", "runs.json")
+        results_path = os.path.join(tmp, "forwardt", "results.json")
+        stored = check.forwardt_result_files(tmp)
+        assert len(stored) == 18
+
+        def changed(path, edit, needle):
+            """Edit one JSON file, collect the problems that name needle, restore it."""
+            doc = jload(path)
+            with open(path, encoding="utf-8", newline="") as f:
+                original = f.read()
+            edit(doc)
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                json.dump(doc, f, indent=1)
+            try:
+                got = committed_state_problems(tmp)
+            finally:
+                with open(path, "w", encoding="utf-8", newline="") as f:
+                    f.write(original)
+            assert got and any(needle in p for p in got), (needle, got)
+            assert committed_state_problems(tmp) == []
+
+        changed(manifest_path, lambda d: d["entries"].pop(), "lists 4 entries")
+        changed(manifest_path, lambda d: d["entries"][3].update(jobs_returned=5), "jobs_returned 5")
+        changed(manifest_path, lambda d: d["entries"][4].update(head_sha="b" * 40), "head_sha")
+        changed(manifest_path, lambda d: d.update(test_ratios_read=True), "test_ratios_read")
+        changed(manifest_path, lambda d: d["entries"][2].update(folder="results/s11-forwardt-run-40861190251"), "differs")
+        changed(results_path, lambda d: d.update(plan_sha256="3" * 64), "results.json plan_sha256")
+        changed(results_path, lambda d: d["analysis"]["models"][0].update(jobs=8), "model 'EPYC 7763'")
+        changed(results_path, lambda d: d["analysis"]["models"][1].update(read=True), "model 'EPYC 9V45'")
+        changed(stored[0], lambda d: d.update(plan_sha256="4" * 64), "plan_sha256, smoke or kind differs")
+        changed(stored[5], lambda d: d.update(smoke=True), "plan_sha256, smoke or kind differs")
+        changed(stored[7], lambda d: d["run"]["runner"].update(cpu_model="Another CPU"), "expected")
+        changed(stored[9], lambda d: d["run"].update(commit="c" * 40), "run id, commit or attempt differs")
+        changed(stored[11], lambda d: d["run"].update(attempt=2), "run id, commit or attempt differs")
+        # a stored file gone, and one stray file in a folder the manifest does not name
+        removed = stored[17]
+        with open(removed, "rb") as f:
+            blob = f.read()
+        os.remove(removed)
+        got = committed_state_problems(tmp)
+        assert any("17 forwardt.json files" in p for p in got) and any("holds 5" in p for p in got), got
+        with open(put(tmp, os.path.relpath(removed, tmp).replace("\\", "/"), text=""), "wb") as f:
+            f.write(blob)
+        assert committed_state_problems(tmp) == []
+        put(tmp, "results/stray-run/job-1/forwardt.json", data=blob)
+        got = committed_state_problems(tmp)
+        assert any("19 forwardt.json files" in p for p in got) and any("lies in no folder" in p for p in got), got

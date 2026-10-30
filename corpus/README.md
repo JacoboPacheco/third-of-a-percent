@@ -77,7 +77,7 @@ What the table says, and only that:
   `std::vector` cannot be proven in range when `n` is not that vector's size, so the check stays
   in the loop. In a compile-only test on Compiler Explorer (`forwardn/README.md`) that made clang
   16 to 18 stop vectorizing sums over such a loop and some writes; clang 19.1.0 and later kept the
-  sums vectorized (one two-store loop is lost again on clang 22 and 23).
+  sums vectorized (one two-store loop is lost again on clang 22 and 23). The variable-bound sum was timed on clang 18 in `forwardt/`.
 - **Shapes** (per-function count, distinct locations): reverse 129 (3: two `[n - 1 - i]` loops in
   LightGBM, 128 copies, and one counting-down loop in whisper.cpp's `parakeet.cpp`), strided 39
   (14), indirect 11 (5), other 265 (55): forward loops bounded by a variable 228 (38), unclear

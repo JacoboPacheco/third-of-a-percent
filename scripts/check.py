@@ -46,18 +46,21 @@
    ratios and intervals from the raw samples and recomputes forwardt/results.json from forwardt/runs.json (the only input, plan
    "Runs: Accounting"); the sha256 of forwardt/PLAN.md must equal the one recorded here and in forwardt/analyze.py and be the
    plan_sha256 stored in every forwardt.json and in forwardt/results.json; every forwardt.json under results/ and forwardt/ must lie
-   in a folder the manifest names. Before the planned runs the manifest is empty and nothing is stored, which passes; a missing
-   analysis script, plan or manifest, an unreadable results.json, or a missing results.json while the manifest lists a run fails.
-   Round 7 robustness analyses (each fails if its script or stored file is absent): robustness/seeds_x86.py --verify --model 6973P
+   in a folder the manifest names. The committed manifest lists the recorded runs (two code tests and three measurement runs) and
+   forwardt/results.json is stored; a manifest that lists no run has nothing to verify and passes; a missing analysis script, plan
+   or manifest, an unreadable results.json, or a missing results.json while the manifest lists a run fails.
+   Robustness analyses (each fails if its script or stored file is absent): robustness/seeds_x86.py --verify --model 6973P
    --whole 1 and the same for --model 9V45 (about 2 minutes together; the other models' cells and the 60 whole analyses are
-   recomputed only by the default --verify), robustness/aa_l2.py --verify (under a minute) and robustness/calibration.py --verify
-   (about a minute).
+   recomputed only by the default --verify), robustness/aa_l2.py --verify (under a minute), robustness/calibration.py --verify
+   (about a minute) and robustness/placement_floor.py --verify (the placement-exemption sensitivity, recomputed from the stored
+   pooled files).
    The newer-toolchain column (versions/check.py) and the environment column (environment/check.py) run as their own steps. Every step whose script or stored result is not in the repository FAILS the run (a deleted
    checker or result folder does not make it greener); only the page step can be skipped, and then the exit code is 3.
 4. The page: scripts/check_site.py --quick (site/data/ equals a fresh build, every number on the page is in
    the data, drawers open, no console errors, no horizontal scroll at 390 px, screenshots). It needs the playwright
-   package, Chromium and network access to the font hosts; without the package the step is replaced by
-   scripts/build_site_data.py --check and listed as skipped.
+   package, Chromium and network access to the font hosts; without the package or Chromium the step is replaced by
+   scripts/build_site_data.py --check and listed as skipped, and a line at the start of the run (scripts/check_site.py
+   --preflight, a few seconds) says so before the other steps run.
 Requirements: Python 3, numpy and PyYAML; if either package is missing the run stops at once, says which and prints the
 pip line (pytest is optional).
 Exit code 0 only if every step passed and none was skipped. A run in which every step that ran passed but one was
@@ -78,6 +81,8 @@ import traceback
 PASSED_WITH_SKIPS = "CHECKS PASSED, WITH SKIPPED STEPS"
 EXIT_PASSED_WITH_SKIPS = 3
 REQUIRED_PACKAGES = (("numpy", "numpy"), ("yaml", "pyyaml"))
+PAGE_TOOLS_MISSING = "playwright or its Chromium is missing"
+PAGE_TOOLS_HINT = "pip install playwright, then playwright install chromium; on Linux add --with-deps"
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "harness"))
@@ -603,16 +608,17 @@ def check_forwardt_named(files, manifest=FORWARDT_MANIFEST):
         print(f"   FAIL {pr}")
     if not problems:
         print(f"   ok   all {len(files)} stored forwardt.json file(s) lie in a folder {manifest} names"
-              + ("" if files else " (none is stored: no run exists yet)"))
+              + ("" if files else " (no forwardt.json is stored)"))
     return not problems
 
 
 def check_forwardt():
     """The forwardt step of main(): forwardt/analyze.py --verify (every stored forwardt.json validated and its ratios recomputed
     from the raw samples, forwardt/results.json recomputed from forwardt/runs.json and compared), the plan hash, and that every
-    stored forwardt.json is in a folder the manifest names. Before the planned runs the manifest is empty and nothing is stored,
-    which passes; a missing analysis script, plan or manifest, an unreadable results.json, or a results.json missing while the
-    manifest lists a run, fails."""
+    stored forwardt.json is in a folder the manifest names. The committed manifest lists the recorded runs and results.json is
+    stored; a manifest that lists no run has nothing to verify and passes (the tests run that case on a scratch tree); a missing
+    analysis script, plan or manifest, an unreadable results.json, or a results.json missing while the manifest lists a run,
+    fails."""
     import subprocess
     analyze = os.path.join(REPO, *FORWARDT_ANALYSIS.split("/"))
     if not os.path.exists(analyze):
@@ -795,6 +801,26 @@ def missing_packages():
     return missing
 
 
+def page_tools_preflight():
+    """Say at the start of the run, not after an hour of other steps, that the page step at the end cannot drive the page.
+
+    Runs `scripts/check_site.py --preflight` (playwright imports and Chromium opens an empty page: a few seconds). Exit 2 means the
+    package or the browser is missing; the run then ends with exit 3 (CHECKS PASSED, WITH SKIPPED STEPS) if everything else passes.
+    Nothing fails here: the page step at the end is unchanged.
+    """
+    import subprocess
+    script = os.path.join(REPO, "scripts", "check_site.py")
+    if not (os.path.isdir(os.path.join(REPO, "site")) and os.path.exists(script)):
+        return  # the page step is skipped for another reason, which it names
+    sys.stdout.flush()
+    rc = subprocess.call([sys.executable, script, "--preflight"])
+    if rc == 2:
+        print(f"the page check at the end will be skipped: {PAGE_TOOLS_MISSING} ({PAGE_TOOLS_HINT}); the run will end with exit {EXIT_PASSED_WITH_SKIPS}")
+    elif rc != 0:
+        print(f"the page preflight exited {rc} (see above); the page check at the end may fail the run")
+    sys.stdout.flush()
+
+
 def finish(ok, skipped):
     """The last line and the exit code: 1 if any step failed, 3 if every step that ran passed but some were skipped, else 0."""
     if not ok:
@@ -815,6 +841,7 @@ def main():
         print(f"MISSING PYTHON PACKAGES: {', '.join(missing)}. Install them with: pip install {' '.join(missing)}")
         print("CHECKS FAILED")
         return 1
+    page_tools_preflight()
     skipped = []
     ok = run_tests()
     print("== results files (schema 1, recomputed intervals, criteria hash, recomputed verdict)")
@@ -919,6 +946,14 @@ def main():
         ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "calibration.py"), "--verify"]) == 0
     else:
         ok &= missing_step("robustness/calibration.py and robustness/calibration.json")
+    print("== placement-exemption sensitivity (robustness/placement_floor.py --verify: robustness/placement-floor.json and the generated block of "
+          "robustness/README-placement-floor.md recomputed from the stored pooled files, with the stored rule reproducing every stored verdict; "
+          "fails if absent)")
+    if os.path.exists(os.path.join(REPO, "robustness", "placement_floor.py")) and os.path.exists(os.path.join(REPO, "robustness", "placement-floor.json")):
+        sys.stdout.flush()
+        ok &= subprocess.call([sys.executable, os.path.join(REPO, "robustness", "placement_floor.py"), "--verify"]) == 0
+    else:
+        ok &= missing_step("robustness/placement_floor.py and robustness/placement-floor.json")
     print("== replication (replication/compare.py --verify: replication/results.json recomputed from the six pooled files; fails if absent)")
     if os.path.exists(os.path.join(REPO, "replication", "compare.py")) and os.path.exists(os.path.join(REPO, "replication", "results.json")):
         sys.stdout.flush()
@@ -929,8 +964,8 @@ def main():
           "the pooled files re-pooled and compared, input paths aside; none is stored until the sweep has run)")
     ok &= check_dsweep()
     print("== forward loops with a variable bound (forwardt/analyze.py --verify: every stored forwardt.json validated and its numbers recomputed, "
-          "forwardt/results.json recomputed from forwardt/runs.json; the plan hash; every stored file in a folder the manifest names; an empty "
-          "manifest and nothing stored is the state before the planned runs and passes)")
+          "forwardt/results.json recomputed from forwardt/runs.json; the plan hash; every stored file in a folder the manifest names; a "
+          "manifest that lists no run has nothing to verify and passes)")
     ok &= check_forwardt()
     print("== PGO column (pgo/check.py: plan, build script, pooled file recomputed from the raw samples, report, tests)")
     if os.path.exists(os.path.join(REPO, "pgo", "check.py")):
@@ -962,8 +997,8 @@ def main():
         sys.stdout.flush()
         rc = subprocess.call([sys.executable, os.path.join(REPO, "scripts", "check_site.py"), "--quick"])
         if rc == 2:
-            print("   skipped: the playwright package is missing, so the page was not driven")
-            skipped.append("the page was not driven (playwright is missing; pip install playwright, then playwright install chromium)")
+            print(f"   skipped: {PAGE_TOOLS_MISSING}, so the page was not driven")
+            skipped.append(f"the page was not driven ({PAGE_TOOLS_MISSING}; {PAGE_TOOLS_HINT})")
             rc = subprocess.call([sys.executable, os.path.join(REPO, "scripts", "build_site_data.py"), "--check"])
         ok &= rc == 0
     else:

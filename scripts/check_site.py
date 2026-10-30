@@ -80,12 +80,14 @@ push the bottom of the hero race to about 921 px in a 900 px window. So a run th
 and nothing else (the last line says so); the full result, and the page lengths, are the run with the fonts online (the same as the CI runner).
 """
 import argparse
+import datetime
 import functools
 import glob
 import http.server
 import hashlib
 import html
 import json
+import math
 import os
 import re
 import struct
@@ -330,7 +332,7 @@ def left_out_above(c, pooled):
 
 
 def robustness_raw():
-    """The three round-7 analyses as stored (robustness/): the expected run-to-run counts, the x86-64 pool under other bootstrap seeds and
+    """The three robustness analyses as stored (robustness/): the expected run-to-run counts, the x86-64 pool under other bootstrap seeds and
     the identical-binary A/A at the L2 size. Read from the files, not from site/data/index.json, so the page is compared with the source."""
     out = []
     for name in ("calibration", "seed-sensitivity-x86", "aa-l2"):
@@ -1844,7 +1846,7 @@ def wording_checks(browser, base, ck, index):
           and "In every loop tried" not in why,
           "Figure 2, reverse loop: the count rule names its 29-loop set (and no longer says every loop tried)")
     note = page.text_content(".mech-note").replace(" ", " ")
-    ck.ok("In the reverse and stride-2 loops the check is an exit clang cannot count (observed" in note and "in the forward loops it can" in note
+    ck.ok("In the reverse and stride-2 loops the check is an exit clang cannot count (observed" in note and "in the forward loops bounded by size() it can" in note
           and "Matrix multiply is rejected on cost" in note and "inferred" in note,
           "section 2, the demo's note: the uncounted exit is scoped to the reverse and stride-2 loops; the forward loops and matrix multiply are named as different")
     # the newer-toolchain tables: the clang 18 column comes from the original pool the rules named
@@ -1873,10 +1875,47 @@ def wording_checks(browser, base, ck, index):
     # the Reproduce text says what the command does
     box = page.text_content("#repro-box").replace(" ", " ")
     sec = page.text_content("#reproduce").replace(" ", " ")
-    ck.ok("Check every number" in page.text_content("#repro-btn") and "clone of the repository" in box and "Python 3 and numpy" in box and "about an hour" in box
-          and "does not measure anything new" in box and "Playwright" in box
-          and "clone of the repository" in sec and "Python 3 and numpy" in sec and "about an hour" in sec and "it measures nothing new" in sec,
-          "the Reproduce button and section 11 say the command re-checks the stored results, in a clone, with Python 3 and numpy, in about an hour, and measures nothing new")
+    need_both = ("clone of the repository", "Python 3, numpy and PyYAML", "one to two hours", "GitHub’s runners", "recomputed from the raw samples")
+    ck.ok("Check every number" in page.text_content("#repro-btn") and all(w in box and w in sec for w in need_both)
+          and "does not measure anything new" in box and "Playwright and its Chromium" in box and "it measures nothing new" in sec
+          and "about an hour" not in box + sec and "laptop" not in page.text_content("#repro-box .repro-note") and "on a laptop, run this" not in sec,
+          "the Reproduce button and section 11 say the command re-checks the stored results, in a clone, with Python 3, numpy and PyYAML (Playwright and its Chromium for the page check), "
+          "in one to two hours on GitHub's runners, and measures nothing new")
+    # the measure command targets the reader's own fork, as the README's does, and the sentence above it says how to get one
+    repo_path = index["repo"]["base"].split("github.com/")[1]
+    ck.ok(page.text_content("#cmd-measure").strip() == index["repo"]["measure_command"] == f"gh workflow run measure.yml -R <you>/{repo_path.split('/')[-1]}"
+          and f"gh repo fork {repo_path} --clone" in sec and "replace <you> with your GitHub user name" in sec and "checkout or fork" not in sec,
+          "section 11: the measure command carries -R <you>/<repository>, and the sentence above it names the fork command and what to replace <you> with")
+    # the typed 'one to two hours' covers the check step of the three recorded CI runs, by the rule tests/test_readme_numbers.py applies to the README
+    with open(os.path.join(REPO, "tests", "data", "ci_check_step.json"), encoding="utf-8") as f_:
+        ci_runs = json.load(f_)["runs"]
+    ci_min = [(datetime.datetime.fromisoformat(r["completed_at"].replace("Z", "+00:00")) - datetime.datetime.fromisoformat(r["started_at"].replace("Z", "+00:00"))).total_seconds() / 60 for r in ci_runs]
+    ck.ok(len(ci_min) == 3 and round(min(ci_min) / 30) == 2 and math.ceil(max(ci_min) / 30) == 4,
+          f"the page's 'one to two hours' is what the three recorded CI check steps round to ({min(ci_min):.0f} to {max(ci_min):.0f} minutes: the shortest to the nearest half hour is one hour, the longest up to the next half hour is two hours)")
+    # the headline range joins two columns; the small print names each column's own range, from the data (the first screen, the abstract and the share card keep the one range)
+    pg_ = index["page"]
+    want_pair = (f"as compiled {pg_['lost_compiled']['min']:.1f} to {pg_['lost_compiled']['max']:.1f}, "
+                 f"aligned {pg_['lost_aligned']['min']:.1f} to {pg_['lost_aligned']['max']:.1f}")
+    pair_where = page.evaluate("""() => [...document.querySelectorAll('[data-v="lostCompMin"], [data-v="lostCompMax"], [data-v="lostAlnMin"], [data-v="lostAlnMax"]')]
+        .filter(e => !e.closest('noscript')).map(e => (e.closest('section') || {}).id)""")
+    ck.ok(want_pair in " ".join(page.text_content("#result p:has([data-v=lostAlnMax])").split()) and pair_where == ["result"] * 4
+          and want_pair in " ".join(dp.text_content("li:has([data-v=lostAlnMax])").split())
+          and dp.locator("[data-v=lostAlnMax]").count() == 1,
+          f"section 1 and the details list name the two columns' own ranges ({want_pair}) from index.json page.lost_compiled and page.lost_aligned, and nowhere else on the main page")
+    # the earlier small programs: jobs whose kernel A/A is above the S3 limit are counted on the page, not dropped without a word; the
+    # noise floors printed beside the bounds are each program's own control, which the page says is separate and can be higher
+    prg = index["programs"]
+    n_ex, n_tot = len(prg["excluded"]), prg["jobs_total"]
+    want_left = (f"{n_ex} of {n_tot}" if n_ex else "no") + (" jobs is" if n_ex == 1 else " jobs are") + f" left out because their kernel A/A was above {prg['aa_max_pct']:.0f}%"
+    cap8 = " ".join(dp.text_content("#prog-cap").split())
+    sum8 = " ".join(dp.text_content("#prog-sum").split())
+    want_gate = f"over the {len(prg['rows'])} of {n_tot} jobs whose kernel A/A (the forward add timed against an identical copy of itself, in the same job) was at most {prg['aa_max_pct']:.0f}%"
+    want_floor = f"The noise floors beside the bounds are a separate control, each program’s own build timed against an identical copy of itself, and run up to {prg['aa_pct']['max']:.1f}%."
+    ck.ok(n_ex > 0 and len(prg["rows"]) + n_ex == n_tot and want_left in cap8 and "fmt only" in cap8
+          and "within the A/A limit" in dp.text_content("#programs-full h2") and "within the A/A limit" in cap8
+          and want_gate in sum8 and want_floor in sum8 and "own A/A was above" not in cap8 + sum8,
+          f"details 7b: the heading and Table 8's note say 'within the A/A limit', the note counts the jobs left out ('{want_left}') from index.json programs.excluded and jobs_total, "
+          f"names the control that gates them (the job's kernel A/A) and says the noise floors beside the bounds are a separate control that can be higher")
     page.close()
     dp.close()
 
@@ -2415,7 +2454,7 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     mtext = norm(mp.evaluate("document.body.textContent"))
     ck.ok("No arm64" not in dtext + mtext and "not timed on Arm" not in dtext + mtext and "Baseline x86-64, plus one Arm column." in dtext
           and f"Section 6d: the {arm['jobs']} jobs of the {len(arm['runs'])} Arm runs" in dtext and "(ud2 on x86-64, brk #0x1 on Arm)" in dtext
-          and "Among the x86-64 models, the forward loops are near 1× on the AMD models only" in dtext and "on the baseline x86-64 of the main timing" in dtext,
+          and "Among the x86-64 models, the forward loops bounded by size() are near 1× on the AMD models only" in dtext and "on the baseline x86-64 of the main timing" in dtext,
           "details: the stale 'No arm64' limit is replaced, the jobs sentence lists the Arm pool, the trap instruction is named per architecture, the AMD-only sentence is scoped to the x86-64 models")
     mp.evaluate("document.querySelectorAll('details.fold').forEach(d => { d.open = true; })")  # the limits box is folded by default
     cb = mp.evaluate("[...document.querySelectorAll('#cannot li')].map(l => l.innerText.replace(/\\s+/g, ' '))")
@@ -2429,7 +2468,7 @@ def arm_checks(browser, base, ck, index, allowed, saved, shots):
     # the clause on the two placement-sensitive loops and the fixed instruction count per call, the cell's name beside the widest L2 interval and the
     # seed count are gone from this paragraph (6a and section 6d carry them); the A/A floor stays tied to the forward add, the L2 widths stay, and the verdict stays 'inconclusive'.
     ck.ok(len(sentences) == 2 and "neither confirms nor contradicts the 0.30% average" in sentences[0]
-          and sentences[0].startswith(f"On {arm['cpu_short']} the three forward loops cost {lr_(f1['min'])}× to {lr_(f1['max'])}× at L1, as compiled, against an A/A floor of ±{pct_s(arm['aa']['half_width_pct'])} (forward add only)")
+          and sentences[0].startswith(f"On {arm['cpu_short']} the three forward loops bounded by size() cost {lr_(f1['min'])}× to {lr_(f1['max'])}× at L1, as compiled, against an A/A floor of ±{pct_s(arm['aa']['half_width_pct'])} (forward add only)")
           and f"At L2 the widest forward interval (±{pct_s(wid['aligned']['half_width_pct'])}) and an identical binary against itself (±{pct_s(aa_l2['half_width_pct'])}) are too wide to resolve 0.30%" in sentences[1]
           and "the pooled verdict is inconclusive, on a margin most other seeds reverse (section 6a)" in sentences[1]
           and DC_["alt_draws"] - DC_["alt_at_or_above_limit"] > DC_["alt_draws"] / 2,
@@ -3876,7 +3915,7 @@ def placement_scope_checks(browser, base, ck, index):
 
 
 def robustness_wording_checks(browser, base, ck, index):
-    """Three round-7 analyses beside the words they qualify: the count calibrated intervals would give beside each run-to-run count,
+    """The three robustness analyses beside the words they qualify: the count calibrated intervals would give beside each run-to-run count,
     the thin-coverage sentence, and the L1 / L2 labels of the A/A band. Every figure is recomputed from the stored files in
     robustness/ and results/ (not from site/data/index.json). The clause on the margin that other seeds do not keep is pinned in
     placement_scope_checks (details) and in the Figure 1 loop (the note beside the switcher)."""
@@ -4469,6 +4508,14 @@ def pinned_text_checks(browser, base, ck, index):
     want_cite = f"Google's {index['claim']['google_pct']:.2f}\\% average}}"
     ck.ok(want_cite in cite and not re.search(r"(?<!\\)%", cite) and cite.count("{") == cite.count("}"),
           f"the BibTeX text escapes the percent sign and prints the data's figure ({want_cite!r})")
+    # the BibTeX author is the CITATION.cff author in BibTeX's "Family, Given" form (the text GitHub's cite box builds from that file)
+    with open(os.path.join(REPO, "CITATION.cff"), encoding="utf-8") as f:
+        cff = f.read()
+    fam, giv = (re.search(rf'^\s*-?\s*{key}:\s*"([^"]+)"\s*$', cff, re.M) for key in ("family-names", "given-names"))
+    bib_author = re.search(r"^\s*author\s*=\s*\{([^}]*)\},?\s*$", cite, re.M)
+    ck.ok(bool(fam and giv and bib_author) and bib_author.group(1) == f"{fam.group(1)}, {giv.group(1)}",
+          f"the BibTeX author ({bib_author.group(1) if bib_author else None!r}) is the CITATION.cff author, family name first "
+          f"({(fam.group(1) + ', ' + giv.group(1)) if fam and giv else None!r})")
     # the matrix-multiply account on the details page types the compiler's own cost numbers; they come from the saved compiler logs
     mmd = os.path.join(REPO, "investigate", "vectorizer", "matmul")
     with open(os.path.join(mmd, "derived", "tables.md"), encoding="utf-8") as f:
@@ -4536,7 +4583,7 @@ def pinned_text_checks(browser, base, ck, index):
           + ("" if not any(extra.values()) else f" (other hosts: {extra})"))
 
 
-BAKED_NAMES = ["googlePct", "clang", "lostMin", "lostMax", "avx2Short", "intelRange", "c2Lost", "c2Vec", "fixMin", "fixMax", "rwSlowMin", "rwSlowMax",
+BAKED_NAMES = ["googlePct", "clang", "lostMin", "lostMax", "lostCompMin", "lostCompMax", "lostAlnMin", "lostAlnMax", "avx2Short", "intelRange", "c2Lost", "c2Vec", "fixMin", "fixMax", "rwSlowMin", "rwSlowMax",
                "jobsPerRun", "nRuns", "minJobs", "nJobs", "beLo", "beHi"]
 # the one baked span that stays empty on purpose: the main page's headline line sits in the hero block, which is changed in its own files
 BAKED_EMPTY_OK = {("intelRange", "headline")}
@@ -4697,7 +4744,169 @@ def ux_checks(browser, base, ck, index):
     dialog_checks(browser, base, ck, index)
 
 
-FOCUSED = {"provenance": provenance_checks, "claims": claims_scope_checks, "pages": pages_workflow_checks, "access": access_checks, "placement": placement_scope_checks, "robustness": robustness_wording_checks, "ux": ux_checks, "stability": layout_stability_checks, "text": pinned_text_checks, "refs": ref_link_checks, "live": live_region_checks, "print": print_checks}  # check groups that take (browser, base, ck, index) and can run alone with --only
+def forwardt_checks(browser, base, ck, index):
+    """Forward loops whose bound is a variable, timed (data/forwardt.json): the figure in section 4 shows the six loops per CPU model
+    with the numbers of the data file, states P2 as failed beside the lost sum, puts the census count beside the cost, labels the
+    model with too few jobs as not read, and fits a phone; the details section lists every cell, the plan's letter and the four
+    variable-bound loops."""
+    print("== forwardt: the figure, the details section, the scoped sentences")
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "site", "data", "forwardt.json"), encoding="utf-8") as fh:
+        D = json.load(fh)
+
+    def ftx(v):
+        return f"{v:.1f}×" if v >= 2 else f"{v:.2f}×"
+
+    def want(l, size):
+        c = l["cells"][size]
+        a = c["aligned"] if c and c["decidable"] else None
+        if not a:
+            return "not decidable"
+        if l["id"] not in ("t01_sum_size", "t02_sum_n") and l["word"] == "lost" and a["ci95"][0] >= 1.5:
+            return "at or above 1.5×"
+        return ftx(a["ratio"])
+
+    models = {m["slug"]: m for m in D["models"]}
+    unread = [m for m in D["models"] if not m["read"]]
+    for vw, label in (({"width": 1440, "height": 900}, "desktop"), ({"width": 390, "height": 844}, "phone")):
+        pg = browser.new_page_plain(viewport=vw)
+        pg.goto(base, wait_until="networkidle")
+        wait_ready(pg)
+        pg.locator("[aria-controls='sb-census']").first.click()
+        pg.wait_for_function("document.querySelectorAll('#ft-rows .ft-row').length === 6", timeout=15000)
+        first = D["models"][0]
+        got1 = pg.eval_on_selector_all("#ft-rows .ft-val", "e => e.map(x => x.textContent)")
+        pg.select_option("#ft-cpu", "neoverse-n2")
+        pg.click("#ft-size-seg button[data-size=L2]")
+        got2 = pg.eval_on_selector_all("#ft-rows .ft-val", "e => e.map(x => x.textContent)")
+        read2 = pg.inner_text("#ft-read")
+        if unread:
+            pg.select_option("#ft-cpu", unread[0]["slug"])
+        unread_txt = pg.inner_text("#ft-rows")
+        opt = pg.eval_on_selector_all("#ft-cpu option", "e => e.map(x => x.textContent)")
+        cap = pg.inner_text("#ft-cap")
+        fits = pg.evaluate("(() => { const r = document.getElementById('fig-ft').getBoundingClientRect(); return [Math.round(r.right), document.documentElement.scrollWidth, innerWidth]; })()")
+        pg.close()
+        ck.ok(got1 == [want(l, "L1") for l in first["loops"]] and got2 == [want(l, "L2") for l in models["neoverse-n2"]["loops"]]
+              and "not decidable" in got2 and "not decidable" in read2 and "One run." in read2,
+              f"forwardt figure ({label}): the six rows show the data file's aligned ratio per model and size ({got1}), the Neoverse-N2 L2 rows say not decidable ({got2})")
+        ck.ok(bool(unread) and f"{unread[0]['cpu_short']} (not read, {unread[0]['jobs']} jobs)" in opt and "not read" in unread_txt
+              and all(f"{m['cpu_short']} ({m['jobs']} jobs)" in opt for m in D["models"] if m["read"]),
+              f"forwardt figure ({label}): the model with too few jobs is labelled not read with its job count ({opt})")
+        arm_read = next((m for m in D["models"] if m["read"] and m["target"] != "x86-64"), None)
+        ck.ok(f"{D['census']['lost_loops']} lost loops" in cap and f"{D['census']['source_locations']} source locations" in cap
+              and "that prediction failed there" in cap and "text pattern" in cap and "run frequency unknown" in cap
+              and "below the 2.8–8.0×" in cap.replace("−", "–") and "at or above" not in cap
+              and arm_read is not None and f"no band was set for it (one run, {arm_read['jobs']} jobs)" in cap
+              and not any("Neoverse-N2" in sent and "failed" in sent for sent in re.split(r"(?<=\.)\s+", cap)),
+              f"forwardt figure ({label}): the caption states P2 as failed on the AMD models only, says no band was set for Neoverse-N2, beside the census count with its unit and method")
+        ck.ok(fits[0] <= vw["width"] and fits[1] <= fits[2],
+              f"forwardt figure ({label}): fits the screen with no sideways scroll ({fits})")
+    dp = browser.new_page_plain(viewport={"width": 1200, "height": 900})
+    dp.goto(base.rsplit("/", 1)[0] + "/details.html", wait_until="networkidle")
+    wait_details(dp)
+    dp.wait_for_function("document.querySelectorAll('#ft-table tbody tr').length > 0 && document.querySelectorAll('#ft-listing tbody tr').length > 0", timeout=15000)
+    nrows = dp.locator("#ft-table tbody tr").count()
+    nlist = dp.locator("#ft-listing tbody tr").count()
+    letter = dp.inner_text("#ft-letter")
+    listing = dp.inner_text("#ft-listing")
+    preds = dp.inner_text("#ft-preds")
+    limits = dp.inner_text("#ft-limits")
+    dp.close()
+    ck.ok(nrows == sum(len(m["loops"]) if m["read"] else 1 for m in D["models"]) and nlist == len(D["forward_listing"])
+          and D["outcome"]["text"].replace("`", "") in letter.replace("\n", " ") and all(k in preds for k in ("P0", "P1", "P2", "P2n", "P3", "P4", "P5", "P6"))
+          and all(i in listing for i in ("t02_sum_n", "t04_scale_n", "t05_fill_n", "t06_offset")) and "Not tested: Intel" in limits,
+          f"forwardt details: every loop of every model read ({nrows} rows), the plan's letter verbatim, P0 to P6, the four variable-bound loops listed ({nlist} rows), the limits")
+    # Each prediction's list names the cells that miss it and the cells nobody could decide, from the stored items (not from the
+    # summary words), so a reader sees the failing cell and its interval; a model whose cells at one size cannot be decided says
+    # which size its result rests on.
+    def fr(v):
+        return f"{v:.3f}×" if v < 2 else f"{v:.2f}×"
+    ptxt = " ".join(preds.split())
+    miss, nd_want, nd_keys = [], [], set()
+    for m in D["models"]:
+        if not m["read"]:
+            continue
+        for k, p in m["predictions"].items():
+            for it in p["items"]:
+                for col, c in it["columns"].items():
+                    if c["state"] != "inside":
+                        word = "straddling" if c["state"] == "straddle" else c["state"]
+                        miss.append(f"{m['cpu_short']}, {it['loop']}, {it['size']}, {col}: {fr(c['ratio'])} ({fr(c['ci95'][0])} to {fr(c['ci95'][1])}), {word} ")
+            cells = sorted({(n["loop"], n["size"]) for n in p["not_decidable"]})
+            if cells:
+                nd_keys.add(k)
+                sizes = {it["size"] for it in p["items"]}
+                rests = f"the {next(iter(sizes))} cells" if len(sizes) == 1 else "the cells that could be decided"
+                nd_want += [f"{m['cpu_short']}: {cells[0][0]} {cells[0][1]} (A/A ±"] + [f"{lp} {sz} (A/A ±" for lp, sz in cells[1:]]
+                nd_want.append(f"; its result here rests on {rests}")
+    shown = re.findall(r"\(\S+× to \S+×\), (?:above|below|straddling) ", ptxt)
+    ck.ok(bool(miss) and all(x in ptxt for x in miss) and len(shown) == len(miss)
+          and nd_keys and ptxt.count("Not decidable.") == len(nd_keys) and all(x in ptxt for x in nd_want),
+          f"forwardt details: each prediction lists the cells that miss it with their interval ({len(miss)} cells) and the cells that cannot be decided ({len(nd_keys)} predictions), from the stored items")
+    # Letter D: a sentence that gives a ratio for forward loops names the loops it covers. Both pages, every section open, every
+    # sentence that says "forward" and prints a ratio must name the bound (size(), a variable) or a named loop; a quoted rule of the
+    # day-one test and the placement ratio (compiled ÷ aligned) are not claims about cost.
+    ratio_re = re.compile(r"\d(?:\.\d+)?\s*×|(?:near|about) 1×")
+    scope_re = re.compile(r"size\(\)|variable|bounded|\bn\b|t0[1-6]_|k0[1-3]_|forward add|forward sum|forward stencil|stencil", re.I)
+    exempt_re = re.compile(r"day-one|placement-sensitive", re.I)
+    block_js = """() => [...document.querySelectorAll('.body p, .body li, .body figcaption, .body .tcap, .body .gist, .body blockquote, .body .tnote, .body .ns')]
+        .filter(e => !e.querySelector('p, li, figcaption')).map(e => (e.innerText || '').replace(/\\s+/g, ' ').trim()).filter(Boolean)"""
+    flat = {}
+    for name, url in (("main page", base), ("details page", base.rsplit("/", 1)[0] + "/details.html")):
+        sp = browser.new_page(viewport={"width": 1280, "height": 900})
+        sp.goto(url, wait_until="networkidle")
+        if name == "main page":
+            wait_ready(sp)
+            sp.wait_for_function("document.querySelectorAll('#ft-rows .ft-row').length === 6", timeout=15000)
+        else:
+            wait_details(sp)
+            sp.wait_for_function("document.querySelectorAll('#ft-preds li').length > 0", timeout=15000)
+        sp.evaluate("document.querySelectorAll('details').forEach(d => { d.open = true; })")
+        sp.wait_for_timeout(300)
+        texts = sp.evaluate(block_js)
+        sp.close()
+        flat[name] = [s for t in texts for s in re.split(r"(?<=[.;:])\s+(?=[A-Z“(])", t)
+                      if re.search(r"\bforward\b", s, re.I) and ratio_re.search(s) and not scope_re.search(s) and not exempt_re.search(s)]
+        ck.ok(not flat[name], f"forwardt scope ({name}): every sentence that prints a ratio for forward loops names the loops it covers ({len(texts)} blocks read; unscoped: {flat[name][:2]})")
+
+
+FOCUSED = {"forwardt": forwardt_checks, "provenance": provenance_checks,"claims": claims_scope_checks, "pages": pages_workflow_checks, "access": access_checks, "placement": placement_scope_checks, "robustness": robustness_wording_checks, "ux": ux_checks, "stability": layout_stability_checks, "text": pinned_text_checks, "refs": ref_link_checks, "live": live_region_checks, "print": print_checks}  # check groups that take (browser, base, ck, index) and can run alone with --only
+
+
+PACKAGE_MISSING = "the Python playwright package is not installed (pip install playwright; playwright install chromium)"
+CHROMIUM_MISSING = "the Chromium browser for playwright is not installed (playwright install chromium; on Linux add --with-deps)"
+BROWSER_ARGS = ["--mute-audio", "--disable-speech-api", "--autoplay-policy=user-gesture-required"]
+
+
+def launch_chromium(p):
+    """Chromium, or None after printing the FAIL line when the browser itself is not installed. Any other launch error is raised as it is."""
+    from playwright.sync_api import Error as PlaywrightError
+    try:
+        return p.chromium.launch(args=BROWSER_ARGS)
+    except PlaywrightError as e:
+        if "Executable doesn't exist" not in str(e):
+            raise
+        print(f"   FAIL {CHROMIUM_MISSING}")
+        return None
+
+
+def preflight():
+    """--preflight: exit 0 when playwright imports and Chromium opens an empty page, 2 when the package or the browser is missing. Checks nothing else."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print(f"   FAIL {PACKAGE_MISSING}")
+        return 2
+    with sync_playwright() as p:
+        browser = launch_chromium(p)
+        if browser is None:
+            return 2
+        try:
+            browser.new_page().close()
+        finally:
+            browser.close()
+    print("== preflight: playwright imports and Chromium opens a page")
+    return 0
 
 
 def main():
@@ -4706,12 +4915,15 @@ def main():
     except Exception:
         pass
     ap = argparse.ArgumentParser()
+    ap.add_argument("--preflight", action="store_true", help="only check that playwright and its Chromium are installed (exit 0, or 2 when one is missing); nothing is checked or driven")
     ap.add_argument("--shots", default=None, help="folder for the screenshots (default: a temporary folder)")
     ap.add_argument("--quick", action="store_true", help="select every row on the default CPU model only")
     ap.add_argument("--arm-only", action="store_true", help="run only the Arm column's checks (to iterate on section 6a and 6d; the full run is the one that counts)")
     ap.add_argument("--only", action="append", default=[], choices=sorted(FOCUSED),
                     help="run only the named focused check group(s) (to iterate; the full run is the one that counts)")
     a = ap.parse_args()
+    if a.preflight:
+        return preflight()
     ck = Checker()
     print("== site data equals a fresh build")
     r = subprocess.run([sys.executable, os.path.join(REPO, "scripts", "build_site_data.py"), "--check"],
@@ -4720,7 +4932,7 @@ def main():
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("   FAIL the Python playwright package is not installed (pip install playwright; playwright install chromium)")
+        print(f"   FAIL {PACKAGE_MISSING}")
         return 2
     shots = a.shots or tempfile.mkdtemp(prefix="third-site-")
     os.makedirs(shots, exist_ok=True)
@@ -4735,7 +4947,9 @@ def main():
     saved = []
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(args=["--mute-audio", "--disable-speech-api", "--autoplay-policy=user-gesture-required"])
+            browser = launch_chromium(p)
+            if browser is None:
+                return 2
             mode = os.environ.get("SITE_CHECK_FONTS", "auto").lower()
             if mode not in ("auto", "online", "offline"):
                 print(f"   FAIL SITE_CHECK_FONTS must be auto, online or offline, not {mode!r}")
@@ -4801,7 +5015,7 @@ def main():
                 ab_nums = re.findall(r"\d[\d,]*(?:\.\d+)?", re.sub(r"\d+\.\d+\.\d+|-O\d|\b1×|AVX2", "", abstract.replace(page.inner_text(".abstract a"), "")))
                 lis = page.evaluate("[...document.querySelectorAll('.abstract ul.findings li')].map(l => [l.innerText, l.firstElementChild && l.firstElementChild.tagName, l.innerText.indexOf(l.firstElementChild.innerText)])")
                 ck.ok(len(ab_nums) <= 15 and len(lis) == 4 and all(t == "B" and i == 0 for _, t, i in lis)
-                      and "forward loops that keep SIMD stay near 1" in abstract
+                      and "forward loops bounded by size() that keep SIMD stay near 1" in abstract
                       and "forward loops pay" not in abstract and "-O3" in abstract and "-O2" in abstract,
                       f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 15 numbers (the real-programs range and the two newer-toolchain versions add four, the as-compiled forward add one) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
                 fixr = [v["range"] for sh in mit["shapes"] if sh["kernel"] in ("m04_rev", "m08_matmul")
@@ -5038,7 +5252,7 @@ def main():
                 cf, cc = page.inner_text("#ce-find"), page.inner_text("#fig-ce-cap")
                 sm = ce["summary"]
                 ck.ok(f"all {sm['clang_rows']} clang rows lose the reverse and stride-2 loops" in cf and sm["clang_rev_s2_lost"] == sm["clang_rows"]
-                      and "none loses a forward loop" in cf and sm["clang_fwd_lost"] == 0
+                      and "none loses a forward loop bounded by size()" in cf and sm["clang_fwd_lost"] == 0
                       and "lost on clang 16 to 18 at baseline x86-64 only, kept on 19 to 22 everywhere, lost everywhere on 23 and trunk" in cf
                       and "No loop is lost on AArch64 only" in cf and "GCC loses nothing at -O2" in cf and sm["gcc_o2_lost"] == 0
                       and f"forward add in {sm['gcc_o3_lost']['k02_add_fwd']} of {sm['gcc_o3_rows']} rows" in cf
@@ -5268,7 +5482,7 @@ def main():
                 ab_nums = re.findall(r"\d[\d,]*(?:\.\d+)?", re.sub(r"\d+\.\d+\.\d+|-O\d|\b1×|AVX2", "", abstract.replace(page.inner_text(".abstract a"), "")))
                 lis = page.evaluate("[...document.querySelectorAll('.abstract ul.findings li')].map(l => [l.innerText, l.firstElementChild && l.firstElementChild.tagName, l.innerText.indexOf(l.firstElementChild.innerText)])")
                 ck.ok(len(ab_nums) <= 15 and len(lis) == 4 and all(t == "B" and i == 0 for _, t, i in lis)
-                      and "forward loops that keep SIMD stay near 1" in abstract
+                      and "forward loops bounded by size() that keep SIMD stay near 1" in abstract
                       and "forward loops pay" not in abstract and "-O3" in abstract and "-O2" in abstract,
                       f"abstract: four bullet lines, each led by its bold headline, Google's figure plus at most 15 numbers (the real-programs range and the two newer-toolchain versions add four, the as-compiled forward add one) ({len(ab_nums)}: {ab_nums}), 'forward loops that keep SIMD', GCC as -O3 vectorization and -O2 cost")
                 fixr = [v["range"] for sh in mit["shapes"] if sh["kernel"] in ("m04_rev", "m08_matmul")
@@ -5481,7 +5695,7 @@ def main():
                 cf, cc = page.inner_text("#ce-find"), page.inner_text("#fig-ce-cap")
                 sm = ce["summary"]
                 ck.ok(f"all {sm['clang_rows']} clang rows lose the reverse and stride-2 loops" in cf and sm["clang_rev_s2_lost"] == sm["clang_rows"]
-                      and "none loses a forward loop" in cf and sm["clang_fwd_lost"] == 0
+                      and "none loses a forward loop bounded by size()" in cf and sm["clang_fwd_lost"] == 0
                       and "lost on clang 16 to 18 at baseline x86-64 only, kept on 19 to 22 everywhere, lost everywhere on 23 and trunk" in cf
                       and "No loop is lost on AArch64 only" in cf and "GCC loses nothing at -O2" in cf and sm["gcc_o2_lost"] == 0
                       and f"forward add in {sm['gcc_o3_lost']['k02_add_fwd']} of {sm['gcc_o3_rows']} rows" in cf
@@ -5743,11 +5957,14 @@ def main():
                       # the box: Google's figure and why the title says it come first, then the numbers from the data, in words a reader follows
                       and f"Google reported that libc++’s bounds checks cost {index['claim']['google_pct']:.2f}% on average over whole services, a third of a percent: the title." in purp
                       and "This study times single loops, a different measurement. The cost depends on the loop." in purp and "neither confirms nor contradicts" not in purp
-                      and f"{lost['min']:.1f}× to {lost['max']:.1f}× as long at the study’s two in-cache sizes, with the bounds check on as with it off, for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction." in purp
+                      and (f"{lost['min']:.1f}× to {lost['max']:.1f}× as long at the study’s two in-cache sizes, with the bounds check on as with it off "
+                           f"(as compiled {index['page']['lost_compiled']['min']:.1f} to {index['page']['lost_compiled']['max']:.1f}, "
+                           f"aligned {index['page']['lost_aligned']['min']:.1f} to {index['page']['lost_aligned']['max']:.1f}), "
+                           "for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction.") in purp
                       and purp.index("Google reported") < purp.index(f"{lost['min']:.1f}×") and "SIMD" not in purp
                       and lost_kernels == ["k04_rev", "k05_stride2", "k08_matmul"]
                       and f"on arrays that fit the processor’s cache ({clang_dp}, -O2):" in purp
-                      and f"About the same, near 1×, for forward loops on the AMD CPU models (one AVX2 exception, {avx_dp}×); {intel_dp}× on Intel (forward add; section 1)." in purp
+                      and f"About the same, near 1×, for forward loops bounded by size() on the AMD CPU models (one AVX2 exception, {avx_dp}×); {intel_dp}× on Intel (forward add; section 1)." in purp
                       and avx_dp == page.text_content('#result .gist span[data-v="avx2Short"]').strip()
                       # one filled start link that says what it does (not the heading below it), four plain jumps with targets, the fold
                       and dgo_txt.startswith("Read the full numbers") and dgo_txt not in res_h2 and res_h2.strip() not in dgo_txt

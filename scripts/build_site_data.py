@@ -46,6 +46,13 @@ Derived, never invented (every number is computed here from the files named, and
                      (ratios and intervals in both columns, the excess in ns per inner call, the extra instructions, the
                      placement flag); for the models below the minimum their job counts. Additive in the same way as
                      replication.json (tests/test_dsweep_results.py builds without it and compares)
+  forwardt.json      the variable-bound loops (forwardt/PLAN.md): forwardt/results.json, which forwardt/analyze.py writes
+                     from the stored per-job files and the run manifest, reduced to what the page prints: per CPU model
+                     (with its job count, or "not read" below the minimum) and per loop the word, the pooled ratio of each
+                     pair with its 95% interval at L1 and L2 and the A/A half-width; the prediction items with their
+                     bands and states; the plan's outcome row and cells; the standing listing of the four variable-bound
+                     loops; the census count read from corpus.json. Additive in the same way as dsweep.json
+                     (tests/test_forwardt_site_data.py builds without it and compares)
 scripts/check_site.py checks that every number printed on the page is in these files.
 """
 import argparse
@@ -119,7 +126,7 @@ CLAIM = {
 REPO_BASE = "https://github.com/JacoboPacheco/third-of-a-percent"
 REPO_INFO = {
     "base": REPO_BASE,
-    "measure_command": "gh workflow run measure.yml",
+    "measure_command": "gh workflow run measure.yml -R <you>/third-of-a-percent",
     "check_command": "python scripts/check.py",
 }
 
@@ -163,7 +170,7 @@ RELATED = {
         {"id": "nist", "m_short": "vector.at(i) 0.881% slower on sequential writes (GCC 4.6.2, a PC with two Xeon X5450 CPUs)", "d_short": "One forward shape; vectorization not analysed", "name": "Flater and Guthrie (NIST), “A Case Study of Performance Degradation Attributable to Run-Time Bounds Checks on C++ Vector Access”, J. Res. NIST 118, 2013", "short": "NIST (2013)",
          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4487316/",
          "measured": "As reported: GCC 4.6.2 on a PC with two Xeon X5450 CPUs (a Dell Precision T5400) under Linux, with Turbo Boost unsupported, frequency scaling left out of the kernel and SpeedStep off, 63 runs per cell; vector.at(i) 0.881% (±0.009) slower than a C array at -O3; sequential write loops only; vectorization not analysed.",
-         "differs": "A dedicated machine with frequency scaling off and a far tighter interval, but one forward shape and an old compiler. Forward loops cost little here too; the shapes that lose SIMD are what it did not test."},
+         "differs": "A dedicated machine with frequency scaling off and a far tighter interval, but one forward shape and an old compiler. Forward loops bounded by size() cost little here too; the shapes that lose SIMD are what it did not test."},
         {"id": "readyset", "m_short": "Every check removed from one Rust program: within the noise", "d_short": "A whole program; no intervals or controls", "name": "Readyset, “How much does Rust’s bounds checking actually cost?”", "short": "Readyset (blog)",
          "url": "https://readyset.io/blog/bounds-checks",
          "measured": "As reported: a rustc patched to drop every bounds check; 1,227 checks per warm read; results well within the noise threshold; no hardware or run count stated.",
@@ -432,24 +439,29 @@ def copy_asm(c, inputs, out_dir):
 
 
 def s3_programs():
-    """Whole-program rows of the S3 runs (S4 runs time no programs): every job usable under criteria-v2."""
+    """Whole-program rows of the S3 runs (S4 runs time no programs): every job usable under criteria-v2. A job whose own identical-binary
+    A/A half-width is above the S3 limit is not a row; it is listed in `excluded` (with what its programs would have said), so the page can
+    say how many jobs the ranges leave out. `jobs_total` counts rows and excluded jobs."""
     aa_max = load(os.path.join(REPO, S3_CRITERIA))["verdict"]["aa_half_width_max_pct"]
-    rows, runs = [], []
+    rows, runs, excluded = [], [], []
     for run in S3_RUNS:
         url = None
         for job_dir in sorted(glob.glob(os.path.join(REPO, "results", run["dir"], "results-*"))):
             doc = load(os.path.join(job_dir, "results.json"))
             url = doc["run"]["workflow_run_url"]
             hw = doc["controls"]["aa"]["half_width_pct"]
-            if hw > aa_max:
-                continue
             progs = {}
             for p in doc.get("programs", []):
                 progs[p["name"].split("_")[0]] = {"ratio": p["ratio"], "ci95": p["ci95"],
                                                   "at_most_pct": p["consistent_with_at_most_pct"],
                                                   "aa_pct": p["aa_half_width_pct"], "traps_fast": p.get("traps_fast")}
-            rows.append({"run_id": run["run_id"], "run_label": run["label"], "job": os.path.basename(job_dir).rsplit("-", 1)[-1],
-                         "cpu_short": cpu_short(doc["run"]["runner"]["cpu_model"]), "programs": progs})
+            who = {"run_id": run["run_id"], "run_label": run["label"], "job": os.path.basename(job_dir).rsplit("-", 1)[-1],
+                   "cpu_short": cpu_short(doc["run"]["runner"]["cpu_model"])}
+            if hw > aa_max:
+                excluded.append({**who, "aa_half_width_pct": hw,
+                                 "programs": {k: {"ratio": q["ratio"], "at_most_pct": q["at_most_pct"]} for k, q in progs.items()}})
+                continue
+            rows.append({**who, "programs": progs})
         runs.append({"run_id": run["run_id"], "label": run["label"], "workflow_run_url": url})
     allp = [p for r in rows for p in r["programs"].values()]
     traps = {}
@@ -458,7 +470,9 @@ def s3_programs():
             traps.setdefault(name, p["traps_fast"])
     return {"criteria": S3_CRITERIA, "aa_max_pct": aa_max, "runs": runs, "rows": rows,
             "at_most_pct": minmax([p["at_most_pct"] for p in allp]), "aa_pct": minmax([p["aa_pct"] for p in allp]),
-            "traps_fast": traps}
+            "traps_fast": traps, "excluded": excluded, "jobs_total": len(rows) + len(excluded),
+            "excluded_aa_pct": minmax([e["aa_half_width_pct"] for e in excluded]),
+            "excluded_at_most_pct": minmax([q["at_most_pct"] for e in excluded for q in e["programs"].values()])}
 
 
 def s1_forward():
@@ -1033,6 +1047,9 @@ def build(out_dir):
         "cpus_few": [{"cpu_short": c["cpu_short"], "jobs": c["jobs"], "form": c["form"]} for c in index["cpus"] if not c["enough"]],
         "judged_cpus": [c["cpu_short"] for c in judged],
         "lost": minmax([v for c in judged for v in (c["lost"]["min"], c["lost"]["max"])]),
+        # the same range per column (the headline pools both): the aligned build and the build as compiled, over the same cells
+        "lost_aligned": minmax([v for c in judged for v in (c["lost_aligned"]["min"], c["lost_aligned"]["max"])]),
+        "lost_compiled": minmax([v for c in judged for v in (c["lost_compiled"]["min"], c["lost_compiled"]["max"])]),
         "lost_instr": minmax([v for c in judged for v in (c["lost_instr"]["min"], c["lost_instr"]["max"])]),
         "forward_cpus": [c["cpu_short"] for c in forward_cpus],
         "forward": forward_range(forward_cpus),
@@ -1064,7 +1081,8 @@ def build(out_dir):
     dump(realworld_data(index["page"]["lost"]["max"]), os.path.join(out_dir, "realworld.json"))
     dump(mitigate_data(), os.path.join(out_dir, "mitigate.json"))
     dump(siblings_data(), os.path.join(out_dir, "siblings.json"))
-    dump(corpus_data(), os.path.join(out_dir, "corpus.json"))
+    corpus = corpus_data()
+    dump(corpus, os.path.join(out_dir, "corpus.json"))
     if os.path.exists(os.path.join(REPO, ARM_POOLED)):  # the Arm column: its own file, read from nothing above except the x86 numbers it sets beside
         dump(arm64_data(index, pooled), os.path.join(out_dir, "arm64.json"))
         index["sections"]["arm64"] = "data/arm64.json"
@@ -1074,6 +1092,9 @@ def build(out_dir):
     if os.path.exists(os.path.join(REPO, DSWEEP_POOLED)):  # the d-sweep: its own file, read from the pooled d-sweep file only
         dump(dsweep_data(), os.path.join(out_dir, "dsweep.json"))
         index["sections"]["dsweep"] = "data/dsweep.json"
+    if os.path.exists(os.path.join(REPO, FORWARDT_RESULTS)):  # the variable-bound loops: its own file, read from forwardt/results.json and the census count of the corpus data
+        dump(forwardt_data(corpus), os.path.join(out_dir, "forwardt.json"))
+        index["sections"]["forwardt"] = "data/forwardt.json"
     fx =os.path.join(REPO, "results", "fixture.json")
     dump(fixture_pooled(fx), os.path.join(out_dir, "fixture", "pooled.json"))
     index["fixture"] = {"path": "data/fixture/pooled.json", "source": rel(fx), "source_sha256": sha(fx),
@@ -1200,7 +1221,7 @@ def arm_calibration(cal, pool_sha, cpu_model, rep):
 
 
 def robustness_data(pooled):
-    """The page's figures from the three round-7 analyses: the expected run-to-run counts of calibrated intervals
+    """The page's figures from the three robustness analyses: the expected run-to-run counts of calibrated intervals
     (robustness/calibration.json), the x86-64 pool re-drawn under other bootstrap seeds (robustness/seed-sensitivity-x86.json) and
     the identical-binary A/A at the L2 size (robustness/aa-l2.json). Nothing here changes a stored word. Each file is checked
     against the pool this page reads (file hash) and against the pool's own counts before one figure is copied from it. The Arm
@@ -2419,6 +2440,137 @@ def dsweep_data():
         "runs": [per_run[k] for k in sorted(per_run)], "models": models, "too_few_jobs": few}
 
 
+# ---------------------------------------------------------------- the variable-bound loops (forwardt/PLAN.md, forwardt/results.json)
+FORWARDT_RESULTS = "forwardt/results.json"
+FORWARDT_PLAN = "forwardt/PLAN.md"
+FORWARDT_ANALYSIS = "forwardt/analyze.py"
+FORWARDT_KERNELS = "forwardt/kernels"
+# loop id -> (what it does, the bound, the counter). The loop line itself is read from the kernel file, not typed here.
+FORWARDT_LOOPS = (
+    ("t01_sum_size", "sum", "size()", "control"),
+    ("t02_sum_n", "sum", "n", "variable"),
+    ("t03_scale_size", "scale", "size()", "control"),
+    ("t04_scale_n", "scale", "n", "variable"),
+    ("t05_fill_n", "fill", "n", "variable"),
+    ("t06_offset", "copy at an offset", "n", "variable"),
+)
+FORWARDT_COLUMNS = ("compiled", "aligned", "novec")
+FORWARDT_PREDICTIONS = ("P1", "P2", "P2n", "P3", "P4", "P5", "P6")
+
+
+def _ft_pair(p):
+    """A pair that was not timed (the no-vectorize build is timed for the sums only) stays null."""
+    return None if p is None else {"ratio": p["ratio"], "ci95": p["ci95"], "jobs": p["jobs"]}
+
+
+def _ft_cell(c):
+    """One loop at one size on one model: the pooled ratio of each pair with its 95% interval, the A/A half-width that decides
+    whether the cell can be read, the placement statistic and the rule-6 flag as stored. Nothing is computed."""
+    out = {"n": c["n"], "jobs": c["jobs"], "decidable": c["decidable"], "aa_half_width_pct": c["aa_half_width_pct"],
+           "forward_inside": (c["forward"] or {}).get("inside"), "placement": _ft_pair(c["placement"])}
+    for col in FORWARDT_COLUMNS:
+        if col in c["pairs"]:
+            out[col] = _ft_pair(c["pairs"][col])
+    return out
+
+
+def _ft_item(it):
+    return {"loop": it["loop"], "size": it["size"], "mode": it["mode"], "state": it["state"], "band": it["band"],
+            "aa_half_width_pct": it.get("aa_half_width_pct"), "jobs": it["jobs"],
+            "columns": {col: {k: v for k, v in c.items() if k in ("ratio", "ci95", "state", "l1", "l2")} for col, c in it["columns"].items()}}
+
+
+def _ft_prediction(pv):
+    return {"state": pv["state"], "fail_sides": pv["fail_sides"], "not_decidable": pv["not_decidable"],
+            "items": [_ft_item(it) for it in pv["items"]]}
+
+
+def _ft_model(m, kernels):
+    head = {**_repl_names(m), "target": m["target"], "arch": m["arch"][0], "jobs": m["jobs"], "run_ids": m["runs"],
+            "read": m["read"], "reason_not_read": m["reason_not_read"], "few_jobs_caveat": m["few_jobs_caveat"]}
+    if not m["read"]:
+        return {**head, "loops": [], "predictions": {}, "p0": {}}
+    assert not m["problems"], f"{m['cpu_model']}: file problems in the forwardt results: {m['problems']}"
+    loops = []
+    for lid, what, bound, kind in FORWARDT_LOOPS:
+        lp = m["loops"][lid]
+        loops.append({"id": lid, "what": what, "bound": bound, "kind": kind, "code": kernels[lid], "word": lp["word"],
+                      "words": {"agree": lp["words"]["agree"], "compiled": lp["words"]["compiled"]["word"], "aligned": lp["words"]["aligned"]["word"]},
+                      "traps": lp["traps"], "direction": lp["direction"],
+                      "vectorization": {k: {"vectorized": v["vectorized"], "width": v["width"], "interleave": v["interleave"]}
+                                        for k, v in lp["vectorization"].items()},
+                      "cells": {sz: _ft_cell(c) for sz, c in lp["cells"].items()}})
+    preds = {pk: _ft_prediction(pv) for pk, pv in m["pred"]["preds"].items() if pv is not None}
+    p0 = {lid: {k: v[k] for k in ("predicted_word", "observed_word", "state", "fast_traps", "trap_clause", "trap_ok")}
+          for lid, v in m["pred"]["P0"].items()}
+    return {**head, "loops": loops, "predictions": preds, "p0": p0}
+
+
+def forwardt_data(corpus):
+    """site/data/forwardt.json: forwardt/results.json (forwardt/analyze.py writes it from the stored per-job files and the
+    manifest, and scripts/check.py recomputes it) reduced to what the page prints: per CPU model and loop the word, the
+    pooled ratio of each pair with its 95% interval at L1 and L2 and the A/A half-width, the prediction items with their bands
+    and states, the outcome row and the standing listing of the variable-bound loops. Nothing is computed here; the plan
+    hash must be that of the file as it stands, and the census count is the one the corpus data prints."""
+    path = os.path.join(REPO, FORWARDT_RESULTS)
+    r = load(path)
+    assert r["kind"] == "forwardt-results" and r["schema_version"] == 1, "forwardt/results.json has another schema"
+    assert r["plan_sha256"] == sha(os.path.join(REPO, FORWARDT_PLAN)), \
+        "forwardt/PLAN.md differs from the plan the sweep was analysed under (it must never be edited)"
+    assert r["criteria_sha256"] == sha(os.path.join(REPO, "harness", "criteria-v3.json")), "the sweep was analysed under other criteria"
+    assert not r["no_run"], "forwardt/results.json records no measurement run"
+    a = r["analysis"]
+    kernels = {}
+    for lid, _, _, _ in FORWARDT_LOOPS:
+        with open(os.path.join(REPO, FORWARDT_KERNELS, lid + ".cpp"), encoding="utf-8") as f:
+            lines = [ln.strip() for ln in f if "// LOOP" in ln]
+        assert len(lines) == 1, f"{lid}: expected one // LOOP line"
+        kernels[lid] = lines[0].replace("// LOOP", "").strip()
+    census = [p for p in corpus["census2"]["patterns"] if p["class"] == "other" and p["detail"].startswith("forward loop bounded by a variable")]
+    assert len(census) == 1, "the corpus data has no single census class for forward loops bounded by a variable"
+    census = census[0]
+    out = a["outcome"]
+    assert f"{census['count']} lost loops" in out["text"] and f"{census['unique_locations']} source locations" in out["text"], \
+        "the plan's census figures differ from the corpus data"
+    models = [_ft_model(m, kernels) for m in a["models"]]
+    models.sort(key=lambda m: (not m["read"], m["target"] != "x86-64", -m["jobs"], m["cpu_model"]))
+
+    def names(lst):
+        return [cpu_short(x["cpu_model"] if isinstance(x, dict) else x) for x in lst]
+
+    summaries = {}
+    for tgt, s in a["summaries"].items():
+        summaries[tgt] = {
+            "jobs": {cpu_short(k): v for k, v in s["jobs"].items()},
+            "p0": {lid: {"state": v["state"], "word": v["word"], "predicted_word": v["predicted_word"], "failed_on": names(v["failed_on"]),
+                         "not_testable_on": names(v["not_testable_on"])} for lid, v in s["P0"].items()},
+            "predictions": {pk: {"state": v["state"], "word": v["word"], "failed_on": names(v["failed_on"]),
+                                 "undecided_on": names(v["undecided_on"]), "not_testable_on": names(v["not_testable_on"]),
+                                 "readable": names(v["readable"])} for pk, v in s["preds"].items()}}
+    cells = [{"cpu_short": cpu_short(c["cpu_model"]), "loop": c["loop"], "size": c["size"], "column": c["column"], "ratio": c["ratio"],
+              "ci95": c["ci95"], "jobs": c["jobs"], "word": c["word"], "limits": c["limits"]} for c in out["cells"]]
+    listing = [{"cpu_short": cpu_short(f["cpu_model"]), "loop": f["loop"], "none_decidable": f["none_decidable"],
+                "cells": [{k: c[k] for k in ("size", "ratio", "ci95", "jobs", "aa_half_width_pct", "inside_forward_range")}
+                          for c in f["decidable_aligned_cells"]]} for f in a["forward_listing"]]
+    n2 = [{"cpu_short": cpu_short(x["cpu_model"]), "jobs": x["jobs"], "word": x["word"], "cells": x["cells"]} for x in a["reported_n2_t02"]]
+    runs = [{"run_id": e["run_id"], "class": e["class"], "runner": e["runner"], "commit": e["head_sha"][:7], "created_at": e["created_at"],
+             "jobs_started": e["jobs_started"], "jobs_returned": e["jobs_returned"]} for e in r["manifest"]]
+    return {
+        "note": "derived by scripts/build_site_data.py from " + FORWARDT_RESULTS + " (" + FORWARDT_ANALYSIS + " writes that file from the "
+                "stored per-job files and the run manifest; scripts/check.py recomputes it); do not edit by hand. The bands, words and "
+                "the outcome row are the ones the plan fixed in " + FORWARDT_PLAN + "; the page adds none.",
+        "plan": FORWARDT_PLAN, "plan_sha256": r["plan_sha256"], "analysis": FORWARDT_ANALYSIS, "source": FORWARDT_RESULTS,
+        "source_sha256": sha(path), "criteria_sha256": r["criteria_sha256"], "resamples": a["resamples"],
+        "minimum_jobs": a["few_jobs"]["minimum"], "few_jobs": a["few_jobs"], "forward_rule": a["forward_rule"],
+        "outcome": {"letter": out["letter"], "row": out["row"], "column": out["column"], "text": out["text"],
+                    "p2_fail_sides": out["p2_fail_sides"], "write_limits": out["cell_permission"]["write_limits"],
+                    "may_say_lost_sum_and_lost_writes_differ": out["may_say_lost_sum_and_lost_writes_differ"], "cells": cells},
+        "census": {"lost_loops": census["count"], "source_locations": census["unique_locations"], "detail": census["detail"]},
+        "loops": [{"id": lid, "what": what, "bound": bound, "kind": kind, "code": kernels[lid]} for lid, what, bound, kind in FORWARDT_LOOPS],
+        "runs": runs, "run_counts": r["manifest_summary"], "models": models, "summaries": summaries, "forward_listing": listing,
+        "n2_t02": n2}
+
+
 def tree(root):
     out = {}
     for dp, _, fs in os.walk(root):
@@ -2486,6 +2638,8 @@ def baked_values(data_dir):
         "bandWorst": _fx(worst[1]), "bandName": short.get(worst[0], worst[0]),
         "googlePct": f"{ix['claim']['google_pct']:.2f}",
         "lostMin": f"{ix['page']['lost']['min']:.1f}", "lostMax": f"{ix['page']['lost']['max']:.1f}",
+        "lostCompMin": f"{ix['page']['lost_compiled']['min']:.1f}", "lostCompMax": f"{ix['page']['lost_compiled']['max']:.1f}",
+        "lostAlnMin": f"{ix['page']['lost_aligned']['min']:.1f}", "lostAlnMax": f"{ix['page']['lost_aligned']['max']:.1f}",
         "beLo": f"{ix['page']['break_even']['at_min']['share_pct']:.2g}", "beHi": f"{ix['page']['break_even']['at_max']['share_pct']:.2g}",
         "clang": f"clang {ver(tc.get('clang'))}", "libcxx": f"libc++ {ver(tc.get('libcxx_package'))}",
         "c1Lost": f"{t1['lost']:,}", "c1Vec": f"{t1['none']['vectorized']:,}",

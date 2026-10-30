@@ -70,11 +70,11 @@ probe was not kept, so whether its functions differed cannot be said.
 - The census counts, the timed kernels and every number under `results/` are clang 18.1.3 on the Ubuntu runner and
   are unchanged. This folder says the forward-loop part of the 444 lost loops is a clang 16-to-18 effect for the
   sums; whether those loops are still lost under clang 19 or later, and what a lost sum costs, is not measured here.
-  A timing of six variable-bound loops on clang 18 has its own plan, `forwardt/PLAN.md` (no run of it exists yet); a
-  census rebuild with a newer clang needs a plan of its own and
-  is not started.
+  A timing of six variable-bound loops on clang 18 has its own plan, `forwardt/PLAN.md`, and its result is in
+  `forwardt/README.md`; a census rebuild with a newer clang needs a plan of its own and is not started.
 - Compile-only. Nothing here says how fast any loop runs or how often such a loop is hot. In the main study, a forward
-  reduction built without vectorization costs 1.09x on one kernel (`docs/dayone-results.md`), so a lost sum may be cheap.
+  reduction built without vectorization costs 1.09x on one kernel (`docs/dayone-results.md`), so a lost sum may be cheap. The timing in `forwardt/` found a larger cost for the variable-bound sum on the two AMD
+  models it read (see the main README, section "Forward loops with a variable bound").
 - The compilers are Compiler Explorer's own builds with its own libc++ for each (its `clang1810` is a release candidate
   of 18.1.0, not the Ubuntu 18.1.3 that was timed; "22.1.0", "23.1.0" and "trunk" are what it offered on
   21 October 2026, and trunk moves). `-O2` and `-O3` are the x86-64 baseline target (SSE2), not AVX2; a width-4 loop

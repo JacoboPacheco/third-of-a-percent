@@ -1,0 +1,59 @@
+--- t05_fill_n.none_a64.s
++++ t05_fill_n.fast_a64.s
+@@ -2,44 +2,22 @@
+ test   %esi,%esi
+ jle    <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+ mov    (%rdi),%rax
+-mov    %esi,%ecx
+-cmp    $0x8,%esi
+-jae    <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+-xor    %edx,%edx
+-jmp    <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+-mov    %ecx,%edx
+-and    $0x7ffffff8,%edx
+-mov    %ecx,%esi
+-shr    $0x3,%esi
+-and    $0xfffffff,%esi
+-shl    $0x5,%rsi
+-movdqa 0xdd8(%rip),%xmm0        # <_IO_stdin_used+off>
++mov    0x8(%rdi),%rcx
++sub    %rax,%rcx
++sar    $0x2,%rcx
++mov    %esi,%edx
++xor    %esi,%esi
+ xor    %edi,%edi
+-movdqa 0xdde(%rip),%xmm1        # <_IO_stdin_used+off>
+-movdqa 0xde6(%rip),%xmm2        # <_IO_stdin_used+off>
+ data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+ data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-nopw   0x0(%rax,%rax,1)
+-movdqa %xmm0,%xmm3
+-paddd  %xmm0,%xmm3
+-paddd  %xmm0,%xmm3
+-movdqu %xmm3,(%rax,%rdi,1)
+-paddd  %xmm1,%xmm3
+-movdqu %xmm3,0x10(%rax,%rdi,1)
+-paddd  %xmm2,%xmm0
+-add    $0x20,%rdi
+-cmp    %rdi,%rsi
+-jne    <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+-cmp    %rcx,%rdx
++cs nopw 0x0(%rax,%rax,1)
++cmp    %rdi,%rcx
+ je     <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+-lea    (%rdx,%rdx,2),%esi
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-nop
+-mov    %esi,(%rax,%rdx,4)
+-inc    %rdx
++mov    %esi,(%rax,%rdi,4)
++inc    %rdi
+ add    $0x3,%esi
+-cmp    %rdx,%rcx
++cmp    %rdi,%rdx
+ jne    <_Z15kern_t05_fill_nRNSt3__16vectorIiNS_9allocatorIiEEEEi+off>
+ ret
+-nop
++ud2
++cs nopw 0x0(%rax,%rax,1)

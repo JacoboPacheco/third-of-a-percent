@@ -1,0 +1,4887 @@
+{
+ "checks": {
+  "problems": []
+ },
+ "criteria": {
+  "file": "harness/criteria-v3.json",
+  "forward_ci_hi_aa_multiplier": 2.0,
+  "forward_ci_hi_floor_pct": 2.0,
+  "forward_point_max_ratio": 1.02,
+  "layout_aa_designated": [
+   "k02_add_fwd.L1",
+   "k02_add_fwd.L2"
+  ],
+  "minimum_jobs": 3
+ },
+ "inputs": {
+  "harness/criteria-v3.json": "b01beceab72f79e9b837483eb7f30403980598358c618ebc79a8dcdb97b55596",
+  "results/s4-pooled/pooled.json": "2d1860b1a7eb5c8818de304ef0716dc3321a8f0332b5d621d21ffa044411c01e",
+  "results/s6-pooled/pooled.json": "42c2393b27e2493a296e0342c58e88e616b533c141f8fab56d60901a4e68a43d",
+  "results/s7-pooled/pooled.json": "cc64419f1e3cf928cec0df250e667a7f7f4fc870c7c765e25004ebecec22ce8d",
+  "results/s8-arm-pooled/pooled.json": "b614c2d05905777081a5016814c15efdb5ae9f93e9d66f9db9d41f68dbdee8e5",
+  "results/s9-arm-ab-pooled/pooled.json": "a4e13eb595fc2389b449b3bb4e2862a6c8101475a4893e31c7392d66bfe10cd9",
+  "results/s9-arm-b-pooled/pooled.json": "d0cd9a427859d311f70aa357860996273bf2b59d4d51cc935d5eb0ba83d8f0f6",
+  "results/s9-x86-ac-pooled/pooled.json": "53b622abc656c892f7e478a0625dbe9ae2684875cb9cafd30ef8d83f819d0363",
+  "results/s9-x86-c-pooled/pooled.json": "990f05d744dd3e0f769185b3cf34cada162e8e9cdebe65a48aa2c709b007c7d6"
+ },
+ "kind": "placement-floor",
+ "label": "sensitivity analysis, not a verdict; no stored verdict, pool or rule file is changed",
+ "method": {
+  "d": "D = (FAST/NONE as compiled) / (FAST/NONE with loops aligned), pooled over jobs (harness/pool.py placement_stat); its deviation is |D - 1| in percent",
+  "d_floor_pct": 2.0,
+  "layout_aa_half_width": "the largest half_width_pct among the designated layout A/A pairs present in the stored block (the criteria-v2 definition)",
+  "source": "the stored pooled.json files only; harness/pool.py cpu_verdict is applied read-only to a copy of each stored CPU-model block whose exemption flags follow the rule under test",
+  "stored_rule_reproduces_stored_verdict": "required of every row; a difference fails the script"
+ },
+ "pools": [
+  {
+   "arch": "x86-64",
+   "id": "s4",
+   "jobs": 30,
+   "models": [
+    {
+     "aa_half_width_pct": 0.09706868277405967,
+     "cpu_model": "AMD EPYC 7763 64-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8344558023418686,
+        0.8377538928418357
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8358785499788325,
+       "as_compiled_ratio": 1.5849933478414413,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.8917401606558881,
+        1.8997171931295485
+       ],
+       "d_deviation_pct": 89.62005280331442,
+       "d_interval_margin_pct": 89.17401606558882,
+       "d_ratio": 1.8962005280331442,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.999046475527856,
+        1.0082780912852112
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0038020081622925,
+       "as_compiled_ratio": 1.320223545473868,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3052510478392998,
+        1.3269112862808141
+       ],
+       "d_deviation_pct": 31.522305667714612,
+       "d_interval_margin_pct": 30.52510478392998,
+       "d_ratio": 1.3152230566771461,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0526719921384828,
+        1.0565168738311213
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.055976542539541,
+       "as_compiled_ratio": 1.0062881968210469,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9519090415950134,
+        0.9564241203869123
+       ],
+       "d_deviation_pct": 4.7054402931146155,
+       "d_interval_margin_pct": 4.357587961308774,
+       "d_ratio": 0.9529455970688538,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 19,
+     "layout_aa_half_width_pct": 0.5752712450024566,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.044751083860639085,
+      "k02_add_fwd.L2": 0.5752712450024566
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 3,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.44581062927699366,
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8312257000183816,
+        0.8424050807607237
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8367810518531836,
+       "as_compiled_ratio": 0.9852090681282925,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.1656537609638071,
+        1.191450486974074
+       ],
+       "d_deviation_pct": 17.737975297886056,
+       "d_interval_margin_pct": 16.565376096380714,
+       "d_ratio": 1.1773797529788605,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0065977251241853,
+        1.0239485454447768
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0150841484011863,
+       "as_compiled_ratio": 1.0013495807567045,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.972123646040075,
+        0.9996190337266522
+       ],
+       "d_deviation_pct": 1.3530471996941795,
+       "d_interval_margin_pct": 0.038096627334782696,
+       "d_ratio": 0.9864695280030582,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 5,
+     "layout_aa_half_width_pct": 0.7251448580152919,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.7251448580152919,
+      "k02_add_fwd.L2": 0.6625788265150201
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 3,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": [
+      "d_floor_2pct",
+      "d_floor_both"
+     ]
+    },
+    {
+     "aa_half_width_pct": 0.14189550945596374,
+     "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8233126854748176,
+        0.826383860474608
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8246253013770486,
+       "as_compiled_ratio": 1.5993271037109864,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.9348330752379563,
+        1.944585239247847
+       ],
+       "d_deviation_pct": 93.94591713839692,
+       "d_interval_margin_pct": 93.48330752379563,
+       "d_ratio": 1.9394591713839693,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9952738720229142,
+        1.0064933502059756
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0003599312653852,
+       "as_compiled_ratio": 1.3265207286456289,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.313605173746964,
+        1.3349789670250272
+       ],
+       "d_deviation_pct": 32.604344415081975,
+       "d_interval_margin_pct": 31.360517374696407,
+       "d_ratio": 1.3260434441508198,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.000000220361541,
+        1.0040313515407373
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0015963982449505,
+       "as_compiled_ratio": 0.9929989889884763,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9876208456709777,
+        0.9955206038909313
+       ],
+       "d_deviation_pct": 0.8583706242893063,
+       "d_interval_margin_pct": 0.44793961090686674,
+       "d_ratio": 0.9914162937571069,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 5,
+     "layout_aa_half_width_pct": 0.5621631157011864,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.13073256468104644,
+      "k02_add_fwd.L2": 0.5621631157011864
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 3,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 1.0488289212983115,
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.9715421030874279,
+        0.9735608859883663
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9723185270009318,
+       "as_compiled_ratio": 1.0248977858322739,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.042113996896162,
+        1.1000302631340304
+       ],
+       "d_deviation_pct": 5.407616678201133,
+       "d_interval_margin_pct": 4.211399689616191,
+       "d_ratio": 1.0540761667820113,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.097657842596623,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 0.4449290044429566,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.4449290044429566,
+      "k02_add_fwd.L2": 0.10157877095565149
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s4-pooled/pooled.json",
+   "runs": 3,
+   "what": "the original 30-job x86-64 pool"
+  },
+  {
+   "arch": "x86-64",
+   "id": "s6",
+   "jobs": 75,
+   "models": [
+    {
+     "aa_half_width_pct": 0.09493412816757862,
+     "cpu_model": "AMD EPYC 7763 64-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8347626918796853,
+        0.8477157764169594
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8391640105567885,
+       "as_compiled_ratio": 1.5851161607979771,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.8705808017939929,
+        1.899074314118805
+       ],
+       "d_deviation_pct": 88.89229529114893,
+       "d_interval_margin_pct": 87.05808017939928,
+       "d_ratio": 1.8889229529114893,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9991235909191188,
+        1.0079588077382482
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0037810125256548,
+       "as_compiled_ratio": 1.3209316680978627,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3063624598056016,
+        1.327010311138373
+       ],
+       "d_deviation_pct": 31.59560218958637,
+       "d_interval_margin_pct": 30.63624598056016,
+       "d_ratio": 1.3159560218958637,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0528405101245073,
+        1.0565338974719989
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0559913907059675,
+       "as_compiled_ratio": 1.0062619342634511,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9519598195302245,
+        0.9561440290007016
+       ],
+       "d_deviation_pct": 4.709267223217662,
+       "d_interval_margin_pct": 4.385597099929839,
+       "d_ratio": 0.9529073277678234,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 20,
+     "layout_aa_half_width_pct": 0.590063855156292,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.05324022836873388,
+      "k02_add_fwd.L2": 0.590063855156292
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 4,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.22240100345263247,
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8408046691989932,
+        0.8526523476760778
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8461078385224419,
+       "as_compiled_ratio": 0.9856160625775443,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.14807699564094,
+        1.1802305550323047
+       ],
+       "d_deviation_pct": 16.488232079107746,
+       "d_interval_margin_pct": 14.807699564094001,
+       "d_ratio": 1.1648823207910775,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9015701539425495,
+        0.9070016988031153
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9038344896833229,
+       "as_compiled_ratio": 0.9127590523741119,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0058140603301755,
+        1.0139874472556927
+       ],
+       "d_deviation_pct": 0.9874111679358366,
+       "d_interval_margin_pct": 0.5814060330175508,
+       "d_ratio": 1.0098741116793584,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0111074146069001,
+        1.020292000193801
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0155937732364488,
+       "as_compiled_ratio": 1.000379879209858,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9785799323287231,
+        0.9923435938862846
+       ],
+       "d_deviation_pct": 1.4980294707900632,
+       "d_interval_margin_pct": 0.765640611371543,
+       "d_ratio": 0.9850197052920994,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 20,
+     "layout_aa_half_width_pct": 0.26372195398629006,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.26372195398629006,
+      "k02_add_fwd.L2": 0.23589720975814576
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 11,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": [
+      "d_floor_2pct",
+      "d_floor_both"
+     ]
+    },
+    {
+     "aa_half_width_pct": 0.06518436019013474,
+     "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8246143504706759,
+        0.8254265558112684
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8249882761975094,
+       "as_compiled_ratio": 1.597311490957653,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.9348341788416747,
+        1.9383909306952782
+       ],
+       "d_deviation_pct": 93.61626547226743,
+       "d_interval_margin_pct": 93.48341788416748,
+       "d_ratio": 1.9361626547226742,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9969644334736852,
+        1.0036811265540915
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0000634292154305,
+       "as_compiled_ratio": 1.3232575819884123,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3169720726670984,
+        1.3282468157541842
+       ],
+       "d_deviation_pct": 32.3173654121653,
+       "d_interval_margin_pct": 31.69720726670984,
+       "d_ratio": 1.323173654121653,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9998007893965538,
+        1.0022788197745351
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0006089415332602,
+       "as_compiled_ratio": 0.9940261651912995,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9911147450042571,
+        0.9951957641131057
+       ],
+       "d_deviation_pct": 0.6578770255514343,
+       "d_interval_margin_pct": 0.48042358868942703,
+       "d_ratio": 0.9934212297444857,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 23,
+     "layout_aa_half_width_pct": 0.44052695046687407,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.036377498368911354,
+      "k02_add_fwd.L2": 0.44052695046687407
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 11,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.6326361531781233,
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.9707505832435105,
+        0.9820963183885117
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9746652707466487,
+       "as_compiled_ratio": 1.0344613820267656,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0483991770664385,
+        1.083981238740414
+       ],
+       "d_deviation_pct": 6.135040723705054,
+       "d_interval_margin_pct": 4.839917706643848,
+       "d_ratio": 1.0613504072370505,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 6,
+     "layout_aa_half_width_pct": 1.5101126595171266,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 1.5101126595171266,
+      "k02_add_fwd.L2": 0.5172517597277715
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 5,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.40992538990691774,
+     "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.1874118013984027,
+        1.2066990307702694
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.199201800971074,
+       "as_compiled_ratio": 1.2301494203672159,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0186778304815338,
+        1.0349891479364024
+       ],
+       "d_deviation_pct": 2.5806848664738036,
+       "d_interval_margin_pct": 1.867783048153382,
+       "d_ratio": 1.025806848664738,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.006071512974776,
+        1.0116125484242562
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.008267328951695,
+       "as_compiled_ratio": 1.0180178341156891,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0061726907653745,
+        1.0123627304598795
+       ],
+       "d_deviation_pct": 0.9670555500525646,
+       "d_interval_margin_pct": 0.6172690765374522,
+       "d_ratio": 1.0096705555005256,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 6,
+     "layout_aa_half_width_pct": 2.201254002555225,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 2.201254002555225,
+      "k02_add_fwd.L2": 1.8879771732357442
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 5,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k03_stencil.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s6-pooled/pooled.json",
+   "runs": 13,
+   "what": "the 75-job x86-64 pool"
+  },
+  {
+   "arch": "x86-64",
+   "id": "s7",
+   "jobs": 95,
+   "models": [
+    {
+     "aa_half_width_pct": 0.07016703141939362,
+     "cpu_model": "AMD EPYC 7763 64-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8344626236361388,
+        0.8437765850717691
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.83749963002972,
+       "as_compiled_ratio": 1.5846527272106083,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.8785022117099297,
+        1.8990845433553758
+       ],
+       "d_deviation_pct": 89.2123495212021,
+       "d_interval_margin_pct": 87.85022117099297,
+       "d_ratio": 1.892123495212021,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9987424241860404,
+        1.0064369401351154
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0028788611780088,
+       "as_compiled_ratio": 1.3215657720061031,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3103736263877137,
+        1.3266037736130487
+       ],
+       "d_deviation_pct": 31.777208909733723,
+       "d_interval_margin_pct": 31.03736263877137,
+       "d_ratio": 1.3177720890973372,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0537635226804567,
+        1.0567539473819931
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.056275113081786,
+       "as_compiled_ratio": 1.0061592127875416,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9518988232458545,
+        0.9548752073586468
+       ],
+       "d_deviation_pct": 4.744587813682966,
+       "d_interval_margin_pct": 4.512479264135316,
+       "d_ratio": 0.9525541218631703,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 29,
+     "layout_aa_half_width_pct": 0.412684113764078,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.040648375369256584,
+      "k02_add_fwd.L2": 0.412684113764078
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 6,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.1999596955147287,
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8402835175314276,
+        0.8507725816273994
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8447598856690851,
+       "as_compiled_ratio": 0.9865008450520307,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.1519711188898776,
+        1.1822173985990574
+       ],
+       "d_deviation_pct": 16.778845893076564,
+       "d_interval_margin_pct": 15.197111888987758,
+       "d_ratio": 1.1677884589307657,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9015351837495913,
+        0.9064272902560607
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9035659048793859,
+       "as_compiled_ratio": 0.9134546479980408,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0064857642417013,
+        1.0144950350735176
+       ],
+       "d_deviation_pct": 1.0944130433933053,
+       "d_interval_margin_pct": 0.6485764241701331,
+       "d_ratio": 1.010944130433933,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.01154938119189,
+        1.020431400587305
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0160256473163558,
+       "as_compiled_ratio": 1.0008888830459708,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9791331574213892,
+        0.991695177963809
+       ],
+       "d_deviation_pct": 1.489801395305912,
+       "d_interval_margin_pct": 0.8304822036190984,
+       "d_ratio": 0.9851019860469409,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 23,
+     "layout_aa_half_width_pct": 0.24075715310438173,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.24075715310438173,
+      "k02_add_fwd.L2": 0.21088950421958574
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 13,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": [
+      "d_floor_2pct",
+      "d_floor_both"
+     ]
+    },
+    {
+     "aa_half_width_pct": 0.05456781847629211,
+     "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8246350286769846,
+        0.8253495417435017
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8249691343140928,
+       "as_compiled_ratio": 1.5972698283021975,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.9351055805015658,
+        1.938188023812511
+       ],
+       "d_deviation_pct": 93.61570777193036,
+       "d_interval_margin_pct": 93.51055805015658,
+       "d_ratio": 1.9361570777193036,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.996528526612909,
+        1.0030458792043477
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9994889805579593,
+       "as_compiled_ratio": 1.3219008875431117,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3145791248250371,
+        1.3283847079682978
+       ],
+       "d_deviation_pct": 32.25767499759402,
+       "d_interval_margin_pct": 31.457912482503716,
+       "d_ratio": 1.3225767499759402,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9998813050606286,
+        1.0023125176694698
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0006510306335983,
+       "as_compiled_ratio": 0.9937888129189004,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9906022457629161,
+        0.9948953947831297
+       ],
+       "d_deviation_pct": 0.6857753107347264,
+       "d_interval_margin_pct": 0.5104605216870284,
+       "d_ratio": 0.9931422468926527,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 28,
+     "layout_aa_half_width_pct": 0.3691600790114935,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.031172744568563893,
+      "k02_add_fwd.L2": 0.3691600790114935
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 13,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.6911281533295566,
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.9696256117298659,
+        0.9808460546436336
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9742073653983447,
+       "as_compiled_ratio": 1.0367715124361379,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0510338337727054,
+        1.0877374399196322
+       ],
+       "d_deviation_pct": 6.422056459428549,
+       "d_interval_margin_pct": 5.103383377270543,
+       "d_ratio": 1.0642205645942855,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 7,
+     "layout_aa_half_width_pct": 1.3034645804995304,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 1.3034645804995304,
+      "k02_add_fwd.L2": 0.5995025554295597
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 6,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.5431317041030947,
+     "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.1878531497832343,
+        1.2042788679949574
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.1985068768585772,
+       "as_compiled_ratio": 1.2308509635147045,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0208046500243935,
+        1.0353339820431342
+       ],
+       "d_deviation_pct": 2.6986984622820787,
+       "d_interval_margin_pct": 2.0804650024393467,
+       "d_ratio": 1.0269869846228208,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0033460964368732,
+        1.0111605058649413
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0070159325334098,
+       "as_compiled_ratio": 1.0198792482962618,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.007048779632119,
+        1.0188636279096621
+       ],
+       "d_deviation_pct": 1.2773696370911525,
+       "d_interval_margin_pct": 0.7048779632119029,
+       "d_ratio": 1.0127736963709115,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 7,
+     "layout_aa_half_width_pct": 1.8242459841580516,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 1.8242459841580516,
+      "k02_add_fwd.L2": 1.5768398618908164
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 6,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.15525432808773387,
+     "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0554471900892535,
+        1.057547253604649
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0569130461275975,
+       "as_compiled_ratio": 1.0678484681059557,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.00928748442949,
+        1.0119672890308176
+       ],
+       "d_deviation_pct": 1.0346567315470567,
+       "d_interval_margin_pct": 0.9287484429489901,
+       "d_ratio": 1.0103465673154706,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 0.08291546497546931,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.08291546497546931,
+      "k02_add_fwd.L2": 0.04124751175095254
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s7-pooled/pooled.json",
+   "runs": 15,
+   "what": "the x86-64 pool the page reads"
+  },
+  {
+   "arch": "x86-64",
+   "id": "s9-x86-c",
+   "jobs": 40,
+   "models": [
+    {
+     "aa_half_width_pct": 0.05022625525314961,
+     "cpu_model": "AMD EPYC 7763 64-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8336565245054501,
+        0.8346048793316085
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8341195032345435,
+       "as_compiled_ratio": 1.584261837494638,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.8978070720978804,
+        1.9005889744627675
+       ],
+       "d_deviation_pct": 89.93223768910777,
+       "d_interval_margin_pct": 89.78070720978803,
+       "d_ratio": 1.8993223768910776,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.996242624690799,
+        1.0033796432611546
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9995694117648318,
+       "as_compiled_ratio": 1.3226720676401509,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3140925576204965,
+        1.328454086780131
+       ],
+       "d_deviation_pct": 32.32418400087409,
+       "d_interval_margin_pct": 31.409255762049646,
+       "d_ratio": 1.323241840008741,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0499920333092712,
+        1.056640030482089
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0558715459878667,
+       "as_compiled_ratio": 1.0059997655588437,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9519695363705252,
+        0.9585462047708071
+       ],
+       "d_deviation_pct": 4.723281029641102,
+       "d_interval_margin_pct": 4.14537952291929,
+       "d_ratio": 0.952767189703589,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 19,
+     "layout_aa_half_width_pct": 0.43352423496463843,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.04287659541203359,
+      "k02_add_fwd.L2": 0.43352423496463843
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 4,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.5299121033630949,
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8376942579465605,
+        0.8585179652923275
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8467737905929587,
+       "as_compiled_ratio": 1.0031527109773548,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.153335627828435,
+        1.2164348020278455
+       ],
+       "d_deviation_pct": 18.46761462407698,
+       "d_interval_margin_pct": 15.3335627828435,
+       "d_ratio": 1.1846761462407698,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.900662845606181,
+        0.9054285267616043
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9029594124243188,
+       "as_compiled_ratio": 0.9151573008021149,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0089798216122443,
+        1.0176093529886687
+       ],
+       "d_deviation_pct": 1.3508789221263529,
+       "d_interval_margin_pct": 0.897982161224431,
+       "d_ratio": 1.0135087892212635,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 5,
+     "layout_aa_half_width_pct": 0.3339826452134542,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.3339826452134542,
+      "k02_add_fwd.L2": 0.32366213754370654
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 2,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.052143432434775816,
+     "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8246340450508479,
+        0.8255099720059633
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8250449045945275,
+       "as_compiled_ratio": 1.596916899091288,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.934069072221699,
+        1.9402683831637761
+       ],
+       "d_deviation_pct": 93.55514956802273,
+       "d_interval_margin_pct": 93.4069072221699,
+       "d_ratio": 1.9355514956802273,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9965446442501348,
+        1.0124067448693979
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.005378063036393,
+       "as_compiled_ratio": 1.3212032691187334,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3008137229893488,
+        1.3280411351075958
+       ],
+       "d_deviation_pct": 31.41357641408056,
+       "d_interval_margin_pct": 30.081372298934884,
+       "d_ratio": 1.3141357641408056,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.999290284439693,
+        1.0017481118074367
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0001821722088362,
+       "as_compiled_ratio": 0.9938474824825063,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9883944339962626,
+        0.9976152023992484
+       ],
+       "d_deviation_pct": 0.6333535932099288,
+       "d_interval_margin_pct": 0.23847976007516092,
+       "d_ratio": 0.9936664640679007,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 7,
+     "layout_aa_half_width_pct": 0.8951878232189292,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.04895788784720079,
+      "k02_add_fwd.L2": 0.8951878232189292
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 3,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.32230505894814687,
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0570451351689043,
+        1.0632860286330783
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0604147736708045,
+       "as_compiled_ratio": 1.0544020273448582,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        0.9899732458705627,
+        0.9996225815435986
+       ],
+       "d_deviation_pct": 0.567018347465309,
+       "d_interval_margin_pct": 0.03774184564013794,
+       "d_ratio": 0.9943298165253469,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9696663911255737,
+        0.9737885149287372
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9719809329179189,
+       "as_compiled_ratio": 1.0168477303812815,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0410278192741211,
+        1.0717554651482875
+       ],
+       "d_deviation_pct": 4.616016214296614,
+       "d_interval_margin_pct": 4.102781927412114,
+       "d_ratio": 1.0461601621429661,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0045995149717315,
+        1.0101831815012292
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0073260424277177,
+       "as_compiled_ratio": 1.0141924601968528,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0027541074229476,
+        1.010536139375784
+       ],
+       "d_deviation_pct": 0.6816479947829635,
+       "d_interval_margin_pct": 0.27541074229475715,
+       "d_ratio": 1.0068164799478296,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 7,
+     "layout_aa_half_width_pct": 0.40956625849595807,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.40956625849595807,
+      "k02_add_fwd.L2": 0.2834282381365516
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 4,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": [
+      "d_floor_2pct",
+      "d_floor_both"
+     ]
+    },
+    {
+     "aa_half_width_pct": 0.7814409810547651,
+     "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.1912465729740411,
+        1.2176612782641922
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.2043872068089052,
+       "as_compiled_ratio": 1.237514698197021,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0108191484865359,
+        1.039484421969036
+       ],
+       "d_deviation_pct": 2.750568189435443,
+       "d_interval_margin_pct": 1.0819148486535868,
+       "d_ratio": 1.0275056818943544,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 0.7181827425802811,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.4947412690814612,
+      "k02_add_fwd.L2": 0.7181827425802811
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.3261953389165906,
+     "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0566324220790528,
+        1.0577783819961515
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0571153822702957,
+       "as_compiled_ratio": 1.067109136852935,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.00749184401081,
+        1.0107951825229133
+       ],
+       "d_deviation_pct": 0.9453797334001868,
+       "d_interval_margin_pct": 0.7491844010810045,
+       "d_ratio": 1.0094537973340019,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 0.1760202577850034,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.1760202577850034,
+      "k02_add_fwd.L2": 0.038240802103262084
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s9-x86-c-pooled/pooled.json",
+   "runs": 4,
+   "what": "the x86-64 replication set, pooled alone"
+  },
+  {
+   "arch": "x86-64",
+   "id": "s9-x86-ac",
+   "jobs": 135,
+   "models": [
+    {
+     "aa_half_width_pct": 0.04659311919690823,
+     "cpu_model": "AMD EPYC 7763 64-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8342578271474501,
+        0.8401856875945649
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8361600283937145,
+       "as_compiled_ratio": 1.5844979885002684,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.8868914952779978,
+        1.8992768787696344
+       ],
+       "d_deviation_pct": 89.49697841262882,
+       "d_interval_margin_pct": 88.68914952779978,
+       "d_ratio": 1.8949697841262882,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9987426274545871,
+        1.0040939625417427
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0015675625994216,
+       "as_compiled_ratio": 1.3220035700071242,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.3145549917365333,
+        1.3256494458746941
+       ],
+       "d_deviation_pct": 31.993449006680883,
+       "d_interval_margin_pct": 31.455499173653333,
+       "d_ratio": 1.3199344900668089,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0533576711664177,
+        1.056406168089441
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0561153493328677,
+       "as_compiled_ratio": 1.0060960952378721,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9522727650936345,
+        0.955459804464691
+       ],
+       "d_deviation_pct": 4.736154448147345,
+       "d_interval_margin_pct": 4.454019553530896,
+       "d_ratio": 0.9526384555185266,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 48,
+     "layout_aa_half_width_pct": 0.3261051851454977,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.031667129691281826,
+      "k02_add_fwd.L2": 0.3261051851454977
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 10,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.1898276238845753,
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8407360491745555,
+        0.8505538755298
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8451191599325187,
+       "as_compiled_ratio": 0.9894539864768939,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.1557925463571859,
+        1.1841809609690221
+       ],
+       "d_deviation_pct": 17.078636171957108,
+       "d_interval_margin_pct": 15.579254635718588,
+       "d_ratio": 1.170786361719571,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9017741643345186,
+        0.9056726267449113
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9034575727863284,
+       "as_compiled_ratio": 0.9137584606400682,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0078939918172591,
+        1.0144066776600953
+       ],
+       "d_deviation_pct": 1.140162876931905,
+       "d_interval_margin_pct": 0.7893991817259138,
+       "d_ratio": 1.011401628769319,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0107255444798369,
+        1.019208016633658
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0158152326489212,
+       "as_compiled_ratio": 1.0012690040713923,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.980886060009935,
+        0.9925017905898599
+       ],
+       "d_deviation_pct": 1.4319758269027871,
+       "d_interval_margin_pct": 0.7498209410140122,
+       "d_ratio": 0.9856802417309721,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 28,
+     "layout_aa_half_width_pct": 0.20980295283213324,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.20980295283213324,
+      "k02_add_fwd.L2": 0.18606236547953348
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 15,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.04565126188001423,
+     "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.8246911621868019,
+        0.8253182360891164
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.8249842878134733,
+       "as_compiled_ratio": 1.5971992362205918,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.935145979922639,
+        1.937759502451705
+       ],
+       "d_deviation_pct": 93.60359461557577,
+       "d_interval_margin_pct": 93.51459799226389,
+       "d_ratio": 1.9360359461557577,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9974317994339289,
+        1.003727472462524
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0006640309050006,
+       "as_compiled_ratio": 1.3217613343960801,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.314240700931306,
+        1.3266211057171933
+       ],
+       "d_deviation_pct": 32.088422644779115,
+       "d_interval_margin_pct": 31.424070093130595,
+       "d_ratio": 1.3208842264477911,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.000009693701594,
+        1.0019225921008537
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0005572413688872,
+       "as_compiled_ratio": 0.993800546554541,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9909215323101448,
+        0.9947526981964667
+       ],
+       "d_deviation_pct": 0.6752931801385365,
+       "d_interval_margin_pct": 0.5247301803533277,
+       "d_ratio": 0.9932470681986146,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 35,
+     "layout_aa_half_width_pct": 0.3469150483935812,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.02725116905590852,
+      "k02_add_fwd.L2": 0.3469150483935812
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 16,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.3790151860738833,
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        0.9705519161873136,
+        0.9764554738714298
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9730935124002169,
+       "as_compiled_ratio": 1.0267612961855621,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.049168665500524,
+        1.0738088973736561
+       ],
+       "d_deviation_pct": 5.515172293459125,
+       "d_interval_margin_pct": 4.91686655005239,
+       "d_ratio": 1.0551517229345913,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0051973003684045,
+        1.012530811250748
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0083500499956328,
+       "as_compiled_ratio": 1.0152754430000654,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0009479589213226,
+        1.010935522798767
+       ],
+       "d_deviation_pct": 0.6868044489572567,
+       "d_interval_margin_pct": 0.09479589213226003,
+       "d_ratio": 1.0068680444895726,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 14,
+     "layout_aa_half_width_pct": 0.6822777344336117,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.6822777344336117,
+      "k02_add_fwd.L2": 0.3395098744972791
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L2",
+        "k03_stencil.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 10,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.4805491470605161,
+     "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.189403491611398,
+        1.2053741799720776
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.1992403451273719,
+       "as_compiled_ratio": 1.2316819640413283,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0211532518152224,
+        1.0353970446044374
+       ],
+       "d_deviation_pct": 2.705180745942193,
+       "d_interval_margin_pct": 2.115325181522243,
+       "d_ratio": 1.027051807459422,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 8,
+     "layout_aa_half_width_pct": 1.615351050452457,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 1.615351050452457,
+      "k02_add_fwd.L2": 1.4005019797408425
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 7,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.18364916682311327,
+     "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.056240300646051,
+        1.0575565066732269
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.0570142093574892,
+       "as_compiled_ratio": 1.0674787384722355,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.008603795135102,
+        1.0111108123412353
+       ],
+       "d_deviation_pct": 0.9900083671634974,
+       "d_interval_margin_pct": 0.8603795135101899,
+       "d_ratio": 1.009900083671635,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": true
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 2,
+     "layout_aa_half_width_pct": 0.1035670430937885,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.1035670430937885,
+      "k02_add_fwd.L2": 0.029568287363584966
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 2,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s9-x86-ac-pooled/pooled.json",
+   "runs": 19,
+   "what": "the x86-64 pool and its replication set pooled together"
+  },
+  {
+   "arch": "arm64",
+   "id": "s8-arm",
+   "jobs": 30,
+   "models": [
+    {
+     "aa_half_width_pct": 0.008956125056414077,
+     "cpu_model": "Neoverse-N2",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0066813274359414,
+        1.0068583935681792
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0067603128938318,
+       "as_compiled_ratio": 1.0048277610221765,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        0.9979518204654095,
+        0.9981989586377913
+       ],
+       "d_deviation_pct": 0.19195749444078647,
+       "d_interval_margin_pct": 0.18010413622087107,
+       "d_ratio": 0.9980804250555921,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9708694552891582,
+        0.9755525532202152
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9735436161975707,
+       "as_compiled_ratio": 1.0065420360478923,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0310943469081366,
+        1.03765164055888
+       ],
+       "d_deviation_pct": 3.3895163299622277,
+       "d_interval_margin_pct": 3.1094346908136616,
+       "d_ratio": 1.0338951632996223,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.5891834261813187,
+        1.589547672519637
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.589388912383257,
+       "as_compiled_ratio": 1.547742099950848,
+       "cell_id": "k08_matmul.L1",
+       "d_ci95": [
+        0.9735088275517355,
+        0.9740527907310867
+       ],
+       "d_deviation_pct": 2.6203034454267304,
+       "d_interval_margin_pct": 2.594720926891325,
+       "d_ratio": 0.9737969655457327,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0175641910422744,
+        1.0177737188343126
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.017682475128811,
+       "as_compiled_ratio": 1.016255151838898,
+       "cell_id": "k08_matmul.L2",
+       "d_ci95": [
+        0.9984621000833878,
+        0.9987554829241908
+       ],
+       "d_deviation_pct": 0.1402523208166806,
+       "d_interval_margin_pct": 0.12445170758091928,
+       "d_ratio": 0.9985974767918332,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 30,
+     "layout_aa_half_width_pct": 2.4019682152458364,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.008889537628231636,
+      "k02_add_fwd.L2": 2.4019682152458364
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1",
+        "k08_matmul.L1",
+        "k08_matmul.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 3,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s8-arm-pooled/pooled.json",
+   "runs": 3,
+   "what": "the Arm pool (set A)"
+  },
+  {
+   "arch": "arm64",
+   "id": "s9-arm-b",
+   "jobs": 30,
+   "models": [
+    {
+     "aa_half_width_pct": 0.009097250702549964,
+     "cpu_model": "Neoverse-N2",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0067587254665538,
+        1.0069311721714096
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0068430215907298,
+       "as_compiled_ratio": 1.004817575793246,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        0.9978702429369227,
+        0.998102609460122
+       ],
+       "d_deviation_pct": 0.20116798289803173,
+       "d_interval_margin_pct": 0.189739053987803,
+       "d_ratio": 0.9979883201710197,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9681581612299084,
+        0.9744799999825312
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9707155627360297,
+       "as_compiled_ratio": 1.0059020199449582,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0305965915753899,
+        1.039815979937943
+       ],
+       "d_deviation_pct": 3.624795826879823,
+       "d_interval_margin_pct": 3.0596591575389853,
+       "d_ratio": 1.0362479582687982,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.5888838246449988,
+        1.589290641689693
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.5890935044707772,
+       "as_compiled_ratio": 1.548002859264436,
+       "cell_id": "k08_matmul.L1",
+       "d_ci95": [
+        0.973881669345842,
+        0.9744444697114203
+       ],
+       "d_deviation_pct": 2.5857915277317733,
+       "d_interval_margin_pct": 2.555553028857971,
+       "d_ratio": 0.9741420847226823,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0175349974474772,
+        1.0177222712041443
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.017618712813499,
+       "as_compiled_ratio": 1.0162682258335936,
+       "cell_id": "k08_matmul.L2",
+       "d_ci95": [
+        0.9985069771628325,
+        0.9988148792097833
+       ],
+       "d_deviation_pct": 0.1327105096339709,
+       "d_interval_margin_pct": 0.11851207902167094,
+       "d_ratio": 0.9986728949036603,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 29,
+     "layout_aa_half_width_pct": 2.8992860436224452,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.008088654819093932,
+      "k02_add_fwd.L2": 2.8992860436224452
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2, k08_matmul.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned)",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2, k08_matmul.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned)",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1",
+        "k08_matmul.L1",
+        "k08_matmul.L2"
+       ],
+       "why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 3,
+     "stored_form": "inconclusive",
+     "stored_why": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L2; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned)",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.04303995794298632,
+     "cpu_model": "Neoverse-V3",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0022019075521285,
+        1.0037474158732793
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0028670266582778,
+       "as_compiled_ratio": 1.0270910337907195,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0231645997590708,
+        1.0250258120452311
+       ],
+       "d_deviation_pct": 2.415475480648732,
+       "d_interval_margin_pct": 2.3164599759070814,
+       "d_ratio": 1.0241547548064873,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9760512473181062,
+        1.0086957296891854
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9875223137247077,
+       "as_compiled_ratio": 1.0635001204475523,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0347769671577964,
+        1.1048519705272422
+       ],
+       "d_deviation_pct": 7.693781261131583,
+       "d_interval_margin_pct": 3.4776967157796435,
+       "d_ratio": 1.0769378126113158,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0020578732706986,
+        1.002825578411428
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0024227504260266,
+       "as_compiled_ratio": 1.0005762537003386,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9977149402972908,
+        0.9988060691591641
+       ],
+       "d_deviation_pct": 0.18420339371818528,
+       "d_interval_margin_pct": 0.11939308408358551,
+       "d_ratio": 0.9981579660628181,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.6369636720089555,
+        1.6445391056178036
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.6417006320295326,
+       "as_compiled_ratio": 1.5329266597094622,
+       "cell_id": "k08_matmul.L1",
+       "d_ci95": [
+        0.930362697610695,
+        0.9439508580789773
+       ],
+       "d_deviation_pct": 6.625688642490191,
+       "d_interval_margin_pct": 5.604914192102273,
+       "d_ratio": 0.9337431135750981,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0111185546695145,
+        1.012903947423856
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.011938579038746,
+       "as_compiled_ratio": 1.0097003140310188,
+       "cell_id": "k08_matmul.L2",
+       "d_ci95": [
+        0.9968552970602554,
+        0.9987291012160269
+       ],
+       "d_deviation_pct": 0.22118585594922413,
+       "d_interval_margin_pct": 0.1270898783973129,
+       "d_ratio": 0.9977881414405078,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 2.2695564123790923,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.03036507769048069,
+      "k02_add_fwd.L2": 2.2695564123790923
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1",
+        "k08_matmul.L1",
+        "k08_matmul.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s9-arm-b-pooled/pooled.json",
+   "runs": 3,
+   "what": "the Arm replication set (set B), pooled alone"
+  },
+  {
+   "arch": "arm64",
+   "id": "s9-arm-ab",
+   "jobs": 60,
+   "models": [
+    {
+     "aa_half_width_pct": 0.006388658851702589,
+     "cpu_model": "Neoverse-N2",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0067393668615503,
+        1.0068688585563743
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0068009654720504,
+       "as_compiled_ratio": 1.0048227547103095,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        0.9979518891991224,
+        0.9981206982017066
+       ],
+       "d_deviation_pct": 0.19648478990220708,
+       "d_interval_margin_pct": 0.18793017982934312,
+       "d_ratio": 0.9980351521009779,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9703783720196562,
+        0.9742543122365808
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9721525279103352,
+       "as_compiled_ratio": 1.0062274009902672,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        1.0320685246197516,
+        1.0377169313382988
+       ],
+       "d_deviation_pct": 3.5050953530076923,
+       "d_interval_margin_pct": 3.2068524619751626,
+       "d_ratio": 1.035050953530077,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.589093545774131,
+        1.5893717584297973
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.5892437050220736,
+       "as_compiled_ratio": 1.547870264293492,
+       "cell_id": "k08_matmul.L1",
+       "d_ci95": [
+        0.9737704713387555,
+        0.9741834179955527
+       ],
+       "d_deviation_pct": 2.603341488648958,
+       "d_interval_margin_pct": 2.5816582004447253,
+       "d_ratio": 0.9739665851135104,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0175780526115297,
+        1.0177252543419635
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.017651133830513,
+       "as_compiled_ratio": 1.0162615780186623,
+       "cell_id": "k08_matmul.L2",
+       "d_ci95": [
+        0.9985279094324759,
+        0.9987452547983456
+       ],
+       "d_deviation_pct": 0.13654540005476612,
+       "d_interval_margin_pct": 0.12547452016543614,
+       "d_ratio": 0.9986345459994523,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 59,
+     "layout_aa_half_width_pct": 1.9394246009360239,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.0059374390343869266,
+      "k02_add_fwd.L2": 1.9394246009360239
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k03_stencil.L1",
+        "k08_matmul.L1"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k03_stencil.L1",
+        "k08_matmul.L1",
+        "k08_matmul.L2"
+       ],
+       "why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+       "word": "map"
+      }
+     },
+     "runs": 6,
+     "stored_form": "map",
+     "stored_why": "MAP: every counted forward in-cache cell has pooled aligned ratio <= 1.02 and pooled aligned ci95_hi <= 1.0200; every lost in-cache cell has pooled ci95_lo >= 1.5 in both columns",
+     "testable": true,
+     "words_that_change": []
+    },
+    {
+     "aa_half_width_pct": 0.04303995794298632,
+     "cpu_model": "Neoverse-V3",
+     "exempt_cells": [
+      {
+       "aligned_ci95": [
+        1.0022019075521285,
+        1.0037474158732793
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0028670266582778,
+       "as_compiled_ratio": 1.0270910337907195,
+       "cell_id": "k02_add_fwd.L1",
+       "d_ci95": [
+        1.0231645997590708,
+        1.0250258120452311
+       ],
+       "d_deviation_pct": 2.415475480648732,
+       "d_interval_margin_pct": 2.3164599759070814,
+       "d_ratio": 1.0241547548064873,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        0.9760512473181062,
+        1.0086957296891854
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 0.9875223137247077,
+       "as_compiled_ratio": 1.0635001204475523,
+       "cell_id": "k02_add_fwd.L2",
+       "d_ci95": [
+        1.0347769671577964,
+        1.1048519705272422
+       ],
+       "d_deviation_pct": 7.693781261131583,
+       "d_interval_margin_pct": 3.4776967157796435,
+       "d_ratio": 1.0769378126113158,
+       "kernel": "k02_add_fwd",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0020578732706986,
+        1.002825578411428
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.0024227504260266,
+       "as_compiled_ratio": 1.0005762537003386,
+       "cell_id": "k03_stencil.L1",
+       "d_ci95": [
+        0.9977149402972908,
+        0.9988060691591641
+       ],
+       "d_deviation_pct": 0.18420339371818528,
+       "d_interval_margin_pct": 0.11939308408358551,
+       "d_ratio": 0.9981579660628181,
+       "kernel": "k03_stencil",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.6369636720089555,
+        1.6445391056178036
+       ],
+       "aligned_ci_hi_within_limit": false,
+       "aligned_point_within_limit": false,
+       "aligned_ratio": 1.6417006320295326,
+       "as_compiled_ratio": 1.5329266597094622,
+       "cell_id": "k08_matmul.L1",
+       "d_ci95": [
+        0.930362697610695,
+        0.9439508580789773
+       ],
+       "d_deviation_pct": 6.625688642490191,
+       "d_interval_margin_pct": 5.604914192102273,
+       "d_ratio": 0.9337431135750981,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": false,
+       "size_class": "L1",
+       "stays_exempt": {
+        "d_floor_2pct": true,
+        "d_floor_both": true,
+        "d_floor_layout_aa": true
+       }
+      },
+      {
+       "aligned_ci95": [
+        1.0111185546695145,
+        1.012903947423856
+       ],
+       "aligned_ci_hi_within_limit": true,
+       "aligned_point_within_limit": true,
+       "aligned_ratio": 1.011938579038746,
+       "as_compiled_ratio": 1.0097003140310188,
+       "cell_id": "k08_matmul.L2",
+       "d_ci95": [
+        0.9968552970602554,
+        0.9987291012160269
+       ],
+       "d_deviation_pct": 0.22118585594922413,
+       "d_interval_margin_pct": 0.1270898783973129,
+       "d_ratio": 0.9977881414405078,
+       "kernel": "k08_matmul",
+       "passes_forward_rule_if_judged": true,
+       "size_class": "L2",
+       "stays_exempt": {
+        "d_floor_2pct": false,
+        "d_floor_both": false,
+        "d_floor_layout_aa": false
+       }
+      }
+     ],
+     "forward_limit_pct": 2.0,
+     "jobs": 1,
+     "layout_aa_half_width_pct": 2.2695564123790923,
+     "layout_aa_pairs_half_width_pct": {
+      "k02_add_fwd.L1": 0.03036507769048069,
+      "k02_add_fwd.L2": 2.2695564123790923
+     },
+     "reproduces_stored_verdict": true,
+     "rules": {
+      "d_floor_2pct": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_both": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "d_floor_layout_aa": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k08_matmul.L1"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      },
+      "written": {
+       "exempt_cell_ids": [
+        "k02_add_fwd.L1",
+        "k02_add_fwd.L2",
+        "k03_stencil.L1",
+        "k08_matmul.L1",
+        "k08_matmul.L2"
+       ],
+       "why": "too few jobs: fewer than minimum_jobs pooled",
+       "word": "inconclusive"
+      }
+     },
+     "runs": 1,
+     "stored_form": "inconclusive",
+     "stored_why": "too few jobs: fewer than minimum_jobs pooled",
+     "testable": false,
+     "words_that_change": []
+    }
+   ],
+   "pooled_file": "results/s9-arm-ab-pooled/pooled.json",
+   "runs": 6,
+   "what": "the Arm pool and its replication set pooled together"
+  }
+ ],
+ "rules": [
+  {
+   "id": "written",
+   "short": "as stored",
+   "text": "the rule as stored: the interval of D excludes 1 and the hot loops differ in placement"
+  },
+  {
+   "id": "d_floor_2pct",
+   "short": "D floor 2%",
+   "text": "the stored rule, and also |D - 1| >= 2%"
+  },
+  {
+   "id": "d_floor_layout_aa",
+   "short": "D floor = layout A/A",
+   "text": "the stored rule, and also |D - 1| >= the pool's layout A/A half-width (largest of the designated pairs)"
+  },
+  {
+   "id": "d_floor_both",
+   "short": "D floor = larger of the two",
+   "text": "the stored rule, and also |D - 1| >= the larger of the 2% floor and the layout A/A half-width"
+  }
+ ],
+ "script": "robustness/placement_floor.py",
+ "summary": {
+  "d_deviation_pct_max": 93.94591713839692,
+  "d_deviation_pct_min": 0.1327105096339709,
+  "distinct_exempt_cells_not_passing_forward_rule": [
+   {
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.0565168738311213,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.055976542539541,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "d_deviation_pct": 4.7054402931146155,
+      "jobs": 19,
+      "layout_aa_half_width_pct": 0.5752712450024566,
+      "pool": "s4",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.0565338974719989,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0559913907059675,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "d_deviation_pct": 4.709267223217662,
+      "jobs": 20,
+      "layout_aa_half_width_pct": 0.590063855156292,
+      "pool": "s6",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.0567539473819931,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.056275113081786,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "d_deviation_pct": 4.744587813682966,
+      "jobs": 29,
+      "layout_aa_half_width_pct": 0.412684113764078,
+      "pool": "s7",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.056640030482089,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0558715459878667,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "d_deviation_pct": 4.723281029641102,
+      "jobs": 19,
+      "layout_aa_half_width_pct": 0.43352423496463843,
+      "pool": "s9-x86-c",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.056406168089441,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0561153493328677,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "d_deviation_pct": 4.736154448147345,
+      "jobs": 48,
+      "layout_aa_half_width_pct": 0.3261051851454977,
+      "pool": "s9-x86-ac",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     }
+    ]
+   },
+   {
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.0239485454447768,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": true,
+      "aligned_ratio": 1.0150841484011863,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+      "d_deviation_pct": 1.3530471996941795,
+      "jobs": 5,
+      "layout_aa_half_width_pct": 0.7251448580152919,
+      "pool": "s4",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.020292000193801,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": true,
+      "aligned_ratio": 1.0155937732364488,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+      "d_deviation_pct": 1.4980294707900632,
+      "jobs": 20,
+      "layout_aa_half_width_pct": 0.26372195398629006,
+      "pool": "s6",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.020431400587305,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": true,
+      "aligned_ratio": 1.0160256473163558,
+      "cell_id": "k03_stencil.L1",
+      "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+      "d_deviation_pct": 1.489801395305912,
+      "jobs": 23,
+      "layout_aa_half_width_pct": 0.24075715310438173,
+      "pool": "s7",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     }
+    ]
+   },
+   {
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.0632860286330783,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0604147736708045,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+      "d_deviation_pct": 0.567018347465309,
+      "jobs": 7,
+      "layout_aa_half_width_pct": 0.40956625849595807,
+      "pool": "s9-x86-c",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     }
+    ]
+   },
+   {
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.2066990307702694,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.199201800971074,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+      "d_deviation_pct": 2.5806848664738036,
+      "jobs": 6,
+      "layout_aa_half_width_pct": 2.201254002555225,
+      "pool": "s6",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.2042788679949574,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.1985068768585772,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+      "d_deviation_pct": 2.6986984622820787,
+      "jobs": 7,
+      "layout_aa_half_width_pct": 1.8242459841580516,
+      "pool": "s7",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.2176612782641922,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.2043872068089052,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+      "d_deviation_pct": 2.750568189435443,
+      "jobs": 1,
+      "layout_aa_half_width_pct": 0.7181827425802811,
+      "pool": "s9-x86-c",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     },
+     {
+      "aligned_ci95_hi": 1.2053741799720776,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.1992403451273719,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+      "d_deviation_pct": 2.705180745942193,
+      "jobs": 8,
+      "layout_aa_half_width_pct": 1.615351050452457,
+      "pool": "s9-x86-ac",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     }
+    ]
+   },
+   {
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.057547253604649,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0569130461275975,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "d_deviation_pct": 1.0346567315470567,
+      "jobs": 1,
+      "layout_aa_half_width_pct": 0.08291546497546931,
+      "pool": "s7",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     },
+     {
+      "aligned_ci95_hi": 1.0577783819961515,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0571153822702957,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "d_deviation_pct": 0.9453797334001868,
+      "jobs": 1,
+      "layout_aa_half_width_pct": 0.1760202577850034,
+      "pool": "s9-x86-c",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     },
+     {
+      "aligned_ci95_hi": 1.0575565066732269,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.0570142093574892,
+      "cell_id": "k02_add_fwd.L1",
+      "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "d_deviation_pct": 0.9900083671634974,
+      "jobs": 2,
+      "layout_aa_half_width_pct": 0.1035670430937885,
+      "pool": "s9-x86-ac",
+      "stays_exempt": {
+       "d_floor_2pct": false,
+       "d_floor_both": false,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     }
+    ]
+   },
+   {
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-N2",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.589547672519637,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.589388912383257,
+      "cell_id": "k08_matmul.L1",
+      "cpu_model": "Neoverse-N2",
+      "d_deviation_pct": 2.6203034454267304,
+      "jobs": 30,
+      "layout_aa_half_width_pct": 2.4019682152458364,
+      "pool": "s8-arm",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.589290641689693,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.5890935044707772,
+      "cell_id": "k08_matmul.L1",
+      "cpu_model": "Neoverse-N2",
+      "d_deviation_pct": 2.5857915277317733,
+      "jobs": 29,
+      "layout_aa_half_width_pct": 2.8992860436224452,
+      "pool": "s9-arm-b",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": false,
+       "d_floor_layout_aa": false
+      },
+      "testable": true
+     },
+     {
+      "aligned_ci95_hi": 1.5893717584297973,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.5892437050220736,
+      "cell_id": "k08_matmul.L1",
+      "cpu_model": "Neoverse-N2",
+      "d_deviation_pct": 2.603341488648958,
+      "jobs": 59,
+      "layout_aa_half_width_pct": 1.9394246009360239,
+      "pool": "s9-arm-ab",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": true
+     }
+    ]
+   },
+   {
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-V3",
+    "occurrences": [
+     {
+      "aligned_ci95_hi": 1.6445391056178036,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.6417006320295326,
+      "cell_id": "k08_matmul.L1",
+      "cpu_model": "Neoverse-V3",
+      "d_deviation_pct": 6.625688642490191,
+      "jobs": 1,
+      "layout_aa_half_width_pct": 2.2695564123790923,
+      "pool": "s9-arm-b",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     },
+     {
+      "aligned_ci95_hi": 1.6445391056178036,
+      "aligned_ci_hi_within_limit": false,
+      "aligned_point_within_limit": false,
+      "aligned_ratio": 1.6417006320295326,
+      "cell_id": "k08_matmul.L1",
+      "cpu_model": "Neoverse-V3",
+      "d_deviation_pct": 6.625688642490191,
+      "jobs": 1,
+      "layout_aa_half_width_pct": 2.2695564123790923,
+      "pool": "s9-arm-ab",
+      "stays_exempt": {
+       "d_floor_2pct": true,
+       "d_floor_both": true,
+       "d_floor_layout_aa": true
+      },
+      "testable": false
+     }
+    ]
+   }
+  ],
+  "exempt_cell_records": 82,
+  "exempt_cell_records_below_2pct": 31,
+  "exempt_cell_records_below_layout_floor": 14,
+  "exempt_cells_with_aligned_ratio_above_point_limit": [
+   {
+    "aligned_ci95_hi": 1.0565168738311213,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.055976542539541,
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "d_deviation_pct": 4.7054402931146155,
+    "jobs": 19,
+    "layout_aa_half_width_pct": 0.5752712450024566,
+    "pool": "s4",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.0565338974719989,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0559913907059675,
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "d_deviation_pct": 4.709267223217662,
+    "jobs": 20,
+    "layout_aa_half_width_pct": 0.590063855156292,
+    "pool": "s6",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.2066990307702694,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.199201800971074,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+    "d_deviation_pct": 2.5806848664738036,
+    "jobs": 6,
+    "layout_aa_half_width_pct": 2.201254002555225,
+    "pool": "s6",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.0567539473819931,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.056275113081786,
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "d_deviation_pct": 4.744587813682966,
+    "jobs": 29,
+    "layout_aa_half_width_pct": 0.412684113764078,
+    "pool": "s7",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.2042788679949574,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.1985068768585772,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+    "d_deviation_pct": 2.6986984622820787,
+    "jobs": 7,
+    "layout_aa_half_width_pct": 1.8242459841580516,
+    "pool": "s7",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.057547253604649,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0569130461275975,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "d_deviation_pct": 1.0346567315470567,
+    "jobs": 1,
+    "layout_aa_half_width_pct": 0.08291546497546931,
+    "pool": "s7",
+    "stays_exempt": {
+     "d_floor_2pct": false,
+     "d_floor_both": false,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   },
+   {
+    "aligned_ci95_hi": 1.056640030482089,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0558715459878667,
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "d_deviation_pct": 4.723281029641102,
+    "jobs": 19,
+    "layout_aa_half_width_pct": 0.43352423496463843,
+    "pool": "s9-x86-c",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.0632860286330783,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0604147736708045,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "d_deviation_pct": 0.567018347465309,
+    "jobs": 7,
+    "layout_aa_half_width_pct": 0.40956625849595807,
+    "pool": "s9-x86-c",
+    "stays_exempt": {
+     "d_floor_2pct": false,
+     "d_floor_both": false,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.2176612782641922,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.2043872068089052,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+    "d_deviation_pct": 2.750568189435443,
+    "jobs": 1,
+    "layout_aa_half_width_pct": 0.7181827425802811,
+    "pool": "s9-x86-c",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   },
+   {
+    "aligned_ci95_hi": 1.0577783819961515,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0571153822702957,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "d_deviation_pct": 0.9453797334001868,
+    "jobs": 1,
+    "layout_aa_half_width_pct": 0.1760202577850034,
+    "pool": "s9-x86-c",
+    "stays_exempt": {
+     "d_floor_2pct": false,
+     "d_floor_both": false,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   },
+   {
+    "aligned_ci95_hi": 1.056406168089441,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0561153493328677,
+    "cell_id": "k03_stencil.L1",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "d_deviation_pct": 4.736154448147345,
+    "jobs": 48,
+    "layout_aa_half_width_pct": 0.3261051851454977,
+    "pool": "s9-x86-ac",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.2053741799720776,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.1992403451273719,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) 6973P-C",
+    "d_deviation_pct": 2.705180745942193,
+    "jobs": 8,
+    "layout_aa_half_width_pct": 1.615351050452457,
+    "pool": "s9-x86-ac",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.0575565066732269,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.0570142093574892,
+    "cell_id": "k02_add_fwd.L1",
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "d_deviation_pct": 0.9900083671634974,
+    "jobs": 2,
+    "layout_aa_half_width_pct": 0.1035670430937885,
+    "pool": "s9-x86-ac",
+    "stays_exempt": {
+     "d_floor_2pct": false,
+     "d_floor_both": false,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   },
+   {
+    "aligned_ci95_hi": 1.589547672519637,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.589388912383257,
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-N2",
+    "d_deviation_pct": 2.6203034454267304,
+    "jobs": 30,
+    "layout_aa_half_width_pct": 2.4019682152458364,
+    "pool": "s8-arm",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.589290641689693,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.5890935044707772,
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-N2",
+    "d_deviation_pct": 2.5857915277317733,
+    "jobs": 29,
+    "layout_aa_half_width_pct": 2.8992860436224452,
+    "pool": "s9-arm-b",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": false,
+     "d_floor_layout_aa": false
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.6445391056178036,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.6417006320295326,
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-V3",
+    "d_deviation_pct": 6.625688642490191,
+    "jobs": 1,
+    "layout_aa_half_width_pct": 2.2695564123790923,
+    "pool": "s9-arm-b",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   },
+   {
+    "aligned_ci95_hi": 1.5893717584297973,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.5892437050220736,
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-N2",
+    "d_deviation_pct": 2.603341488648958,
+    "jobs": 59,
+    "layout_aa_half_width_pct": 1.9394246009360239,
+    "pool": "s9-arm-ab",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": true
+   },
+   {
+    "aligned_ci95_hi": 1.6445391056178036,
+    "aligned_ci_hi_within_limit": false,
+    "aligned_point_within_limit": false,
+    "aligned_ratio": 1.6417006320295326,
+    "cell_id": "k08_matmul.L1",
+    "cpu_model": "Neoverse-V3",
+    "d_deviation_pct": 6.625688642490191,
+    "jobs": 1,
+    "layout_aa_half_width_pct": 2.2695564123790923,
+    "pool": "s9-arm-ab",
+    "stays_exempt": {
+     "d_floor_2pct": true,
+     "d_floor_both": true,
+     "d_floor_layout_aa": true
+    },
+    "testable": false
+   }
+  ],
+  "forward_point_max_ratio": 1.02,
+  "testable_rows": 25,
+  "word_changes": {
+   "d_floor_2pct": [
+    {
+     "cells_losing_exemption": [
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 5,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s4",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L2",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 20,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s6",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L2",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 23,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s7",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L1",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "from": "map",
+     "jobs": 7,
+     "of_which_missing_the_forward_rule": [
+      "k02_add_fwd.L1"
+     ],
+     "pool": "s9-x86-c",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    }
+   ],
+   "d_floor_both": [
+    {
+     "cells_losing_exemption": [
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 5,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s4",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L2",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 20,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s6",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L2",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+     "from": "map",
+     "jobs": 23,
+     "of_which_missing_the_forward_rule": [
+      "k03_stencil.L1"
+     ],
+     "pool": "s7",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k03_stencil.L1; cells above the forward limit: k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    },
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L1",
+      "k03_stencil.L1"
+     ],
+     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+     "from": "map",
+     "jobs": 7,
+     "of_which_missing_the_forward_rule": [
+      "k02_add_fwd.L1"
+     ],
+     "pool": "s9-x86-c",
+     "to": "inconclusive",
+     "why_under_rule": "mixed picture: forward rule (aligned) missed by k02_add_fwd.L1; cells above the forward limit: k02_add_fwd.L1, k02_add_fwd.L1 (aligned), k04_rev.L1, k04_rev.L1 (aligned), k04_rev.L2, k04_rev.L2 (aligned), k05_stride2.L1, k05_stride2.L1 (aligned), k05_stride2.L2, k05_stride2.L2 (aligned), k08_matmul.L1, k08_matmul.L1 (aligned), k08_matmul.L2, k08_matmul.L2 (aligned)"
+    }
+   ],
+   "d_floor_layout_aa": []
+  },
+  "word_unchanged_though_a_missing_cell_is_judged": {
+   "d_floor_2pct": [],
+   "d_floor_both": [
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L1",
+      "k08_matmul.L1",
+      "k08_matmul.L2"
+     ],
+     "cpu_model": "Neoverse-N2",
+     "jobs": 29,
+     "of_which_missing_the_forward_rule": [
+      "k08_matmul.L1"
+     ],
+     "pool": "s9-arm-b",
+     "word": "inconclusive"
+    }
+   ],
+   "d_floor_layout_aa": [
+    {
+     "cells_losing_exemption": [
+      "k02_add_fwd.L1",
+      "k08_matmul.L1",
+      "k08_matmul.L2"
+     ],
+     "cpu_model": "Neoverse-N2",
+     "jobs": 29,
+     "of_which_missing_the_forward_rule": [
+      "k08_matmul.L1"
+     ],
+     "pool": "s9-arm-b",
+     "word": "inconclusive"
+    }
+   ]
+  }
+ }
+}

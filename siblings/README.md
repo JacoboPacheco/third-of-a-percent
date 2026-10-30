@@ -4,10 +4,10 @@ Every number of the main x86-64 pool comes from one setup: Ubuntu clang 18.1.3, 
 
 ## Short answer
 
-**It depends on the compiler, and the forward-loop part holds only under clang.**
+**It depends on the compiler, and the part about forward loops bounded by `size()` holds only under clang.**
 - **Holds:** a check that keeps a loop from vectorizing costs several times; on the AMD models, a check that stays out of the vector loop costs about nothing (0.82x to 1.02x for the forward add; the exception is `-march=x86-64-v3`, where it reached 1.11x on one EPYC 9V45 job).
-- **clang (18 and 20, every libc++ mode tried):** forward loops keep their vectorization. On the AMD models the forward add costs 0.82x to 1.02x aligned (0.95x to 1.11x with `-march=x86-64-v3`); on the Intel models drawn it costs up to 1.20x at L1 under clang 18 FAST (Xeon 6973P-C, 1 job; 1.06x on the Xeon Platinum 8573C, 1 job). Reverse and stride-2 loops lose vectorization and cost 1.6x to 9.7x (2.9x and up outside one AVX2 cell, reverse at L2 on the 8573C).
-- **GCC 14 with libstdc++ `_GLIBCXX_ASSERTIONS`:** forward loops pay too. At `-O3` the checks stop the forward add and the stencil from vectorizing (forward add 4.9x to 8.5x; the forward sum stays vectorized at 1.00x). At `-O2` nothing vectorizes in either build, and the checks still cost up to 2.2x (2.4x for the gather, one job on the Xeon 6973P-C).
+- **clang (18 and 20, every libc++ mode tried):** forward loops bounded by `size()` keep their vectorization. On the AMD models the forward add costs 0.82x to 1.02x aligned (0.95x to 1.11x with `-march=x86-64-v3`); on the Intel models drawn it costs up to 1.20x at L1 under clang 18 FAST (Xeon 6973P-C, 1 job; 1.06x on the Xeon Platinum 8573C, 1 job). Reverse and stride-2 loops lose vectorization and cost 1.6x to 9.7x (2.9x and up outside one AVX2 cell, reverse at L2 on the 8573C).
+- **GCC 14 with libstdc++ `_GLIBCXX_ASSERTIONS`:** forward loops bounded by `size()` pay too. At `-O3` the checks stop the forward add and the stencil from vectorizing (forward add 4.9x to 8.5x; the forward sum stays vectorized at 1.00x). At `-O2` nothing vectorizes in either build, and the checks still cost up to 2.2x (2.4x for the gather, one job on the Xeon 6973P-C).
 - **Matrix multiply depends on the setup:** clang 20, or `-march=x86-64-v3`, keeps it vectorized under FAST. It still costs 1.5x to 2.3x at L1.
 
 ## How to run it
@@ -222,10 +222,10 @@ Read each cell the same way as in the L1 table.
 **What the table shows: partly.**
 
 **What carries over:**
-- **The mechanism.** On every toolchain where a check stops a loop from vectorizing, that loop costs about 2.9x to 9.7x at L1. A vectorized loop whose check stays out of the vector body costs about 1.00x on the AMD models (up to 1.11x with `-march=x86-64-v3`, one EPYC 9V45 job); on the Intel models drawn the forward add still cost 1.06x to 1.20x at L1 (one job each).
+- **The mechanism.** On every toolchain where a check stops a loop from vectorizing, that loop costs about 2.9x to 9.7x at L1. In loops bounded by `size()`, a vectorized loop whose check stays out of the vector body costs about 1.00x on the AMD models (up to 1.11x with `-march=x86-64-v3`, one EPYC 9V45 job); on the Intel models drawn the forward add still cost 1.06x to 1.20x at L1 (one job each).
 - **The class lines under libc++.** They are the same in all three hardening modes on clang 18. EXTENSIVE and DEBUG lose the same three loops as FAST, at ratios within a few percent of FAST on each CPU model; the exception is the noisy k07_hist, whose intervals are wide in every variant. DEBUG adds traps (k02 2, k05 2, k06 2, k08 3) but no measurable time over FAST on these kernels.
 - **The same lines on clang 20 with libc++ 20:**
-  - forward loops: about 1.00x;
+  - forward loops bounded by `size()`: about 1.00x;
   - reverse and stride-2: lost, at the same sizes as clang 18 (5.4x to 8.0x and 2.9x to 5.1x at L1).
 
 **What does not carry over:**
@@ -241,7 +241,7 @@ Read each cell the same way as in the L1 table.
   - At `-O2`, GCC vectorizes none of these loops in either build, yet assertions still cost 1.6x to 2.2x on the forward k02, 1.1x to 2.0x on reverse and 1.7x to 2.2x on matmul (L1 and L2). In k02, whose assembly diff was read, the hardened loop reloads `c`'s pointers on every iteration.
   - The only loop that pays nothing under GCC is k01_sum_fwd. Its check is removed entirely (0 traps), as under clang.
 
-**In one line:** "forward loops pay about nothing" is a property of clang with libc++ on these kernels on the AMD models (with the one AVX2 exception above), not of bounds checking in general.
+**In one line:** "forward loops pay about nothing" (loops bounded by `size()`) is a property of clang with libc++ on these kernels on the AMD models (with the one AVX2 exception above), not of bounds checking in general.
 
 ## Surprises worth a second look
 

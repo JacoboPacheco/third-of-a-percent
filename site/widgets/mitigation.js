@@ -236,7 +236,7 @@ export function mount(el, ctx) {
       b1.cells.forEach((c) => { c.classList.remove('kept', 'lost'); c.classList.add(vec === true ? 'kept' : vec === false ? 'lost' : 'none'); });
       checks1.replaceChildren(...(oneCheck ? [h('span', { class: 'mi-chk one', title: 'one up-front check' })] : Array.from({ length: CELLS }, () => h('span', { class: 'mi-chk', title: 'a check' }))));
       time1.textContent = `unchecked: 1.0 time units · this loop: ${fx(ratio, 2)} (median of the measured ratios${st.cpu === 'all' ? ', all CPU models' : ', ' + st.cpu})`;
-      beltNote.textContent = (mq.matches ? 'Static frame: where each loop is when the unchecked one finishes. ' : '') + 'Illustration scaled to the measured median; the yellow marks are the bounds checks (one per element, or one up front).';
+      beltNote.textContent = (mq.matches ? 'Static frame: where each loop is when the unchecked one finishes. ' : '') + 'Scaled to the measured median; yellow marks are bounds checks, one per element or one up front.';
       beltState = { ratio: Math.max(ratio, 0.05), g, t0: 0, static: true };
       if (firstPaint) { firstPaint = false; startAnim(); } else { cancelAnimationFrame(raf); raf = 0; paintStatic(); }
 
@@ -265,9 +265,9 @@ export function mount(el, ctx) {
       const usable = d.usable_jobs, total = d.job_count;
       const later = [...addedLater];
       rules.replaceChildren(
-        h('p', null, `Only ${usable} of ${total} jobs had a clean enough noise floor to count (A/A at most ${d.aa_max_pct}%), all on ${(d.usable_cpus || []).join(', ') || 'no CPU model'}. The ranges above include every job.`),
+        h('p', null, `Only ${usable} of ${total} jobs had an A/A floor of at most ${d.aa_max_pct}%, all on ${(d.usable_cpus || []).join(', ') || 'no CPU model'}; the ranges include every job.`),
         h('p', null, `The rule for the word “better”: ${d.headline_rule}`),
-        later.length ? h('p', null, `Added after the first timed run, judged by the same rules: ${later.join(', ')}.`) : null);
+        later.length ? h('p', null, `Added after the first timed run, by the same rules: ${later.join(', ')}.`) : null);
       announce(`${sh.shape}, ${st.mode === 'before' ? 'original loop' : 'rewrite ' + v.variant}, ${st.cpu === 'all' ? 'all CPU models' : st.cpu}: ${rangeOf(showV, st.cpu) ? showRange(rangeOf(showV, st.cpu)) : 'no jobs'} against the unchecked original.`);
     }
     update();

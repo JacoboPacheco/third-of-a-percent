@@ -39,8 +39,8 @@
       <p>Google reported that libc++&rsquo;s bounds checks cost <span data-v="googlePct">0.30</span>% on average over whole services, a third of a percent: the title. This study times single loops, a different measurement. The cost depends on the loop.</p>
       <p><b>The result</b>, loop by loop, on arrays that fit the processor&rsquo;s cache (<span data-v="clang">clang 18.1.3</span>, <code>-O2</code>):</p>
       <ul>
-        <li><b><span data-v="lostMin">2.8</span>&times; to <span data-v="lostMax">8.0</span>&times; as long</b> at the study’s two in-cache sizes, with the bounds check on as with it off, for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction.</li>
-        <li><b>About the same, near 1&times;,</b> for forward loops on the AMD CPU models (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;); <span class="nw"><span data-v="intelRange">1.05&ndash;1.20</span>&times;</span> on Intel (forward add; section 1).</li>
+        <li><b><span data-v="lostMin">2.8</span>&times; to <span data-v="lostMax">8.0</span>&times; as long</b> at the study’s two in-cache sizes, with the bounds check on as with it off (as compiled <span data-v="lostCompMin">2.8</span> to <span data-v="lostCompMax">7.7</span>, aligned <span data-v="lostAlnMin">2.9</span> to <span data-v="lostAlnMax">8.0</span>), for reverse, stride-2 and matrix-multiply loops, which also stop running several elements per instruction.</li>
+        <li><b>About the same, near 1&times;,</b> for forward loops bounded by <code>size()</code> on the AMD CPU models (one AVX2 exception, <span data-v="avx2Short">1.11</span>&times;); <span class="nw"><span data-v="intelRange">1.05&ndash;1.20</span>&times;</span> on Intel (forward add; section 1).</li>
       </ul>
     </div>
   </header>
@@ -95,7 +95,7 @@
     <section id="placement-full">
       <h2><span class="secno">3</span>Code placement: the control that changed the reading, in full</h2>
       <p id="ps-sum"><span data-v="psSummary"></span></p>
-      <p>One forward loop, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, it ran up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was. With the checks on, clang emits a shorter SIMD loop that handles <span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span> (<span data-v="k02Bytes"></span> bytes, starting at address <code data-v="k02Start"></code>). As placed, that loop is the slow one on these AMD cores; aligned, it runs faster than the unchecked one. Both builds&rsquo; hot loops cross a 64-byte boundary, so the crossing alone does not tell them apart; the hardware reason (presumably how the processor fetches small loops in 64-byte windows) is inferred, since the investigation had timings only, no hardware counters.</p>
+      <p>One forward loop bounded by <code>size()</code>, <code>c[i] = a[i] + b[i]</code>, looked expensive on some CPUs: as compiled, it ran up to <span data-v="k02Max"></span> times as long with checks on, although it stays vectorized in both builds. The check&rsquo;s own instructions were not the cause; the loop layout it induces was. With the checks on, clang emits a shorter SIMD loop that handles <span data-v="k02PerPassOn"></span> numbers per pass instead of <span data-v="k02PerPassOff"></span> (<span data-v="k02Bytes"></span> bytes, starting at address <code data-v="k02Start"></code>). As placed, that loop is the slow one on these AMD cores; aligned, it runs faster than the unchecked one. Both builds&rsquo; hot loops cross a 64-byte boundary, so the crossing alone does not tell them apart; the hardware reason (presumably how the processor fetches small loops in 64-byte windows) is inferred, since the investigation had timings only, no hardware counters.</p>
       <p>Rebuilding both binaries with every hot loop aligned to 64 bytes (<code>-falign-loops=64</code>) removes the effect. That is why every figure offers the aligned build, and why the rules now call a forward loop <em>placement-sensitive</em> when two things hold: the pooled ratio of its two columns (as compiled &divide; aligned) has an interval that excludes 1, and its hot loop sits differently against the 64-byte windows in the two builds. Such a loop is shown and flagged but not used to judge the forward side. The full write-up is in <a data-href="findingsUrl" href="#" title="investigate/FINDINGS.md in the repository">the investigation&rsquo;s notes</a>.</p>
       <div id="ps-scope" class="ps-scope"></div>
       <p class="tcap" id="ps-cap"><b>Table 2.</b> Placement-sensitive forward loops, per CPU model with enough jobs: pooled ratio as compiled, aligned, and the pooled ratio of the two with its 95% interval.</p>
@@ -139,6 +139,16 @@
       <p id="census-avx2">With AVX2 (<code>-march=x86-64-v3</code>) as a sensitivity run, census 2 loses <span data-v="c2aLost"></span> of <span data-v="c2aVec"></span> (<span data-v="c2aLostU"></span> locations) against <span data-v="c2Lost">444</span> at baseline: census 2 loses fewer at the wider target. Census 1 loses <span data-v="c1aLost"></span> of <span data-v="c1aVec"></span> over <span data-v="c1aProjects"></span> projects (<span data-v="c1aDropped"></span> did not build at AVX2), against <span data-v="c1Lost"></span> of <span data-v="c1Vec"></span> at baseline, so not fewer there. The checks are in the code either way: FAST adds <span data-v="c2Ud2"></span> trap sites and <span data-v="c2Text"></span>% machine code in census 2.</p>
       <p id="census-ctl-sum"><span data-v="censusCtlSum"></span></p>
       <ul class="controls-list" id="census-controls"></ul>
+      <h3 id="forwardt-full">Forward loops whose bound is a variable, timed</h3>
+      <p id="ft-q"></p>
+      <p id="ft-out"></p>
+      <div class="tablewrap boxed" tabindex="0" role="region" aria-label="The six loops per CPU model, both columns and both sizes; scrolls sideways on a narrow screen"><table class="tbl dense" id="ft-table"><thead></thead><tbody></tbody></table></div>
+      <h3 id="ft-preds-h">The predictions and what happened to them</h3>
+      <ul class="controls-list" id="ft-preds"></ul>
+      <blockquote class="ft-blockquote" id="ft-letter"></blockquote>
+      <h3 id="ft-listing-h">The four loops bounded by a variable, cell by cell</h3>
+      <div class="tablewrap boxed" tabindex="0" role="region" aria-label="Every decidable aligned cell of the four variable-bound loops; scrolls sideways on a narrow screen"><table class="tbl dense" id="ft-listing"><thead></thead><tbody></tbody></table></div>
+      <p class="small" id="ft-limits"></p>
     </section>
 
     <section id="mitigate-full">
@@ -150,10 +160,10 @@
       <h2><span class="secno">6</span>Other toolchains, every loop</h2>
       <p>The same eight loops, built and timed the same way under six other setups. Each cell says whether the loop loses vectorization under that setup&rsquo;s checks and gives the range of its ratio, aligned, over every usable job and both sizes.</p>
       <p class="tcap" id="sib-cap"><b>Table 4.</b> Checks on &divide; off, per setup and loop, aligned, over every usable job of every CPU model drawn in the toolchain runs, <span data-v="sibExtraCpus"></span>; so its ranges are wider than Table 1&rsquo;s. <span class="sib-key"><span class="tag t-lost">lost</span> vectorized without checks, not with them; <span class="tag t-kept">kept</span> vectorized in both; <span class="tag t-neither">none</span> vectorized in neither.</span> &ldquo;Kept&rdquo; means the loop stays vectorized, not that the check is free: clang 20 keeps the matrix multiply vectorized and it still costs up to <span data-v="c20MatmulMax"></span>&times;. Gather and histogram vectorize under no setup, checks or not.</p>
-      <p class="tnote" id="sib-note">Jobs: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, sizes L1 and L2, every CPU model drawn. The ranges differ from Figure 1&rsquo;s because each part uses its own jobs, sizes and column. The top of the clang 18 forward range, <span data-v="sib6973"></span>&times;, is an Intel Xeon 6973P-C draw (<span data-v="sib6973Jobs"></span>).</p>
+      <p class="tnote" id="sib-note">Jobs: the <span data-v="sibJobs"></span> jobs of the toolchain runs, aligned, sizes L1 and L2, every CPU model drawn. The ranges differ from Figure 1&rsquo;s because each part uses its own jobs, sizes and column. The top of the clang 18 range for forward loops bounded by <code>size()</code>, <span data-v="sib6973"></span>&times;, is an Intel Xeon 6973P-C draw (<span data-v="sib6973Jobs"></span>).</p>
       <div class="tablewrap boxed sib-wrap" id="sib-wrap" tabindex="0" role="region" aria-label="Table 4, scrolls sideways on a narrow screen"><table class="tbl sib" id="sib-table" aria-describedby="sib-cap"><thead></thead><tbody></tbody></table></div>
       <p class="scroll-hint" id="sib-hint" hidden>The table is wider than the screen: swipe it sideways for every loop.</p>
-      <p id="sib-finding">What the table shows: every libc++ mode on clang 18 (FAST, EXTENSIVE, DEBUG) loses the same three loops, at about the same cost. Clang 20 and AVX2 keep the matrix multiply vectorized, and it still costs up to <span data-v="sibMatmulMax"></span> times. GCC differs: at <code>-O2</code> it vectorizes none of these loops in either build, yet the assertions still cost up to <span data-v="gccO2Max"></span> times (the gather, one job); at <code>-O3</code> the forward add and the stencil lose vectorization too, the forward add at <span data-v="gccO3AddMin"></span> to <span data-v="gccO3AddMax"></span> times, while the forward sum stays vectorized. So &ldquo;forward loops pay about nothing&rdquo; is a property of clang with libc++ on these loops on the AMD models (one exception: <span data-v="avx2Exc"></span>), not of bounds checking in general: the clang 18 FAST forward add still costs <span data-v="sib6973"></span>&times; at L1 on a Xeon 6973P-C (<span data-v="sib6973Jobs"></span> in these runs; <span data-v="sib6973Pooled"></span>).</p>
+      <p id="sib-finding">What the table shows: every libc++ mode on clang 18 (FAST, EXTENSIVE, DEBUG) loses the same three loops, at about the same cost. Clang 20 and AVX2 keep the matrix multiply vectorized, and it still costs up to <span data-v="sibMatmulMax"></span> times. GCC differs: at <code>-O2</code> it vectorizes none of these loops in either build, yet the assertions still cost up to <span data-v="gccO2Max"></span> times (the gather, one job); at <code>-O3</code> the forward add and the stencil lose vectorization too, the forward add at <span data-v="gccO3AddMin"></span> to <span data-v="gccO3AddMax"></span> times, while the forward sum stays vectorized. So &ldquo;forward loops pay about nothing&rdquo; is, for loops bounded by <code>size()</code>, a property of clang with libc++ on these loops on the AMD models (one exception: <span data-v="avx2Exc"></span>), not of bounds checking in general: the clang 18 FAST forward add still costs <span data-v="sib6973"></span>&times; at L1 on a Xeon 6973P-C (<span data-v="sib6973Jobs"></span> in these runs; <span data-v="sib6973Pooled"></span>).</p>
       <p class="small" id="sib-thin">Coverage is thin: <span data-v="sibJobs"></span> jobs in <span data-v="sibRuns"></span> runs, <span data-v="sibExcluded"></span> toolchain-job pairs left out for a noisy A/A, and <span data-v="sibThin"></span> of the <span data-v="sibGroups"></span> setup, loop, size and CPU combinations rest on a single job. Appendix C has every CPU model.</p>
           <p class="tcap" id="sibsum-cap"><b>Table 4a.</b> The timed toolchains in five rows. Checks on &divide; off, aligned, per setup and loop group: whether the group loses vectorization under that setup&rsquo;s checks (<span class="tag t-lost">lost</span>, <span class="tag t-kept">kept</span>, <span class="tag t-neither">none</span>) and the range over the group&rsquo;s loops, every usable job and both sizes. &ldquo;Kept&rdquo; is not &ldquo;free&rdquo;.</p>
       <div class="tablewrap"><table class="tbl sibsum" id="sibsum-table"><thead></thead><tbody></tbody></table></div>
@@ -279,10 +289,10 @@
     </section>
 
     <section id="programs-full">
-      <h2><span class="secno">7b</span>The earlier small programs, every job</h2>
+      <h2><span class="secno">7b</span>The earlier small programs, every job within the A/A limit</h2>
       <p id="prog-sum"><span data-v="progSum"></span></p>
         <p>nlohmann/json parsed a public <code>twitter.json</code> and fmt formatted numbers. FAST mode put <span data-v="jsonTraps"></span> and <span data-v="fmtTraps"></span> check traps into them. For each job the table gives two numbers: the noise floor (how far the unchecked program differs from an identical copy of itself on that machine) and the largest slowdown the measurement allows once that floor is accounted for (the upper end of the 95% interval, or the floor if that is larger).</p>
-        <p class="tcap" id="prog-cap"><b>Table 8.</b> Whole programs, as compiled, every usable job of <span data-v="progRuns"></span>; the earlier run that timed fmt only and the single early job are not in it. Each row: the largest slowdown allowed, next to that job&rsquo;s noise floor.</p>
+        <p class="tcap" id="prog-cap"><b>Table 8.</b> Whole programs, as compiled, every job within the A/A limit of <span data-v="progRuns"></span>: <span data-v="progLeft"></span>. The earlier run that timed fmt only and the single early job are not in it. Each row: the largest slowdown allowed, next to that job&rsquo;s noise floor.</p>
       <div class="tablewrap">
           <table class="tbl" id="prog-table">
             <thead><tr><th scope="col">Run, job</th><th scope="col">CPU model</th><th scope="col" class="num">json: slowdown at most</th><th scope="col" class="num">json: noise floor</th><th scope="col" class="num">fmt: slowdown at most</th><th scope="col" class="num">fmt: noise floor</th></tr></thead>
@@ -304,7 +314,7 @@
         <dt>A/A</dt>
         <dd>The unchecked binary against a byte-identical copy of itself, pooled the same way. Pooled per CPU model it came out at <span data-v="aaMin"></span>% to <span data-v="aaMax"></span>% half-width, against a ceiling of <span data-v="aaCeil"></span>%.</dd>
         <dt>Controls</dt>
-        <dd>Forward loops vectorized in both builds (expected near 1&times;); loops that lose vectorization, with a NOVEC build as a yardstick; and a layout A/A, the unchecked binary rebuilt at a different loop alignment.</dd>
+        <dd>Forward loops bounded by <code>size()</code>, vectorized in both builds (expected near 1&times;); loops that lose vectorization, with a NOVEC build as a yardstick; and a layout A/A, the unchecked binary rebuilt at a different loop alignment.</dd>
         <dt>Instructions</dt>
         <dd>Cachegrind counts the instructions each build executes, at both sizes, beside every time ratio: instructions, not time. No rule reads them.</dd>
         <dt>Verdict</dt>
@@ -316,7 +326,7 @@
         <dt>Layout A/A</dt>
         <dd>The unchecked binary against itself rebuilt at a different loop alignment: what placement alone can do, per loop.</dd>
         <dt>Negative control</dt>
-        <dd>The forward loops, vectorized in both builds, where the expected cost is near <span class="nowrap">1&times;</span>.</dd>
+        <dd>The forward loops bounded by <code>size()</code>, vectorized in both builds, where the expected cost is near <span class="nowrap">1&times;</span>.</dd>
         <dt>Positive control</dt>
         <dd>The reverse, stride-2 and matrix-multiply loops, which lose vectorization under FAST (the compiler&rsquo;s remarks and the assembly), plus the NOVEC build (no checks, vectorization off) as a yardstick of what losing SIMD costs on its own.</dd>
         <dt>Run to run</dt>
@@ -380,7 +390,7 @@
       <div class="tablewrap"><table class="tbl dense" id="appb"><thead><tr><th scope="col">Run</th><th scope="col">CPU model</th><th scope="col" class="num">Jobs</th><th scope="col">Pattern in this run alone</th></tr></thead><tbody></tbody></table></div>
       <p class="tcap" id="appb-cap"><b>Per CPU model, pooled.</b> The verdict form, the numbers it rests on and the rule that decided it, in plain words.</p>
       <div class="tablewrap"><table class="tbl dense" id="appb-cpu"><thead><tr><th scope="col">CPU model</th><th scope="col" class="num">Jobs</th><th scope="col">Verdict</th><th scope="col" class="num">Lose SIMD, aligned: median (range)</th><th scope="col" class="num">Judged forward loops: highest interval end</th><th scope="col">Rule that decided it</th></tr></thead><tbody></tbody></table></div>
-      <p class="small">&ldquo;Map&rdquo; means the pattern of section 1 held: near 1&times; for forward loops, far above it for loops that lose SIMD. It is about these loops on these CPU models, not a statement about Google&rsquo;s services.</p>
+      <p class="small">&ldquo;Map&rdquo; means the pattern of section 1 held: near 1&times; for forward loops bounded by <code>size()</code>, far above it for loops that lose SIMD. It is about these loops on these CPU models, not a statement about Google&rsquo;s services.</p>
       <p class="small">The full record per CPU model, every pooled interval and every per-run result, is <a data-href="pooledUrl" href="#"><code data-v="pooledPath"></code></a> in the repository.</p>
       </details>
     </section>

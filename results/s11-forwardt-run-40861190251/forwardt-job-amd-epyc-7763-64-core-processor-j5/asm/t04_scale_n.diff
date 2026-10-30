@@ -1,0 +1,102 @@
+--- t04_scale_n.none.s
++++ t04_scale_n.fast.s
+@@ -2,58 +2,50 @@
+ test   %rdx,%rdx
+ je     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+ mov    (%rsi),%rax
+-mov    (%rdi),%rcx
+-xor    %esi,%esi
+-cmp    $0x8,%rdx
++mov    0x8(%rsi),%rcx
++sub    %rax,%rcx
++sar    $0x2,%rcx
++mov    (%rdi),%rsi
++mov    0x8(%rdi),%rdi
++sub    %rsi,%rdi
++sar    $0x2,%rdi
++lea    -0x1(%rdx),%r8
++cmp    %r8,%rdi
++cmovb  %rdi,%r8
++cmp    %rcx,%r8
++cmovae %rcx,%r8
++inc    %r8
++xor    %r9d,%r9d
++cmp    $0x5,%r8
+ jb     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-mov    %rcx,%rdi
+-sub    %rax,%rdi
+-cmp    $0x20,%rdi
+-jb     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-mov    %rdx,%rsi
+-and    $0xfffffffffffffff8,%rsi
+-xor    %edi,%edi
++mov    %rsi,%r10
++sub    %rax,%r10
++cmp    $0xf,%r10
++jbe    <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
++mov    %r8d,%r9d
++and    $0x3,%r9d
++mov    $0x4,%r10d
++cmovne %r9,%r10
++sub    %r10,%r8
++xor    %r9d,%r9d
++cs nopw 0x0(%rax,%rax,1)
++movdqu (%rax,%r9,4),%xmm0
++paddd  %xmm0,%xmm0
++movdqu %xmm0,(%rsi,%r9,4)
++add    $0x4,%r9
++cmp    %r9,%r8
++jne    <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
++mov    %r8,%r9
+ nopl   0x0(%rax)
+-movdqu (%rax,%rdi,4),%xmm0
+-movdqu 0x10(%rax,%rdi,4),%xmm1
+-paddd  %xmm0,%xmm0
+-paddd  %xmm1,%xmm1
+-movdqu %xmm0,(%rcx,%rdi,4)
+-movdqu %xmm1,0x10(%rcx,%rdi,4)
+-add    $0x8,%rdi
+-cmp    %rdi,%rsi
+-jne    <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-cmp    %rdx,%rsi
++cmp    %r9,%rcx
+ je     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-mov    %rdx,%r8
+-mov    %rsi,%rdi
+-and    $0x3,%r8
++cmp    %r9,%rdi
+ je     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-mov    %rsi,%rdi
+-nopl   0x0(%rax,%rax,1)
+-mov    (%rax,%rdi,4),%r9d
+-add    %r9d,%r9d
+-mov    %r9d,(%rcx,%rdi,4)
+-inc    %rdi
+-dec    %r8
+-jne    <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-sub    %rdx,%rsi
+-cmp    $0xfffffffffffffffc,%rsi
+-ja     <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+-nopl   0x0(%rax)
+-mov    (%rax,%rdi,4),%esi
+-add    %esi,%esi
+-mov    %esi,(%rcx,%rdi,4)
+-mov    0x4(%rax,%rdi,4),%esi
+-add    %esi,%esi
+-mov    %esi,0x4(%rcx,%rdi,4)
+-mov    0x8(%rax,%rdi,4),%esi
+-add    %esi,%esi
+-mov    %esi,0x8(%rcx,%rdi,4)
+-mov    0xc(%rax,%rdi,4),%esi
+-add    %esi,%esi
+-mov    %esi,0xc(%rcx,%rdi,4)
+-add    $0x4,%rdi
+-cmp    %rdi,%rdx
++mov    (%rax,%r9,4),%r8d
++add    %r8d,%r8d
++mov    %r8d,(%rsi,%r9,4)
++inc    %r9
++cmp    %r9,%rdx
+ jne    <_Z16kern_t04_scale_nRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_m+off>
+ ret
++ud2

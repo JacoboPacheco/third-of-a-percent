@@ -1,4 +1,4 @@
-"""The three round-7 analyses as the page quotes them: robustness/calibration.json (the run-to-run count calibrated intervals would
+"""The three robustness analyses as the page quotes them: robustness/calibration.json (the run-to-run count calibrated intervals would
 give), robustness/seed-sensitivity-x86.json (the x86-64 pool under other bootstrap seeds) and robustness/aa-l2.json (the
 identical-binary A/A at the L2 size), as scripts/build_site_data.py copies them into site/data/index.json ("robustness") and the
 real-world pool's "max_in_a_run" into site/data/realworld.json.

@@ -369,7 +369,7 @@ def intel_all_jobs():
     return out
 
 
-# ---- the three stored readings of round 7: seed re-draws (x86-64), the A/A at L2, the calibration baseline ----------
+# ---- the three stored robustness readings: seed re-draws (x86-64), the A/A at L2, the calibration baseline ----------
 
 SEED_X86 = "robustness/seed-sensitivity-x86.json"
 AA_L2 = "robustness/aa-l2.json"
@@ -2133,34 +2133,172 @@ def exp_arm_seed_l2aa():
     return {"aa": f2(p["half_width_pct"]), "c": f0(rule_aa_ceiling())}
 
 
-def exp_arm_seed_pool_check():
-    path = os.path.join(REPO, "harness", "pool_check.py")
-    with open(path, encoding="utf-8") as f:
-        src = f.read()
+def pool_check_constants(src=None):
+    """harness/pool_check.py's sample and tolerance, read from the text of the file (not imported; `src` stands in for the file in the tamper tests)."""
+    if src is None:
+        with open(os.path.join(REPO, "harness", "pool_check.py"), encoding="utf-8") as f:
+            src = f.read()
     cells = re.search(r"^SAMPLE_CELLS = \((.*?)\)", src, re.M | re.S)
-    width, ratio = re.search(r"^BOUND_TOL_WIDTH = ([\d.]+)", src, re.M), re.search(r"^BOUND_TOL_RATIO = ([\d.]+)", src, re.M)
-    assert cells and width and ratio, "harness/pool_check.py no longer defines SAMPLE_CELLS, BOUND_TOL_WIDTH and BOUND_TOL_RATIO in the form this test reads"
-    assert "k02_add_fwd.L2" not in cells.group(1), "harness/pool_check.py now samples the cell that decides the Arm verdict"
+    placement = re.search(r"^PLACEMENT_CELLS = \((.*?)\)", src, re.M | re.S)
+    nums = {n: re.search(rf"^{n} = ([\d.]+)", src, re.M) for n in ("B", "BOUND_TOL_WIDTH", "BOUND_TOL_RATIO")}
+    assert cells and placement and all(nums.values()), "harness/pool_check.py no longer defines its constants in the form this test reads"
+    return {"cells": re.findall(r'"([^"]+)"', cells.group(1)), "placement": re.findall(r'"([^"]+)"', placement.group(1)),
+            "b": int(nums["B"].group(1)), "width": float(nums["BOUND_TOL_WIDTH"].group(1)), "ratio": float(nums["BOUND_TOL_RATIO"].group(1))}
+
+
+def pool_check_narrow(doc=None, constants=None):
+    """The statistics harness/pool_check.py samples in a pooled file (the CPU models with at least the minimum number of jobs, counted the way its
+    check() lists them: the A/A, the layout A/A of k02_add_fwd.L1, both columns of each sampled cell, the placement statistic of the placement cells),
+    and which of them have a tolerance at least as wide as the stored interval: (statistics sampled, [(CPU model, interval width) of the narrow ones])."""
+    k = constants or pool_check_constants()
+    doc = J(POOLED) if doc is None else doc
+    minimum = J(doc["criteria_file"])["v3"]["pooling"]["minimum_jobs"]
+    sampled, narrow = 0, []
+    for blk in doc["cpus"]:
+        if blk["jobs"] < minimum:
+            continue
+        stats = [blk["aa"]]
+        if "k02_add_fwd.L1" in blk["layout_aa"]:
+            stats.append(blk["layout_aa"]["k02_add_fwd.L1"])
+        by_id = {c["cell_id"]: c for c in blk["cells"]}
+        for cid in k["cells"]:
+            if cid in by_id:
+                stats += [by_id[cid]["as_compiled"], by_id[cid]["aligned"]]
+                if cid in k["placement"] and "placement" in by_id[cid]:
+                    stats.append(by_id[cid]["placement"]["d"])
+        for st in stats:
+            sampled += 1
+            width = st["ci95"][1] - st["ci95"][0]
+            if k["width"] * width + k["ratio"] * st["ratio"] >= width:
+                narrow.append((blk["cpu_model"], width))
+    return sampled, narrow
+
+
+# The three cells the written conclusions rest on, which harness/pool_check.py samples: the stencil at L2 (decides the Xeon 6973P-C's word), the
+# forward add at L2 (decides the Arm core's word) and stride-2 at L1 (the lowest lost-loop cost over the models with a verdict).
+POOL_CHECK_LEAD_CELLS = ("k03_stencil.L2", "k02_add_fwd.L2", "k05_stride2.L1")
+
+
+def check_pool_check_lead_cells(constants=None):
+    """The sample holds the three cells, and each one is what the sentence says it is, tied to the pooled files."""
+    k = constants or pool_check_constants()
+    for cid in POOL_CHECK_LEAD_CELLS:
+        assert cid in k["cells"], f"harness/pool_check.py no longer samples {cid}, one of the three cells the written conclusions rest on"
+    x = cpu_like("6973P-C")
+    ps = {p["cell_id"] for p in x["verdict"]["placement_sensitive"]}
+    counted = [c for c in x["cells"] if c["kernel"] in FORWARD and c["cell_id"] not in ps]
+    top = max(counted, key=lambda c: c["aligned"]["ci95"][1])["cell_id"]
+    assert top == "k03_stencil.L2", f"the counted forward cell of the Xeon 6973P-C with the highest aligned upper end is {top}, not the stencil at L2"
+    dc = arm_deciding()[1]
+    assert (dc["cell_id"], dc["column"]) == ("k02_add_fwd.L2", "aligned"), "the cell that decides the Arm word is no longer the forward add at L2"
+    low = min((c[col]["ratio"], c["cell_id"]) for cpu in enough_cpus() for c in cpu["cells"] if c["class"] == "lost" for col in ("as_compiled", "aligned"))
+    assert low[1] == "k05_stride2.L1", f"the lowest lost-loop cell over the models with a verdict is {low[1]}, not stride-2 at L1"
+
+
+def exp_arm_seed_pool_check():
+    k = pool_check_constants()
+    assert "k02_add_fwd.L2" in k["cells"], "harness/pool_check.py no longer samples the cell that decides the Arm verdict"
     x = arm_cell("k02_add_fwd.L2")["aligned"]
-    tol = float(width.group(1)) * (x["ci95"][1] - x["ci95"][0]) + float(ratio.group(1)) * x["ratio"]
+    tol = k["width"] * (x["ci95"][1] - x["ci95"][0]) + k["ratio"] * x["ratio"]
     margin = x["ci95"][1] - arm_forward_limit()
     assert tol > margin > 0, "the check's tolerance is no longer larger than the margin"
-    return {"tol": f3(tol), "over": f4(margin)}
+    floor = 1 + J("harness/criteria-v3.json")["verdict"]["forward_ci_hi_floor_pct"] / 100
+    assert abs(floor - arm_forward_limit()) < 1e-12, "the limit pool_check.py prints the margin against is not the Arm core's limit"
+    return {"lim": f2(floor), "tol": f3(tol), "over": f4(margin)}
 
 
 def exp_pool_check_sample():
-    """What harness/pool_check.py samples and how closely its interval has to agree: read from its constants and from the minimum-jobs rule."""
+    """What harness/pool_check.py samples and how closely its interval has to agree: read from its constants and from the minimum-jobs rule;
+    the count of narrow intervals is recomputed here from the stored pooled file with the same tolerance formula."""
+    k = pool_check_constants()
+    assert len(set(k["cells"])) == len(k["cells"]), "harness/pool_check.py lists a sampled cell twice"
+    check_pool_check_lead_cells(k)
+    sampled, narrow = pool_check_narrow(constants=k)
+    models = {m for m, _ in narrow}
+    assert len(models) == 1 and "EPYC" in next(iter(models)), f"the narrow statistics are on {sorted(models)}: the sentence says all of them are on one EPYC model"
+    assert 0 < len(narrow) * 10 <= sampled, f"{len(narrow)} narrow statistics of {sampled} are no longer 'a few'"
+    assert max(w for _, w in narrow) < 0.005, "a narrow interval is no longer 'very narrow' (under half a percent)"
+    jobs = len(J(POOLED)["inputs"])
+    assert jobs == sum(c["jobs"] for c in J(POOLED)["cpus"]), "the pooled file's inputs and its per-model job counts disagree"
+    return {"mn": str(J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]), "cells": word(len(k["cells"])), "pl": word(len(k["placement"])),
+            "b": f"{k['b']:,}", "w": f"{round(k['width'] * 100):d}", "r": f"{k['ratio'] * 100:g}",
+            "nk": str(len(narrow)), "nm": str(sampled), "jobs": str(jobs), "cpu": next(iter(models)).split("EPYC ")[1].split()[0]}
+
+
+def tampered_sentence_copies(row_label, rows, text, names=None):
+    """Copies of `text` in which one typed value of the row's sentence is replaced (by the value with a 9 appended, which the anchor still reads), one
+    value per copy: [(name, copy)]. All the row's captured values unless `names` lists some."""
+    found = [r for r in rows if r[0] == row_label]
+    assert len(found) == 1, f"{len(found)} rows are called {row_label!r}"
+    m = re.search(found[0][3], text, re.S)
+    assert m, f"the row {row_label!r} matches no sentence of the text it is tested on"
+    out = []
+    for name in names or m.re.groupindex:
+        s, e = m.span(name)
+        out.append((name, text[:s] + text[s:e] + "9" + text[e:]))
+    return found[0], out
+
+
+def failure_of(row, text, doc):
+    """The message of the AssertionError check_row raises for `text`, or None when the row passes."""
+    try:
+        check_row(row, text, doc)
+    except AssertionError as e:
+        return str(e)
+    return None
+
+
+def test_the_pool_check_sentence_fails_on_each_changed_number():
+    """Every number typed in the pool_check sentence of the details page is changed in turn: the row must name the value as wrong, and pass on the text as it is."""
+    text = details_text()
+    row, copies = tampered_sentence_copies("details: what pool_check.py recomputes and how closely", DETAILS_ROWS, text)
+    assert failure_of(row, text, "readme-parts/DETAILS.md") is None
+    assert {n for n, _ in copies} == {"mn", "cells", "pl", "b", "w", "r", "nk", "nm", "jobs", "cpu"}, "the sentence's typed values changed: add the new ones to the guard"
+    for name, bad in copies:
+        why = failure_of(row, bad, "readme-parts/DETAILS.md")
+        assert why and "types" in why and f"'{name}'" in why, f"changing {name!r} was not caught: {why}"
+
+
+def test_the_arm_pool_check_sentence_fails_on_each_changed_number():
+    text = arm64_text()
+    row, copies = tampered_sentence_copies("arm64: verdict, the independent check", ARM64_ROWS, text)
+    assert failure_of(row, text, "arm64/README.md") is None
+    assert {n for n, _ in copies} == {"lim", "tol", "over"}
+    for name, bad in copies:
+        why = failure_of(row, bad, "arm64/README.md")
+        assert why and "types" in why and f"'{name}'" in why, f"changing {name!r} was not caught: {why}"
+
+
+def test_a_pool_check_sample_without_a_lead_cell_is_caught():
+    """The constants are read from a copy of pool_check.py's text with one of the three cells taken out: the guard must fail on each."""
     with open(os.path.join(REPO, "harness", "pool_check.py"), encoding="utf-8") as f:
         src = f.read()
-    cells = re.search(r"^SAMPLE_CELLS = \((.*?)\)", src, re.M | re.S)
-    placement = re.search(r"^PLACEMENT_CELLS = \((.*?)\)", src, re.M | re.S)
-    b, width, ratio = (re.search(rf"^{n} = ([\d.]+)", src, re.M) for n in ("B", "BOUND_TOL_WIDTH", "BOUND_TOL_RATIO"))
-    assert cells and placement and b and width and ratio, "harness/pool_check.py no longer defines its constants in the form this test reads"
-    n_cells, n_place = len(re.findall(r'"[^"]+"', cells.group(1))), len(re.findall(r'"[^"]+"', placement.group(1)))
-    words = {2: "two", 7: "seven"}
-    assert n_cells in words and n_place in words, f"pool_check samples {n_cells} cells and {n_place} placement statistics: add the words"
-    return {"mn": str(J("harness/criteria-v3.json")["v3"]["pooling"]["minimum_jobs"]), "cells": words[n_cells], "pl": words[n_place],
-            "b": f"{int(b.group(1)):,}", "w": f"{round(float(width.group(1)) * 100):d}", "r": f"{float(ratio.group(1)) * 100:g}"}
+    check_pool_check_lead_cells(pool_check_constants(src))
+    for cid in POOL_CHECK_LEAD_CELLS:
+        cut = pool_check_constants(src.replace(f'"{cid}", ', "", 1).replace(f', "{cid}"', "", 1))
+        assert cid not in cut["cells"], f"the copy still samples {cid}"
+        try:
+            check_pool_check_lead_cells(cut)
+        except AssertionError as e:
+            assert cid in str(e), f"the failure for {cid} does not name it: {e}"
+        else:
+            raise AssertionError(f"a sample without {cid} was not caught")
+
+
+def test_the_count_of_narrow_pool_check_intervals_follows_the_data():
+    """The same counting run on a copy of the pooled file in which one interval is made as narrow as a hair: exactly one more narrow statistic, same total."""
+    doc = json.loads(json.dumps(J(POOLED)))
+    sampled, narrow = pool_check_narrow(doc)
+    stored = pool_check_narrow()
+    assert (sampled, len(narrow)) == (stored[0], len(stored[1])), "the copy does not count like the stored file"
+    blk = next(c for c in doc["cpus"] if "7763" in c["cpu_model"])
+    blk["aa"]["ci95"] = [blk["aa"]["ratio"] - 1e-7, blk["aa"]["ratio"] + 1e-7]
+    sampled2, narrow2 = pool_check_narrow(doc)
+    assert sampled2 == sampled and len(narrow2) == len(narrow) + 1, f"{len(narrow)} narrow, then {len(narrow2)} after one interval was made a hair wide"
+    blk["aa"]["ci95"] = [blk["aa"]["ratio"] - 1.0, blk["aa"]["ratio"] + 1.0]
+    assert len(pool_check_narrow(doc)[1]) == len(narrow), "an interval made wide still counts as narrow"
+    doc["cpus"].append(dict(blk, jobs=J(doc["criteria_file"])["v3"]["pooling"]["minimum_jobs"] - 1))
+    assert pool_check_narrow(doc)[0] == sampled, "a model with too few jobs was sampled"
 
 
 def exp_arm_seed_summary():
@@ -2413,7 +2551,8 @@ ROWS = [
     ("sentence 2: repetitions per side", "harness/criteria*.json reps_per_side",
      exp_reps, r"timed each pair (?P<lo>\d+) to (?P<hi>\d+) times per side"),
     ("sentence 3: lost-loop range", "site/data/index.json page.lost",
-     exp_lost_range, r"took (?P<lo>[\d.]+) to (?P<hi>[\d.]+) times as long in cache at the study's sizes\."),
+     exp_lost_range, r"took (?P<lo>[\d.]+) to (?P<hi>[\d.]+) times as long in cache at the study's sizes "
+                     r"\(the smallest as compiled, the largest with the loops aligned\)\."),
     ("sentence 3: forward range, AVX2 exception, as-compiled forward add",
      "site/data/index.json page.forward and cpus; site/data/siblings.json clang18v3-fast",
      exp_forward_sentence,
@@ -2423,7 +2562,7 @@ ROWS = [
     ("sentence 3: Intel forward add", "site/data/index.json intel_forward and cpus; results/s7-pooled/pooled.json Xeon k02_add_fwd.L1 and k03_stencil.L2 aligned; robustness/seed-sensitivity-x86.json",
      exp_intel_sentence,
      r"Intel: in all (?P<jobs>\d+) Intel jobs seen \((?P<n>\w+) models; (?P<pool>\d+) are in the (?P<pooljobs>\d+)-job pool, (?P<early>\d+) in earlier runs, (?P<setc>\d+) more in set C\) "
-     r"the forward add at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
+     r"the forward add \(bounded by `size\(\)`\) at L1 cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x aligned, "
      r"against (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on the AMD models\. "
      r"The Xeon 8573C \((?P<j1>\d+) jobs\) has no verdict \(INCONCLUSIVE under the written rules\): "
      r"its forward add costs a measured (?P<x8573>[\d.]+)x, over the (?P<lim>\d+)% forward limit\. "
@@ -2458,8 +2597,8 @@ ROWS = [
      r"(?P<ctl>\w+) control programs"),
     ("found: code placement", "site/data/layout.json; site/data/index.json cpus forward_compiled_max_cell",
      exp_placement_bullet,
-     r"Across (?P<n>\d+) placements the reverse loop stays at (?P<rlo>[\d.]+)x to (?P<rhi>[\d.]+)x and the forward sum near 1x; "
-     r"the forward add swings (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on (?P<models>\w+) models "
+     r"Across (?P<n>\d+) placements the reverse loop stays at (?P<rlo>[\d.]+)x to (?P<rhi>[\d.]+)x and the forward sum \(bounded by `size\(\)`\) near 1x; "
+     r"the forward add \(bounded by `size\(\)`\) swings (?P<alo>[\d.]+)x to (?P<ahi>[\d.]+)x on (?P<models>\w+) models "
      r"\(as compiled (?P<c7763>[\d.]+)x on EPYC 7763 and (?P<c9v74>[\d.]+)x on 9V74"),
     ("found: one added size check", "site/data/mitigate.json reverse shape, variant pre",
      exp_mitigation, r"\*\*(?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x\*\* for the reverse loop after one added size check"),
@@ -2551,7 +2690,7 @@ ROWS = [
      r"Arm \(a separate column; the figures above are x86-64\): on one Arm core type \((?P<model>[\w-]+), (?P<jobs>\d+) jobs in (?P<runs>\d+) runs, "
      r"the same compiler, flags and rules\) reverse and stride-2 lose their NEON loops and cost (?P<r>[\d.]+)x and (?P<s>[\d.]+)x at L1 "
      r"\(all ratios here as compiled\); matrix multiply keeps its NEON loop and still costs (?P<m1>[\d.]+)x at L1 \((?P<m2>[\d.]+)x at L2\); "
-     r"forward loops cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1 \(the add and the stencil are placement-sensitive and not judged\), "
+     r"forward loops bounded by `size\(\)` cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1 \(the add and the stencil are placement-sensitive and not judged\), "
      r"against an A/A floor of (?P<aa>[\d.]+)% that belongs to one L1 cell\. "
      r"The verdict is INCONCLUSIVE under the written rules, which stay as written: the forward add at L2, aligned, has an interval ending at (?P<end>[\d.]+), "
      r"over the (?P<lim>[\d.]+) limit by (?P<over>[\d.]+), a margin inside the bootstrap's own seed noise \((?P<k>\d+) of (?P<n>\d+) other seeds end at or above (?P<lim2>[\d.]+)\) "
@@ -3042,7 +3181,7 @@ DETAILS_ROWS = [
      r"\(at most (?P<per>\d+) per run\)\. The Xeon Platinum 8370C drew (?P<j8370>\d+) job \((?P<need>\d+) are needed\): no verdict and no numbers shown\."),
     ("details: forward loops, AMD and Intel", "site/data/index.json page.forward and intel_forward; results/s7-pooled/pooled.json",
      exp_details_forward,
-     r"forward loops ran (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x of the unchecked time there; .*?judges ran (?P<jlo>[\d.]+)x to (?P<jhi>[\d.]+)x\. "
+     r"forward loops bounded by `size\(\)` ran (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x of the unchecked time there; .*?judges ran (?P<jlo>[\d.]+)x to (?P<jhi>[\d.]+)x\. "
      r"The Intel models differ\. In each of (?P<n>\d+) Intel jobs seen \((?P<m>\w+) models; (?P<pj>\d+) of them in the kernel pool, (?P<ea>\d+) in earlier runs and (?P<sc>\d+) more in set C\) "
      r"the forward add at L1, aligned, cost "
      r"(?P<ilo>[\d.]+)x to (?P<ihi>[\d.]+)x: Xeon 8370C (?P<a1>[\d.]+)x to (?P<a2>[\d.]+)x \((?P<an>\d+) jobs, (?P<ap>\d+) in the kernel pool, (?P<as>\d+) in set C\), "
@@ -3200,7 +3339,7 @@ DETAILS_ROWS = [
      r"so in log terms the time ratio is (?P<l1>[\d.]+) of the instruction ratio at L1 and (?P<l2>[\d.]+) at L2"),
     ("details: Arm, forward loops, gather and histogram", "results/s8-arm-pooled/pooled.json cells and aa; site/data/arm64.json forward_instr; noise",
      exp_details_arm_forward,
-     r"Forward loops keep their NEON loops and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1, against a pooled A/A half-width of (?P<aa>[\d.]+)% "
+     r"Forward loops bounded by `size\(\)` keep their NEON loops and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1, against a pooled A/A half-width of (?P<aa>[\d.]+)% "
      r"\(that of one L1 cell, the add's; the add's (?P<pct>[\d.]+)% is (?P<n>\d+) extra instructions in each call, the same at L2, "
      r"and the add and the stencil at L1 are placement-sensitive and not judged\); "
      r"gather and histogram, never vectorized, pay (?P<g>[\d.]+)x and (?P<h>[\d.]+)x at L1"),
@@ -3222,8 +3361,8 @@ DETAILS_ROWS = [
      r"Matrix multiply at both sizes and the add and the stencil at L1 are placement-sensitive under the written rule and not judged"),
     ("details: Arm, links to the runs", "results/s8-arm-run-*/*/results.json run.workflow_run_url",
      exp_details_arm_links,
-     r"`results/s8-arm-run-\*/` \((?P<three>\w+)\), `results/s9-arm-run-\*/` and `results/s9-run-\*/` \(\w+\) and `results/s10-dsweep-run-\*/` \(\w+\): "
-     r"they link to runs of this repository"),
+     r"`results/s8-arm-run-\*/` \((?P<three>\w+)\), `results/s9-arm-run-\*/` and `results/s9-run-\*/` \(\w+\), `results/s10-dsweep-run-\*/` \(\w+\) "
+     r"and `results/s11-forwardt-run-\*/` \(\w+\): they link to runs of this repository"),
     ("details: Arm, the one other architecture", "results/s8-arm-run-*/*/results.json toolchain; results/s8-arm-pooled/pooled.json",
      exp_details_arm_other_arch,
      r"The Arm column \(above\) is the one other architecture, and only with clang (?P<c>[\d.]+) on one core type \((?P<model>[\w-]+)\)"),
@@ -3289,7 +3428,7 @@ ARM64_ROWS = [
     ("arm64: status line", "results/s8-arm-pooled/pooled.json jobs", exp_arm_pooled_over,
      r"One core type, one compiler and (?P<n>\d+) jobs make this a first reading"),
     ("arm64: question, the x86-64 range", "site/data/index.json page.lost", exp_lost_range,
-     r"pay (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x in cache, and that forward loops pay little on the AMD models"),
+     r"pay (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x in cache, and that forward loops bounded by `size\(\)` pay little on the AMD models"),
     ("arm64: short answer, runs and machine", "results/s8-arm-pooled/pooled.json", exp_arm_counts_digits,
      r"`ubuntu-24\.04-arm` runner, (?P<jobs>\d+) jobs in (?P<runs>\d+) runs, every job on a (?P<model>[\w-]+) core"),
     ("arm64: short answer, reverse and stride-2", "results/s8-arm-pooled/pooled.json cells; per-job listings", exp_arm_short_reverse,
@@ -3301,7 +3440,7 @@ ARM64_ROWS = [
      r"said it would be on AArch64 for clang (?P<ca>\d+)\. FAST costs (?P<m1>[\d.]+)x at L1 and (?P<m2>[\d.]+)x at L2\. "
      r"On x86-64 the same loop is lost under clang (?P<cx>\d+) and costs (?P<xlo>[\d.]+)x to (?P<xhi>[\d.]+)x\."),
     ("arm64: short answer, forward loops", "results/s8-arm-pooled/pooled.json cells and aa", exp_arm_short_forward,
-     r"\*\*Forward loops keep NEON and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1\*\* \(as compiled\), against a pooled A/A floor of (?P<aa>[\d.]+)%"),
+     r"\*\*Forward loops bounded by `size\(\)` keep NEON and cost (?P<lo>[\d.]+)x to (?P<hi>[\d.]+)x at L1\*\* \(as compiled\), against a pooled A/A floor of (?P<aa>[\d.]+)%"),
     ("arm64: short answer, the forward add", "results/s8-arm-pooled/pooled.json cells; site/data/arm64.json forward_instr and noise (L2 A/A)", exp_arm_short_add,
      r"the add's (?P<pct>[\d.]+)% is (?P<n>\d+) extra instructions in each call, a count that is the same at L2\. "
      r"At L2 the forward cells are noisy, and so is an identical binary timed against itself there \(A/A half-width (?P<aa>[\d.]+)%\)"),
@@ -3337,7 +3476,7 @@ ARM64_ROWS = [
      r"so the pool \(`results/s8-arm-pooled/pooled\.json`\) has (?P<one>\w+) entry"),
     ("arm64: setup, the runner label in the three places it appears", ".github/workflows/measure.yml runner input", exp_arm_labels,
      r"\*\*Runner\.\*\* `(?P<a>ubuntu-[\d.]+-arm)` \(GitHub-hosted\)\..*?The `(?P<b>ubuntu-[\d.]+-arm)` label could map to other core types later.*?"
-     r"gh workflow run measure\.yml -f runner=(?P<c>ubuntu-[\d.]+-arm)"),
+     r"gh workflow run measure\.yml -R <you>/third-of-a-percent -f runner=(?P<c>ubuntu-[\d.]+-arm)"),
     ("arm64: setup, the trap instruction", "harness/asm.py; per-job listings", exp_arm_trap_form,
      r"`(?P<t>brk #0x1)` is a trap"),
     ("arm64: setup, the fetch window", "harness/placement.py", exp_arm_window,
@@ -3508,8 +3647,10 @@ ARM64_ROWS = [
      r"(?P<c1>[\d.]+) and (?P<c2>[\d.]+) \(jobs only\) and (?P<d>[\d.]+) \(lag-1\), against the pool's (?P<a>[\d.]+)\."),
     ("arm64: verdict, the L2 A/A reading", "site/data/arm64.json noise.identical_binary_aa.L2; harness/criteria-v3.json aa_half_width_max_pct", exp_arm_seed_l2aa,
      r"\*\*The L2 A/A\.\*\* Read at the L2 cell the A/A is (?P<aa>[\d.]+)%, above the rule's (?P<c>\d+)% ceiling"),
-    ("arm64: verdict, the independent check", "harness/pool_check.py SAMPLE_CELLS, BOUND_TOL_WIDTH and BOUND_TOL_RATIO; results/s8-arm-pooled/pooled.json cells", exp_arm_seed_pool_check,
-     r"its tolerance \(a share of the interval's width, about (?P<tol>[\d.]+) here\) is larger than the margin of (?P<over>[\d.]+), so it could not flag a change of this size"),
+    ("arm64: verdict, the independent check", "harness/pool_check.py SAMPLE_CELLS, BOUND_TOL_WIDTH and BOUND_TOL_RATIO; harness/criteria-v3.json verdict; results/s8-arm-pooled/pooled.json cells", exp_arm_seed_pool_check,
+     r"`harness/pool_check\.py`, the recomputation that `scripts/check\.py` runs, samples this cell and prints how far its recomputed upper end lies from "
+     r"(?P<lim>[\d.]+), for information only: its tolerance \(a share of the interval's width, about (?P<tol>[\d.]+) here\) is larger than the margin of "
+     r"(?P<over>[\d.]+), so it could not flag a change of this size"),
     ("arm64: verdict, what this says", "results/s8-arm-pooled/pooled.json cells; arm64/seed-sensitivity.json deciding_cell", exp_arm_seed_summary,
      r"that cell's interval is (?P<hw>[\d.]+)% either side because L2 timings on this machine are that noisy, even for an identical binary, "
      r"and a margin of (?P<over>[\d.]+) is smaller than the bootstrap's seed noise"),
@@ -3677,7 +3818,7 @@ def exp_holdout_order():
 
 
 CURRENT_RUN_LINK = "github.com/JacoboPacheco/third-of-a-percent/actions/runs/"
-LINKED_GROUPS = ("s6-run", "s7-run", "s8-arm-run", "s9-arm-run", "s9-run", "s10-dsweep-run")
+LINKED_GROUPS = ("s6-run", "s7-run", "s8-arm-run", "s9-arm-run", "s9-run", "s10-dsweep-run", "s11-forwardt-run")
 
 
 def record_commits(doc, top_level_commit=False):
@@ -3732,7 +3873,7 @@ def result_groups():
 
 def exp_run_links():
     """Which run links work and which commits the records name (tests/data/run_links_and_commits.json, a record of what the GitHub API said),
-    checked against the records themselves: the ids and commits of results/ are the ones the record lists, the six linked groups are the ones that
+    checked against the records themselves: the ids and commits of results/ are the ones the record lists, the seven linked groups are the ones that
     resolve and carry this repository's name in their links, every other group's ids returned 404 and its commits are not in the repository."""
     rec = J(RUN_LINKS)
     groups = result_groups()
@@ -3757,6 +3898,7 @@ def exp_run_links():
     assert [(c["commit"], c["vs_main"]) for c in arm] == [("6176991", "diverged")] and [(c["commit"], c["vs_main"]) for c in ds_] == [("8c874ec", "diverged")]
     for g in ("s6-run", "s7-run", "s9-arm-run", "s9-run"):
         assert {c["vs_main"] for c in rec["commits"][g]} == {"ahead"}, f"{g}: its commit is no longer an ancestor of the default branch"
+    assert {c["vs_main"] for c in rec["commits"]["s11-forwardt-run"]} == {"identical"}, "the forwardt runs name a commit that was not the default branch's head when it was read"
     smoke = rec["arm_smoke"]
     assert smoke["head"].startswith("6176991") and smoke["measure_yml_sha256_at_head"] == smoke["measure_yml_sha256_on_main_at_bbcee23"], (
         "the measure.yml on arm-smoke is not recorded as the default branch's")
@@ -3765,7 +3907,7 @@ def exp_run_links():
     return {"n4": str(s4), "p95": str(repl()["pools"]["x86"]["earlier"]["jobs"]), "nh": str(len(job_records("results/s5-holdout/runs/*/results-*/results.json"))),
             "n8": str(len(job_records(S8_ARM_JOBS))), "c8": "6176991", "b8": "arm-smoke", "base": "bbcee23",
             "r67": word(sum(1 for g in ("s6-run", "s7-run") for _ in rec["runs"][g]["resolve"])), "r8": word(len(rec["runs"]["s8-arm-run"]["resolve"])),
-            "r9": word(len(rec["runs"]["s9-arm-run"]["resolve"]) + len(rec["runs"]["s9-run"]["resolve"])), "r10": word(len(rec["runs"]["s10-dsweep-run"]["resolve"])),
+            "r9": word(len(rec["runs"]["s9-arm-run"]["resolve"]) + len(rec["runs"]["s9-run"]["resolve"])), "r10": word(len(rec["runs"]["s10-dsweep-run"]["resolve"])), "r11": word(len(rec["runs"]["s11-forwardt-run"]["resolve"])),
             "c10": "8c874ec", "b10": "dsweep-smoke"}
 
 
@@ -5076,8 +5218,10 @@ README_PROV_ROWS = [
         r"`corpus`, `realworld`, `pgo`, the day-one runs and `versions` these are commits of the author's unpublished development history that this repository does not "
         r"hold, so the code of those runs cannot be recovered from here\. The (?P<n8>\d+) Arm jobs \(`s8-arm-run-\*`\) name (?P<c8>[0-9a-f]+) on the temporary public "
         r"branch `(?P<b8>arm-smoke)`, because the `runner` input they needed was not yet on the default branch \(its `measure\.yml` was byte for byte the default "
-        r"branch's at commit (?P<base>[0-9a-f]+), which has the `runner` input\); that branch is kept because the records name its commit\. The run links inside the "
-        r"records work for `s6` to `s10` \(their runs are in this repository's Actions list\) and return 404 for every older folder"),
+        r"branch's at commit (?P<base>[0-9a-f]+), which has the `runner` input\); that branch is kept because the records name its commit\. "
+        r"The forwardt runs \(the \w+ of `forwardt/runs\.json`: \w+ measurement runs, stored, and \w+ code tests, not stored\) were dispatched from the public branch "
+        r"`[a-z-]+` at commit [0-9a-f]+, which the default branch holds, so that branch is not needed to recover their code\. "
+        r"The run links inside the records work for `s6` to `s11` \(their runs are in this repository's Actions list\) and return 404 for every older folder"),
     row("README: how to rerun, the minimum number of jobs, the runner sizes and the compilers", "harness/criteria-v3.json minimum_jobs; run.runner.cores of every record; results/ run.toolchain; versions/install.sh",
         lambda: {**pick(exp_repl_sets(), "mn"), "cl": timed_clang(), **pick(exp_runner_cores_rows(), "e", "l", "n"), **exp_versions_range()},
         r"a verdict needs (?P<mn>\d+) or more jobs of one model, so one rerun will not reproduce the per-model verdicts by itself.*?The early runs \(`s1` to `s4`, including "
@@ -5114,7 +5258,7 @@ DETAILS_PROV_ROWS = [
     row("details: the run links that work and the commits the records name", "tests/data/run_links_and_commits.json; results/ records",
         exp_run_links,
         r"The links work for the records in `results/s6-run-\*/` and `results/s7-run-\*/` \((?P<r67>\w+) runs\), `results/s8-arm-run-\*/` \((?P<r8>\w+)\), "
-        r"`results/s9-arm-run-\*/` and `results/s9-run-\*/` \((?P<r9>\w+)\) and `results/s10-dsweep-run-\*/` \((?P<r10>\w+)\).*?the code that produced the (?P<n4>\d+) "
+        r"`results/s9-arm-run-\*/` and `results/s9-run-\*/` \((?P<r9>\w+)\), `results/s10-dsweep-run-\*/` \((?P<r10>\w+)\) and `results/s11-forwardt-run-\*/` \((?P<r11>\w+)\).*?the code that produced the (?P<n4>\d+) "
         r"`s4-run-\*` jobs, (?P=n4) of the (?P<p95>\d+) pooled jobs, and the (?P<nh>\d+) holdout jobs cannot be recovered from here\. The (?P<n8>\d+) Arm jobs "
         r"\(`results/s8-arm-run-\*/`\) name (?P<c8>[0-9a-f]+) on the temporary public branch `(?P<b8>arm-smoke)`.*?at commit (?P<base>[0-9a-f]+)\)\. The d-sweep jobs name "
         r"(?P<c10>[0-9a-f]+) on `(?P<b10>dsweep-smoke)`"),
@@ -5467,16 +5611,20 @@ GROUP2_README_ROWS = [
         r"and also the four-fold unrolling that the scalar loop without the check has and the checked one lacks \(read from the listings; inferred, not separated, and not a stable "
         r"share: on Neoverse-N2 the no-vectorize build takes (?P<an>[\d.]+)x and the checked build (?P<af>[\d.]+)x for reverse\)\."),
     row("trust: what MAP and INCONCLUSIVE cover", "results/s7-pooled/pooled.json verdict.placement_sensitive and cells; asm/k01_sum_fwd.* of the 95 jobs; results/s8-arm-pooled", exp_cover_numbers,
-        r"\*\*What MAP and INCONCLUSIVE cover\.\*\* Each word is a statement about the forward in-cache cells left after one exemption that the rule file "
+        r"\*\*What MAP and INCONCLUSIVE cover\.\*\* Each word is a statement about the forward in-cache cells \(loops bounded by `size\(\)`\) left after one exemption that the rule file "
         r"`harness/criteria-v3\.json` sets \(it was fixed before the first pooled run, in the author's unpublished development history, though after the earlier runs were known\): a cell is "
         r"left out when the hot loops of the two builds sit differently in memory and the ratio between its as-compiled and aligned results has an interval that excludes 1\. "
         r"The rule has no minimum size for that difference and does not ask whether the cost goes away when the loops are aligned; aligning to 64 bytes removes one source of "
-        r"placement variation, not all of it \(the stencil at L1 on EPYC 7763 is (?P<sc>[\d.]+)x as compiled and (?P<sa>[\d.]+)x aligned\)\. The exemption left out (?P<amd>\d) of "
+        r"placement variation, not all of it \(the stencil at L1 on EPYC 7763 is (?P<sc>[\d.]+)x as compiled and (?P<sa>[\d.]+)x aligned\)\. "
+        r"The second test .{0,1200}? extra window\. "  # its figures are tied to the pools in tests/test_placement_docs.py
+        r"The exemption left out (?P<amd>\d) of "
         r"the (?P<six>\d) forward cells on each AMD model, (?P<x69>\d) on the Xeon 6973P-C and (?P<x85>\d) on the Xeon 8573C, each listed with its ratios in the model's verdict "
         r"line in `results/s7-pooled/pooled\.json`\. On each AMD model the (?P<jd>\d) judged cells are the forward sum at L1 and L2, which compiles to identical machine code in "
         r"both builds \(the same in all (?P<jobs>\d+) jobs, so it measures noise, not the check\), and the stencil at L2\. The Xeon 6973P-C's forward add at L1 "
         r"\((?P<ac2>[\d.]+)x as compiled, (?P<aa2>[\d.]+)x aligned\) is among the cells left out, and the Xeon 8573C's \((?P<xc2>[\d.]+)x in both columns\) is judged, so the two "
-        r"Intel words do not rank those models by cost\. The 6973P-C's MAP and the Arm INCONCLUSIVE each rest on one cell within (?P<tol>[\d.]+) of the (?P<lim>[\d.]+) limit "
+        r"Intel words do not rank those models by cost\. "
+        r"The rule asks whether the two columns differ, not by how much: .{0,1100}? the fifth being the EPYC 9V45's stencil at L1 \(\d\.\d{4}\)\. "  # tied to the pools in tests/test_placement_docs.py
+        r"The 6973P-C's MAP and the Arm INCONCLUSIVE each rest on one cell within (?P<tol>[\d.]+) of the (?P<lim>[\d.]+) limit "
         r"\((?P<h1>[\d.]+) and (?P<h2>[\d.]+)\)"),
     row("trust: floors, sizes and builds, the A/A at L2", "details.json aa_extra of the 95 jobs; robustness/aa-l2.json pools s7 and s8-arm; the seed file's stencil interval and the Arm pool's forward add interval at L2",
         exp_aa_extra,
@@ -5506,10 +5654,12 @@ GROUP2_DETAILS_ROWS = [
         exp_cover_numbers,
         r"That is (?P<amd>\d) of the (?P<six>\d) forward in-cache cells on each AMD model, (?P<x69>\d) on the Xeon 6973P-C and (?P<x85>\d) on the Xeon 8573C in the (?P<jobs>\d+)-job pool, "
         r"each listed with its ratios in the model's verdict line in `results/s7-pooled/pooled\.json` \(`harness/criteria-v3\.json`, `placement_sensitive`\)\. MAP or INCONCLUSIVE is a "
-        r"statement about the cells that are left\. The rule has no minimum size for the difference and does not ask whether the cost goes away when the loops are aligned\. The "
-        r"cells left are, on each AMD model, the forward sum at L1 and L2, whose machine code is identical in the two builds in all (?P=jobs) jobs \(so they measure noise, not the "
+        r"statement about the cells that are left\. The rule has no minimum size for the difference and does not ask whether the cost goes away when the loops are aligned\. "
+        r"The second test .{0,1200}? extra window\. "  # its figures are tied to the pools in tests/test_placement_docs.py
+        r"The cells left are, on each AMD model, the forward sum at L1 and L2, whose machine code is identical in the two builds in all (?P=jobs) jobs \(so they measure noise, not the "
         r"check\), and the stencil at L2\. The Xeon 6973P-C's forward add at L1 \((?P<ac3>[\d.]+) as compiled, (?P<aa3>[\d.]+) aligned\) is left out, while the Xeon 8573C's "
         r"\((?P<xc3>[\d.]+) as compiled, (?P<xa3>[\d.]+) aligned\) is judged; that is why only one of the two has a verdict, and the two Intel words do not rank the models by cost\. "
+        r"The rule asks whether the two columns differ, not by how much: .{0,1100}? the fifth being the EPYC 9V45's stencil at L1 \(\d\.\d{4}\)\. "  # tied to the pools in tests/test_placement_docs.py
         r"Aligning loops to 64 bytes removes one source of placement variation, not all of it: the stencil at L1 on EPYC 7763 is (?P<sc>[\d.]+) as compiled and (?P<sa>[\d.]+) aligned\. "
         r"Several words rest on margins of a few thousandths against the (?P<lim>[\d.]+) limit \(the Xeon 6973P-C's stencil at L2 ends at (?P<h1>[\d.]+), the Arm forward add at L2 at "
         r"(?P<h2>[\d.]+);"),
@@ -5522,11 +5672,15 @@ GROUP2_DETAILS_ROWS = [
         r"The A/A floor of these readings is that of an identical binary \(at most (?P<aamax>[\d.]+)% on EPYC 7763\), while the same program built without checks at "
         r"`-falign-loops=64` differs from the default build by (?P<fmt>[\d.]+)% for \{fmt\} on EPYC 7763 and by (?P<sp>[\d.]+)% for Spectra on EPYC 9V45 "
         r"\(`pairs\.layout` in `results/realworld-pooled/realworld\.json`\)"),
-    row("details: what pool_check.py recomputes and how closely", "harness/pool_check.py SAMPLE_CELLS, PLACEMENT_CELLS, B, BOUND_TOL_WIDTH, BOUND_TOL_RATIO; harness/criteria-v3.json minimum_jobs",
+    row("details: what pool_check.py recomputes and how closely", "harness/pool_check.py SAMPLE_CELLS, PLACEMENT_CELLS, B, BOUND_TOL_WIDTH, BOUND_TOL_RATIO; harness/criteria-v3.json minimum_jobs; results/s7-pooled/pooled.json intervals and inputs",
         exp_pool_check_sample,
         r"`harness/pool_check\.py` independently recomputes a sample of the pooled numbers, not all of them: for each CPU model with (?P<mn>\d+) or more jobs, the A/A, "
-        r"the layout A/A, (?P<cells>\w+) named cells and (?P<pl>\w+) placement statistics\. It uses its own code, generator and (?P<b>[\d,]+) resamples, so its interval "
+        r"the layout A/A, (?P<cells>\w+) named cells and (?P<pl>\w+) placement statistics\. They include the three cells the written conclusions rest on "
+        r"\(the stencil and the forward add at L2, which decide the words of the Xeon 6973P-C and of the Arm core, and stride-2 at L1, where the range of "
+        r"lost-loop costs starts\)\. It uses its own code, generator and (?P<b>[\d,]+) resamples, so its interval "
         r"bounds only have to agree with the stored ones within a Monte Carlo tolerance \((?P<w>\d+)% of the interval's width plus (?P<r>[\d.]+)% of the ratio\); "
+        r"for a few very narrow intervals \((?P<nk>\d+) of the (?P<nm>\d+) statistics sampled in the (?P<jobs>\d+)-job x86-64 pool, all EPYC (?P<cpu>\w+)\) "
+        r"the tolerance is as wide as the interval, so there the check confirms the point estimate and the order of the width, not the bound\. "
         r"`scripts/check\.py` re-runs `harness/pool\.py` for all the rest"),
     row("details: the PGO column, runs and jobs", "results/pgo-pooled/pgo.json runs, cpus, inputs; results/realworld-pooled/realworld.json jobs", exp_pgo_head,
         r"\*\*PGO column \(`pgo/`, six runs: (?P<ids>[\d, and]+), on build run \d+\)\.\*\* All eight rows \(six workloads and two controls\) rebuilt with clang "
@@ -5861,8 +6015,9 @@ GROUP3_DETAILS_ROWS = [
         r"three AMD CPU models only \((?P=j7), (?P=j45) and (?P=j74) jobs\).*?"
         r"Of the (?P<ne>\d+) expectations written before any run, in the author's unpublished development history, (?P<nh>\d+) held"),
     row("details: the whole-program columns, json and fmt", "site/data/index.json programs (rows, at_most_pct, aa_pct)", exp_details_programs,
-        r"json and fmt \(earlier runs, S3\) are \"consistent with at most (?P<alo>[\d.]+)% to (?P<ahi>[\d.]+)%\", each next to its own A/A floor "
-        r"\((?P<flo>[\d.]+)% to (?P<fhi>[\d.]+)%\); that wording is an upper bound only where the interval includes 1\. "
+        r"json and fmt \(earlier runs, S3\) are \"consistent with at most (?P<alo>[\d.]+)% to (?P<ahi>[\d.]+)%\" over the [\d]+ of [\d]+ jobs whose kernel A/A \(the forward add timed against an identical copy of itself, in the same job\) was at most [\d.]+%; "
+        r"the [\d]+ others had a kernel A/A of [\d.]+% to [\d.]+% and bounds up to [\d.]+%\. Each bound is given next to the program's own A/A floor "
+        r"\((?P<flo>[\d.]+)% to (?P<fhi>[\d.]+)%, a separate control that can exceed [\d.]+%\); that wording is an upper bound only where the interval includes 1\. "
         r"In (?P<k>\d+) of the (?P<n>\d+) json job rows the interval lies wholly above 1, so a small slowdown is indicated in those rows, not only an upper bound "
         r"\(only for the first does the lower end of the interval, (?P<l1>[\d.]+)% above 1, also clear that job's own A/A floor of (?P<a1>[\d.]+)%; "
         r"for the second and third the lower end, (?P<l2>[\d.]+)% above 1, lies below their floors of (?P<a2>[\d.]+)% and (?P<a3>[\d.]+)%\): "
@@ -6007,7 +6162,7 @@ DETAILS_ROWS.append(row("details: the d-sweep plan's Records section calls the p
                         "dsweep/PLAN.md (read); tests/data/s9_s10_provenance.json public_history and dsweep_public", exp_dsweep_records_claim,
                         r"The plan's own \"Records\" section calls the public history one squashed sync commit with the plan pushed alone first; neither was so\."))
 
-ROUND7_DETAILS_ROWS = [
+ROBUSTNESS_DETAILS_ROWS = [
     row("details: run to run, against exactly calibrated intervals", "robustness/calibration.json run_to_run s7 (EPYC 7763, 9V74) and s6 (EPYC 7763), families of cells",
         exp_details_calibrated,
         r"Exactly calibrated intervals would put (?P<e7>[\d.]+) and (?P<e9>[\d.]+) of those outside \(95% range for independent comparisons: (?P<l7>\d+) to (?P<h7>\d+) and (?P<l9>\d+) to (?P<h9>\d+)\), "
@@ -6025,7 +6180,7 @@ ROUND7_DETAILS_ROWS = [
         r"about the size of what the deciding cell's interval can resolve\."),
 ]
 
-ARM64_ROUND7_ROWS = [
+ARM64_ROBUSTNESS_ROWS = [
     row("arm64: run to run, against exactly calibrated intervals", "robustness/calibration.json run_to_run s8-arm and s9-arm-ab (k05_stride2.L2, all cells)", exp_arm_calibrated,
         r"In those stride-2 cells (?P<so>\d+) of (?P<sn>\d+) comparisons fall outside, against (?P<se>[\d.]+) expected if the intervals were exactly calibrated; over all 16 cells "
         r"the count is below that expectation \((?P<ao>\d+) of (?P<an>\d+), against (?P<ae>[\d.]+)\)\. With the six runs of sets A and B pooled together \(secondary\) "
@@ -6033,8 +6188,8 @@ ARM64_ROUND7_ROWS = [
         r"\(\[calibration baseline\]\(\.\./robustness/README-calibration\.md\)\)\."),
 ]
 
-DETAILS_ROWS.extend(ROUND7_DETAILS_ROWS)
-ARM64_ROWS.extend(ARM64_ROUND7_ROWS)
+DETAILS_ROWS.extend(ROBUSTNESS_DETAILS_ROWS)
+ARM64_ROWS.extend(ARM64_ROBUSTNESS_ROWS)
 
 AA_L2_TABLE_HEADER = ("| CPU model | jobs | pooled A/A half-width at L1 | pooled A/A half-width at L2 | jobs with their own half-width above 2% at L2 |")
 AA_L2_TABLE_ROWS = (("AMD EPYC 7763", "s7", "7763"), ("AMD EPYC 9V74", "s7", "9V74"), ("AMD EPYC 9V45", "s7", "9V45"),

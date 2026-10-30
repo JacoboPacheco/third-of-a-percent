@@ -288,6 +288,10 @@ function fillStatic() {
     nCpusEnough: String(pg.cpus_enough),
     lostMin: pg.lost.min.toFixed(1),
     lostMax: pg.lost.max.toFixed(1),
+    lostCompMin: pg.lost_compiled.min.toFixed(1), // the same range in each column: as compiled, aligned
+    lostCompMax: pg.lost_compiled.max.toFixed(1),
+    lostAlnMin: pg.lost_aligned.min.toFixed(1),
+    lostAlnMax: pg.lost_aligned.max.toFixed(1),
     beLo: pg.break_even.at_min.share_pct.toPrecision(2), // section 10: the arithmetic at the two ends of that range
     beHi: pg.break_even.at_max.share_pct.toPrecision(2),
     fwdMin: fx(pg.forward.aligned.min),
@@ -453,7 +457,10 @@ function fillStatic() {
   const clearJ = aboveJ.filter((r) => (r.programs.json.ci95[0] - 1) * 100 > r.programs.json.aa_pct); // lower interval end above the job's own noise floor
   const floorSay = clearJ.length === aboveJ.length ? 'In all of them the lower end of the interval is also above the job’s noise floor.' : clearJ.length ? `The lower end of the interval is also above the job’s noise floor in the ${joinAnd(clearJ.map((r) => r.programs.json.ratio.toFixed(3)))} ${clearJ.length > 1 ? 'rows' : 'row'} only.` : 'In none of them is the lower end of the interval above the job’s noise floor.';
   const progAbove = aboveJ.length ? ` For json, ${aboveJ.length} of ${nProg('json')} job rows have an interval that excludes 1 (it lies wholly above 1): ${joinAnd(aboveJ.map((r) => { const q = r.programs.json; return `${rowName(r)} ${q.ratio.toFixed(3)}, interval ${q.ci95[0].toFixed(3)} to ${q.ci95[1].toFixed(3)}, noise floor ${q.aa_pct.toFixed(2)}%`; }))}. ${floorSay} The other json rows${aboveF.length ? '' : ' and every fmt row'} include 1 or lie below it.` : '';
-  v.progSum = `In the earlier runs (the pooled runs timed no programs), turning the checks on made nlohmann/json at most ${pr(jA)} slower depending on the job, and fmt at most ${pr(fA)}, once each job’s noise floor (${pr(aa)}) is accounted for. Those bounds are no tighter than the noise, so for the rows whose interval includes 1 they say the cost is small, not how small.${progAbove}`;
+  const nEx = P.excluded.length, aaLim = pct(P.aa_max_pct, 0); // jobs whose kernel A/A is above the S3 limit: not rows, so not in any range here
+  v.progLeft = `${nEx ? `${nEx} of ${P.jobs_total}` : 'no'} jobs ${nEx === 1 ? 'is' : 'are'} left out because their kernel A/A was above ${aaLim}%`;
+  const exSay = nEx ? ` The ranges are over the ${P.rows.length} of ${P.jobs_total} jobs whose kernel A/A (the forward add timed against an identical copy of itself, in the same job) was at most ${aaLim}%; the ${nEx} left out had a kernel A/A of ${pr([P.excluded_aa_pct.min, P.excluded_aa_pct.max])} and bounds of up to ${pct(P.excluded_at_most_pct.max)}%. The noise floors beside the bounds are a separate control, each program’s own build timed against an identical copy of itself, and run up to ${pct(P.aa_pct.max)}%.` : '';
+  v.progSum = `In the earlier runs (the pooled runs timed no programs), turning the checks on made nlohmann/json at most ${pr(jA)} slower depending on the job, and fmt at most ${pr(fA)}, once each job’s noise floor (${pr(aa)}) is accounted for.${exSay} Those bounds are no tighter than the noise, so for the rows whose interval includes 1 they say the cost is small, not how small.${progAbove}`;
   // Intel models: the forward add at L1, aligned, in every job (no verdict)
   const IF = ix.intel_forward;
   v.intelRange = IF && IF.jobs.length ? rangeX(IF.aligned.min, IF.aligned.max).replace('×', '') : 'n/a';
@@ -1602,7 +1609,7 @@ function renderSiblings() {
   };
   const intelStatus = (c) => (c.form === 'inconclusive' ? 'came out inconclusive under the written rules, so no headline number is printed' : 'has a verdict');
   setV('intelText', IF && IF.jobs.length
-    ? `Among the x86-64 models, the forward loops are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs. The ${IF.set_c.jobs} Intel jobs of replication set C (${joinAnd(Object.entries(IF.set_c.per_cpu).map(([c, n]) => `${c} in ${n} job${n === 1 ? '' : 's'}`))}; Figure 8 in section 1) are not among these ${IF.jobs.length}; in the same cell they cost ${rangeX(IF.set_c.aligned.min, IF.set_c.aligned.max)} aligned.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
+    ? `Among the x86-64 models, the forward loops bounded by size() are near 1× on the AMD models only (one exception: ${avx2Text()}). On ${IF.cpus.length === 1 ? 'the one Intel model' : `the ${IF.cpus.length} Intel models`} GitHub drew (${joinAnd(IF.cpus.map((c) => { const n = IF.jobs.filter((j) => j.cpu_short === c).length; return `${c} in ${n} job${n === 1 ? '' : 's'}`; }))}), the forward add at L1 cost ${rangeX(IF.aligned.min, IF.aligned.max)} aligned in every one of ${IF.jobs.length} jobs, in the earlier runs, the early trial run and the pooled runs. The ${IF.set_c.jobs} Intel jobs of replication set C (${joinAnd(Object.entries(IF.set_c.per_cpu).map(([c, n]) => `${c} in ${n} job${n === 1 ? '' : 's'}`))}; Figure 8 in section 1) are not among these ${IF.jobs.length}; in the same cell they cost ${rangeX(IF.set_c.aligned.min, IF.set_c.aligned.max)} aligned.${incl.length ? ` ${joinAnd(incl.map((c) => c.cpu_short))} ${incl.length === 1 ? 'has' : 'have'} enough pooled jobs for a row in Table 1: ${incl.map((c) => `${c.cpu_short} ${intelStatus(c)}`).join('; ')}. ${incl.map(intelModel).join('. ')}. The loops that lose SIMD cost ${rangeX(xLo, xHi)} aligned on ${incl.length === 1 ? 'it' : incl.length === 2 ? 'both' : 'all'}${xLo >= S.ix.page.lost.min && xHi <= S.ix.page.lost.max ? ', inside the range the AMD models give' : ''}.` : ''}${noPooled.length ? ` ${capFirst(joinAnd(noPooled.map((m) => `${m} came up in ${pooledN(m) ? `${pooledN(m)} pooled job${pooledN(m) === 1 ? '' : 's'}, too few to judge` : 'no pooled job'}`)))}.` : ''} The toolchain runs add one more Xeon 6973P-C reading (section 6): ${v69}× in ${j69} job${j69 === 1 ? '' : 's'}.`
     : '');
   const o3 = row('gcc14-O3-assert').cells.k02_add_fwd.range;
   setV('gccO3AddMin', fx(o3.min)); setV('gccO3AddMax', fx(o3.max));
@@ -1712,7 +1719,7 @@ function ceFindings() {
   const gccO2Vec = gc.filter((r) => r.opt === '-O2').reduce((a, r) => a + C.kernels.filter((k) => r.vec[k].none).length, 0);
   const gccO2Cells = gc.filter((r) => r.opt === '-O2').length * C.kernels.length;
   const clv = [...new Set(cl.filter((r) => r.major).map((r) => r.major))];
-  const short = `${sm.clang_rev_s2_lost === sm.clang_rows ? `all ${sm.clang_rows} clang rows lose the reverse and stride-2 loops` : `${sm.clang_rev_s2_lost} of ${sm.clang_rows} clang rows lose the reverse and stride-2 loops`}, and ${sm.clang_fwd_lost === 0 ? 'none loses a forward loop' : `${sm.clang_fwd_lost} lose a forward loop`}. Matrix multiply: ${groups.map(say).join(', ').replace(/^lost on clang /, 'lost on clang ')}. ${armOnly.length ? `Lost on AArch64 only: ${joinAnd(armOnly.map((k) => SHORT_NAMES[k]))}.` : 'No loop is lost on AArch64 only.'} GCC loses ${sm.gcc_o2_lost === 0 ? 'nothing' : sm.gcc_o2_lost} at -O2; at -O3 it loses the ${joinAnd(every.map((k) => SHORT_NAMES[k]))} loops in every version and the forward add in ${g3.k02_add_fwd} of ${n3} rows.`;
+  const short = `${sm.clang_rev_s2_lost === sm.clang_rows ? `all ${sm.clang_rows} clang rows lose the reverse and stride-2 loops` : `${sm.clang_rev_s2_lost} of ${sm.clang_rows} clang rows lose the reverse and stride-2 loops`}, and ${sm.clang_fwd_lost === 0 ? 'none loses a forward loop bounded by size()' : `${sm.clang_fwd_lost} lose a forward loop bounded by size()`}. Matrix multiply: ${groups.map(say).join(', ').replace(/^lost on clang /, 'lost on clang ')}. ${armOnly.length ? `Lost on AArch64 only: ${joinAnd(armOnly.map((k) => SHORT_NAMES[k]))}.` : 'No loop is lost on AArch64 only.'} GCC loses ${sm.gcc_o2_lost === 0 ? 'nothing' : sm.gcc_o2_lost} at -O2; at -O3 it loses the ${joinAnd(every.map((k) => SHORT_NAMES[k]))} loops in every version and the forward add in ${g3.k02_add_fwd} of ${n3} rows.`;
   return {
     short,
     matmul: groups.map(say).join('; '),
@@ -1806,7 +1813,7 @@ function renderLayout() {
   const addRows = (pred) => good.filter((c) => c.rows.some((r) => r.kernel === 'k02_add_fwd' && r.size === 'L1' && pred(r))).map((c) => c.cpu_short);
   const swing = addRows((r) => r.verdict === 'MIXED' || r.verdict === 'PLACEMENT_DEPENDENT'), steady = addRows((r) => r.verdict === 'ROBUST');
   const add = good.flatMap((c) => c.rows.filter((r) => r.kernel === 'k02_add_fwd' && r.as_compiled != null && r.size === 'L1' && (r.verdict === 'MIXED' || r.verdict === 'PLACEMENT_DEPENDENT')).map((r) => `${c.cpu_short} ${lr(r.as_compiled)} as compiled, ${lr(r.aligned)} aligned`));
-  setV('layoutFinding', `What it shows, on the CPU models with enough jobs (${joinAnd(good.map((c) => `${c.cpu_short}, ${jobsOf(c)}`))}): the reverse loop, which loses SIMD, stays ${rev ? rangeX(rev.min, rev.max) : 'none'} at every placement, so the loss itself does not depend on placement (the size of the cost does, within that range). The simple forward sum is robust (${k.k01_sum_fwd ? `${lr(k.k01_sum_fwd.min)} to ${lr(k.k01_sum_fwd.max)}` : 'none'} at every placement). The forward add swings with placement on ${joinAnd(swing)}, ${k.k02_add_fwd ? `${lr(k.k02_add_fwd.min)} to ${lr(k.k02_add_fwd.max)}` : 'none'} over the CPU models, and there its as-compiled placement is the slow one at L1 (${joinAnd(add)})${steady.length ? `; on ${joinAnd(steady)} it stays robust at L1 and does not cost` : ''}; the stencil is ${dep.length ? `placement-dependent at ${joinAnd(dep)}` : 'not placement-dependent here'}. So “forward loops stay near 1×” holds for the sum, and for the add and the stencil it depends on where the loop lands in memory.`);
+  setV('layoutFinding', `What it shows, on the CPU models with enough jobs (${joinAnd(good.map((c) => `${c.cpu_short}, ${jobsOf(c)}`))}): the reverse loop, which loses SIMD, stays ${rev ? rangeX(rev.min, rev.max) : 'none'} at every placement, so the loss itself does not depend on placement (the size of the cost does, within that range). The simple forward sum is robust (${k.k01_sum_fwd ? `${lr(k.k01_sum_fwd.min)} to ${lr(k.k01_sum_fwd.max)}` : 'none'} at every placement). The forward add swings with placement on ${joinAnd(swing)}, ${k.k02_add_fwd ? `${lr(k.k02_add_fwd.min)} to ${lr(k.k02_add_fwd.max)}` : 'none'} over the CPU models, and there its as-compiled placement is the slow one at L1 (${joinAnd(add)})${steady.length ? `; on ${joinAnd(steady)} it stays robust at L1 and does not cost` : ''}; the stencil is ${dep.length ? `placement-dependent at ${joinAnd(dep)}` : 'not placement-dependent here'}. So “forward loops bounded by size() stay near 1×” holds for the sum, and for the add and the stencil it depends on where the loop lands in memory.`);
   setV('layoutLimits', `Limits: ${L.placements} placements in steps of ${L.step_bytes} bytes (loop start at ${joinAnd(res.map(String))} modulo 64), not a full sweep; two sizes in cache; ${thin.map((c) => `${c.cpu_short} drew ${jobsOf(c)}, fewer than ${R.min_jobs}, so it is inconclusive`).join('; ')}${thin.length ? '; ' : ''}shared virtual machines; the hardware reason for any swing is inferred, not measured. Source: ${joinAnd(L.sources)}; rules: ${L.plan}.`);
   const box = $('layout-tables');
   box.replaceChildren();
@@ -2006,7 +2013,7 @@ function armTexts() { // the sentences filled into [data-v] spans on both pages
   const reversed = DC.alt_draws - DC.alt_at_or_above_limit; // other seeds that put the interval's end under the limit
   setV('armCore', A.cpu_short);
   const fwdL1 = `${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}×`;
-  setV('armGist', `On an Arm core (${A.cpu_short}, ${A.jobs} jobs) ${names(D.lostK)} lose SIMD and take ${fx(SM.lost.min)}× to ${fx(SM.lost.max)}× as long in cache; forward loops cost ${fwdL1} at L1, as compiled. The written rules call this core ${form}, by a margin of ${DC.margin_over_limit.toFixed(4)} that most other bootstrap seeds reverse.`);
+  setV('armGist', `On Arm (${A.cpu_short}, ${A.jobs} jobs) ${names(D.lostK)} lose SIMD and take ${fx(SM.lost.min)}× to ${fx(SM.lost.max)}× as long in cache; forward loops bounded by size() cost ${fwdL1} at L1, as compiled. The written rules call this core ${form}, by a margin of ${DC.margin_over_limit.toFixed(4)} that most other bootstrap seeds reverse.`);
   setVNodes('armWhat', [`The same eight loops, repetitions and written rules ran unchanged on GitHub’s Arm runner (${A.runs.length} runs of ${A.criteria.jobs_per_run} jobs, ${M.jobs_agreeing === A.jobs ? 'every job' : `${M.jobs_agreeing} of ${A.jobs} jobs`} on a ${M.cpu_model} core, ${clang} and ${libcxx} in FAST mode at `, el('code', { class: 'nowrap' }, opt),
     `). The data is sized by the same rule, half of each core’s L1 data cache and of its L2: ${kibWords(M.size_targets_bytes.L1 / 1024)} and ${kibWords(M.size_targets_bytes.L2 / 1024)} here, other byte counts on the x86-64 models.`]);
   setV('armWhy', D.missed.length
@@ -2015,7 +2022,7 @@ function armTexts() { // the sentences filled into [data-v] spans on both pages
   armMmFill();
   const wid = A.cells.filter((c) => A.forward_loops.kernels.includes(c.kernel) && c.size_class === 'L2')
     .reduce((a, c) => (!a || c.aligned.half_width_pct > a.aligned.half_width_pct ? c : a), null);
-  setV('armAvg', `On ${A.cpu_short} the three forward loops cost ${fwdL1} at L1, as compiled, against an A/A floor of ±${pctS(A.aa.half_width_pct)} (forward add only): three microbenchmarks, not Google’s services, so this neither confirms nor contradicts the ${g}% average. At L2 the widest forward interval (±${pctS(wid.aligned.half_width_pct)}) and an identical binary against itself (±${pctS(aaL2.half_width_pct)}) are too wide to resolve ${g}%, and the pooled verdict is ${form}, on a margin most other seeds reverse (section 6a).`);
+  setV('armAvg', `On ${A.cpu_short} the three forward loops bounded by size() cost ${fwdL1} at L1, as compiled, against an A/A floor of ±${pctS(A.aa.half_width_pct)} (forward add only): three microbenchmarks, not Google’s services, so this neither confirms nor contradicts the ${g}% average. At L2 the widest forward interval (±${pctS(wid.aligned.half_width_pct)}) and an identical binary against itself (±${pctS(aaL2.half_width_pct)}) are too wide to resolve ${g}%, and the pooled verdict is ${form}, on a margin most other seeds reverse (section 6a).`);
   setV('armLimit', `Arm: one core type (${A.cpu_short}), ${A.jobs} jobs on shared machines, ${clang} only; no real programs, profile-guided builds or other compilers were timed there (section 6a).`);
   setV('armLimFull', `Arm is one added column (section 6d): one core type, ${A.jobs} jobs in ${A.runs.length} runs, ${clang} only, no real programs.`);
   setV('armJobsSet', `the ${A.jobs} jobs of the ${A.runs.length} Arm runs (a separate pool on one core type), as compiled and aligned`);
@@ -2205,7 +2212,7 @@ function armDetails() {
   const iaa = A.noise.identical_binary_aa, aaL2 = iaa.L2.pooled;
   const flipSay = (c) => ((c.as_compiled.ratio - 1) * (c.aligned.ratio - 1) < 0 ? ' (it changes side of 1×, so no cost is claimed for it)' : '');
   $('arm-forward').replaceChildren(el('b', null, 'Forward loops. '),
-    `At the L1 size the ${numWord(A.forward_loops.kernels.length)} forward loops cost ${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}× as compiled and ${lr(F1.aligned.min)}× to ${lr(F1.aligned.max)}× aligned (Table 12). `,
+    `At the L1 size the ${numWord(A.forward_loops.kernels.length)} forward loops bounded by size() cost ${lr(F1.as_compiled.min)}× to ${lr(F1.as_compiled.max)}× as compiled and ${lr(F1.aligned.min)}× to ${lr(F1.aligned.max)}× aligned (Table 12). `,
     sameAdd ? `Cachegrind counts the instructions the checks add to one call: ${sumA.as_compiled.added} for the sum, ${addA.as_compiled.added} (aligned ${addA.aligned.added}) for the add and ${stenA.as_compiled.added} (aligned ${stenA.aligned.added}) for the stencil, the same count at the L2 size. For the add that is an instruction ratio of ${addA.as_compiled.instr_ratio.toFixed(4)} at L1 (${num(addA.elements)} elements) and ${addB.as_compiled.instr_ratio.toFixed(4)} at L2 (${num(addB.elements)} elements), so the share of a call the checks take follows the array length; that these instructions are the time cost fits the counts and was not tested. ` : '',
     fwdPs.length ? `${capFirst(joinAnd(fwdPs.map((q) => `${cellName(q.cell_id)} (compiled ÷ aligned ${q.d.toFixed(3)})`)))} ${fwdPs.length === 1 ? 'is' : 'are'} placement-sensitive on this core${fwdPredMiss ? ', which the plan had predicted would not happen' : ''}; the rule leaves ${fwdPs.length === 1 ? 'that cell' : 'those cells'} out. The A/A floor of ${pctS(A.aa.half_width_pct)} is that of the forward add at L1 alone, and a byte-identical copy cannot see where a loop sits in memory, so for these the yardstick is the compiled ÷ aligned ratio: ${joinAnd(fwdPs.map((q) => { const c = D.cell(q.cell_id); return `${SHORT_NAMES[c.kernel]} ${lr(c.as_compiled.ratio)}× compiled and ${lr(c.aligned.ratio)}× aligned${flipSay(c)}`; }))}.` : '');
   // noise at the L2 size: the identical-binary A/A at L2 and the per-process mixture (descriptive; no cause is claimed)
@@ -2778,7 +2785,7 @@ function renderRealworld() {
   setV('rwDetect', numWord(detected.length));
   setV('rwDetectProjects', numWord(projectsOf(detected)));
   setV('rwOthers', numWord(T.groups.length - 1));
-  setV('rwStatus', `${capFirst(numWord(prog.length))} workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, so Table 9 is that model; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below and on the details page.`);
+  setV('rwStatus', `${capFirst(numWord(prog.length))} workloads (${numWord(projectsOf(prog))} projects: LightGBM three ways, Draco, tiny-dnn, Spectra) that contain lost loops and two controls that do not, each timed whole with the checks off (NONE) and on (FAST): ${T.jobs} jobs in ${R.runs.length} runs on GitHub’s shared machines. ${main.jobs} jobs drew an AMD ${main.cpu_short}, the model with the most jobs, shown in Table 9; the other ${restJobs} jobs (AMD ${joinAnd(rest.map((g) => g.cpu_short))}) are summarised below.`);
   setV('rwTCap', `FAST ÷ NONE, whole program, AMD ${main.cpu_short}, ${main.jobs} jobs, 95% interval beneath. Aligned: both builds with every hot loop aligned to 64 bytes. A/A floor: the unchecked program against a copy of itself. A reading needs both columns above the floor.`);
   $('rw-time-table').querySelector('tbody').replaceChildren(...Object.keys(RW_NAMES).map((n) => rwTimeRow(n, main.rows[n])));
   const lostProgs = prog.map((r) => r.row);
@@ -3003,6 +3010,171 @@ function landOnHash() {
   const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0; // the room the sticky bar needs
   if (top < pad - 6 || top > pad + 64) target.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
+/* ---------- forward loops bounded by a variable, timed (data/forwardt.json) ---------- */
+function ftX(v) { return `${v >= 2 ? v.toFixed(1) : v.toFixed(2)}×`; }
+function ftIvl(c) { return `${ftX(c.ci95[0])} to ${ftX(c.ci95[1])}`; }
+function ftBand(b) {
+  if (!b) return null;
+  if (b.lo != null && b.lo > 0 && b.hi != null) return `${ftX(b.lo)} to ${ftX(b.hi)}`;
+  if (b.hi != null && !(b.lo > 0)) return `at most ${ftX(b.hi)}`;
+  if (b.lo != null) return `above ${ftX(b.lo)}`;
+  if (b.hi != null) return `at most ${ftX(b.hi)}`;
+  return null;
+}
+const ftTicks = (text) => text.split('`').map((t, i) => (i % 2 ? code(t) : t));
+const ftWrite = (l) => !/^t0[12]_/.test(l.id);
+const FT_ATLEAST = 1.5; // the plan gives lost writes only as "at or above 1.5×", and only where the interval lies there
+const ftOpen = (l, a) => !!a && ftWrite(l) && l.word === 'lost' && a.ci95[0] >= FT_ATLEAST;
+function ftBandOf(D, key) {
+  for (const m of D.models) {
+    const p = m.predictions && m.predictions[key];
+    const it = p && p.items && p.items[0];
+    if (it && it.band) return it.band;
+  }
+  return null;
+}
+const ftR = (v) => `${v.toFixed(v < 2 ? 3 : 2)}×`; // three decimals below 2×, so an interval around a band edge does not print as one number
+function ftOutside(D, k) { // one prediction's cells that are not inside the band, and its cells that could not be decided, from the stored items
+  const out = [];
+  const nd = [];
+  for (const m of D.models) {
+    const p = m.read && m.predictions && m.predictions[k];
+    if (!p) continue;
+    const sizes = new Set();
+    for (const it of p.items) {
+      sizes.add(it.size);
+      const b = it.band;
+      const bt = ftBand(b) === ftBand(ftBandOf(D, k)) ? 'this band' : b && b.lo > 0 && b.hi != null ? `the band ${ftBand(b)}` : `the limit (${ftBand(b)})`; // the heading already prints the first item's band
+      for (const [col, c] of Object.entries(it.columns)) {
+        if (c.state !== 'inside') out.push(`${m.cpu_short}, ${it.loop}, ${it.size}, ${col}: ${ftR(c.ratio)} (${ftR(c.ci95[0])} to ${ftR(c.ci95[1])}), ${c.state === 'straddle' ? 'straddling' : c.state} ${bt}`);
+      }
+    }
+    const cells = [...new Map(p.not_decidable.map((n) => [`${n.loop} ${n.size}`, `${n.loop} ${n.size} (A/A ±${pctS(n.aa_half_width_pct)})`])).values()];
+    if (cells.length) nd.push(`${m.cpu_short}: ${cells.join(', ')}; its result here rests on ${sizes.size === 1 ? `the ${[...sizes][0]} cells` : 'the cells that could be decided'}`);
+  }
+  return { out, nd };
+}
+function ftSums(D) { // the lost sum's aligned L1 ratio per decidable model
+  const out = { amd: [], arm: [] };
+  for (const m of D.models) {
+    if (!m.read) continue;
+    const l = m.loops.find((x) => x.id === 't02_sum_n');
+    const c = l && l.cells.L1;
+    if (c && c.decidable && c.aligned) out[m.target === 'x86-64' ? 'amd' : 'arm'].push(c.aligned.ratio);
+  }
+  return out;
+}
+function renderForwardt() {
+  const D = S.ft;
+  const sums = ftSums(D);
+  const st = (S.ftSel = { slug: D.models[0].slug, size: 'L1', loop: 't02_sum_n' });
+  const pos = (r) => Math.max(0, Math.min(100, (Math.log(r) / Math.log(8)) * 100));
+  if (has('fig-ft')) {
+    const sel = $('ft-cpu'), rows = $('ft-rows'), read = $('ft-read'), seg = $('ft-size-seg');
+    for (const m of D.models) sel.append(el('option', { value: m.slug }, m.read ? `${m.cpu_short} (${m.jobs} jobs)` : `${m.cpu_short} (not read, ${m.jobs} jobs)`));
+    const draw = () => {
+      const m = D.models.find((x) => x.slug === st.slug);
+      for (const b of seg.children) b.setAttribute('aria-checked', String(b.dataset.size === st.size));
+      rows.replaceChildren();
+      if (!m.read) {
+        rows.append(el('p', { class: 'ft-unread' }, `${m.cpu_short}: not read. ${m.jobs} jobs returned; a model needs ${D.minimum_jobs}, so none of its cells is reported.`));
+        read.replaceChildren();
+        return;
+      }
+      for (const l of m.loops) {
+        const c = l.cells[st.size];
+        const a = c && c.decidable ? c.aligned : null;
+        const open = ftOpen(l, a);
+        const track = el('span', { class: 'ft-track', 'aria-hidden': 'true' }, el('i', { class: 'ft-one' }));
+        if (a) {
+          track.append(el('i', { class: `ft-fill${open ? ' ft-open' : ''}`, style: `width:${open ? pos(FT_ATLEAST) : pos(a.ratio)}%` }));
+          if (!open) track.append(el('i', { class: 'ft-ci', style: `left:${pos(a.ci95[0])}%;width:${Math.max(0.6, pos(a.ci95[1]) - pos(a.ci95[0]))}%` }));
+        }
+        rows.append(el('button', { type: 'button', class: 'ft-row', 'data-word': l.word, 'data-loop': l.id, 'aria-pressed': String(l.id === st.loop), onclick: () => { st.loop = l.id; draw(); } },
+          el('span', { class: 'ft-name' }, `${l.what} `, code(l.bound), el('small', null, l.word)), track,
+          el('span', { class: `ft-val${a ? '' : ' ft-na'}` }, a ? (open ? 'at or above 1.5×' : ftX(a.ratio)) : 'not decidable')));
+      }
+      const l = m.loops.find((x) => x.id === st.loop) || m.loops[0];
+      const c = l.cells[st.size];
+      const a = c && c.decidable ? c.aligned : null;
+      let t;
+      if (!a) t = ` ${m.cpu_short}, ${st.size}: not decidable; the identical-binary A/A half-width is ±${pctS(c.aa_half_width_pct)}, above the ${D.forward_rule.floor}% the plan allows.`;
+      else t = ` ${m.cpu_short}, ${st.size}, aligned: ${ftOpen(l, a) ? 'at or above 1.5×' : `${ftX(a.ratio)} (${ftIvl(a)})`}${c.compiled ? `; as compiled ${ftX(c.compiled.ratio)}` : ''}; A/A ±${pctS(c.aa_half_width_pct)}; ${c.jobs} jobs.${l.kind === 'variable' ? '' : (c.forward_inside ? ' Inside the forward-loop range.' : ' Outside the forward-loop range.')}`;
+      const notes = [];
+      if (m.few_jobs_caveat) notes.push(`With ${D.few_jobs.minimum} to ${D.few_jobs.maximum} jobs the interval may be narrower than the spread between jobs.`);
+      const nd = m.loops.filter((x) => !(x.cells[st.size] && x.cells[st.size].decidable)).length;
+      if (nd) notes.push(`${nd} of ${m.loops.length} cells at ${st.size} are not decidable.`);
+      if (m.target !== 'x86-64') notes.push('One run.');
+      const p6 = m.predictions && m.predictions.P6;
+      if (p6 && p6.fail_sides && p6.fail_sides.length) notes.push(`The prediction for its kept writes (${ftBand(ftBandOf(D, 'P6'))}) failed ${p6.fail_sides.join(' and ')}.`);
+      read.replaceChildren(code(srcLine(l.code)), t, notes.length ? ` ${notes.join(' ')}` : '');
+    };
+    for (const sz of ['L1', 'L2']) seg.append(el('button', { type: 'button', role: 'radio', 'data-size': sz, onclick: () => { st.size = sz; draw(); } }, sz));
+    sel.addEventListener('change', () => { st.slug = sel.value; draw(); });
+    const band = ftBand(ftBandOf(D, 'P2'));
+    const armM = D.models.find((m) => m.read && m.target !== 'x86-64');
+    const cap = ['Aligned, FAST against NONE; line = 95% interval, tick = 1×; the two ', code('size()'), ' loops are controls. '];
+    if (sums.amd.length) cap.push(`The sum bounded by a variable was predicted at ${band}; on the AMD models read it costs ${rangeX(Math.min(...sums.amd), Math.max(...sums.amd))}, below the ${rng(S.ix.page.lost)} of the other lost loops: that prediction failed there.${sums.arm.length && armM ? ` On Neoverse-N2 it costs ${rangeX(Math.min(...sums.arm), Math.max(...sums.arm))}; no band was set for it (one run, ${armM.jobs} jobs).` : ''} `);
+    cap.push(`Census: ${D.census.lost_loops} lost loops of this shape, per function, at ${D.census.source_locations} source locations; shape by text pattern, run frequency unknown, share with one of these six shapes not counted.`);
+    $('ft-cap').replaceChildren(...cap);
+    draw();
+  }
+  if (has('ft-table')) {
+    const read = D.models.filter((m) => m.read);
+    $('ft-q').replaceChildren('The census counts ', num(D.census.lost_loops), ' lost loops that are forward loops bounded by a variable and not by ', code('size()'), '. To see what that shape costs, six small loops were timed with the check off and on (clang 18.1.3, libc++ 18, -O2, 32-bit integers, two in-cache sizes): two are bounded by ', code('size()'), ' and are the controls, four by a variable ', code('n'), '. Each cell is pooled over jobs by a geometric mean with a ', num(D.resamples), '-resample bootstrap, and is reported only when its identical-binary A/A half-width is at most ', `${D.forward_rule.floor}%`, '; a CPU model needs at least ', String(D.minimum_jobs), ' jobs. The bands and words are the ones in ', repoNode(D.plan, 'the plan'), '.');
+    const by = Object.entries(D.summaries).map(([tgt, s]) => {
+      const g = {};
+      for (const [k, p] of Object.entries(s.predictions)) (g[p.state] = g[p.state] || []).push(k);
+      return `${tgt}: ${Object.entries(g).map(([state, ks]) => `${joinAnd(ks)} ${ks.length > 1 && state === 'holds' ? 'hold' : state}`).join('; ')}`;
+    });
+    $('ft-out').replaceChildren(el('b', null, 'Result. '), `P2 ${D.outcome.row}. `, by.join('. '), '. The sum bounded by a variable costs more than predicted on the x86-64 models read; the cells are in the tables below.');
+    const tb = $('ft-table');
+    const head = (cols) => el('tr', null, ...cols.map((h) => el('th', { scope: 'col' }, h)));
+    tb.querySelector('thead').append(head(['CPU model', 'Loop', 'L1, as compiled', 'L1, aligned', 'L2, as compiled', 'L2, aligned', 'Word']));
+    const cellTxt = (c, col) => (!c || !c.decidable || !c[col] ? 'not decidable' : `${ftX(c[col].ratio)} (${ftIvl(c[col])})`);
+    for (const m of D.models) {
+      if (!m.read) {
+        tb.querySelector('tbody').append(el('tr', { class: 'grp' }, el('th', { scope: 'row' }, `${m.cpu_short} (not read, ${m.jobs} jobs)`), el('td', { colspan: '6', class: 'muted' }, `Fewer than the ${D.minimum_jobs} jobs a model needs; no cell is reported.`)));
+        continue;
+      }
+      m.loops.forEach((l, i) => tb.querySelector('tbody').append(el('tr', { class: i ? null : 'grp' },
+        el('th', { scope: 'row' }, i ? '' : `${m.cpu_short} (${m.jobs} jobs)`), el('td', null, `${l.what} `, code(l.bound)),
+        el('td', null, cellTxt(l.cells.L1, 'compiled')), el('td', null, cellTxt(l.cells.L1, 'aligned')),
+        el('td', null, cellTxt(l.cells.L2, 'compiled')), el('td', null, cellTxt(l.cells.L2, 'aligned')), el('td', null, l.word))));
+    }
+    const names = { P0: 'the word of each loop', P1: 'the controls', P2: 'lost sums', P2n: 'lost sums with vectorization off', P3: 'lost writes', P4: 'narrower loops', P5: 'L2 against L1', P6: 'kept writes on Neoverse-N2' };
+    const ul = $('ft-preds');
+    for (const k of Object.keys(names)) {
+      const per = Object.entries(D.summaries).map(([tgt, s]) => {
+        if (k === 'P0') {
+          const v = Object.entries(s.p0);
+          const bad = v.filter(([, x]) => x.state !== 'holds').map(([id]) => id);
+          return `${tgt}: ${v.length - bad.length} of ${v.length} loops as predicted${bad.length ? ` (not: ${joinAnd(bad)})` : ''}`;
+        }
+        const p = s.predictions[k];
+        if (!p) return null;
+        const more = [p.failed_on.length ? `fails on ${joinAnd(p.failed_on)}` : null, p.undecided_on.length ? `undecided on ${joinAnd(p.undecided_on)}` : null, p.not_testable_on.length ? `not testable on ${joinAnd(p.not_testable_on)}` : null].filter(Boolean);
+        return `${tgt}: ${p.state}${more.length ? ` (${more.join('; ')})` : ''}`;
+      }).filter(Boolean);
+      const band = ftBand(ftBandOf(D, k));
+      const { out, nd } = ftOutside(D, k);
+      ul.append(el('li', null, el('b', null, k), ` ${names[k]}${band ? `, ${band}` : ''}. ${per.join('. ')}.`,
+        out.length ? ` Cells that miss the prediction: ${out.join('; ')}.` : '',
+        nd.length ? ` Not decidable. ${nd.join('. ')}.` : ''));
+    }
+    $('ft-letter').replaceChildren(el('b', null, `Outcome ${D.outcome.letter}, as the plan words it. `), ...ftTicks(D.outcome.text));
+    const ls = $('ft-listing');
+    ls.querySelector('thead').append(head(['CPU model', 'Loop', 'L1, aligned', 'L2, aligned']));
+    const lc = (row, sz) => {
+      const c = row.cells.find((x) => x.size === sz);
+      return c ? `${ftX(c.ratio)} (${ftIvl(c)}), A/A ±${pctS(c.aa_half_width_pct)}; ${c.inside_forward_range ? 'inside' : 'outside'} the forward range` : 'not decidable';
+    };
+    for (const row of D.forward_listing) ls.querySelector('tbody').append(el('tr', null, el('th', { scope: 'row' }, row.cpu_short),
+      el('td', null, code(row.loop)),
+      row.none_decidable ? el('td', { colspan: '2', class: 'muted' }, 'none: no cell is decidable') : [el('td', null, lc(row, 'L1')), el('td', null, lc(row, 'L2'))]));
+    $('ft-limits').replaceChildren(`Limits. One compiler (clang 18.1.3 with libc++ 18), -O2, 32-bit integers, six loops written for this test, two in-cache sizes. Read: ${joinAnd(read.map((m) => `${m.cpu_short}, ${m.jobs} jobs`))}; Neoverse-N2 comes from one run, and a model with ${D.few_jobs.minimum} to ${D.few_jobs.maximum} jobs carries the caveat that its interval may be narrower than the spread between jobs. Not tested: Intel, GCC, the RAM size. The census count is per function, says nothing about how often a loop runs, and the share of lost loops with one of these six shapes is not counted. Clang 19 and later keep the variable-bound sums (a compile-only sweep; nothing was timed).`);
+  }
+}
 async function loadSection(path, key, render, boxId) {
   try {
     S[key] = await getJSON(path);
@@ -3044,6 +3216,7 @@ async function start() {
       S.ix.sections.arm64 ? loadSection(S.ix.sections.arm64, 'arm', renderArm, has('arm') ? 'arm' : 'arm-full') : null,
       S.ix.sections.replication ? loadSection(S.ix.sections.replication, 'rep', renderReplication, has('fig-rep') ? 'fig-rep' : 'replication-full') : null,
       S.ix.sections.dsweep ? loadSection(S.ix.sections.dsweep, 'ds', renderDsweep, has('arm') ? 'arm' : 'dsweep-full') : null,
+      S.ix.sections.forwardt ? loadSection(S.ix.sections.forwardt, 'ft', renderForwardt, has('fig-ft') ? 'fig-ft' : 'forwardt-full') : null,
     ]);
     renderMatmulVersions();
     renderRuleList();
@@ -3100,7 +3273,7 @@ function buildChrome() {
   const base = (S.ix && S.ix.repo && S.ix.repo.base) || '';
   const gpct = S.ix && S.ix.claim ? `${S.ix.claim.google_pct.toFixed(2)}\\% ` : ''; // a bare % starts a comment in LaTeX, so it is escaped in the title
   $('cmd-cite').textContent = `@misc{jacobopacheco2026thirdofapercent,
-  author = {JacoboPacheco},
+  author = {Pacheco, Jacobo},
   title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's ${gpct}average},
   year   = {2026},
   note   = {Work in progress, October 2026. Code written by AI coding agents directed by the author},

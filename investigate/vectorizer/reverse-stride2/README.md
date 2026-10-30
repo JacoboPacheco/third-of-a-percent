@@ -8,7 +8,7 @@ against those files without any network access.
 
 With libc++ hardening mode FAST, the project's reverse loop (`k04_rev`) and stride-2 loop
 (`k05_stride2`) are not vectorized by clang 18.1.0 (x86-64 baseline, `-O2`). With the checks off (NONE)
-both are vectorized. The forward loops stay vectorized. The only message is one line,
+both are vectorized. The forward loops bounded by `size()` stay vectorized. The only message is one line,
 "could not determine number of loop iterations". This folder looks for the pass and the analysis result
 behind that line, tests the project's up-front-check rewrites against it, and compares clang 19, 20, 21
 and trunk.
@@ -33,7 +33,7 @@ hold the evidence.
    expression of the bound changes, the loop vectorizer of `opt` 18.1.0 vectorized the loop exactly when the
    exit had a count, in all 14 functions (F7). INFERRED, from knowledge of the LLVM source: the vectorizer
    needs a backedge-taken count, which exists only when every exit has one; it is the smallest of the exit
-   counts. In the forward loops the counts of the trap exits enter the vector trip count, and the traps stay
+   counts. In the forward loops bounded by `size()` the counts of the trap exits enter the vector trip count, and the traps stay
    in the scalar remainder (F3).
 3. In the reverse and stride-2 loops, at least one exit has no count (`***COULDNOTCOMPUTE***`), so the
    backedge-taken count is unpredictable. The loop-access analysis prints that SCEV could not compute the exit
@@ -110,7 +110,7 @@ So the three FAST loops have three different kinds of extra exit: a test of the 
 loop-invariant value (forward), a loop-invariant test with no counter in it (reverse), and tests of
 `2*i` and `2*i|1` (stride-2).
 
-### F3. Forward loops: the exit counts go into the vector trip count (OBSERVED, reading INFERRED)
+### F3. Forward loops bounded by `size()`: the exit counts go into the vector trip count (OBSERVED, reading INFERRED)
 
 - `raw/A-c18-kernels-fast.json`, assembly of the forward add: ``cmovae  r10, rdx`` and ``cmovae  r10, rcx`` clamp one value in `r10` against two sizes.
 - `raw/A-c18-kernels-fast.json`, same function: the vector loop `.LBB1_9` holds no trap. The function's only ``ud2`` follows the scalar remainder loop (`extracted/asm-clang18.txt`).

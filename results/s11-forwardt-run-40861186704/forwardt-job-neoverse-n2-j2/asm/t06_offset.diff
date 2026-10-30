@@ -1,0 +1,92 @@
+--- t06_offset.none.s
++++ t06_offset.fast.s
+@@ -1,38 +1,57 @@
+ <_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii>:
+ cmp	w2, #0x1
+ b.lt	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.tstop
+-ldr	x8, [x1]
+-ldr	x9, [x0]
+-sxtw	x11, w3
+-cmp	w2, #0x8
+-mov	w10, w2
+-b.cc	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.lo, b.ul, b.last
+-lsl	x12, x11, #2
+-add	x14, x12, x9
+-sub	x12, x14, x8
+-cmp	x12, #0x20
++ldp	x8, x9, [x0]
++sxtw	x10, w3
++ldp	x12, x13, [x1]
++mov	w11, w2
++sub	x15, x11, #0x1
++sub	x9, x9, x8
++asr	x9, x9, #2
++sub	x13, x13, x12
++asr	x13, x13, #2
++subs	x14, x9, x10
++csel	x14, xzr, x14, cc	// cc = lo, ul, last
++cmp	x14, x15
++csel	x14, x14, x15, cc	// cc = lo, ul, last
++cmp	x14, x13
++csel	x14, x14, x13, cc	// cc = lo, ul, last
++add	x15, x14, #0x1
++mov	x14, xzr
++cmp	x15, #0x8
++b.ls	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.plast
++lsl	x14, x10, #2
++add	x16, x14, x8
++sub	x14, x16, x12
++cmp	x14, #0x20
+ b.cs	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.hs, b.nlast
+-mov	x12, xzr
+-lsl	x13, x12, #2
+-sub	x10, x10, x12
+-add	x11, x13, x11, lsl #2
+-add	x8, x8, x13
+-add	x9, x9, x11
+-ldr	w11, [x8], #4
+-subs	x10, x10, #0x1
+-str	w11, [x9], #4
++mov	x14, xzr
++b	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>
++ands	x14, x15, #0x7
++mov	w17, #0x8                   	// #8
++add	x16, x16, #0x10
++csel	x14, x17, x14, eq	// eq = none
++sub	x14, x15, x14
++add	x15, x12, #0x10
++mov	x17, x14
++ldp	q0, q1, [x15, #-16]
++subs	x17, x17, #0x8
++add	x15, x15, #0x20
++stp	q0, q1, [x16, #-16]
++add	x16, x16, #0x20
++b.ne	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.any
++add	x12, x12, x14, lsl #2
++sub	x13, x13, x14
++add	x10, x14, x10
++sub	x11, x11, x14
++cbz	x13, <_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>
++cmp	x9, x10
++b.ls	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.plast
++ldr	w14, [x12], #4
++subs	x11, x11, #0x1
++str	w14, [x8, x10, lsl #2]
++sub	x13, x13, #0x1
++add	x10, x10, #0x1
+ b.ne	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.any
+ ret
+-and	x12, x10, #0x7ffffff8
+-add	x13, x8, #0x10
+-add	x14, x14, #0x10
+-mov	x15, x12
+-ldp	q0, q1, [x13, #-16]
+-subs	x15, x15, #0x8
+-add	x13, x13, #0x20
+-stp	q0, q1, [x14, #-16]
+-add	x14, x14, #0x20
+-b.ne	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.any
+-cmp	x12, x10
+-b.eq	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>  // b.none
+-b	<_Z15kern_t06_offsetRNSt3__16vectorIiNS_9allocatorIiEEEERKS3_ii+off>
++brk	#0x1

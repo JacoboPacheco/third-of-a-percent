@@ -275,6 +275,67 @@ def test_independent_check_skips_cpu_models_below_the_minimum_job_count():
         assert problems3 and len(skipped3) == 2 and "FAIL" in text3, text3
 
 
+def test_the_sample_holds_the_three_cells_the_conclusions_rest_on():
+    """k03_stencil.L2 decides the word of the Xeon 6973P-C, k02_add_fwd.L2 the word of the Arm core, k05_stride2.L1 is the smallest lost-loop cost."""
+    for cell in ("k03_stencil.L2", "k02_add_fwd.L2", "k05_stride2.L1"):
+        assert cell in pool_check.SAMPLE_CELLS, f"{cell} is not sampled"
+    assert len(set(pool_check.SAMPLE_CELLS)) == len(pool_check.SAMPLE_CELLS)
+    rng = random.Random(12)
+    jobs = [job(rng, "1", host=1 + 0.03 * i, n=12) for i in range(3)]
+    with tempfile.TemporaryDirectory() as d:
+        path, _ = write_pooled(d, jobs)
+        n, problems, skipped, text = quiet_check(path)
+    assert problems == [] and skipped == [], problems
+    for cell in ("k02_add_fwd.L2", "k05_stride2.L1"):    # the made-up jobs have no stencil
+        for column in ("as compiled", "aligned"):
+            assert any(f"{cell} {column}" in ln and ln.lstrip().startswith("ok") for ln in text.splitlines()), f"{cell} {column} is not listed:\n{text}"
+
+
+def test_the_tolerance_and_the_resampling_of_the_check_are_as_before():
+    """The check was widened by cells and a printed margin only: a looser tolerance or fewer resamples would make it agree with more."""
+    assert (pool_check.B, pool_check.BOUND_TOL_WIDTH, pool_check.BOUND_TOL_RATIO, pool_check.WIDTH_FACTOR) == (4000, 0.15, 0.0005, 1.5)
+    assert pool_check.PLACEMENT_CELLS == ("k02_add_fwd.L1", "k03_stencil.L1")
+
+
+def test_the_margin_text_says_under_or_over_and_how_far():
+    assert pool_check.margin_text(1.0211, 1.02) == "upper end 0.0011 over 1.02"
+    assert pool_check.margin_text(1.0184, 1.02) == "upper end 0.0016 under 1.02"
+    assert pool_check.margin_text(1.02, 1.02) == "upper end 0.0000 under 1.02"
+    assert pool_check.margin_text(6.52, 1.02) == "upper end 5.5000 over 1.02"
+
+
+def test_the_margin_to_the_forward_limit_is_printed_for_cells_only_and_decides_nothing():
+    """Beside the recomputed upper end of every cell statistic (both columns) and of nothing else; a cell far over the limit (a lost loop) still passes."""
+    import re
+    rng = random.Random(11)
+    jobs = [job(rng, "1", host=1 + 0.03 * i, n=12) for i in range(3)]
+    with tempfile.TemporaryDirectory() as d:
+        path, doc = write_pooled(d, jobs)
+        n, problems, skipped, text = quiet_check(path)
+    limit = pool_check.forward_limit(doc)
+    assert limit == 1 + CRIT["verdict"]["forward_ci_hi_floor_pct"] / 100 == 1.02
+    assert problems == [], problems
+    lines = [ln for ln in text.splitlines() if ln.lstrip().startswith(("ok", "FAIL"))]
+    assert len(lines) == n
+    seen = set()
+    for ln in lines:
+        m = re.search(r"independent [\d.]+ \[[\d.]+, ([\d.]+)\](?:  \(upper end ([\d.]+) (under|over) ([\d.]+)\))?", ln)
+        assert m, ln
+        hi = float(m.group(1))
+        is_cell = "as compiled" in ln or " aligned" in ln
+        assert (m.group(2) is not None) == is_cell, f"the margin is {'missing' if is_cell else 'printed'} on: {ln}"
+        if not is_cell:
+            assert "(upper end" not in ln, ln
+            continue
+        assert float(m.group(4)) == limit
+        assert abs(float(m.group(2)) - abs(limit - hi)) < 1.6e-4, ln     # both numbers are printed to four decimals
+        if abs(limit - hi) > 2e-4:
+            assert m.group(3) == ("under" if hi < limit else "over"), ln
+            seen.add(m.group(3))
+    assert seen == {"under", "over"}, f"the made-up pool should show a cell under and a cell over the limit, saw {seen}"
+    assert any(" aa " in ln for ln in lines) and any("layout " in ln for ln in lines)
+
+
 def test_v3_criteria_keep_the_v2_thresholds():
     import verdict
     v2 = verdict.load_criteria(os.path.join(pool.REPO, "harness", "criteria-v2.json"))

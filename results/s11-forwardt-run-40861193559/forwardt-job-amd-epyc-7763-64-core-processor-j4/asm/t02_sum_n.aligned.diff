@@ -1,0 +1,70 @@
+--- t02_sum_n.none_a64.s
++++ t02_sum_n.fast_a64.s
+@@ -2,49 +2,25 @@
+ test   %rsi,%rsi
+ je     <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
+ mov    (%rdi),%rax
+-cmp    $0x4,%rsi
+-jae    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
+-xor    %ecx,%ecx
++mov    0x8(%rdi),%rcx
++sub    %rax,%rcx
++sar    $0x2,%rcx
++lea    -0x1(%rsi),%r8
++xor    %r9d,%r9d
+ xor    %edi,%edi
+-jmp    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
++data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++nopw   0x0(%rax,%rax,1)
++cmp    %r8,%rcx
++jbe    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
++movslq (%rax,%r9,4),%r10
++add    %r10,%rdi
++inc    %r9
++cmp    %r9,%rsi
++jne    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
++mov    %rdi,(%rdx)
++ret
+ xor    %edi,%edi
+ mov    %rdi,(%rdx)
+ ret
+-mov    %rsi,%rcx
+-and    $0xfffffffffffffffc,%rcx
+-pxor   %xmm0,%xmm0
+-xor    %edi,%edi
+-pxor   %xmm1,%xmm1
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   (%rax)
+-movq   (%rax,%rdi,4),%xmm2
+-movq   0x8(%rax,%rdi,4),%xmm3
+-pxor   %xmm4,%xmm4
+-pcmpgtd %xmm2,%xmm4
+-punpckldq %xmm4,%xmm2
+-paddq  %xmm2,%xmm0
+-pxor   %xmm2,%xmm2
+-pcmpgtd %xmm3,%xmm2
+-punpckldq %xmm2,%xmm3
+-paddq  %xmm3,%xmm1
+-add    $0x4,%rdi
+-cmp    %rdi,%rcx
+-jne    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
+-paddq  %xmm0,%xmm1
+-pshufd $0xee,%xmm1,%xmm0
+-paddq  %xmm1,%xmm0
+-movq   %xmm0,%rdi
+-cmp    %rsi,%rcx
+-je     <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-data16 data16 data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+-nopl   0x0(%rax,%rax,1)
+-movslq (%rax,%rcx,4),%r8
+-add    %r8,%rdi
+-inc    %rcx
+-cmp    %rcx,%rsi
+-jne    <_Z14kern_t02_sum_nRKNSt3__16vectorIiNS_9allocatorIiEEEEmPl+off>
+-mov    %rdi,(%rdx)
+-ret
+-data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
++ud2

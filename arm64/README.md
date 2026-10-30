@@ -4,7 +4,7 @@ Status: work in progress (Oct 2026), like the rest of the project. One core type
 
 ## Question
 
-The x86-64 results say that loops which lose SIMD under libc++'s FAST hardening mode pay 2.8x to 8.0x in cache, and that forward loops pay little on the AMD models. Do the same loop shapes lose their vector code and pay on an AArch64 core (NEON)? And what do forward loops cost on this machine, where the A/A control of one L1 cell is far below a third of a percent?
+The x86-64 results say that loops which lose SIMD under libc++'s FAST hardening mode pay 2.8x to 8.0x in cache, and that forward loops bounded by `size()` pay little on the AMD models. Do the same loop shapes lose their vector code and pay on an AArch64 core (NEON)? And what do those forward loops cost on this machine, where the A/A control of one L1 cell is far below a third of a percent?
 
 ## Short answer
 
@@ -12,7 +12,7 @@ On GitHub's `ubuntu-24.04-arm` runner, 30 jobs in 3 runs, every job on a Neovers
 
 - **Reverse and stride-2 lose their NEON loops under FAST and pay.** 6.58x and 5.50x at L1, 5.90x and 5.07x at L2 (as compiled). Their functions go from 4 and 5 NEON instructions to none, and the compiler reports "could not determine number of loop iterations", the remark the x86-64 builds print for the same two loops. The L2 figures are medians of noisier timings than the L1 ones and are the less stable estimates (see "Noise at L2").
 - **Matrix multiply keeps its NEON loop and still pays.** The loop is vectorized in both builds, as the compile-only sweep (`ce-sweep/`) said it would be on AArch64 for clang 18. FAST costs 1.55x at L1 and 1.02x at L2. On x86-64 the same loop is lost under clang 18 and costs 3.2x to 4.8x. What in the listing goes with the cost is described below; why the cost falls from L1 to L2 is not established.
-- **Forward loops keep NEON and cost 1.000x to 1.007x at L1** (as compiled), against a pooled A/A floor of 0.009%, which is the floor of one cell (the forward add at L1), not of the machine. The add and the stencil are placement-sensitive at L1 and not judged by the rule; the add's 0.5% is 26 extra instructions in each call, a count that is the same at L2. At L2 the forward cells are noisy, and so is an identical binary timed against itself there (A/A half-width 2.62%).
+- **Forward loops bounded by `size()` keep NEON and cost 1.000x to 1.007x at L1** (as compiled), against a pooled A/A floor of 0.009%, which is the floor of one cell (the forward add at L1), not of the machine. The add and the stencil are placement-sensitive at L1 and not judged by the rule; the add's 0.5% is 26 extra instructions in each call, a count that is the same at L2. At L2 the forward cells are noisy, and so is an identical binary timed against itself there (A/A half-width 2.62%).
 - **Gather and histogram**, which are never vectorized, pay for the check itself: 1.59x and 1.13x at L1.
 - **The verdict under the written rules is INCONCLUSIVE, and the data cannot separate it from MAP.** One forward cell misses the rule: the forward add at L2, aligned, has an interval that ends at 1.021, against a limit of 1.02. The margin, 0.0011, is inside the bootstrap's own seed noise: the same data under 400 other seeds gives an end at or above 1.02 in 8, and a whole verdict of MAP in 392. The stored verdict is the one the rule gave under the seed fixed before the Arm runs, in the author's unpublished development history. It is not changed here, and it is not a finding that the forward add costs more than 2% at L2.
 
@@ -51,7 +51,7 @@ The 95% intervals (a bootstrap over jobs and repetitions) are narrow at L1 and w
 
 The NONE builds vectorize both loops (width 4, interleaved count 2). Under FAST the compiler reports `loop not vectorized: could not determine number of loop iterations`, the functions contain no NEON instruction and one `brk #0x1` each, and the reverse loop is a scalar loop with a compare and a branch to the trap in every iteration. Cachegrind counts 7.96x and 9.51x the instructions at L1 (instructions, not time). The no-vectorize build over NONE, at L1, costs 5.45x for reverse and 3.46x for stride-2, so the checked scalar loops cost more than plain scalar loops do: 6.58x against 5.45x, and 5.50x against 3.46x. What the remainder is was not isolated; it is presumably the per-element compare and branch, as inferred in the x86-64 study.
 
-The compile-only sweep (`ce-sweep/`, Compiler Explorer's clang 18.1.0 for AArch64) classed the loops the same way as these timed builds: reverse and stride-2 lost, matrix multiply and the forward loops kept.
+The compile-only sweep (`ce-sweep/`, Compiler Explorer's clang 18.1.0 for AArch64) classed the loops the same way as these timed builds: reverse and stride-2 lost, matrix multiply and the forward loops bounded by `size()` kept.
 
 ### Matrix multiply: kept, and 1.55x at L1
 
@@ -75,7 +75,7 @@ Neither is vectorized in either build, so nothing is lost; what they pay is the 
 
 ### Forward loops: what they cost, and against what
 
-The plan said that if the A/A half-width is below 0.30%, the forward loops would be reported against it as a description. The pooled A/A half-width is 0.009% (per job, 0.021% to 0.056%). That is the A/A of one cell, the forward add at L1: the floor of that cell, not of the machine (other cells are noisier; see "Noise at L2"). Against it, at L1:
+The forward loops here are the sum, the add and the stencil, all bounded by `size()`; loops with a variable bound are not covered in this folder (see [forwardt/README.md](../forwardt/README.md)). The plan said that if the A/A half-width is below 0.30%, the forward loops would be reported against it as a description. The pooled A/A half-width is 0.009% (per job, 0.021% to 0.056%). That is the A/A of one cell, the forward add at L1: the floor of that cell, not of the machine (other cells are noisier; see "Noise at L2"). Against it, at L1:
 
 - the forward sum costs 0.0% as compiled (ratio 1.000, interval 0.9999 to 1.0001) and 0.0% aligned;
 - the forward add costs 0.5% as compiled and 0.7% aligned;
@@ -95,7 +95,7 @@ At L2 the forward cells are 0.991 to 1.002 as compiled (0.986 to 1.007 aligned),
 
 - **A/A** (the forward add at L1, one binary against a byte-identical copy): pooled 1.0000, half-width 0.009%. This is the control the written rules read, and it is the floor of that one cell. Every job also timed the same A/A at the add's L2 cell (`details.json`, `aa_extra`; `pooled.json` does not hold it): pooled 1.0014, half-width 2.62%.
 - **Layout A/A** (NONE against NONE built with `-falign-loops=64`): the half-width runs from 0.006% at the quietest L1 cells to 3.0% (stride-2, L2). Moving the loops alone changes matrix multiply at L1 by 3.8% (ratio 1.038), the largest layout effect at L1; the other L1 cells move by at most 0.17%. It moves only the unchecked build's loops (see "Placement").
-- **Negative control** (the forward loops stay vectorized in both builds, expected near 1): the NEON instructions stay at 13, 5 and 10; the forward sum's function is identical line for line in both builds and has no trap.
+- **Negative control** (the forward loops bounded by `size()` stay vectorized in both builds, expected near 1): the NEON instructions stay at 13, 5 and 10; the forward sum's function is identical line for line in both builds and has no trap.
 - **Positive control** (the no-vectorize build over NONE): at L1 it costs 5.05x for the sum, 5.89x for the add, 3.87x for the stencil, 5.45x for reverse, 3.46x for stride-2 and 3.66x for matrix multiply (3.5x to 5.9x). Switching vectorization off by hand is a known slowdown of this size on this core.
 
 ### Noise at L2
@@ -131,7 +131,7 @@ These readings change no rule, threshold, seed or resample count, and the stored
 - **The whole analysis.** `harness/pool.py` `analyse_cpu` run under 40 of those seeds gives 39 MAP and 1 INCONCLUSIVE. The verdict form derived from the re-drawn statistics (forward, lost, placement, A/A and positive-control rules) for all 400 is 392 MAP and 8 INCONCLUSIVE, each of the 8 because of the same cell. Under every seed the lost loops pass, the placement-sensitive set is the same four cells and the A/A half-width stays between 0.0084% and 0.0098%.
 - **Other interval methods.** `robustness/` applies eight interval methods to this pool (`robustness/PLAN.md` has a note that says in its own heading it was written before any robustness number of the Arm pool existed, an order that rests on that heading and on the author's unpublished development history; `robustness/results-arm.json` has the numbers; its self-test reproduces 99 of the pool's own numbers exactly). Only the pool's own method gives INCONCLUSIVE; the block bootstraps over 1, 2 and 5 ABBA quartets, the jobs-only bootstrap and t interval and the two lag-1 corrections all give MAP, with the add's upper end at 1.016 to 1.017 (block), 1.004 and 1.006 (jobs only) and 1.014 (lag-1), against the pool's 1.021.
 - **The L2 A/A.** Read at the L2 cell the A/A is 2.62%, above the rule's 2% ceiling (see "Noise at L2"), and the form would be INCONCLUSIVE whatever the add's interval. Like the seed and method readings above, this is a reading beside the verdict: the written rule reads the A/A at L1 only.
-- **The independent check.** `harness/pool_check.py`, the recomputation that `scripts/check.py` runs, does not sample this cell, and its tolerance (a share of the interval's width, about 0.009 here) is larger than the margin of 0.0011, so it could not flag a change of this size. `robustness/` recomputes the cell with the pool's own seed and gets the stored numbers exactly.
+- **The independent check.** `harness/pool_check.py`, the recomputation that `scripts/check.py` runs, samples this cell and prints how far its recomputed upper end lies from 1.02, for information only: its tolerance (a share of the interval's width, about 0.009 here) is larger than the margin of 0.0011, so it could not flag a change of this size. `robustness/` recomputes the cell with the pool's own seed and gets the stored numbers exactly.
 
 What this says. The stored verdict is INCONCLUSIVE and is kept. It is not a finding that the forward add costs more than 2% at L2: that cell's interval is 2.8% either side because L2 timings on this machine are that noisy, even for an identical binary, and a margin of 0.0011 is smaller than the bootstrap's seed noise. The data cannot separate INCONCLUSIVE from MAP at this cell. A replication of 30 more jobs (set B, 29 of them Neoverse-N2), planned in writing (the records do not show the order), was run afterwards; alone it is INCONCLUSIVE on the same cell, with the aligned interval ending at 1.0247, and pooled with this column (59 Neoverse-N2 jobs) it gives MAP, which the harness labels unstable. This column's own verdict is unchanged; see [replication/README.md](../replication/README.md).
 
@@ -145,7 +145,7 @@ Of the 192 comparisons of one run's point against another run's interval (16 cel
 
 - **Reverse and stride-2 lost under FAST.** Held (remarks, NEON counts and time, above). The plan notes that reverse was already seen in a two-kernel smoke run, so it was not a blind prediction; stride-2 was.
 - **Matrix multiply not lost on AArch64** (from the compile-only sweep). Held: vectorized in both builds. Blind. The plan said any difference from x86-64 would be reported, not explained.
-- **Forward loops vectorized in both builds, no placement effect.** The first part held (13 / 13, 5 / 5 and 10 / 10 NEON instructions); it was blind for the sum and the stencil, and for the add the time ratio at L1 (1.005x) was known. The second part did not hold under the written rule for the add and the stencil at L1 (above).
+- **Forward loops (sum, add, stencil) vectorized in both builds, no placement effect.** The first part held (13 / 13, 5 / 5 and 10 / 10 NEON instructions); it was blind for the sum and the stencil, and for the add the time ratio at L1 (1.005x) was known. The second part did not hold under the written rule for the add and the stencil at L1 (above).
 - **Gather and histogram:** no prediction was written; the results are above.
 - **Every job that returns is pooled, none dropped:** 30 of 30 returned and all are pooled.
 
@@ -167,17 +167,16 @@ No count of held predictions is given: the two statements that touch a figure se
 ## Reproduce
 
 ```
-gh workflow run measure.yml -f runner=ubuntu-24.04-arm
+gh workflow run measure.yml -R <you>/third-of-a-percent -f runner=ubuntu-24.04-arm
 ```
 
-Run it more than once for a pool (the three runs here were dispatched together), then `gh run watch` and `gh run download <id>` into one folder per run. The per-job files are the `results-neoverse-n2-jN` artifacts. Then:
+Run it more than once for a pool (the three runs here were dispatched together), then `gh run watch -R <you>/third-of-a-percent` and `gh run download <id> -R <you>/third-of-a-percent -D build/arm-run-1` (and `build/arm-run-2`, and so on): one folder per run, under the git-ignored `build/`, so that nothing in `results/` is overwritten. The per-job files are the `results-neoverse-n2-jN` artifacts. Then, in a shell that expands the glob (Git Bash, bash, zsh):
 
 ```
-python harness/pool.py results/s8-arm-pooled/pooled.json results/s8-arm-run-*
-python scripts/check.py
+python harness/pool.py build/arm-pooled.json build/arm-run-*
 ```
 
-`python scripts/check.py` recomputes every interval from the raw timings and checks the figures in this file against the data. The sensitivity readings have their own commands: `python arm64/seeds.py` rewrites `arm64/seed-sensitivity.json` (it re-draws 400 seeds, so it takes a while), `python arm64/seeds.py --check` recomputes a sample of it and `--check --all` all of it; `python robustness/check.py` recomputes `robustness/results-arm.json`.
+Read the verdict line it prints against the stored one in `results/s8-arm-pooled/pooled.json`. The pool is written under `build/` on purpose: the stored pool and the stored runs are what the figures in this file and `scripts/check.py` read, and a pool written into them would replace the data those figures are tied to. `python scripts/check.py` re-checks the stored results, not yours: it recomputes every interval from the stored raw timings and checks the figures in this file against that data. The sensitivity readings have their own commands: `python arm64/seeds.py` rewrites `arm64/seed-sensitivity.json` (it re-draws 400 seeds, so it takes a while), `python arm64/seeds.py --check` recomputes a sample of it and `--check --all` all of it; `python robustness/check.py` recomputes `robustness/results-arm.json`.
 
 ## What was written first
 
