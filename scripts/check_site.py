@@ -1875,23 +1875,26 @@ def wording_checks(browser, base, ck, index):
     # the Reproduce text says what the command does
     box = page.text_content("#repro-box").replace(" ", " ")
     sec = page.text_content("#reproduce").replace(" ", " ")
-    need_both = ("clone of the repository", "Python 3, numpy and PyYAML", "one to two hours", "GitHub’s runners", "recomputed from the raw samples")
+    # the typed hours are what the check step of the three recorded CI runs rounds to, by the rule tests/test_readme_numbers.py applies to the README
+    with open(os.path.join(REPO, "tests", "data", "ci_check_step.json"), encoding="utf-8") as f_:
+        ci_runs = json.load(f_)["runs"]
+    ci_min = [(datetime.datetime.fromisoformat(r["completed_at"].replace("Z", "+00:00")) - datetime.datetime.fromisoformat(r["started_at"].replace("Z", "+00:00"))).total_seconds() / 60 for r in ci_runs]
+    ci_lo, ci_hi = round(min(ci_min) / 30) / 2, math.ceil(max(ci_min) / 30) / 2
+    ci_hours = f"{ci_lo:g} to {ci_hi:g} hours"
+    need_both = ("clone of the repository", "Python 3, numpy and PyYAML", ci_hours, "GitHub’s runners", "recomputed from the raw samples")
     ck.ok("Check every number" in page.text_content("#repro-btn") and all(w in box and w in sec for w in need_both)
           and "does not measure anything new" in box and "Playwright and its Chromium" in box and "it measures nothing new" in sec
-          and "about an hour" not in box + sec and "laptop" not in page.text_content("#repro-box .repro-note") and "on a laptop, run this" not in sec,
+          and "about an hour" not in box + sec and "one to two hours" not in box + sec and "laptop" not in page.text_content("#repro-box .repro-note") and "on a laptop, run this" not in sec,
           "the Reproduce button and section 11 say the command re-checks the stored results, in a clone, with Python 3, numpy and PyYAML (Playwright and its Chromium for the page check), "
-          "in one to two hours on GitHub's runners, and measures nothing new")
+          f"in {ci_hours} on GitHub's runners, and measures nothing new")
     # the measure command targets the reader's own fork, as the README's does, and the sentence above it says how to get one
     repo_path = index["repo"]["base"].split("github.com/")[1]
     ck.ok(page.text_content("#cmd-measure").strip() == index["repo"]["measure_command"] == f"gh workflow run measure.yml -R <you>/{repo_path.split('/')[-1]}"
           and f"gh repo fork {repo_path} --clone" in sec and "replace <you> with your GitHub user name" in sec and "checkout or fork" not in sec,
           "section 11: the measure command carries -R <you>/<repository>, and the sentence above it names the fork command and what to replace <you> with")
-    # the typed 'one to two hours' covers the check step of the three recorded CI runs, by the rule tests/test_readme_numbers.py applies to the README
-    with open(os.path.join(REPO, "tests", "data", "ci_check_step.json"), encoding="utf-8") as f_:
-        ci_runs = json.load(f_)["runs"]
-    ci_min = [(datetime.datetime.fromisoformat(r["completed_at"].replace("Z", "+00:00")) - datetime.datetime.fromisoformat(r["started_at"].replace("Z", "+00:00"))).total_seconds() / 60 for r in ci_runs]
-    ck.ok(len(ci_min) == 3 and round(min(ci_min) / 30) == 2 and math.ceil(max(ci_min) / 30) == 4,
-          f"the page's 'one to two hours' is what the three recorded CI check steps round to ({min(ci_min):.0f} to {max(ci_min):.0f} minutes: the shortest to the nearest half hour is one hour, the longest up to the next half hour is two hours)")
+    # the three recorded runs are what the typed hours cover: 104.9 to 120.4 minutes round to 1.5 to 2.5 hours (the shortest to the nearest half hour, the longest up to the next half hour)
+    ck.ok(len(ci_min) == 3 and (ci_lo, ci_hi) == (1.5, 2.5),
+          f"the page's '{ci_hours}' is what the three recorded CI check steps round to ({min(ci_min):.1f} to {max(ci_min):.1f} minutes: the shortest to the nearest half hour, the longest up to the next half hour)")
     # the headline range joins two columns; the small print names each column's own range, from the data (the first screen, the abstract and the share card keep the one range)
     pg_ = index["page"]
     want_pair = (f"as compiled {pg_['lost_compiled']['min']:.1f} to {pg_['lost_compiled']['max']:.1f}, "

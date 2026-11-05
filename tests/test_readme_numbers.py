@@ -5118,7 +5118,7 @@ def exp_check_exit():
     return {"line": line.group(1), "code": code.group(1)}
 
 
-HALF_HOURS_LO = {1: "half an hour", 2: "one", 3: "an hour and a half", 4: "two", 5: "two and a half", 6: "three"}  # the first word of "one to two hours"
+HALF_HOURS_LO = {1: "half an hour", 2: "one", 3: "an hour and a half", 4: "two", 5: "two and a half", 6: "three"}  # the README's first words, by the shortest step rounded to the nearest half hour
 HALF_HOURS_HI = {1: "half an hour", 2: "one hour", 3: "an hour and a half", 4: "two hours", 5: "two and a half hours", 6: "three hours",
                  7: "three and a half hours", 8: "four hours"}
 
@@ -5126,8 +5126,8 @@ HALF_HOURS_HI = {1: "half an hour", 2: "one hour", 3: "an hour and a half", 4: "
 def exp_ci_check_duration():
     """README says how long `python scripts/check.py` takes on a CI runner. The typed range must cover the shortest and the longest scripts/check.py step of
     the three most recent successful push runs of the ci workflow (tests/data/ci_check_step.json, read from the GitHub API) and be no wider than the
-    half-hour rounding of them: the shortest step to the nearest half hour (55 minutes is "one"), the longest up to the next half hour (95 minutes is
-    "two hours"). A range that stops at "one hour" does not cover a 95-minute step; one that runs to "three hours" is wider than any step read."""
+    half-hour rounding of them: the shortest step to the nearest half hour (104.9 minutes is "an hour and a half"), the longest up to the next half hour
+    (120.4 minutes is "two and a half hours"). A range that stops at "two hours" does not cover a 120.4-minute step; one that runs to "three hours" is wider than any step read."""
     runs = J("tests/data/ci_check_step.json")["runs"]
     assert len(runs) == 3 and len({r["run_id"] for r in runs}) == 3, "the fixture holds three distinct runs"
     when = lambda s: datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))  # noqa: E731
