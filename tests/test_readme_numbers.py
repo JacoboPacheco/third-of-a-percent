@@ -6431,6 +6431,98 @@ def test_the_llvm_excerpts_carry_a_notice_that_matches_the_folder():
     assert "indvars_predicate_traps.txt" in notice and "collectLoopUniforms_sha256.txt" in notice
     for n in excerpts:  # the 14 are exactly the files the NOTICE describes by pattern
         assert n.endswith(".cpp.txt") or n.startswith(("legality_", "x86_")), f"{n} starts with the LLVM header but the NOTICE does not describe it"
+    # the e-mail addresses of the commits' authors and committers were replaced by empty text, and the NOTICE says so (and what that costs)
+    for phrase in ("kept as the API returned them (saved as indented JSON) except for one change: every e-mail address in them was replaced by empty text",
+                   'in the same two lines of the "verification.payload" text, which is the signed commit object; there "Name <address>" became "Name <>"',
+                   "the signature in the \"verification\" block can no longer be checked against it",
+                   'its "verified" and "reason" fields are GitHub\'s verdict on the original download, with the addresses in place, not on the stored text',
+                   "Nothing in this repository reads the addresses or the signature",
+                   "fetch_llvm_src.py blanks the addresses in the same way when it writes these files",
+                   "The addresses remain in the earlier git history of this repository, which this change does not rewrite"):
+        assert phrase in notice, f"the NOTICE of llvm-src/ no longer says: {phrase}"
+    assert "e-mail addresses as the commits carry them" not in notice, "the NOTICE says the addresses are kept, but they were blanked"
+    assert "kept as returned" not in notice, "the NOTICE says the answers are kept as returned, but they are re-saved as indented JSON"
+
+
+LLVM_SRC_EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+
+
+def test_no_file_in_llvm_src_holds_an_email_address():
+    """The two commit answers of api.github.com were saved with the e-mail addresses of the commits' authors and committers, in the "email" fields
+    and in the signed commit's payload; the NOTICE says every address was replaced by empty text. No file of the folder may match an address
+    pattern, the "email" fields are empty and the payload's author and committer lines end in "<>" before the time stamp, so a later download
+    (or a hand edit) cannot put an address back unnoticed. Only counts are printed on a failure, not the addresses."""
+    folder = os.path.join(REPO, "investigate", "vectorizer", "matmul", "llvm-src")
+    hits = {}
+    for n in sorted(os.listdir(folder)):
+        with open(os.path.join(folder, n), encoding="utf-8") as f:
+            found = LLVM_SRC_EMAIL.findall(f.read())
+        if found:
+            hits[n] = len(found)
+    assert not hits, f"e-mail addresses (count per file) in llvm-src/: {hits}"
+    for n in ("commit_39b0cbe69c.json", "commit_b6a8f5486b.json"):
+        commit = J(f"investigate/vectorizer/matmul/llvm-src/{n}")["commit"]
+        assert commit["author"]["email"] == "" and commit["committer"]["email"] == "", f"{n}: an email field holds text"
+        lines = [ln for ln in commit["verification"]["payload"].split("\n") if ln.startswith(("author ", "committer "))]
+        assert len(lines) == 2, f"{n}: the payload has {len(lines)} author or committer lines, expected 2"
+        for ln in lines:
+            assert re.fullmatch(r"(author|committer) .+ <> \d+ [+-]\d{4}", ln), f"{n}: a payload line is not of the form 'Name <> time zone'"
+
+
+def fetch_llvm_src_module():
+    """investigate/vectorizer/matmul/fetch_llvm_src.py loaded from its path (nothing is downloaded when it is imported)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("fetch_llvm_src", os.path.join(REPO, "investigate", "vectorizer", "matmul", "fetch_llvm_src.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_fetch_llvm_src_blanks_email_addresses_and_writes_the_stored_format():
+    """fetch_llvm_src.py writes the API answers through blank_emails and dump. Made-up addresses (example.org and .invalid names only): every
+    address in a string, list or dict is replaced by empty text, the rest is untouched (LLVM IR such as '@llvm.trap' and '@@' hunk headers
+    are not addresses), the input is not changed, and dump() of each stored answer gives the stored text back, byte for byte (so the stored
+    files are in the form the script writes, and have no address that a second pass would still find)."""
+    fetch = fetch_llvm_src_module()
+    sample = {
+        "commit": {
+            "author": {"date": "2024-04-28T12:15:54Z", "email": "jane.doe+llvm@example.org", "name": "Jane Doe"},
+            "committer": {"email": "bot-1@users.noreply.example.org", "name": "Bot"},
+            "message": "Fix a thing (#1)\n\nCC @someone, ping a@b, written to jane.doe+llvm@example.org\nfoo@bar.example",
+            "verification": {"payload": "tree abc\nauthor Jane Doe <jane.doe+llvm@example.org> 1714306554 +0100\n"
+                                        "committer Bot <bot-1@users.noreply.example.org> 1714306555 +0100\n\nFix a thing (#1)\n",
+                             "reason": "valid", "verified": True},
+        },
+        "files": [{"patch": "@@ -1,2 +1,2 @@ define void @f(ptr %a)\n+  call void @llvm.trap()\n+declare i1 @pred() #0\n", "changes": 3}],
+        "mixed": [1, None, True, 2.5, ["x@y.invalid"]],
+    }
+    before = json.dumps(sample, sort_keys=True)
+    out = fetch.blank_emails(sample)
+    assert json.dumps(sample, sort_keys=True) == before, "blank_emails changed its input"
+    expected = json.loads(before)
+    expected["commit"]["author"]["email"] = ""
+    expected["commit"]["committer"]["email"] = ""
+    expected["commit"]["message"] = "Fix a thing (#1)\n\nCC @someone, ping a@b, written to \n"
+    expected["commit"]["verification"]["payload"] = ("tree abc\nauthor Jane Doe <> 1714306554 +0100\n"
+                                                     "committer Bot <> 1714306555 +0100\n\nFix a thing (#1)\n")
+    expected["mixed"][4][0] = ""
+    assert out == expected, "blank_emails did not give the expected text"
+    assert fetch.blank_emails("no address here, only @llvm.trap and a/b") == "no address here, only @llvm.trap and a/b"
+    assert fetch.blank_emails("<x@example.org>") == "<>" and fetch.blank_emails(7) == 7
+    text = fetch.dump(sample, sort_keys=True)
+    assert text.startswith('{\n "commit": {') and text.endswith("}\n") and not LLVM_SRC_EMAIL.search(text)
+    assert json.loads(text) == expected
+    for n, kw in (("commit_39b0cbe69c.json", {"sort_keys": True}), ("commit_b6a8f5486b.json", {"sort_keys": True}), ("commit_in_tag.json", {})):
+        with open(os.path.join(REPO, "investigate", "vectorizer", "matmul", "llvm-src", n), encoding="utf-8", newline="") as f:
+            stored = f.read()
+        assert fetch.dump(json.loads(stored), **kw) == stored, f"{n} is not what fetch_llvm_src.py would write for it"
+    # main() writes the three API answers only through dump(): a write that went around it would put the addresses back at the next download
+    with open(os.path.join(REPO, "investigate", "vectorizer", "matmul", "fetch_llvm_src.py"), encoding="utf-8") as f:
+        source = f.read()
+    json_writes = re.findall(r'^\s*write\("commit_[^\n]*', source, re.M)
+    assert len(json_writes) == 3 and all(", dump(" in ln for ln in json_writes), \
+        f"fetch_llvm_src.py: the three API answers must be written as write(name, dump(...)); found {json_writes}"
+    assert source.count("json.dump") == 1, "fetch_llvm_src.py serialises JSON somewhere other than dump(), which blanks the addresses"
 
 
 def test_the_replication_pooled_files_list_every_job_of_their_runs():

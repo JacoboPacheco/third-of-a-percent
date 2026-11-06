@@ -2,6 +2,7 @@
 
 Network: raw.githubusercontent.com (source files) and api.github.com (two commits, ten tag comparisons, two tag listings); no key.
 The unauthenticated GitHub API allows 60 requests per hour per address; a full run uses 14 of them.
+Every e-mail address in an API answer is replaced by empty text before the file is written (see llvm-src/NOTICE).
 Writes llvm-src/. Run:  python fetch_llvm_src.py
 """
 import hashlib
@@ -48,6 +49,26 @@ def function_text(src, header):
 def write(name, text):
     with open(os.path.join(OUT, name), "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
+
+
+EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+
+
+def blank_emails(value):
+    """The value with every e-mail address replaced by empty text, in strings, lists and dicts: an "email" field becomes ""
+    and the line "author Name <address> ..." of a signed commit's payload becomes "author Name <> ..."."""
+    if isinstance(value, str):
+        return EMAIL.sub("", value)
+    if isinstance(value, list):
+        return [blank_emails(v) for v in value]
+    if isinstance(value, dict):
+        return {k: blank_emails(v) for k, v in value.items()}
+    return value
+
+
+def dump(answer, **kw):
+    """The text of an API answer as it is stored: indented JSON, no e-mail address, one final newline."""
+    return json.dumps(blank_emails(answer), indent=1, **kw) + "\n"
 
 
 def main():
@@ -135,7 +156,7 @@ def main():
 
     # 4. the commit that changed collectLoopUniforms, and whether each tag contains it
     commit = json.loads(get("%s/commits/%s" % (API, COMMIT), "application/vnd.github+json"))
-    write("commit_%s.json" % COMMIT[:10], json.dumps(commit, indent=1, sort_keys=True) + "\n")
+    write("commit_%s.json" % COMMIT[:10], dump(commit, sort_keys=True))
     print("commit:", commit["sha"][:10], commit["commit"]["author"]["date"], commit["commit"]["message"].splitlines()[0])
     rows = []
     for tag in ("18.1.0", "18.1.3", "18.1.8", "19.1.0", "19.1.7"):
@@ -146,7 +167,7 @@ def main():
 
     # 5. the IndVarSimplify commit that lets loop exits that trap be predicated in loops with simple stores
     commit2 = json.loads(get("%s/commits/%s" % (API, COMMIT2), "application/vnd.github+json"))
-    write("commit_%s.json" % COMMIT2[:10], json.dumps(commit2, indent=1, sort_keys=True) + "\n")
+    write("commit_%s.json" % COMMIT2[:10], dump(commit2, sort_keys=True))
     print("commit:", commit2["sha"][:10], commit2["commit"]["author"]["date"], commit2["commit"]["message"].splitlines()[0])
     for tag in ("19.1.0", "21.1.0", "21.1.8", "22.1.0", "23.1.0"):
         cmp_ = json.loads(get("%s/compare/%s...llvmorg-%s" % (API, COMMIT2[:10], tag), "application/vnd.github+json"))
@@ -161,8 +182,8 @@ def main():
         names = [r["ref"].rsplit("/", 1)[1] for r in refs]
         series[prefix + "x"] = sorted(names, key=lambda t: [int(x) if x.isdigit() else 0 for x in re.split(r"[.-]", t[len("llvmorg-"):])])
         print("tags llvmorg-%s*: %s" % (prefix, " ".join(series[prefix + "x"])))
-    write("commit_in_tag.json", json.dumps({"note": "GitHub compare API, trimmed to the status fields. status 'ahead' means the tag contains the commit; 'diverged' or 'behind' means it does not.",
-                                              "tags_in_repository": series, "rows": rows}, indent=1) + "\n")
+    write("commit_in_tag.json", dump({"note": "GitHub compare API, trimmed to the status fields. status 'ahead' means the tag contains the commit; 'diverged' or 'behind' means it does not.",
+                                      "tags_in_repository": series, "rows": rows}))
 
     # 6. IndVarSimplify.cpp at four tags: the option and the side-effect test that decide whether trapping exits are predicated
     lines_out = []

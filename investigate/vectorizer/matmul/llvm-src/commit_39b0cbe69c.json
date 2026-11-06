@@ -24,13 +24,13 @@
  "commit": {
   "author": {
    "date": "2025-10-16T16:18:00Z",
-   "email": "fmayer@google.com",
+   "email": "",
    "name": "Florian Mayer"
   },
   "comment_count": 0,
   "committer": {
    "date": "2025-10-16T16:18:00Z",
-   "email": "noreply@github.com",
+   "email": "",
    "name": "GitHub"
   },
   "message": "[IndVarSimplify] Allow predicateLoopExit on some loops with thread-local writes (#155901)\n\nThis is important to optimize patterns that frequently appear with\nbounds checks:\n\n```\nfor (int i = 0; i < N; ++i) {\n  bar[i] = foo[i] + 123;\n}\n```\n\nwhich gets roughly turned into\n\n```\nfor (int i = 0; i < N; ++i) {\n  if (i >= size of foo)\n     ubsan.trap();\n  if (i >= size of bar)\n     ubsan.trap();\n  bar[i] = foo[i] + 123;\n}\n```\n\nMotivating example:\nhttps://github.com/google/boringssl/blob/main/crypto/fipsmodule/hmac/hmac.cc.inc#L138\n\nI hand-verified the assembly and confirmed that this optimization\nremoves the check in the loop.\nThis also allowed the loop to be vectorized.\n\nAlive2: https://alive2.llvm.org/ce/z/3qMdLF\n\nI did a `stage2-check-all` for both normal and\n`-DBOOTSTRAP_CMAKE_C[XX]_FLAGS=\"-fsanitize=array-bounds\n-fsanitize-trap=all\"`.\n\nI also ran some Google-internal tests with `fsanitize=array-bounds`.\nEverything passes.",
@@ -40,7 +40,7 @@
   },
   "url": "https://api.github.com/repos/llvm/llvm-project/git/commits/39b0cbe69ca8704dbc5846a91d136f0ed6101782",
   "verification": {
-   "payload": "tree 7b18cd97e0f8f5bbc25360267188ee0e40503834\nparent 7fe069121b57a187e2072f01ecc84523948d9f04\nauthor Florian Mayer <fmayer@google.com> 1760631480 -0700\ncommitter GitHub <noreply@github.com> 1760631480 -0700\n\n[IndVarSimplify] Allow predicateLoopExit on some loops with thread-local writes (#155901)\n\nThis is important to optimize patterns that frequently appear with\nbounds checks:\n\n```\nfor (int i = 0; i < N; ++i) {\n  bar[i] = foo[i] + 123;\n}\n```\n\nwhich gets roughly turned into\n\n```\nfor (int i = 0; i < N; ++i) {\n  if (i >= size of foo)\n     ubsan.trap();\n  if (i >= size of bar)\n     ubsan.trap();\n  bar[i] = foo[i] + 123;\n}\n```\n\nMotivating example:\nhttps://github.com/google/boringssl/blob/main/crypto/fipsmodule/hmac/hmac.cc.inc#L138\n\nI hand-verified the assembly and confirmed that this optimization\nremoves the check in the loop.\nThis also allowed the loop to be vectorized.\n\nAlive2: https://alive2.llvm.org/ce/z/3qMdLF\n\nI did a `stage2-check-all` for both normal and\n`-DBOOTSTRAP_CMAKE_C[XX]_FLAGS=\"-fsanitize=array-bounds\n-fsanitize-trap=all\"`.\n\nI also ran some Google-internal tests with `fsanitize=array-bounds`.\nEverything passes.",
+   "payload": "tree 7b18cd97e0f8f5bbc25360267188ee0e40503834\nparent 7fe069121b57a187e2072f01ecc84523948d9f04\nauthor Florian Mayer <> 1760631480 -0700\ncommitter GitHub <> 1760631480 -0700\n\n[IndVarSimplify] Allow predicateLoopExit on some loops with thread-local writes (#155901)\n\nThis is important to optimize patterns that frequently appear with\nbounds checks:\n\n```\nfor (int i = 0; i < N; ++i) {\n  bar[i] = foo[i] + 123;\n}\n```\n\nwhich gets roughly turned into\n\n```\nfor (int i = 0; i < N; ++i) {\n  if (i >= size of foo)\n     ubsan.trap();\n  if (i >= size of bar)\n     ubsan.trap();\n  bar[i] = foo[i] + 123;\n}\n```\n\nMotivating example:\nhttps://github.com/google/boringssl/blob/main/crypto/fipsmodule/hmac/hmac.cc.inc#L138\n\nI hand-verified the assembly and confirmed that this optimization\nremoves the check in the loop.\nThis also allowed the loop to be vectorized.\n\nAlive2: https://alive2.llvm.org/ce/z/3qMdLF\n\nI did a `stage2-check-all` for both normal and\n`-DBOOTSTRAP_CMAKE_C[XX]_FLAGS=\"-fsanitize=array-bounds\n-fsanitize-trap=all\"`.\n\nI also ran some Google-internal tests with `fsanitize=array-bounds`.\nEverything passes.",
    "reason": "valid",
    "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJo8Rq4CRC1aQ7uu5UhlAAAxBwQAKlQ0wlLuyRh7mGmzpUDjsmw\nG96XirEDjLca0PI/jqZozg/BclGxUaFREMSXgRHHgpVjcXV8a84glYXr6jbkq1vl\nNoDnzQ/1BjasQxyRyyUjg/cAaSsU+97hq69/Pdw12S1zxqJPDarMVKoogaRla7pJ\nwi8xAZxdPhS3Lg5WAqMkYTB1kMZ/3Pw7UrZuavz9JltGZ7jBj4WbK8YnUZGh3zBc\njERtxe9kEwyv/XW6C/IQ56ptbtugSMgZFWJmYpYY9P2DR/tPmfqt2wWhkavQqYLX\nS/EKtu1DMeZKOvLoPtXYFj6WS3MG01REJ48Qthpcjm++iEyMNcj/2BwiXj/L9h0g\nKjZSo9BYOPbh3GnUXo5pH5fJZ41YgkdDV2GobpKfY1hhL4BGnMVSqVRh6xZLC4nr\nhpsxWwJTpfIic+/9glWcMtiglxcp0SYWr5VP42V+ly1ZzcaFXV6BLoFnmAtVy++Z\nJ89XNblirQsEsM1gWQJkAxjUwj+G6jnqnwMMSqUG/JCVlPuvm+DSJRd+qanndw/N\nNKm02tWGR+28k7gtFbjWdwk00WZ/kblaNO8xP+n7gLX0EUJQiW1ePXg5DbGURYk/\n1C2e7P8yDt0jQKi3o8NfG3ajYjv8z1iBEoKEpxM9rG2bSeYrjftNBj7kVlsiuf7r\nbnsWXcUQDNvPx/8oqp8b\n=zLRI\n-----END PGP SIGNATURE-----\n",
    "verified": true,
