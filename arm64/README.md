@@ -1,6 +1,6 @@
 # Arm column: the same eight loops on an AArch64 runner
 
-Status: work in progress (Oct 2026), like the rest of the project. One core type, one compiler and 30 jobs make this a first reading, not a survey of Arm hardware. The column is pooled and reported on its own; no number of the x86-64 study depends on it.
+Status: complete (Oct 2026). One core type, one compiler and 30 jobs make this a first reading, not a survey of Arm hardware. The column is pooled and reported on its own; no number of the x86-64 study depends on it.
 
 ## Question
 

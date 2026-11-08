@@ -1,6 +1,6 @@
 # forwardt: the time cost of six forward loops with a variable bound
 
-Status: work in progress (Oct 2026). The plan, the six loops, the measurement code, the analysis and the recorded runs are in this folder. The result is under [Result](#result); `runs.json` lists the runs it rests on.
+Status: complete (Oct 2026). The plan, the six loops, the measurement code, the analysis and the recorded runs are in this folder. The result is under [Result](#result); `runs.json` lists the runs it rests on.
 
 ## Question
 
@@ -29,7 +29,7 @@ The compile-only sweep in [forwardn/README.md](../forwardn/README.md) found that
 
 ## How a run is dispatched and recorded
 
-The plan called for a code test on each runner (`jobs` = `[1]` and `reps` = 4, so that the files are marked as smoke files, which the analysis sets aside and never pools), then three measurement runs of 6 jobs: one on `ubuntu-24.04-arm` (Neoverse-N2) and two on `ubuntu-24.04`, the two x86-64 runs from one commit. The five runs were dispatched from a temporary branch of the public repository, `forwardt-run` (manifest key `branch`), as the `dsweep` runs were; each file records its commit. The branch is kept for as long as the runs record its commits.
+The plan called for a code test on each runner (`jobs` = `[1]` and `reps` = 4, so that the files are marked as smoke files, which the analysis sets aside and never pools), then three measurement runs of 6 jobs: one on `ubuntu-24.04-arm` (Neoverse-N2) and two on `ubuntu-24.04`, the two x86-64 runs from one commit. The five runs were dispatched from a temporary branch of the public repository, `forwardt-run` (manifest key `branch`), as the `dsweep` runs were; each file records its commit. The branch has since been deleted; the commit the five runs record, 595e061, is on the default branch, so their code is still public.
 
 Every Actions run that executes `sweep.py` to time anything is an entry of `runs.json`, whatever its outcome: tests, failed and cancelled runs included. An entry gives the run id, the runner, the commit, the creation time (UTC), the class (`test` or `measurement`), the clause of the plan that called for it (or the words `not in the plan` with a reason), the jobs started and returned, the reason for each job that did not return, and the folder under `results/` that holds its downloaded files (null for a run that is not stored). The analysis stops, and writes nothing, when a folder named by the manifest is missing, when a file carries a run id that the manifest does not list, or when the number of files in a folder differs from the entry's count of returned jobs. A job that fails is listed and not replaced; no run is started to change a word.
 

@@ -6,7 +6,7 @@ A bounds check makes a C++ program stop if an index is out of range; libc++ hard
 
 A measurement study, not a library or a tool to install, for C++ engineers and tech leads deciding whether to turn on libc++ hardening. **Start here: the live page, https://jacobopacheco.github.io/third-of-a-percent/** Switch the check off and on, then pick a loop to read its machine code.
 
-Status: work in progress (Oct 2026). The measurements described here are the ones so far; the page, notes and results may still change. Code written by AI coding agents directed by the author.
+Status: complete (Nov 2026). All planned runs are finished and the measurements described here are the final ones for this study; what the study does not cover is under "How much to trust it". Code written by AI coding agents directed by the author.
 
 ![First screen of the page: eight loops as bars, the reverse loop with the check on drawn as 8.0 times as long](docs/hero.png)
 

@@ -3276,7 +3276,7 @@ function buildChrome() {
   author = {Pacheco, Jacobo},
   title  = {Third of a Percent: bounds checks in C++'s standard library, measured loop by loop next to Google's ${gpct}average},
   year   = {2026},
-  note   = {Work in progress, October 2026. Code written by AI coding agents directed by the author},
+  note   = {Study complete, November 2026. Code written by AI coding agents directed by the author},
   url    = {${base}}
 }`;
 }

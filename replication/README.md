@@ -1,6 +1,6 @@
 # Replication sets B and C
 
-Status: work in progress (Oct 2026). Two sets of extra runs, planned in writing (the order of plan and dispatch cannot be established from the records; see "What the plan does and does not show"), and the comparison with the pools they replicate. The pools the page and the README read are unchanged; the sets are reported beside them.
+Status: complete (Oct 2026). Two sets of extra runs, planned in writing (the order of plan and dispatch cannot be established from the records; see "What the plan does and does not show"), and the comparison with the pools they replicate. The pools the page and the README read are unchanged; the sets are reported beside them.
 
 ## Why
 

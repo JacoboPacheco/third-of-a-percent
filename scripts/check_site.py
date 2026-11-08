@@ -43,7 +43,7 @@
      and states the thin coverage; placement-sensitive cells are listed with the pooled column ratio;
    - docs/hero.png and site/og.png (pictures of the first screen) are the size they claim, and docs/hero.json (what
      they were taken from, written by scripts/capture_hero.py) equals what the first screen shows and what site/data
-     says; the work-in-progress marking shows at every phone width from 320 px; neither page scrolls sideways from
+     says; the status marking shows at every phone width from 320 px; neither page scrolls sideways from
      320 px; an Intel model's no-verdict note shows on a phone; the hero's lane names are never cut; the hint pill
      never sits on other parts; the page's counts of lost jobs, the 29-loop tally and the newer-toolchain baseline
      are tied to the files they come from;
@@ -720,10 +720,10 @@ def collapsed_checks(browser, base, ck, index, saved, shots):
         pg.click("#wip-btn")
         pg.evaluate("document.querySelector('.hero h1').click()")  # a click on the page itself, away from the chip and the note
         wip3 = pg.evaluate("document.getElementById('wip-note').hidden")
-        ck.ok(wip0 == ["BUTTON", "false", True, "Work in progress"]
-              and not wip1[0] and wip1[1].startswith("More runs are still being added") and "may change" in wip1[1] and wip1[1].count(".") == 1 and wip1[2] and wip1[3] == "true" and wip1[4] == 0
+        ck.ok(wip0 == ["BUTTON", "false", True, "Study complete"]
+              and not wip1[0] and wip1[1].startswith("All planned runs are finished") and "final" in wip1[1] and wip1[1].count(".") == 1 and wip1[2] and wip1[3] == "true" and wip1[4] == 0
               and hs and wip2 == [True, "wip-btn"] and wip3,
-              f"{w}x{h}: the 'Work in progress' chip is a button; one click shows one sentence that says what is unfinished (more runs, text still edited, numbers may change), instantly, inside the view with no sideways scroll; Escape closes it and returns focus, so does a click elsewhere ({wip0}, {wip1}, {wip2}, {wip3})")
+              f"{w}x{h}: the 'Study complete' chip is a button; one click shows one sentence that says all planned runs are finished and the numbers are final, instantly, inside the view with no sideways scroll; Escape closes it and returns focus, so does a click elsewhere ({wip0}, {wip1}, {wip2}, {wip3})")
         ck.ok(pg.inner_text("#race-ratio").endswith("×") and len(pg.query_selector_all("#race-loops button")) == 8, f"{w}: the first view prints a measured ratio and offers all eight loop chips")
         f1 = pg.evaluate("document.getElementById('fig1').getBoundingClientRect().top")
         ck.ok(f1 < h * 3, f"{w}: the clickable heatmap is within three screens (the contrast band and the mechanism demo come first; Figure 1 starts at {f1:.0f} px)")
@@ -1611,12 +1611,12 @@ def hero_image_checks(browser, base, ck, index):
     with open(os.path.join(SITE, "index.html"), encoding="utf-8") as f:
         src = f.read()
     alt = re.search(r'og:image:alt" content="([^"]*)"', src)
-    ck.ok('og:image:width" content="1200"' in src and 'og:image:height" content="630"' in src and alt and "work in progress" in alt.group(1).lower(),
-          "the share card's declared size is 1200 x 630 and its alt text says the work is in progress")
+    ck.ok('og:image:width" content="1200"' in src and 'og:image:height" content="630"' in src and alt and "study complete" in alt.group(1).lower(),
+          "the share card's declared size is 1200 x 630 and its alt text says the study is complete")
 
 
 def phone_checks(browser, base, ck, index):
-    """Narrow screens and the hero's small layouts: a work-in-progress marking at every phone width and no sideways
+    """Narrow screens and the hero's small layouts: the status marking at every phone width and no sideways
     scroll on either page from 320 px, an Intel model's no-verdict note on a phone, lane names never cut at tablet
     widths, and the hint pill clear of other parts in every hero variant."""
     print("== narrow screens: the marking, sideways scroll, the no-verdict note, lane names, the hint pill")
@@ -1630,12 +1630,12 @@ def phone_checks(browser, base, ck, index):
         pg.wait_for_timeout(120)
         shown = pg.evaluate("""() => [...document.querySelectorAll('.bar-wip .wip-long, .hero .dateline')].filter(e => {
             const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
-            return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && /in progress/i.test(e.textContent); }).length""")
+            return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && /study complete/i.test(e.textContent); }).length""")
         if not shown:
             no_mark.append(w)
         if not no_hscroll(pg):
             wide.append(w)
-    ck.ok(not no_mark, f"main page: a work-in-progress marking is visible at every phone width from 320 to 640 px (none at: {no_mark})")
+    ck.ok(not no_mark, f"main page: the 'Study complete' marking is visible at every phone width from 320 to 640 px (none at: {no_mark})")
     ck.ok(not wide, f"main page: no sideways scroll at any width from 320 to 640 px (scrolls at: {wide})")
     # an Intel model with no verdict: the note beside Figure 1's switcher is visible on a phone, after tapping the hero's tab
     pg.set_viewport_size({"width": 390, "height": 844})
@@ -4495,7 +4495,7 @@ def pinned_text_checks(browser, base, ck, index):
         with open(os.path.join(SITE, n), encoding="utf-8") as f:
             gl += re.findall(r'href="(https://security\.googleblog\.com[^"]*)"', f.read())
     ck.ok(f"({fx_py(index['claim']['google_pct'])}%)" in mi["description"]
-          and alt_want in mi["og:image:alt"] and alt_want in md["og:image:alt"] and "work in progress" in md["og:image:alt"].lower()
+          and alt_want in mi["og:image:alt"] and alt_want in md["og:image:alt"] and "study complete" in md["og:image:alt"].lower()
           and mi["og:url"] == pages_url == mi["canonical"] and md["og:url"] == pages_url + "details.html" == md["canonical"]
           and mi["og:image"] == pages_url + "og.png" == md["og:image"] == mi["twitter:image"] == md["twitter:image"]
           and mi["twitter:card"] == md["twitter:card"] == "summary_large_image" and (md["og:image:width"], md["og:image:height"]) == ("1200", "630")
@@ -5954,7 +5954,7 @@ def main():
                 ck.ok(
                       # what the page holds, for whom, and the setting it is about; the main page is a breadcrumb above the title, said in words
                       "holds the full tables, runs and checks of a study of what bounds checks in C++’s standard library cost, loop by loop, for C++ engineers deciding whether to turn on libc++ hardening." in byl
-                      and "not needed to follow the result" not in byl + purp and "work in progress" in byl.lower()
+                      and "not needed to follow the result" not in byl + purp and "study complete" in byl.lower()
                       and crumb and crumb[0] == "index.html" and crumb[1].startswith("←") and "Main page" in crumb[1] and "short version" in crumb[1] and crumb[2]
                       and dp.locator('.front .byline a[href="index.html"]').count() == 0 and dp.inner_text("#repo-link") == "Code and data on GitHub"
                       # the box: Google's figure and why the title says it come first, then the numbers from the data, in words a reader follows

@@ -1,6 +1,6 @@
 # Matrix-multiply d-sweep
 
-Status: work in progress (Oct 2026). One question, a rule committed before the runs (in the author's unpublished development history), and three runs (18 jobs); no further runs are planned for this question.
+Status: complete (Oct 2026). One question, a rule committed before the runs (in the author's unpublished development history), and three runs (18 jobs); no further runs are planned for this question.
 
 ## Question
 

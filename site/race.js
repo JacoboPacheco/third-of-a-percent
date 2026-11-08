@@ -533,7 +533,7 @@ function buildRepro() {
   document.addEventListener('click', (e) => { if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) set(false); });
 }
 
-/* ---------- the Work in progress chip: one click shows what is unfinished (instant, nothing moves) ---------- */
+/* ---------- the status chip ("Study complete"): one click shows what the status means (instant, nothing moves) ---------- */
 function buildWip() {
   const btn = $('wip-btn'), note = $('wip-note');
   if (!btn || !note) return;

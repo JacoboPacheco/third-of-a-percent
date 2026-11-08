@@ -54,7 +54,7 @@ def test_no_numbered_or_ordered_start_list_before_the_first_heading():
 
 def test_status_line_carries_the_exact_disclosure_once_in_the_top():
     t = top()
-    status = [ln for ln in t if ln.startswith("Status: work in progress")]
+    status = [ln for ln in t if ln.startswith("Status: complete (")]
     assert len(status) == 1 and status[0].endswith(DISCLOSURE)
     assert sum(ln.count(DISCLOSURE) for ln in t) == 1
 

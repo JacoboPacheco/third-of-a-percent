@@ -3424,7 +3424,7 @@ ARM64_ROWS = [
     ("arm64: title", "arm kernels in results/s8-arm-pooled/pooled.json", exp_arm_title,
      r"# Arm column: the same (?P<k>\w+) loops on an AArch64 runner"),
     ("arm64: status date", "results/s8-arm-run-*/*/results.json run.started_at", exp_arm_status_date,
-     r"Status: work in progress \((?P<m>[A-Z][a-z]{2}) (?P<y>\d{4})\)"),
+     r"Status: complete \((?P<m>[A-Z][a-z]{2}) (?P<y>\d{4})\)"),
     ("arm64: status line", "results/s8-arm-pooled/pooled.json jobs", exp_arm_pooled_over,
      r"One core type, one compiler and (?P<n>\d+) jobs make this a first reading"),
     ("arm64: question, the x86-64 range", "site/data/index.json page.lost", exp_lost_range,
